@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+us-law-severity-map-env/
+
+# Data files (shapefiles are downloaded automatically)
+data/
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.zip
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output
+*.png
+*.jpg
+*.pdf
+!screenshot.png
