@@ -1,6 +1,5 @@
 # Terraform
 terraform/.terraform/
-terraform/.terraform.lock.hcl
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/*.tfvars
@@ -15,6 +14,7 @@ kubeconfig*
 
 # IDE
 .vscode/
+.cursor/
 .idea/
 *.swp
 *.swo
