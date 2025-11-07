@@ -29,4 +29,3 @@ spec:
       tlsSecret: longhorn-tls
       annotations:
         cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
-

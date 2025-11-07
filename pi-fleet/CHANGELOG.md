@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+
 - Network configuration documentation (NETWORK.md)
 - Updated FLEET.md with current IP addresses and service domains
 - Flux GitOps installation and configuration
@@ -10,5 +11,5 @@
 - Infrastructure directory structure for cluster components
 
 ### Changed
-- Marked eldertree as single-node cluster in documentation
 
+- Marked eldertree as single-node cluster in documentation
