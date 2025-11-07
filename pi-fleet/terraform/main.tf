@@ -130,6 +130,8 @@ resource "null_resource" "retrieve_kubeconfig" {
       sed -i.bak 's/127.0.0.1/${var.pi_host}/g' ${local.kubeconfig_path}
       chmod 600 ${local.kubeconfig_path}
       rm -f ${local.kubeconfig_path}.bak
+      # Update cluster and context names to eldertree
+      ${path.module}/update-kubeconfig.sh ${local.kubeconfig_path}
     EOT
   }
 

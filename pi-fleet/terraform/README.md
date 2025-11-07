@@ -2,12 +2,9 @@
 
 Automates k3s control plane installation on Raspberry Pi.
 
-## What It Does
+## Cluster Name
 
-1. Verifies system and installs prerequisites
-2. Installs k3s with `--cluster-init` (HA-ready)
-3. Downloads kubeconfig locally
-4. Saves node token for workers
+The cluster is named **eldertree** (matching the control plane hostname). Kubeconfig contexts are automatically configured with this name.
 
 ## Usage
 
@@ -24,7 +21,16 @@ terraform apply
 
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
+kubectl config use-context eldertree
 kubectl get nodes
+```
+
+## Update Existing Kubeconfig
+
+If you have an existing kubeconfig with default names:
+
+```bash
+./update-kubeconfig.sh ~/.kube/config-eldertree
 ```
 
 ## Cleanup

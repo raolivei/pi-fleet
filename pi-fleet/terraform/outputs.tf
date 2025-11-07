@@ -1,3 +1,8 @@
+output "cluster_name" {
+  description = "Name of the K3s cluster"
+  value       = "eldertree"
+}
+
 output "cluster_endpoint" {
   description = "K3s cluster API endpoint"
   value       = "https://${var.pi_host}:6443"

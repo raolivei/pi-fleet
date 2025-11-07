@@ -32,9 +32,19 @@ kubectl get nodes
 ## Structure
 
 ```
-terraform/         # Infrastructure as code
-clusters/core/     # Cluster manifests
+terraform/         # Infrastructure as code (K3s setup)
+clusters/eldertree/     # FluxCD manifests (GitOps)
+helm/              # Custom Helm charts
 ```
+
+## Helm Charts
+
+Custom charts for cluster components:
+
+- **cert-manager-issuers**: ClusterIssuers (self-signed, ACME)
+- **monitoring-stack**: Prometheus + Grafana
+
+See [helm/README.md](helm/README.md) for details.
 
 ## Add Worker Nodes
 
