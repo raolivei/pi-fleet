@@ -2,6 +2,8 @@
 
 K3s cluster on Raspberry Pi, managed with Terraform.
 
+> **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for git workflow and branching strategy.
+
 ## Hardware
 
 - Raspberry Pi 5 (8GB, ARM64)
