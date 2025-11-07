@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - cert-manager # TLS certificate management
   - issuers # ClusterIssuer (self-signed)
+  - vault # HashiCorp Vault (dev mode)
