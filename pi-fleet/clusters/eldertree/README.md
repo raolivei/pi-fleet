@@ -1,4 +1,4 @@
-# Core Cluster
+# Eldertree Cluster
 
 K3s control plane with embedded etcd.
 
