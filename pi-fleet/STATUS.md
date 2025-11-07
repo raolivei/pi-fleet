@@ -41,6 +41,7 @@ Access services via HTTPS (accept self-signed certificate warnings):
 ## Network Configuration
 
 Add to `/etc/hosts`:
+
 ```
 192.168.2.83  eldertree
 192.168.2.83  grafana.eldertree.local
@@ -70,4 +71,3 @@ kubectl get certificates -A
 - Import Kubernetes dashboards into Grafana
 - Set up alerts in Prometheus (when needed)
 - Add worker nodes (when needed)
-

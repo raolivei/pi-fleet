@@ -5,6 +5,7 @@ Use this prompt to replicate the eldertree cluster setup on similar infrastructu
 ## Objective
 
 Set up a production-ready single-node K3s cluster on a Raspberry Pi with:
+
 - GitOps-based deployment using Flux
 - Monitoring stack (Prometheus + Grafana)
 - Certificate management with self-signed TLS
@@ -14,6 +15,7 @@ Set up a production-ready single-node K3s cluster on a Raspberry Pi with:
 ## Context
 
 **Hardware:**
+
 - Raspberry Pi 5 (8GB, ARM64)
 - Debian 12 Bookworm
 - Single-node cluster (workers can be added later)
@@ -21,6 +23,7 @@ Set up a production-ready single-node K3s cluster on a Raspberry Pi with:
 - IP: 192.168.2.83
 
 **Repository Structure:**
+
 ```
 pi-fleet/
 ├── terraform/          # K3s installation
@@ -43,11 +46,13 @@ pi-fleet/
 ## Implementation Steps
 
 ### 1. Network Documentation
+
 - Create `NETWORK.md` with current IP, static IP setup guide, and service domains
 - Document `/etc/hosts` entries for local DNS
 - Keep it concise and actionable
 
 ### 2. Bootstrap Flux GitOps
+
 ```bash
 # Install Flux CLI
 brew install fluxcd/tap/flux
@@ -64,6 +69,7 @@ gh repo deploy-key add /path/to/key.pub --repo USER/REPO --title "flux-CLUSTER" 
 ```
 
 ### 3. Deploy cert-manager (Helm Chart)
+
 ```yaml
 # HelmRepository + HelmRelease in clusters/eldertree/infrastructure/cert-manager/
 # Use official jetstack Helm chart
@@ -72,6 +78,7 @@ gh repo deploy-key add /path/to/key.pub --repo USER/REPO --title "flux-CLUSTER" 
 ```
 
 ### 4. Create Custom Helm Chart: cert-manager-issuers
+
 ```
 helm/cert-manager-issuers/
 ├── Chart.yaml
@@ -84,6 +91,7 @@ helm/cert-manager-issuers/
 Key: Separate issuers from cert-manager to avoid CRD race conditions.
 
 ### 5. Create Custom Helm Chart: monitoring-stack
+
 ```
 helm/monitoring-stack/
 ├── Chart.yaml
@@ -97,11 +105,12 @@ helm/monitoring-stack/
 ```
 
 **Important values to set:**
+
 ```yaml
 global:
   domain: CLUSTER.local
   clusterIssuer: selfsigned-cluster-issuer
-  storageClass: local-path  # Use K3s built-in storage
+  storageClass: local-path # Use K3s built-in storage
 
 prometheus:
   enabled: true
@@ -146,6 +155,7 @@ grafana:
 ```
 
 ### 6. Deploy Custom Charts via Flux
+
 ```yaml
 # HelmRelease pointing to custom charts in git
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -169,6 +179,7 @@ spec:
 ## Key Decisions
 
 ### ✅ DO
+
 - Use Helm charts for all deployments
 - Use K3s built-in local-path-provisioner for storage
 - Separate cert-manager from issuers (avoid CRD race)
@@ -178,6 +189,7 @@ spec:
 - Keep documentation concise
 
 ### ❌ DON'T
+
 - Don't deploy Longhorn until there's a specific use case
 - Don't create multiple separate HelmReleases for related services
 - Don't overload with documentation
@@ -186,32 +198,40 @@ spec:
 ## Common Issues & Solutions
 
 ### PVC Pending with Wrong StorageClass
+
 **Problem:** PVCs stuck pending with `storageClass: longhorn`
 
-**Solution:** 
+**Solution:**
+
 1. Ensure `storageClassName: local-path` in Helm values
 2. Delete existing PVCs: `kubectl delete pvc -n NAMESPACE PVC_NAME`
 3. Reconcile HelmRelease: `flux reconcile helmrelease NAME -n NAMESPACE`
 
 ### HelmChart Not Found
+
 **Problem:** `invalid chart reference: stat /tmp/.../helm/CHART: no such file or directory`
 
-**Solution:** 
+**Solution:**
+
 - Ensure chart path includes repo prefix: `./pi-fleet/helm/CHART`
 - Verify Flux GitRepository is pointing to correct branch
 - Check chart exists in git at specified path
 
 ### ClusterIssuer CRD Not Found
+
 **Problem:** `no matches for kind "ClusterIssuer" in version "cert-manager.io/v1"`
 
 **Solution:**
+
 - Separate ClusterIssuer into its own Helm chart deployed after cert-manager
 - Use HelmRelease dependencies or separate kustomization path
 
 ### Kubeconfig Context Issues
+
 **Problem:** `context was not found for specified context: default`
 
 **Solution:**
+
 ```bash
 # Re-download kubeconfig from cluster
 sshpass -p 'PASSWORD' ssh USER@HOST 'sudo cat /etc/rancher/k3s/k3s.yaml' > ~/.kube/config-CLUSTER
@@ -249,21 +269,25 @@ kubectl get storageclass
 ## Expected Final State
 
 **Running Pods:**
+
 - flux-system: helm-controller, kustomize-controller, source-controller, notification-controller
 - cert-manager: cert-manager, cainjector, webhook
 - flux-system: cert-manager-issuers (cert-manager, cainjector, webhook)
 - monitoring: grafana, prometheus-server, node-exporter, kube-state-metrics, pushgateway
 
 **Ingresses:**
+
 - grafana.eldertree.local (HTTPS with self-signed cert)
 - prometheus.eldertree.local (HTTPS with self-signed cert)
 
 **Storage:**
+
 - All PVCs using `local-path` StorageClass
 - Prometheus: 8Gi
 - Grafana: 2Gi
 
 **Certificates:**
+
 - ClusterIssuer: selfsigned-cluster-issuer (Ready)
 - Certificates: grafana-tls, prometheus-tls (Ready)
 
@@ -303,7 +327,7 @@ flux reconcile kustomization flux-system
 ✅ Grafana accessible via HTTPS with self-signed cert  
 ✅ Prometheus accessible via HTTPS with self-signed cert  
 ✅ All documentation concise and actionable  
-✅ All changes committed to git with good messages  
+✅ All changes committed to git with good messages
 
 ## Additional Notes
 
@@ -317,4 +341,3 @@ flux reconcile kustomization flux-system
 ## Prompt for AI Assistant
 
 "Set up a K3s cluster on [HARDWARE] with GitOps using Flux. Use custom Helm charts for cert-manager-issuers and a monitoring-stack (Prometheus + Grafana). Deploy everything via Flux HelmReleases pointing to charts in the git repository. Use self-signed certificates for local services. Use K3s built-in local-path-provisioner for storage. Keep all documentation concise. Commit at each milestone. Follow the branching strategy in CONTRIBUTING.md. Update CHANGELOG.md as you go. Target structure: clusters/[CLUSTER-NAME]/ for manifests, helm/ for custom charts."
-

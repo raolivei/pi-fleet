@@ -4,6 +4,11 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/*.tfvars
 terraform/.terraform.tfstate.lock.info
+terraform/k3s-node-token
+
+# Helm
+helm/**/Chart.lock
+helm/**/charts/*.tgz
 
 # Sensitive files
 *.pem
