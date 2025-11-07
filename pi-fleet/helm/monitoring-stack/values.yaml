@@ -18,6 +18,7 @@ prometheus:
     persistentVolume:
       enabled: true
       size: 8Gi
+      storageClass: local-path
     ingress:
       enabled: true
       ingressClassName: traefik
@@ -37,6 +38,7 @@ grafana:
   persistence:
     enabled: true
     size: 2Gi
+    storageClassName: local-path
   datasources:
     datasources.yaml:
       apiVersion: 1
