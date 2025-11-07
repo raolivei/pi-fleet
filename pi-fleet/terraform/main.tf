@@ -85,7 +85,38 @@ resource "null_resource" "install_k3s" {
 }
 
 # =============================================================================
-# Step 3: Retrieve kubeconfig and node token
+# Step 3: Install k9s
+# =============================================================================
+
+resource "null_resource" "install_k9s" {
+  depends_on = [null_resource.install_k3s]
+
+  connection {
+    type     = "ssh"
+    host     = var.pi_host
+    user     = var.pi_user
+    password = var.pi_password
+    timeout  = "5m"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "set -e",
+      "echo 'Installing k9s...'",
+      "K9S_VERSION=$(curl -s https://api.github.com/repos/derailed/k9s/releases/latest | grep 'tag_name' | awk '{print $2}' | tr -d '\",' | sed 's/^v//')",
+      "curl -sfL https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_Linux_arm64.tar.gz -o /tmp/k9s.tar.gz",
+      "echo ${var.pi_password} | sudo -S tar -xzf /tmp/k9s.tar.gz -C /tmp",
+      "echo ${var.pi_password} | sudo -S mv /tmp/k9s /usr/local/bin/k9s",
+      "echo ${var.pi_password} | sudo -S chmod +x /usr/local/bin/k9s",
+      "rm -f /tmp/k9s.tar.gz",
+      "echo 'k9s installation complete!'",
+      "k9s version",
+    ]
+  }
+}
+
+# =============================================================================
+# Step 4: Retrieve kubeconfig and node token
 # =============================================================================
 
 resource "null_resource" "retrieve_kubeconfig" {
