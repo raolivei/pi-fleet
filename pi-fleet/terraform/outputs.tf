@@ -20,7 +20,7 @@ output "ssh_command" {
 
 output "next_steps" {
   description = "Next steps to use your cluster"
-  value = <<-EOT
+  value       = <<-EOT
     
     ╔══════════════════════════════════════════════════════════╗
     ║         K3s Control Plane Installation Complete!         ║
