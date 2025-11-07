@@ -3,21 +3,26 @@
 ## Control Plane
 
 - **eldertree** - Main control plane node (Raspberry Pi 5, 8GB)
+  - IP: `192.168.2.83`
+  - Single-node cluster
 
 ## Worker Nodes
 
-- **fleet-worker-01** - First worker node
-- **fleet-worker-02** - Second worker node
+- **fleet-worker-01** - First worker node (future)
+- **fleet-worker-02** - Second worker node (future)
 - **fleet-worker-XX** - Additional workers as needed
 
 ## Network Configuration
 
+See [NETWORK.md](NETWORK.md) for full network setup guide.
+
 Add to `/etc/hosts` on all machines:
 
 ```
-<IP>  eldertree
-<IP>  fleet-worker-01
-<IP>  fleet-worker-02
+192.168.2.83  eldertree
+192.168.2.83  longhorn.eldertree.local
+192.168.2.83  grafana.eldertree.local
+192.168.2.83  prometheus.eldertree.local
 ```
 
 ## Joining Workers

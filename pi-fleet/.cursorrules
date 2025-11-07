@@ -1,0 +1,50 @@
+# Git Branching Strategy
+
+When working on this repository, ALWAYS follow this branching workflow:
+
+## Branch Naming Convention
+
+Create branches with these prefixes based on work type:
+
+- `feat/` or `feature/` - New features (e.g., `feat/user-authentication`)
+- `fix/` - Bug fixes (e.g., `fix/login-error`)
+- `chore/` - Maintenance tasks (e.g., `chore/update-dependencies`)
+- `docs/` - Documentation only (e.g., `docs/api-readme`)
+- `refactor/` - Code refactoring (e.g., `refactor/database-queries`)
+- `infra/` - Infrastructure changes (e.g., `infra/pi-fleet`)
+- `test/` - Test additions/changes (e.g., `test/user-service`)
+
+## Workflow Rules
+
+1. **NEVER commit directly to `main` or `dev`**
+2. **Always create a feature branch** for any work
+3. **Push feature branches to remote** for backup and collaboration
+4. **Keep branches focused** - one feature/fix/task per branch
+5. **Merge to main only when truly complete** (stable, tested, documented)
+
+## Example Workflow
+
+# Start new work
+git checkout main
+git pull
+git checkout -b feat/my-new-feature
+
+# Work, commit, push
+git add .
+git commit -m "feat: Add my new feature"
+git push origin feat/my-new-feature
+
+# When ready to finalize
+git checkout main
+git merge feat/my-new-feature
+git push origin main
+
+## Branch Lifecycle
+
+- **Keep feature branches** until work is fully complete and tested
+- **Push regularly** to remote for backup
+- **Merge to main** only when production-ready
+- **Delete branches** after successful merge (optional)
+
+**Remember: Feature branches allow iteration without polluting main. Main should always be stable.**
+
