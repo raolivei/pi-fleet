@@ -1,0 +1,15 @@
+apiVersion: v2
+name: monitoring-stack
+description: Complete monitoring stack with Prometheus and Grafana for pi-fleet
+type: application
+version: 0.1.0
+appVersion: "1.0"
+dependencies:
+  - name: prometheus
+    version: "25.30.1"
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: prometheus.enabled
+  - name: grafana
+    version: "8.8.2"
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled

@@ -1,0 +1,81 @@
+# Monitoring Stack Values
+
+# Global configuration
+global:
+  domain: eldertree.local
+  clusterIssuer: selfsigned-cluster-issuer
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+  alertmanager:
+    enabled: false
+  nodeExporter:
+    enabled: true
+  pushgateway:
+    enabled: false
+  server:
+    persistentVolume:
+      enabled: true
+      size: 8Gi
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      hosts:
+        - prometheus.eldertree.local
+      tls:
+        - secretName: prometheus-tls
+          hosts:
+            - prometheus.eldertree.local
+      annotations:
+        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+
+# Grafana configuration
+grafana:
+  enabled: true
+  adminPassword: admin
+  persistence:
+    enabled: true
+    size: 2Gi
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local
+          access: proxy
+          isDefault: true
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: "default"
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      kubernetes-cluster:
+        gnetId: 7249
+        revision: 1
+        datasource: Prometheus
+      node-exporter:
+        gnetId: 1860
+        revision: 37
+        datasource: Prometheus
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - grafana.eldertree.local
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.eldertree.local
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned-cluster-issuer

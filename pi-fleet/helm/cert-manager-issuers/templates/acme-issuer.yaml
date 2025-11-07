@@ -1,0 +1,17 @@
+{{- if .Values.acme.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.acme.name }}
+spec:
+  acme:
+    server: {{ .Values.acme.server }}
+    email: {{ .Values.acme.email }}
+    privateKeySecretRef:
+      name: {{ .Values.acme.name }}-account-key
+    solvers:
+    - http01:
+        ingress:
+          class: traefik
+{{- end }}
+

@@ -1,26 +1,45 @@
 # Custom Helm Charts
 
-This directory contains custom Helm charts for the pi-fleet cluster.
+Custom Helm charts for the pi-fleet cluster.
+
+## Available Charts
+
+### cert-manager-issuers
+
+Custom cert-manager ClusterIssuers (self-signed, ACME).
+
+### monitoring-stack
+
+Complete monitoring solution with Prometheus and Grafana.
 
 ## Structure
 
-Each subdirectory represents a custom Helm chart:
-
 ```
 helm/
+├── cert-manager-issuers/
+├── monitoring-stack/
 └── <chart-name>/
     ├── Chart.yaml
     ├── values.yaml
     ├── templates/
-    └── ...
+    └── README.md
 ```
 
 ## Usage
 
-Charts in this directory can be:
-- Packaged and deployed directly to the cluster
-- Referenced by FluxCD HelmRelease resources
-- Stored in a local chart repository
+Charts are deployed via FluxCD HelmRelease from the git repository:
+
+```yaml
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+spec:
+  chart:
+    spec:
+      chart: ./helm/<chart-name>
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+```
 
 ## Creating a New Chart
 
@@ -28,4 +47,3 @@ Charts in this directory can be:
 cd helm
 helm create <chart-name>
 ```
-

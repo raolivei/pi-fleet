@@ -1,0 +1,13 @@
+# Default values for cert-manager-issuers
+
+# Self-signed ClusterIssuer
+selfSigned:
+  enabled: true
+  name: selfsigned-cluster-issuer
+
+# Future: Add ACME Let's Encrypt issuer
+acme:
+  enabled: false
+  email: ""
+  server: https://acme-v02.api.letsencrypt.org/directory
+  name: letsencrypt-prod

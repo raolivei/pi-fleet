@@ -7,7 +7,6 @@
 - Network configuration documentation (NETWORK.md)
 - Updated FLEET.md with current IP addresses and service domains
 - Flux GitOps installation and configuration
-- Longhorn storage provisioner manifests (single-node config)
 - cert-manager with self-signed ClusterIssuer for local TLS
 - Prometheus monitoring with persistent storage
 - Grafana with Kubernetes dashboards and ingress
@@ -31,6 +30,6 @@
 - Updated FluxCD HelmReleases to reference custom charts from git repository
 - Renamed `clusters/core/` to `clusters/eldertree/` to match cluster name and support multi-cluster structure
 
-### Fixed
+### Removed
 
-- Installed open-iscsi on eldertree for Longhorn storage requirements
+- Longhorn storage provisioner (deferred until specific use case emerges)

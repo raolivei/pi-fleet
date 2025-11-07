@@ -20,7 +20,6 @@ Add to `/etc/hosts` on all machines:
 
 ```
 192.168.2.83  eldertree
-192.168.2.83  longhorn.eldertree.local
 192.168.2.83  grafana.eldertree.local
 192.168.2.83  prometheus.eldertree.local
 ```
