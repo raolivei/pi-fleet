@@ -7,7 +7,7 @@ spec:
   interval: 10m
   chart:
     spec:
-      chart: ./helm/cert-manager-issuers
+      chart: ./pi-fleet/helm/cert-manager-issuers
       version: '0.1.0'
       sourceRef:
         kind: GitRepository
