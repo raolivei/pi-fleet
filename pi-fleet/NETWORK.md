@@ -35,10 +35,19 @@ Add to `/etc/hosts` on all machines accessing the cluster:
 
 ## Service Domains
 
-Local services will use `.eldertree.local` domain:
+Local services use `.eldertree.local` domain with self-signed TLS:
 
 - `longhorn.eldertree.local` - Storage UI
-- `grafana.eldertree.local` - Monitoring dashboards
+- `grafana.eldertree.local` - Monitoring dashboards (admin/admin)
 - `prometheus.eldertree.local` - Metrics endpoint
 
-All services use self-signed TLS certificates.
+## Accessing Services
+
+After adding `/etc/hosts` entries, access services via HTTPS:
+
+```bash
+# Accept self-signed certificate warnings in browser
+https://grafana.eldertree.local
+https://longhorn.eldertree.local
+https://prometheus.eldertree.local
+```
