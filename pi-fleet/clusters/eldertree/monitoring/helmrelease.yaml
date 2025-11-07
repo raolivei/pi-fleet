@@ -22,6 +22,7 @@ spec:
     global:
       domain: eldertree.local
       clusterIssuer: selfsigned-cluster-issuer
+      storageClass: local-path
     prometheus:
       enabled: true
     grafana:
