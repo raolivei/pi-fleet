@@ -1,0 +1,286 @@
+name: Terraform Apply (Manual)
+
+on:
+    workflow_dispatch:
+        inputs:
+            pr_number:
+                description: "PR number to apply (e.g., 42)"
+                required: true
+                type: string
+
+permissions:
+    contents: read
+    pull-requests: write
+    statuses: write
+    issues: write
+
+jobs:
+    terraform-apply:
+        name: "Apply Infrastructure Changes"
+        runs-on: ubuntu-latest
+
+        defaults:
+            run:
+                working-directory: terraform/s3-cloudfront
+
+        steps:
+            - name: Validate PR Number
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      const prNumber = '${{ github.event.inputs.pr_number }}';
+                      if (!prNumber || isNaN(prNumber)) {
+                        core.setFailed('Invalid PR number provided');
+                        return;
+                      }
+
+                      // Check if PR exists and is open
+                      try {
+                        const { data: pr } = await github.rest.pulls.get({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          pull_number: parseInt(prNumber)
+                        });
+
+                        if (pr.state !== 'open') {
+                          core.setFailed(`PR #${prNumber} is ${pr.state}. Can only apply to open PRs.`);
+                        }
+
+                        core.info(`✅ PR #${prNumber} is open and valid`);
+                      } catch (error) {
+                        core.setFailed(`PR #${prNumber} not found`);
+                      }
+
+            - name: Checkout PR branch
+              uses: actions/checkout@v3
+              with:
+                  ref: refs/pull/${{ github.event.inputs.pr_number }}/head
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v2
+              with:
+                  terraform_version: 1.6.0
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v2
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: us-east-1
+
+            - name: Download Plan Artifact
+              uses: dawidd6/action-download-artifact@v2
+              with:
+                  workflow: terraform-pr-plan.yml
+                  pr: ${{ github.event.inputs.pr_number }}
+                  name: terraform-plan-${{ github.event.inputs.pr_number }}
+                  path: terraform/s3-cloudfront/
+              continue-on-error: true
+
+            - name: Terraform Init
+              run: terraform init
+
+            - name: Check if Plan Exists
+              id: check_plan
+              run: |
+                  if [ -f "tfplan" ]; then
+                    echo "plan_exists=true" >> $GITHUB_OUTPUT
+                    echo "✅ Found saved plan from PR"
+                  else
+                    echo "plan_exists=false" >> $GITHUB_OUTPUT
+                    echo "⚠️ No saved plan found, will generate new one"
+                  fi
+
+            - name: Generate New Plan if Needed
+              if: steps.check_plan.outputs.plan_exists == 'false'
+              run: |
+                  echo "⚠️ Generating new plan..."
+                  terraform plan -input=false -out=tfplan
+
+            - name: Terraform Apply
+              id: apply
+              run: |
+                  terraform apply -input=false tfplan | tee apply.log
+              continue-on-error: true
+
+            - name: Get Terraform Outputs
+              if: steps.apply.outcome == 'success'
+              id: outputs
+              run: |
+                  echo "cloudfront_domain=$(terraform output -raw cloudfront_domain_name 2>/dev/null || echo 'N/A')" >> $GITHUB_OUTPUT
+                  echo "s3_bucket=$(terraform output -raw s3_bucket_name 2>/dev/null || echo 'N/A')" >> $GITHUB_OUTPUT
+                  echo "s3_website=$(terraform output -raw s3_website_endpoint 2>/dev/null || echo 'N/A')" >> $GITHUB_OUTPUT
+
+            - name: Post Success Comment to PR
+              if: steps.apply.outcome == 'success'
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      const output = `## ✅ Terraform Apply Successful!
+
+                      Infrastructure has been successfully deployed/updated!
+
+                      ### 📊 Outputs
+
+                      - **CloudFront Domain**: \`${{ steps.outputs.outputs.cloudfront_domain }}\`
+                      - **S3 Bucket**: \`${{ steps.outputs.outputs.s3_bucket }}\`
+                      - **S3 Website**: \`${{ steps.outputs.outputs.s3_website }}\`
+
+                      ### 🌐 Test Your Infrastructure
+
+                      - **CloudFront URL**: https://${{ steps.outputs.outputs.cloudfront_domain }}
+                      - **S3 Direct**: http://${{ steps.outputs.outputs.s3_website }}
+
+                      ### ✅ Ready to Merge
+
+                      **This PR is now safe to merge!**
+
+                      The infrastructure has been tested and verified in AWS.
+                      All status checks should now pass.
+
+                      ---
+
+                      **Applied by**: @${{ github.actor }}  
+                      **Workflow**: [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})  
+                      **Timestamp**: ${new Date().toISOString()}
+                      `;
+
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: parseInt('${{ github.event.inputs.pr_number }}'),
+                        body: output
+                      });
+
+                      // Add success label
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: parseInt('${{ github.event.inputs.pr_number }}'),
+                        labels: ['terraform-applied', 'ready-to-merge']
+                      });
+
+            - name: Create Success Status Check
+              if: steps.apply.outcome == 'success'
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      const { data: pr } = await github.rest.pulls.get({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        pull_number: parseInt('${{ github.event.inputs.pr_number }}')
+                      });
+
+                      await github.rest.repos.createCommitStatus({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        sha: pr.head.sha,
+                        state: 'success',
+                        context: 'Terraform Apply',
+                        description: 'Infrastructure successfully applied',
+                        target_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+                      });
+
+            - name: Post Failure Comment to PR
+              if: steps.apply.outcome == 'failure'
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      const fs = require('fs');
+                      let applyLog = 'Log file not found';
+                      try {
+                        applyLog = fs.readFileSync('terraform/s3-cloudfront/apply.log', 'utf8').slice(-4000);
+                      } catch (error) {
+                        applyLog = 'Could not read apply.log';
+                      }
+
+                      const output = `## ❌ Terraform Apply Failed
+
+                      Infrastructure deployment failed. **DO NOT MERGE THIS PR!**
+
+                      ### 🚨 Error Details
+
+                      <details><summary>Show Apply Log (last 4000 characters)</summary>
+
+                      \`\`\`
+                      ${applyLog}
+                      \`\`\`
+
+                      </details>
+
+                      ### 🔍 Common Issues
+
+                      - AWS quota limits exceeded
+                      - Insufficient IAM permissions
+                      - Resource naming conflicts
+                      - State lock issues
+                      - Network/API errors
+
+                      ### 🛠️ Next Steps
+
+                      1. **Review the error** above
+                      2. **Fix the Terraform code**
+                      3. **Push new commit** to this PR
+                      4. **Wait for new plan** to run
+                      5. **Run apply again** from Actions tab
+
+                      ### ⚠️ DO NOT MERGE
+
+                      This PR cannot be merged until apply succeeds!
+
+                      ---
+
+                      **Failed at**: ${new Date().toISOString()}  
+                      **Triggered by**: @${{ github.actor }}  
+                      **Workflow**: [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+                      `;
+
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: parseInt('${{ github.event.inputs.pr_number }}'),
+                        body: output
+                      });
+
+                      // Add failure label
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: parseInt('${{ github.event.inputs.pr_number }}'),
+                        labels: ['terraform-apply-failed', 'do-not-merge']
+                      });
+
+            - name: Create Failure Status Check
+              if: steps.apply.outcome == 'failure'
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      const { data: pr } = await github.rest.pulls.get({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        pull_number: parseInt('${{ github.event.inputs.pr_number }}')
+                      });
+
+                      await github.rest.repos.createCommitStatus({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        sha: pr.head.sha,
+                        state: 'failure',
+                        context: 'Terraform Apply',
+                        description: 'Infrastructure apply failed',
+                        target_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+                      });
+
+            - name: Upload Apply Log
+              if: always()
+              uses: actions/upload-artifact@v3
+              with:
+                  name: terraform-apply-log-pr-${{ github.event.inputs.pr_number }}
+                  path: terraform/s3-cloudfront/apply.log
+                  retention-days: 30
+
+            - name: Fail workflow if apply failed
+              if: steps.apply.outcome == 'failure'
+              run: |
+                  echo "::error::Terraform apply failed for PR #${{ github.event.inputs.pr_number }}"
+                  exit 1

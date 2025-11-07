@@ -1,0 +1,170 @@
+name: Terraform Plan (PR)
+
+on:
+    pull_request:
+        branches:
+            - main
+        paths:
+            - "terraform/**"
+            - ".github/workflows/terraform-*.yml"
+
+permissions:
+    contents: read
+    pull-requests: write
+    statuses: write
+
+jobs:
+    terraform-plan:
+        name: "Plan Infrastructure Changes"
+        runs-on: ubuntu-latest
+
+        defaults:
+            run:
+                working-directory: terraform/s3-cloudfront
+
+        outputs:
+            plan-exitcode: ${{ steps.plan.outputs.exitcode }}
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v2
+              with:
+                  terraform_version: 1.6.0
+                  terraform_wrapper: true
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v2
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: us-east-1
+
+            - name: Terraform Format Check
+              id: fmt
+              run: terraform fmt -check -recursive
+              continue-on-error: true
+
+            - name: Terraform Init
+              id: init
+              run: terraform init
+
+            - name: Terraform Validate
+              id: validate
+              run: terraform validate -no-color
+
+            - name: Terraform Plan
+              id: plan
+              run: |
+                  terraform plan -no-color -input=false -out=tfplan
+                  terraform show -no-color tfplan > plan-output.txt
+              continue-on-error: true
+
+            - name: Save Plan Artifact
+              uses: actions/upload-artifact@v3
+              with:
+                  name: terraform-plan-${{ github.event.pull_request.number }}
+                  path: |
+                      terraform/s3-cloudfront/tfplan
+                      terraform/s3-cloudfront/plan-output.txt
+                  retention-days: 30
+
+            - name: Post Plan to PR
+              uses: actions/github-script@v6
+              env:
+                  PLAN: "${{ steps.plan.outputs.stdout }}"
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const fs = require('fs');
+                      const planOutput = fs.readFileSync('terraform/s3-cloudfront/plan-output.txt', 'utf8');
+
+                      const { data: comments } = await github.rest.issues.listComments({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: context.issue.number,
+                      });
+
+                      const botComment = comments.find(comment => {
+                        return comment.user.type === 'Bot' && comment.body.includes('🏗️ Terraform Plan')
+                      });
+
+                      const planStatus = '${{ steps.plan.outcome }}' === 'success' ? '✅' : '❌';
+                      const applyStatus = '${{ steps.plan.outcome }}' === 'success' 
+                        ? '⏸️ **Waiting for manual approval**' 
+                        : '🚫 **Cannot apply until plan succeeds**';
+
+                      const output = `## 🏗️ Terraform Plan - PR #${{ github.event.pull_request.number }}
+
+                      #### 📋 Format Check: \`${{ steps.fmt.outcome }}\`
+                      #### ⚙️ Initialization: \`${{ steps.init.outcome }}\`
+                      #### 🤖 Validation: \`${{ steps.validate.outcome }}\`
+                      #### 📊 Plan: ${planStatus} \`${{ steps.plan.outcome }}\`
+
+                      <details><summary>📄 Show Full Plan</summary>
+
+                      \`\`\`terraform
+                      ${planOutput.slice(0, 60000)}
+                      \`\`\`
+
+                      </details>
+
+                      ---
+
+                      ### 🎯 Next Steps
+
+                      ${applyStatus}
+
+                      **To apply this plan:**
+
+                      1. Go to the [Actions tab](https://github.com/${{ github.repository }}/actions/workflows/terraform-pr-apply.yml)
+                      2. Click "Run workflow"
+                      3. Enter PR number: \`${{ github.event.pull_request.number }}\`
+                      4. Click "Run workflow" button
+                      5. Wait for apply to complete
+                      6. If successful, you can merge this PR
+
+                      **⚠️ Important**: This PR cannot be merged until apply succeeds!
+
+                      ---
+
+                      **Plan saved as artifact**: \`terraform-plan-${{ github.event.pull_request.number }}\`  
+                      **Commit**: ${{ github.sha }}  
+                      **Author**: @${{ github.actor }}
+                      `;
+
+                      if (botComment) {
+                        await github.rest.issues.updateComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          comment_id: botComment.id,
+                          body: output
+                        });
+                      } else {
+                        await github.rest.issues.createComment({
+                          issue_number: context.issue.number,
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          body: output
+                        });
+                      }
+
+            - name: Create Status Check
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      await github.rest.repos.createCommitStatus({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        sha: context.payload.pull_request.head.sha,
+                        state: '${{ steps.plan.outcome }}' === 'success' ? 'success' : 'failure',
+                        context: 'Terraform Plan',
+                        description: '${{ steps.plan.outcome }}' === 'success' ? 'Plan succeeded' : 'Plan failed',
+                        target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+                      });
+
+            - name: Fail if plan failed
+              if: steps.plan.outcome == 'failure'
+              run: exit 1

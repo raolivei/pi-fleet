@@ -1,0 +1,84 @@
+╔═══════════════════════════════════════════════════════════════╗
+║           AWS COST SUMMARY - US LAW SEVERITY MAP             ║
+║                    (5-50 visits/day)                          ║
+╚═══════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────┐
+│ RECOMMENDED: S3 + CloudFront                                  │
+└───────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════╦═══════════╦═══════════════╦══════════╗
+║ Service               ║ Usage     ║ Unit Price    ║ Monthly  ║
+╠═══════════════════════╬═══════════╬═══════════════╬══════════╣
+║ S3 Storage            ║ 10 MB     ║ $0.023/GB     ║ $0.0002  ║
+║ S3 GET Requests       ║ 1,500     ║ $0.0004/1K    ║ $0.0006  ║
+║ S3 PUT Requests       ║ 30        ║ $0.005/1K     ║ $0.0002  ║
+║ CloudFront Transfer   ║ 15 MB     ║ FREE TIER     ║ $0.00    ║
+║ CloudFront Requests   ║ 1,500     ║ FREE TIER     ║ $0.00    ║
+║ Route53 (optional)    ║ 1 zone    ║ $0.50/zone    ║ $0.50    ║
+╠═══════════════════════╩═══════════╩═══════════════╩══════════╣
+║ TOTAL (no domain)                                  │ $0.00    ║
+║ TOTAL (with custom domain)                         │ $0.50    ║
+╚════════════════════════════════════════════════════╧══════════╝
+
+┌───────────────────────────────────────────────────────────────┐
+│ FREE TIER BENEFITS (First 12 months)                         │
+├───────────────────────────────────────────────────────────────┤
+│ ✓ S3: 5GB storage + 20K GET + 2K PUT requests               │
+│ ✓ CloudFront: 1TB data transfer + 10M requests               │
+│ ✓ GitHub Actions: 2,000 minutes/month (public repos)         │
+│ ✓ ACM Certificates: Always FREE                              │
+└───────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────┐
+│ ANNUAL COST PROJECTION                                        │
+├───────────────────────────────────────────────────────────────┤
+│ Year 1 (with free tier):           $0.00 - $6.00             │
+│ Year 2+ (after free tier expires): $0.12 - $6.12             │
+│                                                               │
+│ Domain registration (optional):     +$12/year                │
+└───────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────┐
+│ SCALING SCENARIOS                                             │
+├──────────────────┬──────────────┬─────────────────────────────┤
+│ Traffic Level    │ Monthly Cost │ Annual Cost                 │
+├──────────────────┼──────────────┼─────────────────────────────┤
+│ 50/day (current) │ $0.00-$0.50  │ $0.00-$6.00                 │
+│ 500/day          │ $0.03-$0.53  │ $0.36-$6.36                 │
+│ 5,000/day        │ $0.30-$0.80  │ $3.60-$9.60                 │
+│ 50,000/day       │ $3.00-$3.50  │ $36.00-$42.00               │
+└──────────────────┴──────────────┴─────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────┐
+│ COMPARISON: Other AWS Services (AVOID!)                      │
+├──────────────────────────┬───────────────┬────────────────────┤
+│ Service                  │ Monthly Cost  │ vs. Recommended    │
+├──────────────────────────┼───────────────┼────────────────────┤
+│ S3 + CloudFront (rec)    │ $0.50         │ ✓ BEST CHOICE      │
+│ EC2 t3.micro             │ $12.00        │ 24x more expensive │
+│ Elastic Beanstalk        │ $25.00        │ 50x more expensive │
+│ Lightsail                │ $3.50         │ 7x more expensive  │
+│ EKS (Kubernetes)         │ $148.00       │ 296x more expensive│
+└──────────────────────────┴───────────────┴────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+                    RECOMMENDATION
+═══════════════════════════════════════════════════════════════
+
+For 5-50 visits/day:
+
+✓ Use S3 + CloudFront (Terraform provided)
+✓ Skip custom domain initially (save $0.50/mo)  
+✓ Use GitHub Actions for CI/CD (FREE)
+✓ Enable AWS Budgets alert at $1/month
+
+Expected cost: $0.00/month (100% free tier eligible)
+
+═══════════════════════════════════════════════════════════════
+
+Documentation:
+- Full Analysis: docs/AWS_COST_ANALYSIS.md
+- Quick Start: docs/DEPLOYMENT_QUICKSTART.md
+- Infrastructure: terraform/s3-cloudfront/
+

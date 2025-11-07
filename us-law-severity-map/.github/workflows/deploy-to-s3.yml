@@ -1,0 +1,68 @@
+name: Deploy to AWS S3
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://pypi.org/simple -r requirements.txt
+
+      - name: Generate interactive map
+        run: |
+          python main.py
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync . s3://${{ secrets.S3_BUCKET_NAME }} \
+            --exclude ".git/*" \
+            --exclude ".github/*" \
+            --exclude "*.py" \
+            --exclude "*.pyc" \
+            --exclude "__pycache__/*" \
+            --exclude "venv/*" \
+            --exclude "us-law-severity-map/*" \
+            --exclude ".gitignore" \
+            --exclude "PROMPT.md" \
+            --exclude "*.zip" \
+            --cache-control "public, max-age=3600" \
+            --delete
+
+      - name: Invalidate CloudFront cache
+        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "📊 Map deployed to S3 bucket: ${{ secrets.S3_BUCKET_NAME }}"
+          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            echo "🌐 CloudFront cache invalidated"
+          fi
