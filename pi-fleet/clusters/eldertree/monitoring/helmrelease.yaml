@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: ./pi-fleet/helm/monitoring-stack
-      version: '0.1.0'
+      version: "0.1.0"
       sourceRef:
         kind: GitRepository
         name: flux-system
@@ -27,4 +27,3 @@ spec:
       enabled: true
     grafana:
       enabled: true
-
