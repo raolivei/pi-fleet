@@ -15,6 +15,7 @@ Personal finance, investment, and budgeting dashboard.
 See [VAULT.md](../../../../VAULT.md) for secrets management.
 
 **Sync secrets from Vault to Kubernetes:**
+
 ```bash
 ./scripts/sync-vault-to-k8s.sh
 ```
@@ -79,8 +80,8 @@ kubectl logs -n canopy -l app=canopy,component=frontend
 ## Resources
 
 **Optimized for Raspberry Pi:**
+
 - API: 128Mi-256Mi RAM, 100m-250m CPU
 - Frontend: 64Mi-128Mi RAM, 50m-100m CPU
 - Redis: 32Mi-64Mi RAM, 25m-50m CPU
 - Postgres: 128Mi-256Mi RAM, 100m-250m CPU, 5Gi storage
-
