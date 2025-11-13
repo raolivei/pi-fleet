@@ -71,6 +71,14 @@ See [helm/README.md](helm/README.md) for details.
 
 See [NETWORK.md](NETWORK.md) for DNS setup.
 
+## Secrets
+
+Secrets stored in Vault. See [VAULT.md](VAULT.md).
+
+```bash
+./scripts/sync-vault-to-k8s.sh
+```
+
 ## Add Worker Nodes
 
 ```bash

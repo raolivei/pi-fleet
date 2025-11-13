@@ -4,13 +4,12 @@
 
 ### Added
 
-- Vault secrets management: scripts to populate, migrate, and sync secrets from Vault to Kubernetes
+- Vault secrets management: sync script to sync secrets from Vault to Kubernetes
 - All project secrets migrated to Vault:
   - Grafana admin password
   - Flux Git SSH key
   - Canopy PostgreSQL password, app secret key, database URL, GHCR token
 - VAULT.md documentation for secrets management
-- migrate-all-secrets-to-vault.sh script for automatic secret migration
 - Enhanced Grafana dashboards: 9 comprehensive K8s dashboards (cluster views, resources, API server, PVs)
 - kube-state-metrics for detailed Kubernetes object metrics
 - Prometheus scrape interval optimization

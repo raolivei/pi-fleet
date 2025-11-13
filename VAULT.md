@@ -8,10 +8,7 @@ Vault stores secrets for all pi-fleet projects.
 # Set kubeconfig
 export KUBECONFIG=~/.kube/config-eldertree
 
-# Populate Vault with secrets
-./scripts/populate-vault-secrets.sh
-
-# Sync secrets to Kubernetes
+# Sync secrets from Vault to Kubernetes
 ./scripts/sync-vault-to-k8s.sh
 ```
 
