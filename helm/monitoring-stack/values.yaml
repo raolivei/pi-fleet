@@ -14,7 +14,7 @@ prometheus:
     enabled: true
   pushgateway:
     enabled: false
-  kubeStateMetrics:
+  kube-state-metrics:
     enabled: true
   server:
     persistentVolume:
