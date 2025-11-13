@@ -6,23 +6,16 @@ Automated DNS record management for Kubernetes Ingress resources using external-
 
 External-DNS automatically creates DNS records in Pi-hole when Ingress resources are created, eliminating manual ConfigMap updates.
 
-## Important Note: dnsmasq RFC2136 Limitations
+## Architecture
 
-**Pi-hole uses dnsmasq, which does NOT natively support RFC2136.** RFC2136 is designed for BIND-style DNS servers. To make this work, you have two options:
+**BIND Backend for RFC2136:** Pi-hole uses dnsmasq which doesn't support RFC2136, so a BIND sidecar container handles RFC2136 dynamic DNS updates:
 
-### Option A: BIND Backend for dnsmasq (Recommended)
+1. **BIND sidecar** runs alongside Pi-hole, listening on port 5353
+2. **External-DNS** connects to BIND via RFC2136 protocol to create/update DNS records
+3. **dnsmasq** forwards `eldertree.local` queries to BIND for resolution
+4. **BIND** manages the `eldertree.local` zone with RFC2136 updates
 
-Configure dnsmasq to use BIND as a backend for RFC2136 updates:
-
-1. **Add BIND sidecar to Pi-hole deployment** (or run BIND separately)
-2. **Configure dnsmasq to forward RFC2136 updates to BIND**
-3. **Configure BIND to accept RFC2136 updates with TSIG**
-
-### Option B: Keep Manual ConfigMap Approach
-
-For now, continue using the manual ConfigMap approach. External-DNS is configured and ready, but won't work until Pi-hole has RFC2136 support via BIND backend.
-
-**Current Status:** External-DNS is deployed but will fail to update DNS records until Pi-hole has RFC2136 support configured.
+**Current Status:** ✅ BIND backend configured and ready. External-DNS will automatically create DNS records when Ingress resources are created.
 
 ## Setup
 
@@ -39,19 +32,17 @@ echo -n "YOUR_SECRET_HERE" | base64
 
 Update `secret.yaml` with the base64-encoded secret.
 
-### 2. Configure Pi-hole for RFC2136
+### 2. BIND Backend Configuration
 
-Pi-hole's dnsmasq needs BIND backend for RFC2136. Add to Pi-hole ConfigMap:
+BIND is configured as a sidecar container in the Pi-hole deployment:
+- Listens on port 5353 for RFC2136 updates
+- Manages `eldertree.local` zone
+- Accepts updates authenticated with TSIG key
+- dnsmasq forwards `eldertree.local` queries to BIND
 
-```yaml
-# In pihole/configmap.yaml, add:
-06-rfc2136.conf: |
-  # Enable RFC2136 via BIND backend
-  server=127.0.0.1#5353
-  # Or configure dnsmasq to forward RFC2136 updates
-```
-
-**Alternative**: Use a BIND sidecar container in Pi-hole deployment.
+Configuration files:
+- `pihole/bind-configmap.yaml` - BIND named.conf and zone file
+- `pihole/deployment.yaml` - BIND sidecar container configuration
 
 ### 3. Deploy External-DNS
 
