@@ -20,7 +20,7 @@ spec:
       initContainers:
         - name: bind-init
           image: busybox:latest
-          command: ['sh', '-c']
+          command: ["sh", "-c"]
           args:
             - |
               cp /etc/named/eldertree.local.zone /var/named/eldertree.local.zone
@@ -100,7 +100,7 @@ spec:
               add:
                 - NET_ADMIN
         - name: bind
-          image: internetsystemsconsortium/bind9:9.18
+          image: ubuntu/bind9:latest
           ports:
             - name: bind-udp
               containerPort: 5353
@@ -109,10 +109,10 @@ spec:
               containerPort: 5353
               protocol: TCP
           args:
-            - -4
-            - -c
-            - /etc/named/named.conf
-            - -f
+            - "-4"
+            - "-c"
+            - "/etc/named/named.conf"
+            - "-f"
           volumeMounts:
             - name: bind-config
               mountPath: /etc/named
