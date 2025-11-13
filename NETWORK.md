@@ -23,16 +23,19 @@ To ensure cluster stability, configure static IP via router DHCP reservation:
 External-DNS automatically creates DNS records when Ingress resources are created.
 
 **How it works:**
+
 - Create Ingress with hostname → External-DNS creates DNS record automatically
 - Delete Ingress → DNS record removed automatically
 - No manual ConfigMap updates needed
 
 **Configure macOS/Router:**
+
 - Set DNS to `192.168.2.83:30053` (Pi-hole NodePort)
 - Or configure router DNS for network-wide access
 
 **Add new services:**
 Simply create an Ingress resource - External-DNS handles DNS automatically:
+
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -53,6 +56,7 @@ spec:
 ```
 
 **Verify:**
+
 ```bash
 kubectl get pods -n external-dns
 kubectl logs -n external-dns deployment/external-dns
@@ -67,11 +71,13 @@ Pi-hole resolves `*.eldertree.local` domains via Kubernetes ConfigMap.
 
 **Add new services:**
 Update ConfigMap: `clusters/eldertree/infrastructure/pihole/configmap.yaml`
+
 ```yaml
 data:
   05-custom-dns.conf: |
     address=/newservice.eldertree.local/192.168.2.83
 ```
+
 Then: `kubectl apply -f ... && kubectl rollout restart deployment/pihole -n pihole`
 
 ### Option 3: /etc/hosts (Manual)
@@ -107,6 +113,7 @@ Access services via HTTPS (accept self-signed certificate warnings):
 ## Troubleshooting DNS
 
 **DNS not resolving:**
+
 ```bash
 kubectl get pods -n pihole
 kubectl exec -it deployment/pihole -n pihole -- cat /etc/dnsmasq.d/05-custom-dns.conf

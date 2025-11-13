@@ -71,6 +71,29 @@ See [helm/README.md](helm/README.md) for details.
 
 See [NETWORK.md](NETWORK.md) for DNS setup.
 
+## Ingress and SSL Certificates
+
+The cluster uses Traefik as the Ingress Controller (pre-installed with k3s), Cert-Manager for automatic SSL/TLS certificate management, and ExternalDNS for automatic DNS record creation.
+
+**Quick Start:**
+```bash
+# Validate ingress setup
+./scripts/validate-ingress-setup.sh
+
+# Check ingress resources
+kubectl get ingress -A
+
+# Check certificates
+kubectl get certificates -A
+```
+
+**Components:**
+- **Traefik**: Ingress Controller (IngressClass: `traefik`)
+- **Cert-Manager**: SSL certificate management (ClusterIssuer: `selfsigned-cluster-issuer`)
+- **ExternalDNS**: Automatic DNS records for `*.eldertree.local` domains
+
+See [docs/INGRESS.md](docs/INGRESS.md) for complete documentation on creating ingress resources with automatic SSL certificates and DNS.
+
 ## Secrets
 
 Secrets stored in Vault. See [VAULT.md](VAULT.md).
@@ -93,9 +116,14 @@ curl -sfL https://get.k3s.io | K3S_URL=https://eldertree:6443 K3S_TOKEN=<token> 
 
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
+
+# Basic cluster validation
 kubectl get nodes
 kubectl get pods -A
 kubectl get helmreleases -A
+
+# Validate ingress setup
+./scripts/validate-ingress-setup.sh
 ```
 
 ## Cleanup
