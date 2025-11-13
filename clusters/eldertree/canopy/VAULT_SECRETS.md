@@ -15,7 +15,7 @@ All Canopy secrets are stored under: `secret/kv/canopy/`
 **Purpose**: GitHub Container Registry authentication for pulling Docker images  
 **Status**: ✅ Already stored in Vault
 
-**Current Value**: [Stored in Vault - retrieve with: `vault kv get secret/kv/canopy/ghcr-token`]
+**Vault UI**: https://vault.eldertree.local/ui/vault/secrets/secret/kv/canopy/ghcr-token/details
 
 ### 2. PostgreSQL Password
 
@@ -24,13 +24,22 @@ All Canopy secrets are stored under: `secret/kv/canopy/`
 **Purpose**: PostgreSQL database password for canopy user  
 **Status**: ⚠️ Needs to be stored in Vault
 
-**Current Value**: [Get from Kubernetes secret: `kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.postgres-password}' | base64 -d`]
+**Vault Path**: `secret/kv/canopy/postgres`  
+**Key**: `password`  
+**Value**: `0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=`
 
-**Store in Vault**:
+**Store in Vault via UI**:
+1. Go to: https://vault.eldertree.local/ui/vault/secrets/secret/kv/canopy/postgres/create
+2. Add key: `password`
+3. Add value: `0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=`
+4. Click "Save"
+
+**Store in Vault via CLI**:
 ```bash
-# Get from current Kubernetes secret
-POSTGRES_PASSWORD=$(kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.postgres-password}' | base64 -d)
-vault kv put secret/kv/canopy/postgres password="$POSTGRES_PASSWORD"
+export VAULT_ADDR=https://vault.eldertree.local
+export VAULT_SKIP_VERIFY=true
+# Authenticate first: vault auth -method=userpass username=your_username
+vault kv put secret/kv/canopy/postgres password="0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw="
 ```
 
 ### 3. Application Secret Key
@@ -40,13 +49,22 @@ vault kv put secret/kv/canopy/postgres password="$POSTGRES_PASSWORD"
 **Purpose**: Application secret key for encryption/signing  
 **Status**: ⚠️ Needs to be stored in Vault
 
-**Current Value**: [Get from Kubernetes secret: `kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.secret-key}' | base64 -d`]
+**Vault Path**: `secret/kv/canopy/app`  
+**Key**: `secret-key`  
+**Value**: `dC0L6hlYisylorwu2tDJBVcUqOv18U57PuXYPWwgdhU`
 
-**Store in Vault**:
+**Store in Vault via UI**:
+1. Go to: https://vault.eldertree.local/ui/vault/secrets/secret/kv/canopy/app/create
+2. Add key: `secret-key`
+3. Add value: `dC0L6hlYisylorwu2tDJBVcUqOv18U57PuXYPWwgdhU`
+4. Click "Save"
+
+**Store in Vault via CLI**:
 ```bash
-# Get from current Kubernetes secret
-SECRET_KEY=$(kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.secret-key}' | base64 -d)
-vault kv put secret/kv/canopy/app secret-key="$SECRET_KEY"
+export VAULT_ADDR=https://vault.eldertree.local
+export VAULT_SKIP_VERIFY=true
+# Authenticate first: vault auth -method=userpass username=your_username
+vault kv put secret/kv/canopy/app secret-key="dC0L6hlYisylorwu2tDJBVcUqOv18U57PuXYPWwgdhU"
 ```
 
 ### 4. Database URL
@@ -56,33 +74,57 @@ vault kv put secret/kv/canopy/app secret-key="$SECRET_KEY"
 **Purpose**: Complete PostgreSQL connection string  
 **Status**: ⚠️ Needs to be stored in Vault (derived from postgres password)
 
-**Current Value**: [Get from Kubernetes secret: `kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.database-url}' | base64 -d`]
+**Vault Path**: `secret/kv/canopy/database`  
+**Key**: `url`  
+**Value**: `postgresql+psycopg://canopy:0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=@canopy-postgres:5432/canopy`
 
-**Store in Vault**:
+**Store in Vault via UI**:
+1. Go to: https://vault.eldertree.local/ui/vault/secrets/secret/kv/canopy/database/create
+2. Add key: `url`
+3. Add value: `postgresql+psycopg://canopy:0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=@canopy-postgres:5432/canopy`
+4. Click "Save"
+
+**Store in Vault via CLI**:
 ```bash
-# Get from current Kubernetes secret
-DATABASE_URL=$(kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.database-url}' | base64 -d)
-vault kv put secret/kv/canopy/database url="$DATABASE_URL"
+export VAULT_ADDR=https://vault.eldertree.local
+export VAULT_SKIP_VERIFY=true
+# Authenticate first: vault auth -method=userpass username=your_username
+vault kv put secret/kv/canopy/database url="postgresql+psycopg://canopy:0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=@canopy-postgres:5432/canopy"
 ```
 
 ## Complete Vault Setup
 
-Run all commands to store secrets in Vault:
+### Quick Setup via Vault UI
+
+1. **PostgreSQL Password**:
+   - Path: https://vault.eldertree.local/ui/vault/secrets/secret/kv/canopy/postgres/create
+   - Key: `password`
+   - Value: `0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=`
+
+2. **Application Secret Key**:
+   - Path: https://vault.eldertree.local/ui/vault/secrets/secret/kv/canopy/app/create
+   - Key: `secret-key`
+   - Value: `dC0L6hlYisylorwu2tDJBVcUqOv18U57PuXYPWwgdhU`
+
+3. **Database URL**:
+   - Path: https://vault.eldertree.local/ui/vault/secrets/secret/kv/canopy/database/create
+   - Key: `url`
+   - Value: `postgresql+psycopg://canopy:0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=@canopy-postgres:5432/canopy`
+
+4. **GHCR Token**: ✅ Already stored
+   - Path: https://vault.eldertree.local/ui/vault/secrets/secret/kv/canopy/ghcr-token/details
+
+### Setup via CLI (requires authentication)
 
 ```bash
-# Get current values from Kubernetes secrets
-export KUBECONFIG=~/.kube/config-eldertree
-POSTGRES_PASSWORD=$(kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.postgres-password}' | base64 -d)
-SECRET_KEY=$(kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.secret-key}' | base64 -d)
-DATABASE_URL=$(kubectl get secret canopy-secrets -n canopy -o jsonpath='{.data.database-url}' | base64 -d)
+export VAULT_ADDR=https://vault.eldertree.local
+export VAULT_SKIP_VERIFY=true
+# Authenticate: vault auth -method=userpass username=your_username
 
-# Store in Vault
-vault kv put secret/kv/canopy/postgres password="$POSTGRES_PASSWORD"
-vault kv put secret/kv/canopy/app secret-key="$SECRET_KEY"
-vault kv put secret/kv/canopy/database url="$DATABASE_URL"
-
-# GHCR Token (already stored - verify if needed)
-# vault kv get secret/kv/canopy/ghcr-token
+# Store secrets
+vault kv put secret/kv/canopy/postgres password="0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw="
+vault kv put secret/kv/canopy/app secret-key="dC0L6hlYisylorwu2tDJBVcUqOv18U57PuXYPWwgdhU"
+vault kv put secret/kv/canopy/database url="postgresql+psycopg://canopy:0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=@canopy-postgres:5432/canopy"
 ```
 
 ## Vault UI Access
@@ -110,18 +152,18 @@ spec:
     name: canopy-secrets
     creationPolicy: Owner
   data:
-  - secretKey: postgres-password
-    remoteRef:
-      key: secret/kv/canopy/postgres
-      property: password
-  - secretKey: secret-key
-    remoteRef:
-      key: secret/kv/canopy/app
-      property: secret-key
-  - secretKey: database-url
-    remoteRef:
-      key: secret/kv/canopy/database
-      property: url
+    - secretKey: postgres-password
+      remoteRef:
+        key: secret/kv/canopy/postgres
+        property: password
+    - secretKey: secret-key
+      remoteRef:
+        key: secret/kv/canopy/app
+        property: secret-key
+    - secretKey: database-url
+      remoteRef:
+        key: secret/kv/canopy/database
+        property: url
 
 ---
 apiVersion: external-secrets.io/v1beta1
@@ -137,10 +179,10 @@ spec:
     name: ghcr-secret
     creationPolicy: Owner
   data:
-  - secretKey: .dockerconfigjson
-    remoteRef:
-      key: secret/kv/canopy/ghcr-token
-      property: token
+    - secretKey: .dockerconfigjson
+      remoteRef:
+        key: secret/kv/canopy/ghcr-token
+        property: token
 ```
 
 ### Option 2: Manual Sync Script
