@@ -5,6 +5,7 @@ metadata:
   namespace: pihole
   annotations:
     cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    traefik.ingress.kubernetes.io/headers.customrequestheaders: X-Forwarded-Proto=https
   labels:
     app: pihole
 spec:
@@ -16,6 +17,13 @@ spec:
   - host: pihole.eldertree.local
     http:
       paths:
+      - path: /admin
+        pathType: Prefix
+        backend:
+          service:
+            name: pihole
+            port:
+              number: 80
       - path: /
         pathType: Prefix
         backend:

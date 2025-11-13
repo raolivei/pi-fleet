@@ -51,6 +51,8 @@ spec:
               value: "UTC"
             - name: FTLCONF_dns_listeningMode
               value: "all"
+            - name: VIRTUAL_HOST
+              value: "pihole.eldertree.local"
             - name: WEBPASSWORD
               valueFrom:
                 secretKeyRef:

@@ -25,6 +25,7 @@ kubectl create secret generic vault-token --from-literal=token=$VAULT_TOKEN -n e
 ## Secret Paths
 
 - `secret/monitoring/grafana` - Grafana admin password
+- `secret/pihole/webpassword` - Pi-hole web admin password
 - `secret/flux/git` - Flux Git SSH private key
 - `secret/canopy/postgres` - Canopy PostgreSQL password
 - `secret/canopy/app` - Canopy application secret key
@@ -59,6 +60,7 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/monitoring/grafana admin
 External Secrets Operator syncs secrets from Vault to Kubernetes automatically. Secrets are refreshed every 24 hours.
 
 - `monitoring/grafana-admin` - Grafana admin password
+- `pihole/pihole-secrets` - Pi-hole web admin password
 - `flux-system/flux-system` - Flux Git SSH key
 - `canopy/canopy-secrets` - Canopy app secrets
 - `canopy/ghcr-secret` - GitHub Container Registry token
