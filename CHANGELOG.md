@@ -10,6 +10,12 @@
   - Flux Git SSH key
   - Canopy PostgreSQL password, app secret key, database URL, GHCR token
 - VAULT.md documentation for secrets management
+
+### Removed
+
+- Consolidated DNS scripts: removed 8 redundant scripts, kept 1 unified script
+- Removed redundant Canopy Vault documentation and migration guides
+- Removed unused Canopy sync-secrets.sh (handled by main sync script)
 - Enhanced Grafana dashboards: 9 comprehensive K8s dashboards (cluster views, resources, API server, PVs)
 - kube-state-metrics for detailed Kubernetes object metrics
 - Prometheus scrape interval optimization

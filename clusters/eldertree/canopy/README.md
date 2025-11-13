@@ -12,22 +12,12 @@ Personal finance, investment, and budgeting dashboard.
 
 **⚠️ IMPORTANT: All secrets are stored in Vault, not in Kubernetes manifests or local files.**
 
-See [VAULT_SECRETS.md](./VAULT_SECRETS.md) for complete secret storage instructions.
+See [VAULT.md](../../../../VAULT.md) for secrets management.
 
-### Quick Setup
-
-1. **Store all secrets in Vault** (see VAULT_SECRETS.md for details):
-   ```bash
-   vault kv put secret/kv/canopy/postgres password="..."
-   vault kv put secret/kv/canopy/app secret-key="..."
-   vault kv put secret/kv/canopy/database url="..."
-   vault kv put secret/kv/canopy/ghcr-token token="..."
-   ```
-
-2. **Sync secrets from Vault to Kubernetes**:
-   ```bash
-   ./sync-secrets.sh
-   ```
+**Sync secrets from Vault to Kubernetes:**
+```bash
+./scripts/sync-vault-to-k8s.sh
+```
 
 ## Build and Push Images
 

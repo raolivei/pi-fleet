@@ -12,7 +12,7 @@ Sync secrets from Vault to Kubernetes secrets.
 
 ## setup-dns.sh
 
-Setup DNS for *.eldertree.local domains (Pi-hole or /etc/hosts).
+Setup DNS for \*.eldertree.local domains (Pi-hole or /etc/hosts).
 
 ```bash
 ./scripts/setup-dns.sh
