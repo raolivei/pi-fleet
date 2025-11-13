@@ -4,3 +4,4 @@ resources:
   - cert-manager # TLS certificate management
   - issuers # ClusterIssuer (self-signed)
   - vault # HashiCorp Vault (dev mode)
+  - pihole # Pi-hole DNS server with custom DNS rewrites

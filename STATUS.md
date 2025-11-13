@@ -15,6 +15,7 @@
 - ✅ **Flux GitOps** - Automatic deployment from git
 - ✅ **cert-manager** - TLS certificate management
 - ✅ **cert-manager-issuers** - Self-signed ClusterIssuer configured
+- ✅ **Pi-hole** - DNS server with custom DNS rewrites for *.eldertree.local
 
 ### Monitoring
 
@@ -43,13 +44,18 @@
 
 - **Canopy**: https://canopy.eldertree.local - Personal finance dashboard
 
+### DNS
+
+- **Pi-hole**: https://pihole.eldertree.local - DNS server with automatic *.eldertree.local resolution
+
 ## Network Configuration
 
-### Option 1: AdGuard Home DNS (Recommended - Automatic)
+### Option 1: Pi-hole DNS (Recommended - Automatic)
 
-Configure AdGuard Home DNS rewrites for automatic resolution:
+Pi-hole automatically resolves `*.eldertree.local` domains via Kubernetes ConfigMap:
 - See [docs/DNS_SETUP.md](./docs/DNS_SETUP.md) for instructions
-- Or run: `./scripts/setup-adguard-dns.sh`
+- Or run: `./scripts/setup-pihole-dns.sh`
+- Configure your router or device DNS to use: `192.168.2.83:30053`
 
 ### Option 2: Manual /etc/hosts
 
@@ -60,6 +66,8 @@ Add to `/etc/hosts`:
 192.168.2.83  grafana.eldertree.local
 192.168.2.83  prometheus.eldertree.local
 192.168.2.83  canopy.eldertree.local
+192.168.2.83  pihole.eldertree.local
+192.168.2.83  vault.eldertree.local
 ```
 
 ## Validation
