@@ -14,6 +14,8 @@ prometheus:
     enabled: true
   pushgateway:
     enabled: false
+  kubeStateMetrics:
+    enabled: true
   server:
     persistentVolume:
       enabled: true
@@ -34,10 +36,6 @@ prometheus:
       scrape_interval: 30s
       scrape_timeout: 10s
       evaluation_interval: 30s
-
-# Kube-state-metrics configuration
-kubeStateMetrics:
-  enabled: true
 
 # Grafana configuration
 grafana:
