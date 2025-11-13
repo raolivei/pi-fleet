@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - infrastructure # cert-manager + issuers
   - monitoring # Prometheus + Grafana
+  - canopy # Personal finance dashboard

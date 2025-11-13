@@ -32,12 +32,16 @@
 - ✅ **Traefik** - Built-in K3s ingress controller
 - ✅ **TLS** - Self-signed certificates via cert-manager
 
-## Services
+## Applications
 
-Access services via HTTPS (accept self-signed certificate warnings):
+### Monitoring
 
 - **Grafana**: https://grafana.eldertree.local (admin/admin)
 - **Prometheus**: https://prometheus.eldertree.local
+
+### Finance
+
+- **Canopy**: https://canopy.eldertree.local - Personal finance dashboard
 
 ## Network Configuration
 
@@ -47,6 +51,7 @@ Add to `/etc/hosts`:
 192.168.2.83  eldertree
 192.168.2.83  grafana.eldertree.local
 192.168.2.83  prometheus.eldertree.local
+192.168.2.83  canopy.eldertree.local
 ```
 
 ## Validation
