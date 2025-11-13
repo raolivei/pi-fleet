@@ -45,6 +45,14 @@
 
 ## Network Configuration
 
+### Option 1: AdGuard Home DNS (Recommended - Automatic)
+
+Configure AdGuard Home DNS rewrites for automatic resolution:
+- See [docs/DNS_SETUP.md](./docs/DNS_SETUP.md) for instructions
+- Or run: `./scripts/setup-adguard-dns.sh`
+
+### Option 2: Manual /etc/hosts
+
 Add to `/etc/hosts`:
 
 ```
