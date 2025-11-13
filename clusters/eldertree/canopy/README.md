@@ -4,26 +4,30 @@ Personal finance, investment, and budgeting dashboard.
 
 ## Prerequisites
 
-- Secrets must be created before deployment
+- **All secrets must be stored in Vault** before deployment
 - Container images must be built and pushed to GHCR
+- Vault must be accessible and configured
 
-## Create Secrets
+## Secrets Management
 
-```bash
-# Generate postgres password
-POSTGRES_PASSWORD=$(openssl rand -base64 32)
+**⚠️ IMPORTANT: All secrets are stored in Vault, not in Kubernetes manifests or local files.**
 
-# Generate secret key
-SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+See [VAULT_SECRETS.md](./VAULT_SECRETS.md) for complete secret storage instructions.
 
-# Create secret
-kubectl create secret generic canopy-secrets \
-  --namespace canopy \
-  --from-literal=postgres-password="$POSTGRES_PASSWORD" \
-  --from-literal=database-url="postgresql+psycopg://canopy:$POSTGRES_PASSWORD@canopy-postgres:5432/canopy" \
-  --from-literal=secret-key="$SECRET_KEY" \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
+### Quick Setup
+
+1. **Store all secrets in Vault** (see VAULT_SECRETS.md for details):
+   ```bash
+   vault kv put secret/kv/canopy/postgres password="..."
+   vault kv put secret/kv/canopy/app secret-key="..."
+   vault kv put secret/kv/canopy/database url="..."
+   vault kv put secret/kv/canopy/ghcr-token token="..."
+   ```
+
+2. **Sync secrets from Vault to Kubernetes**:
+   ```bash
+   ./sync-secrets.sh
+   ```
 
 ## Build and Push Images
 
