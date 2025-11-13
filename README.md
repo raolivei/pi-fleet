@@ -9,6 +9,14 @@ K3s cluster on Raspberry Pi, managed with Terraform.
 - Raspberry Pi 5 (8GB, ARM64)
 - Debian 12 Bookworm
 
+## Fleet Naming
+
+**Control Plane:**
+- **eldertree** - Main control plane node (192.168.2.83)
+
+**Worker Nodes:**
+- **fleet-worker-01**, **fleet-worker-02**, etc. (future)
+
 ## Quick Start
 
 ```bash
@@ -46,6 +54,23 @@ Custom charts for cluster components (Helm v4 compatible):
 
 See [helm/README.md](helm/README.md) for details.
 
+## Cluster Status
+
+**Current State:**
+- Single-node K3s cluster (eldertree)
+- K3s v1.33.5+k3s1, Helm v4.0.0
+- Flux GitOps, cert-manager, Pi-hole DNS
+- Monitoring: Prometheus + Grafana
+- Storage: local-path-provisioner
+
+**Deployed Applications:**
+- Grafana: https://grafana.eldertree.local (admin/admin)
+- Prometheus: https://prometheus.eldertree.local
+- Canopy: https://canopy.eldertree.local
+- Pi-hole: https://pihole.eldertree.local
+
+See [NETWORK.md](NETWORK.md) for DNS setup.
+
 ## Add Worker Nodes
 
 ```bash
@@ -54,6 +79,15 @@ cat terraform/k3s-node-token
 
 # On worker node (fleet-worker-01, fleet-worker-02, etc.)
 curl -sfL https://get.k3s.io | K3S_URL=https://eldertree:6443 K3S_TOKEN=<token> sh -
+```
+
+## Validation
+
+```bash
+export KUBECONFIG=~/.kube/config-eldertree
+kubectl get nodes
+kubectl get pods -A
+kubectl get helmreleases -A
 ```
 
 ## Cleanup

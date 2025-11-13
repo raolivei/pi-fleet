@@ -15,70 +15,77 @@ spec:
       labels:
         app: pihole
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
-      - name: pihole
-        image: pihole/pihole:latest
-        ports:
-        - name: dns-udp
-          containerPort: 53
-          protocol: UDP
-        - name: dns-tcp
-          containerPort: 53
-          protocol: TCP
-        - name: http
-          containerPort: 80
-          protocol: TCP
-        - name: https
-          containerPort: 443
-          protocol: TCP
-        env:
-        - name: TZ
-          value: "UTC"
-        - name: FTLCONF_dns_listeningMode
-          value: "all"
-        - name: WEBPASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: pihole-secrets
-              key: webpassword
-              optional: true
-        volumeMounts:
-        - name: pihole-data
-          mountPath: /etc/pihole
-        - name: pihole-data
-          mountPath: /etc/dnsmasq.d
-        - name: dnsmasq-config
-          mountPath: /etc/dnsmasq.d/05-custom-dns.conf
-          subPath: 05-custom-dns.conf
-          readOnly: true
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /admin/index.php
-            port: 80
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /admin/index.php
-            port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 5
-        # Pi-hole needs NET_ADMIN capability for DNS
-        securityContext:
-          capabilities:
-            add:
-              - NET_ADMIN
+        - name: pihole
+          image: pihole/pihole:latest
+          ports:
+            - name: dns-udp
+              containerPort: 53
+              protocol: UDP
+              hostPort: 53
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+              hostPort: 53
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: https
+              containerPort: 443
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "UTC"
+            - name: FTLCONF_dns_listeningMode
+              value: "all"
+            - name: WEBPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pihole-secrets
+                  key: webpassword
+                  optional: true
+          volumeMounts:
+            - name: pihole-data
+              mountPath: /etc/pihole
+            - name: pihole-data
+              mountPath: /etc/dnsmasq.d
+            - name: dnsmasq-config
+              mountPath: /etc/dnsmasq.d/05-custom-dns.conf
+              subPath: 05-custom-dns.conf
+              readOnly: true
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /admin/
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
       volumes:
-      - name: pihole-data
-        persistentVolumeClaim:
-          claimName: pihole-data
-      - name: dnsmasq-config
-        configMap:
-          name: pihole-dnsmasq
+        - name: pihole-data
+          persistentVolumeClaim:
+            claimName: pihole-data
+        - name: dnsmasq-config
+          configMap:
+            name: pihole-dnsmasq

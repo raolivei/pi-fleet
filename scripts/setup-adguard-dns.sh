@@ -45,6 +45,6 @@ echo ""
 echo "export ADGUARD_USER='admin'"
 echo "export ADGUARD_PASS='your_password'"
 echo ""
-echo "Then run the API commands in DNS_SETUP.md"
+echo "Then run the API commands (see NETWORK.md for DNS setup details)"
 echo ""
 

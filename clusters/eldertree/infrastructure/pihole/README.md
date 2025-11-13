@@ -132,5 +132,5 @@ To use Pi-hole as your DNS server:
    - macOS: System Settings → Network → DNS → Add `192.168.2.83`
    - Linux: Edit `/etc/resolv.conf` or use NetworkManager
 
-See [../../docs/DNS_SETUP.md](../../docs/DNS_SETUP.md) for detailed instructions.
+See [../../NETWORK.md](../../NETWORK.md) for detailed DNS setup instructions.
 

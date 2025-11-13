@@ -16,6 +16,7 @@ prometheus:
     enabled: false
   kube-state-metrics:
     enabled: true
+    fullnameOverride: "monitoring-stack-kube-state-metrics"
     serviceAccount:
       create: true
       name: monitoring-stack-kube-state-metrics
@@ -43,6 +44,11 @@ prometheus:
 # Grafana configuration
 grafana:
   enabled: true
+  # Admin password from Vault (synced to Kubernetes secret: monitoring/grafana-admin)
+  admin:
+    existingSecret: grafana-admin
+    secretKey: admin-password
+  # Fallback password (used if secret doesn't exist)
   adminPassword: admin
   persistence:
     enabled: true
@@ -54,7 +60,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local
+          url: http://monitoring-stack-prometheus-server.observability.svc.cluster.local
           access: proxy
           isDefault: true
   dashboardProviders:
