@@ -1,7 +1,4 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - infrastructure # cert-manager + issuers
-  - monitoring # kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
-  - observability # Netdata, Grafana Agent, cAdvisor, Kubernetes Dashboard, metrics-server, KEDA
-  - canopy # Personal finance dashboard
+  - infrastructure # cert-manager, external-dns, external-secrets, vault, pihole
