@@ -12,7 +12,13 @@ data:
       allow-query { any; };
       allow-transfer { none; };
       allow-update { key "externaldns-key"; };
-      recursion no;
+      recursion yes;
+      forwarders {
+        10.43.0.10;  // CoreDNS
+        8.8.8.8;
+        1.1.1.1;
+      };
+      forward only;
     };
 
     // TSIG key for external-dns
