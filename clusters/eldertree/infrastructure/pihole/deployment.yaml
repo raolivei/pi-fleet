@@ -15,8 +15,8 @@ spec:
       labels:
         app: pihole
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: false
+      dnsPolicy: ClusterFirst
       initContainers:
         - name: bind-init
           image: busybox:latest
