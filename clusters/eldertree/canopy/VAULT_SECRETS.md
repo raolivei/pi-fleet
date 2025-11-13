@@ -22,10 +22,7 @@ All Canopy secrets are stored under: `secret/kv/canopy/`
 **Vault Path**: `secret/kv/canopy/postgres`  
 **Key**: `password`  
 **Purpose**: PostgreSQL database password for canopy user  
-**Status**: ⚠️ Needs to be stored in Vault
-
-**Vault Path**: `secret/kv/canopy/postgres`  
-**Key**: `password`  
+**Status**: ⚠️ Needs to be stored in Vault  
 **Value**: `0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=`
 
 **Store in Vault via UI**:
@@ -47,10 +44,7 @@ vault kv put secret/kv/canopy/postgres password="0J9E7DwcsBQkcHim8OobTTugNcgahUF
 **Vault Path**: `secret/kv/canopy/app`  
 **Key**: `secret-key`  
 **Purpose**: Application secret key for encryption/signing  
-**Status**: ⚠️ Needs to be stored in Vault
-
-**Vault Path**: `secret/kv/canopy/app`  
-**Key**: `secret-key`  
+**Status**: ⚠️ Needs to be stored in Vault  
 **Value**: `dC0L6hlYisylorwu2tDJBVcUqOv18U57PuXYPWwgdhU`
 
 **Store in Vault via UI**:
@@ -72,10 +66,7 @@ vault kv put secret/kv/canopy/app secret-key="dC0L6hlYisylorwu2tDJBVcUqOv18U57Pu
 **Vault Path**: `secret/kv/canopy/database`  
 **Key**: `url`  
 **Purpose**: Complete PostgreSQL connection string  
-**Status**: ⚠️ Needs to be stored in Vault (derived from postgres password)
-
-**Vault Path**: `secret/kv/canopy/database`  
-**Key**: `url`  
+**Status**: ⚠️ Needs to be stored in Vault (derived from postgres password)  
 **Value**: `postgresql+psycopg://canopy:0J9E7DwcsBQkcHim8OobTTugNcgahUFPjChVeIC4XEw=@canopy-postgres:5432/canopy`
 
 **Store in Vault via UI**:
