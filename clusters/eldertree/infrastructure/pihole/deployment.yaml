@@ -86,16 +86,12 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
-            httpGet:
-              path: /admin/
-              port: 80
-              httpHeaders:
-              - name: Host
-                value: localhost
-            initialDelaySeconds: 90
+            tcpSocket:
+              port: 53
+            initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 5
+            failureThreshold: 3
           securityContext:
             capabilities:
               add:
