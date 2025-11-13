@@ -1,0 +1,79 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: keda
+  namespace: keda
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: keda
+      version: '2.15.1'
+      sourceRef:
+        kind: HelmRepository
+        name: kedacore
+        namespace: keda
+      interval: 12h
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    # Operator configuration
+    operator:
+      name: keda-operator
+      replicaCount: 1
+      
+    # Metrics server configuration
+    metricsServer:
+      replicaCount: 1
+      
+    # Admission webhooks
+    webhooks:
+      enabled: true
+      replicaCount: 1
+      
+    # Service account configuration
+    serviceAccount:
+      create: true
+      name: keda-operator
+      
+    # Pod security context
+    podSecurityContext:
+      runAsNonRoot: true
+      
+    # Resources for operator
+    resources:
+      operator:
+        limits:
+          cpu: 1000m
+          memory: 1000Mi
+        requests:
+          cpu: 100m
+          memory: 100Mi
+      metricsServer:
+        limits:
+          cpu: 1000m
+          memory: 1000Mi
+        requests:
+          cpu: 100m
+          memory: 100Mi
+      webhooks:
+        limits:
+          cpu: 1000m
+          memory: 1000Mi
+        requests:
+          cpu: 100m
+          memory: 100Mi
+          
+    # Logging level
+    logging:
+      operator:
+        level: info
+      metricServer:
+        level: 0
+

@@ -1,0 +1,35 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: canopy
+  namespace: canopy
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  labels:
+    app: canopy
+spec:
+  tls:
+  - hosts:
+    - canopy.local
+    secretName: canopy-tls
+  rules:
+  - host: canopy.local
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: canopy-api
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: canopy-frontend
+            port:
+              number: 3000
+
