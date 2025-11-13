@@ -5,34 +5,23 @@
 ### Added
 
 - External Secrets Operator for automatic Vault to Kubernetes secret syncing
-- **External-DNS with RFC2136 support**: Automated DNS record management for Kubernetes Ingress resources
-  - External-DNS Helm chart deployment with RFC2136 provider
-  - BIND sidecar container added to Pi-hole deployment for RFC2136 dynamic DNS updates
-  - TSIG authentication configured for secure DNS updates
-  - dnsmasq configured to forward `eldertree.local` queries to BIND backend
-  - Automatic DNS record creation/deletion when Ingress resources are created/removed
-  - Documentation: external-dns README and TESTING.md guide
-- Vault secrets management: sync script to sync secrets from Vault to Kubernetes (legacy, now automated via External Secrets Operator)
-- All project secrets migrated to Vault:
-  - Grafana admin password
-  - Flux Git SSH key
-  - Canopy PostgreSQL password, app secret key, database URL, GHCR token
+- External-DNS with RFC2136 support for automated DNS record management
+- Vault secrets management sync script (legacy, now automated)
+- Grafana dashboards: 9 comprehensive K8s dashboards
+- kube-state-metrics for detailed Kubernetes object metrics
+- DASHBOARDS.md guide with PromQL queries
 
 ### Removed
 
-- Consolidated DNS scripts: removed 8 redundant scripts, kept 1 unified script
-- Removed redundant Canopy Vault documentation and migration guides
-- Removed unused Canopy sync-secrets.sh (handled by main sync script)
-- Enhanced Grafana dashboards: 9 comprehensive K8s dashboards (cluster views, resources, API server, PVs)
-- kube-state-metrics for detailed Kubernetes object metrics
-- Prometheus scrape interval optimization
-- DASHBOARDS.md guide with useful PromQL queries
+- Consolidated DNS scripts: removed 8 redundant scripts
+- Redundant Canopy Vault documentation and migration guides
+- Unused Canopy sync-secrets.sh script
 
 ### Changed
 
-- NETWORK.md updated with automated DNS option (External-DNS) as recommended approach
-- Pi-hole deployment enhanced with BIND sidecar for RFC2136 support
-- Grafana configuration updated to use Kubernetes secret from Vault instead of hardcoded password
+- NETWORK.md: External-DNS as recommended DNS approach
+- Pi-hole deployment: BIND sidecar for RFC2136 support
+- Grafana: use Kubernetes secret from Vault instead of hardcoded password
 
 ## [0.2.0] - 2025-11-12
 
