@@ -1,6 +1,6 @@
 # Vault Secrets Management
 
-Vault stores secrets for all pi-fleet projects.
+Vault stores secrets for all pi-fleet projects. External Secrets Operator automatically syncs secrets from Vault to Kubernetes.
 
 ## Quick Start
 
@@ -8,8 +8,18 @@ Vault stores secrets for all pi-fleet projects.
 # Set kubeconfig
 export KUBECONFIG=~/.kube/config-eldertree
 
-# Sync secrets from Vault to Kubernetes
-./scripts/sync-vault-to-k8s.sh
+# External Secrets Operator syncs automatically
+# Manual sync (legacy): ./scripts/sync-vault-to-k8s.sh
+```
+
+## Setup External Secrets Operator
+
+Create Vault token secret:
+
+```bash
+VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
+VAULT_TOKEN=$(kubectl logs -n vault $VAULT_POD | grep "Root Token" | awk '{print $NF}')
+kubectl create secret generic vault-token --from-literal=token=$VAULT_TOKEN -n external-secrets
 ```
 
 ## Secret Paths
@@ -40,7 +50,15 @@ VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpat
 # Read secret
 kubectl exec -n vault $VAULT_POD -- vault kv get secret/monitoring/grafana
 
-# Write secret
+# Write secret (External Secrets Operator will sync automatically)
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/monitoring/grafana adminPassword=yourpassword
 ```
 
+## External Secrets
+
+External Secrets Operator syncs secrets from Vault to Kubernetes automatically. Secrets are refreshed every 24 hours.
+
+- `monitoring/grafana-admin` - Grafana admin password
+- `flux-system/flux-system` - Flux Git SSH key
+- `canopy/canopy-secrets` - Canopy app secrets
+- `canopy/ghcr-secret` - GitHub Container Registry token
