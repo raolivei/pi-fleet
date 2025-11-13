@@ -15,10 +15,9 @@ data:
       recursion yes;
       forwarders {
         10.43.0.10;  // CoreDNS
-        8.8.8.8;
-        1.1.1.1;
       };
-      forward only;
+      forward first;
+      dnssec-validation no;
     };
 
     // TSIG key for external-dns
@@ -52,4 +51,3 @@ data:
   06-bind-backend.conf: |
     # Forward eldertree.local queries to BIND for RFC2136-managed records
     server=/eldertree.local/127.0.0.1#5353
-
