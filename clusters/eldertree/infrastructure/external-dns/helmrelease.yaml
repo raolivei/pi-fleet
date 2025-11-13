@@ -24,7 +24,7 @@ spec:
       - name: EXTERNAL_DNS_RFC2136_HOST
         value: "192.168.2.83"
       - name: EXTERNAL_DNS_RFC2136_PORT
-        value: "53"
+        value: "5353"
       - name: EXTERNAL_DNS_RFC2136_ZONE
         value: "eldertree.local"
       - name: EXTERNAL_DNS_RFC2136_TSIG_KEYNAME

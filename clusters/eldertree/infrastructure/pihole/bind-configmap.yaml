@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bind-config
+  namespace: pihole
+data:
+  named.conf: |
+    // BIND configuration for RFC2136 dynamic DNS updates
+    options {
+      directory "/var/named";
+      listen-on port 5353 { any; };
+      allow-query { any; };
+      allow-transfer { none; };
+      allow-update { key "externaldns-key"; };
+      recursion no;
+    };
+
+    // TSIG key for external-dns
+    key "externaldns-key" {
+      algorithm hmac-sha256;
+      secret "L1BhWEliMFI3anJXS1ZUbnRiZER2S1JmRWkvTi9QZmpCSnZiR1hNbkR1Zz0=";
+    };
+
+    // Zone for eldertree.local
+    zone "eldertree.local" IN {
+      type master;
+      file "eldertree.local.zone";
+      allow-update { key "externaldns-key"; };
+    };
+
+  eldertree.local.zone: |
+    $TTL 300
+    $ORIGIN eldertree.local.
+    @       IN      SOA     ns1.eldertree.local. admin.eldertree.local. (
+                            2024111301  ; serial
+                            3600        ; refresh
+                            1800        ; retry
+                            604800      ; expire
+                            300         ; minimum
+                            )
+            IN      NS      ns1.eldertree.local.
+    ns1     IN      A       192.168.2.83
+    *       IN      A       192.168.2.83
+
+  # dnsmasq configuration to forward eldertree.local queries to BIND
+  06-bind-backend.conf: |
+    # Forward eldertree.local queries to BIND for RFC2136-managed records
+    server=/eldertree.local/127.0.0.1#5353
+
