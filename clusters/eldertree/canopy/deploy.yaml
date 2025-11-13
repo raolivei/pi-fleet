@@ -19,6 +19,8 @@ spec:
         app: canopy
         component: api
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: api
         image: ghcr.io/raolivei/canopy-api:latest
@@ -76,6 +78,8 @@ spec:
         app: canopy
         component: frontend
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: frontend
         image: ghcr.io/raolivei/canopy-frontend:latest
