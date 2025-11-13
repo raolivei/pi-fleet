@@ -7,10 +7,10 @@ metadata:
 spec:
   interval: 1m
   ref:
-    branch: infra/pi-fleet
+    branch: main
   secretRef:
     name: flux-system
-  url: ssh://git@github.com/raolivei/raolivei
+  url: ssh://git@github.com/raolivei/pi-fleet
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -19,7 +19,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./pi-fleet/clusters/eldertree
+  path: ./clusters/eldertree
   prune: true
   sourceRef:
     kind: GitRepository
