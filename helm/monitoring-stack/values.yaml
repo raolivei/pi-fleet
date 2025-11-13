@@ -16,6 +16,9 @@ prometheus:
     enabled: false
   kube-state-metrics:
     enabled: true
+    serviceAccount:
+      create: true
+      name: monitoring-stack-kube-state-metrics
   server:
     persistentVolume:
       enabled: true
