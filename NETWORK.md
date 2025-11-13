@@ -18,19 +18,52 @@ To ensure cluster stability, configure static IP via router DHCP reservation:
 
 ## DNS Setup
 
-### Option 1: Pi-hole DNS (Recommended - Automatic)
+### Option 1: External-DNS with RFC2136 (Recommended - Fully Automated)
 
-Pi-hole automatically resolves `*.eldertree.local` domains via Kubernetes ConfigMap.
+External-DNS automatically creates DNS records when Ingress resources are created.
+
+**How it works:**
+- Create Ingress with hostname → External-DNS creates DNS record automatically
+- Delete Ingress → DNS record removed automatically
+- No manual ConfigMap updates needed
 
 **Configure macOS/Router:**
 - Set DNS to `192.168.2.83:30053` (Pi-hole NodePort)
 - Or configure router DNS for network-wide access
 
+**Add new services:**
+Simply create an Ingress resource - External-DNS handles DNS automatically:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-service
+spec:
+  rules:
+    - host: myservice.eldertree.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+```
+
 **Verify:**
 ```bash
-nslookup canopy.eldertree.local 192.168.2.83
-dig @192.168.2.83 canopy.eldertree.local
+kubectl get pods -n external-dns
+kubectl logs -n external-dns deployment/external-dns
+nslookup myservice.eldertree.local 192.168.2.83
 ```
+
+**Note:** Pi-hole uses dnsmasq which has limited RFC2136 support. See `clusters/eldertree/infrastructure/external-dns/README.md` for configuration details.
+
+### Option 2: Pi-hole DNS (Manual ConfigMap)
+
+Pi-hole resolves `*.eldertree.local` domains via Kubernetes ConfigMap.
 
 **Add new services:**
 Update ConfigMap: `clusters/eldertree/infrastructure/pihole/configmap.yaml`
@@ -41,7 +74,7 @@ data:
 ```
 Then: `kubectl apply -f ... && kubectl rollout restart deployment/pihole -n pihole`
 
-### Option 2: /etc/hosts (Manual)
+### Option 3: /etc/hosts (Manual)
 
 Add to `/etc/hosts` on all machines:
 
