@@ -25,5 +25,10 @@ spec:
       storageClass: local-path
     prometheus:
       enabled: true
+      kube-state-metrics:
+        enabled: true
+        serviceAccount:
+          create: true
+          name: monitoring-stack-kube-state-metrics
     grafana:
       enabled: true

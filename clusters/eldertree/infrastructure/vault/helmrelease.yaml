@@ -22,5 +22,16 @@ spec:
       ui:
         enabled: true
         serviceType: ClusterIP
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        hosts:
+          - host: vault.eldertree.local
+        tls:
+          - secretName: vault-tls
+            hosts:
+              - vault.eldertree.local
+        annotations:
+          cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
     injector:
       enabled: true
