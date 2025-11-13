@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-upstream-dns
+  namespace: pihole
+data:
+  99-upstream-dns.conf: |
+    # Upstream DNS servers configured via ConfigMap
+    # Use Google DNS directly (port 53 is reachable)
+    server=8.8.8.8
+    server=8.8.4.4
+    server=1.1.1.1

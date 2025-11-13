@@ -53,6 +53,10 @@ spec:
               value: "all"
             - name: VIRTUAL_HOST
               value: "pihole.eldertree.local"
+            - name: PIHOLE_DNS_1
+              value: "8.8.8.8"
+            - name: PIHOLE_DNS_2
+              value: "1.1.1.1"
             - name: WEBPASSWORD
               valueFrom:
                 secretKeyRef:
@@ -71,6 +75,10 @@ spec:
             - name: bind-config
               mountPath: /etc/dnsmasq.d/06-bind-backend.conf
               subPath: 06-bind-backend.conf
+              readOnly: true
+            - name: upstream-dns
+              mountPath: /etc/dnsmasq.d/99-upstream-dns.conf
+              subPath: 99-upstream-dns.conf
               readOnly: true
           resources:
             requests:
@@ -139,3 +147,6 @@ spec:
             name: bind-config
         - name: bind-data
           emptyDir: {}
+        - name: upstream-dns
+          configMap:
+            name: pihole-upstream-dns
