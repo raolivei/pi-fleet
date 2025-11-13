@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pihole
+  namespace: pihole
+  annotations:
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+  labels:
+    app: pihole
+spec:
+  tls:
+  - hosts:
+    - pihole.eldertree.local
+    secretName: pihole-tls
+  rules:
+  - host: pihole.eldertree.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: pihole
+            port:
+              number: 80
