@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-11-12
+
+### Added
+
+- **Helm v4 Compatibility**: All custom charts (`cert-manager-issuers`, `monitoring-stack`) tested and working with Helm v4.0.0
+
+## [0.1.0] - 2025-11-07
+
 ### Added
 
 - Network configuration documentation (NETWORK.md)

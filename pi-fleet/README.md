@@ -39,7 +39,7 @@ helm/              # Custom Helm charts
 
 ## Helm Charts
 
-Custom charts for cluster components:
+Custom charts for cluster components (Helm v4 compatible):
 
 - **cert-manager-issuers**: ClusterIssuers (self-signed, ACME)
 - **monitoring-stack**: Prometheus + Grafana

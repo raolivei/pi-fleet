@@ -2,6 +2,8 @@
 
 Custom Helm charts for the pi-fleet cluster.
 
+**Helm v4 Compatible** - All charts tested with Helm v4.0.0.
+
 ## Available Charts
 
 ### cert-manager-issuers

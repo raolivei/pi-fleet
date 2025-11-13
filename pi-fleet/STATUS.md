@@ -6,6 +6,7 @@
 - **Type**: Single-node K3s cluster
 - **Node**: eldertree (192.168.2.83)
 - **K3s Version**: v1.33.5+k3s1
+- **Helm Version**: v4.0.0 (compatible)
 
 ## Deployed Components
 
