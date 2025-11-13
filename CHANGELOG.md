@@ -4,6 +4,13 @@
 
 ### Added
 
+- **External-DNS with RFC2136 support**: Automated DNS record management for Kubernetes Ingress resources
+  - External-DNS Helm chart deployment with RFC2136 provider
+  - BIND sidecar container added to Pi-hole deployment for RFC2136 dynamic DNS updates
+  - TSIG authentication configured for secure DNS updates
+  - dnsmasq configured to forward `eldertree.local` queries to BIND backend
+  - Automatic DNS record creation/deletion when Ingress resources are created/removed
+  - Documentation: external-dns README and TESTING.md guide
 - Vault secrets management: sync script to sync secrets from Vault to Kubernetes
 - All project secrets migrated to Vault:
   - Grafana admin password
@@ -23,6 +30,8 @@
 
 ### Changed
 
+- NETWORK.md updated with automated DNS option (External-DNS) as recommended approach
+- Pi-hole deployment enhanced with BIND sidecar for RFC2136 support
 - Grafana configuration updated to use Kubernetes secret from Vault instead of hardcoded password
 
 ## [0.2.0] - 2025-11-12
