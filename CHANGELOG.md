@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- Enhanced Grafana dashboards: 9 comprehensive K8s dashboards (cluster views, resources, API server, PVs)
+- kube-state-metrics for detailed Kubernetes object metrics
+- Prometheus scrape interval optimization
+- DASHBOARDS.md guide with useful PromQL queries
+
 ## [0.2.0] - 2025-11-12
 
 ### Added

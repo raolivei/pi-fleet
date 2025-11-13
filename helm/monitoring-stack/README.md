@@ -4,11 +4,12 @@ Complete monitoring solution for pi-fleet with Prometheus and Grafana.
 
 ## Features
 
-- **Prometheus**: Metrics collection and storage
-- **Grafana**: Visualization with pre-configured dashboards
-- **Node Exporter**: Host metrics
+- **Prometheus**: Metrics collection and storage with optimized scraping
+- **Grafana**: Visualization with 9 comprehensive Kubernetes dashboards
+- **kube-state-metrics**: Detailed Kubernetes object metrics
+- **Node Exporter**: Host-level metrics (CPU, memory, disk, network)
 - **Pre-configured datasources**: Prometheus → Grafana
-- **Built-in dashboards**: Kubernetes Cluster, Node Exporter
+- **Built-in dashboards**: Cluster views, resource monitoring, API server, PVs, nodes
 
 ## Values
 
@@ -38,3 +39,7 @@ grafana:
 ## Deployment
 
 This chart is deployed via FluxCD from the git repository.
+
+## Dashboards
+
+See [DASHBOARDS.md](./DASHBOARDS.md) for dashboard details and useful PromQL queries.

@@ -30,6 +30,14 @@ prometheus:
             - prometheus.eldertree.local
       annotations:
         cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    global:
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      evaluation_interval: 30s
+
+# Kube-state-metrics configuration
+kubeStateMetrics:
+  enabled: true
 
 # Grafana configuration
 grafana:
@@ -62,13 +70,48 @@ grafana:
             path: /var/lib/grafana/dashboards/default
   dashboards:
     default:
-      kubernetes-cluster:
-        gnetId: 7249
+      # Comprehensive Kubernetes cluster monitoring
+      k8s-views-global:
+        gnetId: 15757
+        revision: 37
+        datasource: Prometheus
+      k8s-views-namespaces:
+        gnetId: 15758
+        revision: 34
+        datasource: Prometheus
+      k8s-views-pods:
+        gnetId: 15759
+        revision: 28
+        datasource: Prometheus
+      # Detailed cluster metrics
+      k8s-cluster-monitoring:
+        gnetId: 6417
         revision: 1
         datasource: Prometheus
-      node-exporter:
+      # API server health
+      k8s-apiserver:
+        gnetId: 12006
+        revision: 1
+        datasource: Prometheus
+      # Persistent volumes
+      k8s-persistent-volumes:
+        gnetId: 13646
+        revision: 2
+        datasource: Prometheus
+      # Node monitoring with enhanced metrics
+      node-exporter-full:
         gnetId: 1860
         revision: 37
+        datasource: Prometheus
+      # Resource usage by namespace
+      k8s-compute-resources-namespace:
+        gnetId: 15661
+        revision: 1
+        datasource: Prometheus
+      # Resource usage by pod
+      k8s-compute-resources-pod:
+        gnetId: 15662
+        revision: 1
         datasource: Prometheus
   ingress:
     enabled: true
