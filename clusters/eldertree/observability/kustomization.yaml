@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - helmrepositories.yaml
+  - netdata-helmrelease.yaml
+  - grafana-agent-helmrelease.yaml
+  - cadvisor-daemonset.yaml
+  - kubernetes-dashboard-helmrelease.yaml
+  - metrics-server-helmrelease.yaml
+  - keda-helmrelease.yaml

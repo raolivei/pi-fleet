@@ -1,0 +1,59 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kubernetes-dashboard
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: observability
+  chart:
+    spec:
+      chart: kubernetes-dashboard
+      version: "7.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: kubernetes-dashboard
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: true
+  upgrade:
+    cleanupOnFail: true
+  values:
+    image:
+      repository: kubernetesui/dashboard
+      tag: v2.7.0
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      hosts:
+        - dashboard.eldertree.local
+      tls:
+        - secretName: kubernetes-dashboard-tls
+          hosts:
+            - dashboard.eldertree.local
+      annotations:
+        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    metricsScraper:
+      enabled: true
+      image:
+        repository: kubernetesui/metrics-scraper
+        tag: v1.0.9
+    rbac:
+      create: true
+      clusterRoleMetrics: true
+    serviceAccount:
+      create: true
+    protocolHttp: true
+    extraArgs:
+      - --enable-skip-login
+      - --enable-insecure-login
+
