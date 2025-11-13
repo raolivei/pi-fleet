@@ -43,6 +43,11 @@ prometheus:
 # Grafana configuration
 grafana:
   enabled: true
+  # Admin password from Vault (synced to Kubernetes secret: monitoring/grafana-admin)
+  admin:
+    existingSecret: grafana-admin
+    secretKey: admin-password
+  # Fallback password (used if secret doesn't exist)
   adminPassword: admin
   persistence:
     enabled: true

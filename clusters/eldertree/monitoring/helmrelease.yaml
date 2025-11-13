@@ -30,5 +30,28 @@ spec:
         serviceAccount:
           create: true
           name: monitoring-stack-kube-state-metrics
+      server:
+        ingress:
+          enabled: true
+          ingressClassName: traefik
+          hosts:
+            - prometheus.eldertree.local
+          tls:
+            - secretName: prometheus-tls
+              hosts:
+                - prometheus.eldertree.local
+          annotations:
+            cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
     grafana:
       enabled: true
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        hosts:
+          - grafana.eldertree.local
+        tls:
+          - secretName: grafana-tls
+            hosts:
+              - grafana.eldertree.local
+        annotations:
+          cert-manager.io/cluster-issuer: selfsigned-cluster-issuer

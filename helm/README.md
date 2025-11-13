@@ -49,3 +49,17 @@ spec:
 cd helm
 helm create <chart-name>
 ```
+
+## Migration Notes
+
+Infrastructure components were migrated to custom Helm charts for better management:
+
+- **cert-manager-issuers**: Manages ClusterIssuers (self-signed, ACME)
+- **monitoring-stack**: Bundles Prometheus + Grafana with coordinated config
+
+**Benefits:**
+- Templating via values.yaml
+- Explicit versioning
+- Managed dependencies
+- Reusable across clusters
+- GitOps-friendly (FluxCD deploys from git)
