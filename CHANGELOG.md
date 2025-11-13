@@ -4,6 +4,16 @@
 
 ### Added
 
+- **External Secrets Operator**: Automatic secret syncing from Vault to Kubernetes
+  - External Secrets Operator HelmRelease deployment
+  - ClusterSecretStore configured for Vault connection
+  - ExternalSecret resources for automatic syncing:
+    - Grafana admin password (monitoring namespace)
+    - Flux Git SSH key (flux-system namespace)
+    - Canopy secrets: postgres password, secret key, database URL (canopy namespace)
+    - GHCR token (canopy namespace)
+  - Secrets refresh every 24 hours automatically
+  - VAULT.md updated with External Secrets Operator setup instructions
 - **External-DNS with RFC2136 support**: Automated DNS record management for Kubernetes Ingress resources
   - External-DNS Helm chart deployment with RFC2136 provider
   - BIND sidecar container added to Pi-hole deployment for RFC2136 dynamic DNS updates
@@ -11,12 +21,11 @@
   - dnsmasq configured to forward `eldertree.local` queries to BIND backend
   - Automatic DNS record creation/deletion when Ingress resources are created/removed
   - Documentation: external-dns README and TESTING.md guide
-- Vault secrets management: sync script to sync secrets from Vault to Kubernetes
+- Vault secrets management: sync script to sync secrets from Vault to Kubernetes (legacy, now automated via External Secrets Operator)
 - All project secrets migrated to Vault:
   - Grafana admin password
   - Flux Git SSH key
   - Canopy PostgreSQL password, app secret key, database URL, GHCR token
-- VAULT.md documentation for secrets management
 
 ### Removed
 
