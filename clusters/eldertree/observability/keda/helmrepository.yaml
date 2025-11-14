@@ -6,3 +6,5 @@ metadata:
 spec:
   interval: 24h
   url: https://kedacore.github.io/charts
+
+

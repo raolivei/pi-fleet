@@ -110,6 +110,60 @@ Access services via HTTPS (accept self-signed certificate warnings):
 - `https://pihole.eldertree.local` - DNS server
 - `https://vault.eldertree.local` - Secrets management
 
+## Remote Access via VPN
+
+### WireGuard VPN
+
+Access your cluster from anywhere (including mobile LTE) using WireGuard VPN.
+
+**Quick Setup:**
+
+```bash
+cd clusters/eldertree/infrastructure/wireguard
+./setup-vpn.sh
+```
+
+**Manual Setup:**
+
+1. **Install WireGuard on Raspberry Pi:**
+   ```bash
+   ssh raolivei@eldertree
+   cd /tmp
+   curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/infrastructure/wireguard/install-wireguard.sh
+   sudo bash install-wireguard.sh
+   ```
+
+2. **Generate client configs:**
+   ```bash
+   cd ~/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/infrastructure/wireguard
+   ./generate-client.sh mac
+   ./generate-client.sh mobile
+   ```
+
+3. **Connect from Mac:**
+   ```bash
+   brew install wireguard-tools
+   sudo cp client-mac.conf /usr/local/etc/wireguard/wg0.conf
+   sudo wg-quick up wg0
+   ```
+
+4. **Connect from Mobile:**
+   - Install WireGuard app
+   - Scan QR code (`client-mobile.png`) or import config
+
+**VPN Details:**
+- **VPN Network**: `10.8.0.0/24`
+- **Server IP**: `10.8.0.1`
+- **Port**: UDP `51820`
+- **Access**: Full access to `192.168.2.0/24` network
+
+**Once connected, you can access:**
+- Kubernetes API: `kubectl get nodes`
+- Cluster services: `https://canopy.eldertree.local`
+- SSH: `ssh raolivei@192.168.2.83`
+
+See `clusters/eldertree/infrastructure/wireguard/README.md` for detailed documentation.
+
 ## Troubleshooting DNS
 
 **DNS not resolving:**

@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wireguard-install
+  namespace: wireguard-vpn
+spec:
+  template:
+    spec:
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: installer
+        image: debian:bookworm
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          set -e
+          echo "🔐 WireGuard VPN Server Installation"
+          echo "===================================="
+          
+          # Get script from ConfigMap
+          cat /tmp/script/install-wireguard.sh > /host/tmp/install-wireguard.sh
+          chmod +x /host/tmp/install-wireguard.sh
+          
+          # Chroot to host and run script
+          chroot /host /bin/bash /tmp/install-wireguard.sh
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: host-root
+          mountPath: /host
+        - name: script
+          mountPath: /tmp/script
+      volumes:
+      - name: host-root
+        hostPath:
+          path: /
+          type: Directory
+      - name: script
+        configMap:
+          name: wireguard-install-script
+      restartPolicy: Never
+

@@ -155,3 +155,5 @@ kubectl get pods -n canopy
 kubectl get ingress -n canopy
 kubectl get certificate -n canopy
 ```
+
+

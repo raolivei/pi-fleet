@@ -1,0 +1,14 @@
+# WireGuard Configuration Files
+# These contain private keys and should not be committed
+
+# Client configurations (contain private keys)
+client-*.conf
+client-*.png
+
+# Server keys (should be on server only)
+server_private.key
+server_public.key
+
+# Generated QR codes
+*.png
+

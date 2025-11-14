@@ -5,4 +5,9 @@ resources:
   - flux-git-ssh.yaml
   - canopy-secrets.yaml
   - ghcr-secret.yaml
+  - pihole-secrets.yaml
+  - swimto-secrets.yaml
+  - us-law-severity-map-secrets.yaml
+  # Note: nima-secrets.yaml not included as NIMA has no secrets currently
+  # When secrets are needed, uncomment and add data section
 
