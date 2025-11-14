@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: keda
-      version: '2.15.1'
+      version: "2.15.1"
       sourceRef:
         kind: HelmRepository
         name: kedacore
@@ -27,25 +27,25 @@ spec:
     operator:
       name: keda-operator
       replicaCount: 1
-      
+
     # Metrics server configuration
     metricsServer:
       replicaCount: 1
-      
+
     # Admission webhooks
     webhooks:
       enabled: true
       replicaCount: 1
-      
+
     # Service account configuration
     serviceAccount:
       create: true
       name: keda-operator
-      
+
     # Pod security context
     podSecurityContext:
       runAsNonRoot: true
-      
+
     # Resources for operator
     resources:
       operator:
@@ -69,11 +69,10 @@ spec:
         requests:
           cpu: 100m
           memory: 100Mi
-          
+
     # Logging level
     logging:
       operator:
         level: info
       metricServer:
         level: 0
-

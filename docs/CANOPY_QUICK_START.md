@@ -12,6 +12,7 @@
 ```bash
 sudo networksetup -setdnsservers Wi-Fi 192.168.2.83
 ```
+
 </details>
 
 <details>
@@ -29,18 +30,21 @@ sudo networksetup -setdnsservers Wi-Fi 192.168.2.83
 # Add to /etc/resolv.conf
 nameserver 192.168.2.83
 ```
+
 </details>
 
 <details>
 <summary><b>iOS</b></summary>
 
 Settings → Wi-Fi → (i) → DNS → Manual → Add `192.168.2.83`
+
 </details>
 
 <details>
 <summary><b>Android</b></summary>
 
 Settings → Wi-Fi → Modify Network → Static IP → DNS1: `192.168.2.83`
+
 </details>
 
 ### Step 2: Open Canopy
@@ -66,13 +70,13 @@ curl -k https://canopy.eldertree.local/api/v1/health
 
 ## 🔐 HTTPS Details
 
-| Feature | Status |
-|---------|--------|
-| **URL** | https://canopy.eldertree.local |
-| **Certificate** | Self-signed (valid 90 days) |
-| **HTTP Redirect** | ✅ Auto-redirects to HTTPS |
-| **API Endpoint** | https://canopy.eldertree.local/api/ |
-| **Encryption** | ✅ TLS enabled |
+| Feature           | Status                              |
+| ----------------- | ----------------------------------- |
+| **URL**           | https://canopy.eldertree.local      |
+| **Certificate**   | Self-signed (valid 90 days)         |
+| **HTTP Redirect** | ✅ Auto-redirects to HTTPS          |
+| **API Endpoint**  | https://canopy.eldertree.local/api/ |
+| **Encryption**    | ✅ TLS enabled                      |
 
 ---
 
@@ -121,6 +125,7 @@ kubectl get secret -n canopy canopy-tls -o jsonpath='{.data.ca\.crt}' | base64 -
 # Windows: certmgr.msc → Trusted Root → Import
 # Linux: Copy to /usr/local/share/ca-certificates/ and run update-ca-certificates
 ```
+
 </details>
 
 <details>
@@ -132,6 +137,7 @@ kubectl get secret -n canopy canopy-tls -o jsonpath='{.data.ca\.crt}' | base64 -
 4. Save and reboot router
 
 All devices will automatically use Pi-hole DNS!
+
 </details>
 
 ---
@@ -143,9 +149,9 @@ See [ACCESS_CANOPY.md](./ACCESS_CANOPY.md) for complete setup guide.
 ---
 
 **Need help?** Check cluster status:
+
 ```bash
 kubectl get pods -n canopy
 kubectl get ingress -n canopy
 kubectl get certificate -n canopy
 ```
-

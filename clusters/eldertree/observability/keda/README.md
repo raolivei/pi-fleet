@@ -39,12 +39,12 @@ spec:
   minReplicaCount: 1
   maxReplicaCount: 10
   triggers:
-  - type: prometheus
-    metadata:
-      serverAddress: http://prometheus-server.monitoring.svc.cluster.local:9090
-      metricName: http_requests_total
-      threshold: '100'
-      query: sum(rate(http_requests_total{job="my-app"}[2m]))
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-server.monitoring.svc.cluster.local:9090
+        metricName: http_requests_total
+        threshold: "100"
+        query: sum(rate(http_requests_total{job="my-app"}[2m]))
 ```
 
 ### Scale based on Redis list length
@@ -60,11 +60,11 @@ spec:
   minReplicaCount: 0
   maxReplicaCount: 20
   triggers:
-  - type: redis
-    metadata:
-      address: redis-service:6379
-      listName: mylist
-      listLength: "5"
+    - type: redis
+      metadata:
+        address: redis-service:6379
+        listName: mylist
+        listLength: "5"
 ```
 
 ### Scale a CronJob based on events
@@ -79,19 +79,20 @@ spec:
     template:
       spec:
         containers:
-        - name: worker
-          image: my-worker:latest
+          - name: worker
+            image: my-worker:latest
   triggers:
-  - type: rabbitmq
-    metadata:
-      queueName: tasks
-      host: amqp://user:pass@rabbitmq:5672
-      queueLength: '5'
+    - type: rabbitmq
+      metadata:
+        queueName: tasks
+        host: amqp://user:pass@rabbitmq:5672
+        queueLength: "5"
 ```
 
 ## Monitoring
 
 KEDA exposes Prometheus metrics at:
+
 - Operator: `http://keda-operator.keda.svc.cluster.local:8080/metrics`
 - Metrics Server: `http://keda-metrics-apiserver.keda.svc.cluster.local:8080/metrics`
 
@@ -115,4 +116,3 @@ kubectl get apiservice | grep keda
 - [KEDA Documentation](https://keda.sh/docs/)
 - [Scalers List](https://keda.sh/docs/scalers/)
 - [GitHub Repository](https://github.com/kedacore/keda)
-

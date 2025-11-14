@@ -11,6 +11,7 @@ This directory contains the observability components for the eldertree cluster.
 KEDA enables event-driven autoscaling for Kubernetes workloads based on external metrics.
 
 **Deployed Components:**
+
 - **KEDA Operator**: Main controller managing ScaledObjects and ScaledJobs
 - **Metrics Server**: Exposes external metrics to Kubernetes Metrics API
 - **Admission Webhooks**: Validates and mutates KEDA resources
@@ -20,6 +21,7 @@ KEDA enables event-driven autoscaling for Kubernetes workloads based on external
 **Version**: 2.15.1
 
 **Resources:**
+
 - Operator: 100m CPU / 100Mi RAM (request), 1000m CPU / 1000Mi RAM (limit)
 - Metrics Server: 100m CPU / 100Mi RAM (request), 1000m CPU / 1000Mi RAM (limit)
 - Webhooks: 100m CPU / 100Mi RAM (request), 1000m CPU / 1000Mi RAM (limit)
@@ -68,18 +70,19 @@ spec:
   minReplicaCount: 1
   maxReplicaCount: 10
   triggers:
-  - type: prometheus
-    metadata:
-      serverAddress: http://prometheus-server.monitoring.svc:9090
-      metricName: http_requests_per_second
-      threshold: '100'
-      query: |
-        sum(rate(http_requests_total{app="my-app"}[2m]))
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-server.monitoring.svc:9090
+        metricName: http_requests_per_second
+        threshold: "100"
+        query: |
+          sum(rate(http_requests_total{app="my-app"}[2m]))
 ```
 
 ### Monitoring
 
 KEDA exposes Prometheus metrics:
+
 - Operator metrics: `http://keda-operator.keda.svc.cluster.local:8080/metrics`
 - Metrics Server: `http://keda-metrics-apiserver.keda.svc.cluster.local:8080/metrics`
 
@@ -100,4 +103,3 @@ Consider adding these observability components:
 - [ ] **cAdvisor** - Container resource usage and performance
 - [ ] **Loki** - Log aggregation
 - [ ] **Tempo** - Distributed tracing
-

@@ -4,4 +4,3 @@ metadata:
   name: keda
   labels:
     name: keda
-

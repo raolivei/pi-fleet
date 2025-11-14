@@ -1,6 +1,6 @@
 # Example KEDA ScaledObject
 # This demonstrates how to use KEDA to autoscale based on CPU metrics
-# 
+#
 # To test:
 # 1. Create a test deployment: kubectl create deployment test-app --image=nginx:alpine
 # 2. Apply this ScaledObject: kubectl apply -f keda-test-scaledobject.yaml
@@ -20,10 +20,10 @@ spec:
   pollingInterval: 30
   cooldownPeriod: 300
   triggers:
-  - type: cpu
-    metricType: Utilization
-    metadata:
-      value: "50"
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "50"
 ---
 # Example: Scale based on Prometheus metrics
 # Uncomment and modify for your use case
