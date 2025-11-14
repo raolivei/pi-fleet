@@ -5,17 +5,18 @@ metadata:
   name: canopy
   namespace: canopy
   annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
   labels:
     app: canopy
 spec:
+  ingressClassName: traefik
   tls:
   - hosts:
-    - canopy.local
+    - canopy.eldertree.local
     secretName: canopy-tls
   rules:
-  - host: canopy.local
+  - host: canopy.eldertree.local
     http:
       paths:
       - path: /api
