@@ -322,15 +322,15 @@ kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:82
 kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN=root && vault kv put secret/canopy/app secret-key=\$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN=root && vault kv put secret/canopy/database url=postgresql+psycopg://canopy:password@canopy-postgres:5432/canopy"
 
-# Set Grafana admin password
-kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN=root && vault kv put secret/monitoring/grafana adminPassword=yourpassword"
+# Set Grafana admin username and password
+kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN=root && vault kv put secret/monitoring/grafana adminUser=admin adminPassword=yourpassword"
 
 # Set Pi-hole web password
 kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN=root && vault kv put secret/pihole/webpassword password=yourpassword"
 ```
 
 **Secret Paths Structure:**
-- `secret/monitoring/grafana` - Grafana admin password
+- `secret/monitoring/grafana` - Grafana admin username and password (`adminUser`, `adminPassword`)
 - `secret/pihole/webpassword` - Pi-hole web admin password
 - `secret/canopy/postgres` - Canopy PostgreSQL password
 - `secret/canopy/app` - Canopy application secret key

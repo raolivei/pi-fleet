@@ -140,6 +140,18 @@ kubectl get nodes
 - Use `flux reconcile` for manual sync
 - Check status: `flux get kustomizations`
 
+### SSH Access
+
+**ALWAYS use `sshpass` when SSH'ing into eldertree:**
+
+- **NEVER** use plain `ssh` commands to eldertree
+- **ALWAYS** use `sshpass -p 'PASSWORD' ssh` format
+- Password is stored in `terraform/terraform.tfvars` as `pi_password`
+- Example: `sshpass -p 'PASSWORD' ssh raolivei@eldertree "command"`
+- For `scp`: `sshpass -p 'PASSWORD' scp file raolivei@eldertree:/path`
+
+This ensures non-interactive SSH access in scripts and automation.
+
 ## Important Notes
 
 ### Cluster Naming

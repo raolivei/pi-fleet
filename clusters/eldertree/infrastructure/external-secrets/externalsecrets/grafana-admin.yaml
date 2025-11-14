@@ -12,6 +12,10 @@ spec:
     name: grafana-admin
     creationPolicy: Owner
   data:
+    - secretKey: admin-user
+      remoteRef:
+        key: secret/monitoring/grafana
+        property: adminUser
     - secretKey: admin-password
       remoteRef:
         key: secret/monitoring/grafana

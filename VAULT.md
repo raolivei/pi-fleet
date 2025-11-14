@@ -25,7 +25,7 @@ kubectl create secret generic vault-token --from-literal=token=$VAULT_TOKEN -n e
 ## Secret Paths
 
 ### Monitoring
-- `secret/monitoring/grafana` - Grafana admin password
+- `secret/monitoring/grafana` - Grafana admin username and password (`adminUser`, `adminPassword`)
 
 ### Infrastructure
 - `secret/pihole/webpassword` - Pi-hole web admin password
@@ -71,7 +71,7 @@ VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpat
 kubectl exec -n vault $VAULT_POD -- vault kv get secret/monitoring/grafana
 
 # Write secret (External Secrets Operator will sync automatically)
-kubectl exec -n vault $VAULT_POD -- vault kv put secret/monitoring/grafana adminPassword=yourpassword
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/monitoring/grafana adminUser=admin adminPassword=yourpassword
 ```
 
 ## External Secrets
@@ -79,7 +79,7 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/monitoring/grafana admin
 External Secrets Operator syncs secrets from Vault to Kubernetes automatically. Secrets are refreshed every 24 hours.
 
 ### Monitoring
-- `monitoring/grafana-admin` - Grafana admin password
+- `monitoring/grafana-admin` - Grafana admin username and password
 
 ### Infrastructure
 - `pihole/pihole-secrets` - Pi-hole web admin password
@@ -104,6 +104,9 @@ VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpat
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/canopy/postgres password=yourpassword
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/canopy/app secret-key=your-secret-key
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/canopy/database url=postgresql+psycopg://canopy:password@canopy-postgres:5432/canopy
+
+# Grafana secrets
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/monitoring/grafana adminUser=admin adminPassword=yourpassword
 
 # SwimTO secrets
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/swimto/postgres password=yourpassword

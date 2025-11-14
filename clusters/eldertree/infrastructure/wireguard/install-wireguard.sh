@@ -70,6 +70,29 @@ WG_SERVER_IP="10.8.0.1"
 LOCAL_NETWORK="192.168.2.0/24"
 LOCAL_GATEWAY="192.168.2.1"
 
+# Detect the default network interface (for NAT masquerading)
+# This finds the interface used for the default route
+DEFAULT_INTERFACE=$(ip route | grep default | awk '{print $5}' | head -n1)
+
+# Fallback: try common interface names if detection fails
+if [ -z "$DEFAULT_INTERFACE" ] || [ ! -d "/sys/class/net/$DEFAULT_INTERFACE" ]; then
+    echo "⚠️  Could not detect default interface, trying common names..."
+    for iface in wlan0 eth0 enp0s3 enp0s8; do
+        if [ -d "/sys/class/net/$iface" ] && ip addr show "$iface" | grep -q "inet "; then
+            DEFAULT_INTERFACE="$iface"
+            echo "✅ Using detected interface: $DEFAULT_INTERFACE"
+            break
+        fi
+    done
+fi
+
+if [ -z "$DEFAULT_INTERFACE" ]; then
+    echo "❌ Could not detect network interface. Please set DEFAULT_INTERFACE manually."
+    exit 1
+fi
+
+echo "🌐 Detected network interface: $DEFAULT_INTERFACE"
+
 # Get public IP or use placeholder (will need to be updated)
 PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || echo "YOUR_PUBLIC_IP")
 
@@ -84,8 +107,8 @@ Address = ${WG_SERVER_IP}/24
 ListenPort = ${WG_PORT}
 
 # Enable IP forwarding and NAT
-PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o ${DEFAULT_INTERFACE} -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o ${DEFAULT_INTERFACE} -j MASQUERADE
 
 # DNS (use Pi-hole if available, otherwise router)
 DNS = 192.168.2.83, ${LOCAL_GATEWAY}
