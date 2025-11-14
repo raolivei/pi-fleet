@@ -141,3 +141,4 @@ echo "  2. Re-import config into WireGuard app on iPhone"
 echo "  3. Connect and test: https://canopy.eldertree.local"
 echo ""
 
+

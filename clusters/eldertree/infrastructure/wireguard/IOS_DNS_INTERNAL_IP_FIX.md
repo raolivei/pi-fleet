@@ -107,3 +107,4 @@ If DNS continues to not work:
    - If DNS queries succeed → Safari cache issue → Clear Safari cache
 
 3. **As last resort**, set up DNS forwarding on VPN server (Solution 2)
+

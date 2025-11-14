@@ -129,3 +129,4 @@ echo "To view logs:"
 echo "  sudo journalctl -u wireguard-dns-proxy.service -f"
 echo ""
 
+

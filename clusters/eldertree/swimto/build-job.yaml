@@ -27,7 +27,7 @@ spec:
           docker build -t ${IMAGE_PREFIX}/swimto-api:latest /workspace/apps/api || exit 1
           
           # Build Web image  
-          docker build -t ${IMAGE_PREFIX}/swimto-web:latest --target production /workspace/apps/web || exit 1
+          docker build -t ${IMAGE_PREFIX}/swimto-web:latest /workspace/apps/web || exit 1
           
           # Push to GitHub Container Registry
           docker push ${IMAGE_PREFIX}/swimto-api:latest || exit 1

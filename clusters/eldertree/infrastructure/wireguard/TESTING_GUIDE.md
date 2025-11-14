@@ -106,3 +106,4 @@ curl ifconfig.me
 ✅ Can access cluster services  
 ✅ Works from any network (WiFi, LTE, etc.)  
 
+

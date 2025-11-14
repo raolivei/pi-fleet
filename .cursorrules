@@ -64,6 +64,10 @@ pi-fleet/
 
 - **Git tag versions must match Docker image tag versions** - When creating a release, ensure the git tag (e.g., `v1.2.3`) matches the Docker image tag used in deployment manifests and Helm charts
 
+**Image Changes:**
+
+- **Any changes to Docker images must always update CHANGELOG.md** - This includes changes to Dockerfiles, base images, image tags in deployment manifests, or any other image-related modifications
+
 **Example Workflow:**
 
 ```bash
