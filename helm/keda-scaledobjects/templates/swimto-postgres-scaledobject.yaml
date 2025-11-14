@@ -1,0 +1,26 @@
+{{- if and .Values.swimto.enabled .Values.swimto.postgres.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: swimto-postgres-scaler
+  namespace: swimto
+  labels:
+    {{- include "keda-scaledobjects.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: postgres
+  minReplicaCount: {{ .Values.swimto.postgres.minReplicas }}
+  maxReplicaCount: {{ .Values.swimto.postgres.maxReplicas }}
+  pollingInterval: {{ .Values.global.pollingInterval }}
+  cooldownPeriod: {{ .Values.global.cooldownPeriod }}
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.cpuThreshold | quote }}
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.memoryThreshold | quote }}
+{{- end }}
+

@@ -1,0 +1,27 @@
+{{- if and .Values.canopy.enabled .Values.canopy.postgres.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: canopy-postgres-scaler
+  namespace: canopy
+  labels:
+    {{- include "keda-scaledobjects.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: canopy-postgres
+    kind: StatefulSet
+  minReplicaCount: {{ .Values.canopy.postgres.minReplicas }}
+  maxReplicaCount: {{ .Values.canopy.postgres.maxReplicas }}
+  pollingInterval: {{ .Values.global.pollingInterval }}
+  cooldownPeriod: {{ .Values.global.cooldownPeriod }}
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.cpuThreshold | quote }}
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.memoryThreshold | quote }}
+{{- end }}
+

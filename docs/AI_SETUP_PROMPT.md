@@ -38,7 +38,7 @@ pi-fleet/
 
 ## Requirements
 
-1. **Use Helm charts as much as possible** - All deployments should be Helm-based
+1. **Use Helm charts where applicable** - Prefer Helm charts for all deployments when suitable charts exist. This provides better maintainability, reusability, and version management. When Helm charts are not available or not suitable, use raw YAML manifests.
 2. **Keep it simple** - Concise documentation, no over-engineering
 3. **GitOps workflow** - All changes via git commits
 4. **Branching strategy** - Work in `infra/pi-fleet` branch, following conventions in CONTRIBUTING.md

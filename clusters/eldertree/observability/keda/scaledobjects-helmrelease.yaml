@@ -1,0 +1,21 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keda-scaledobjects
+  namespace: keda
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm/keda-scaledobjects
+      version: "0.1.0"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: false
+  upgrade:
+    cleanupOnFail: true
+

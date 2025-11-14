@@ -1,0 +1,64 @@
+# Default values for keda-scaledobjects
+# Global settings
+global:
+  pollingInterval: 30
+  cooldownPeriod: 300
+  cpuThreshold: "50"
+  memoryThreshold: "80"
+
+# Canopy namespace
+canopy:
+  enabled: true
+  api:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+  frontend:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 3
+  redis:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+  postgres:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+
+# SwimTO namespace
+swimto:
+  enabled: true
+  api:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+  web:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+  postgres:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+  redis:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+
+# Nima namespace
+nima:
+  enabled: true
+  api:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+# US Law Severity Map namespace
+usLawSeverityMap:
+  enabled: true
+  web:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 3
+
