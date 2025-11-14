@@ -1,11 +1,42 @@
-# Git Branching Strategy
+# Pi Fleet - Cursor Rules
 
-When working on this repository, ALWAYS follow this branching workflow:
+## Project Overview
+K3s cluster management on Raspberry Pi using Terraform for infrastructure and FluxCD for GitOps.
 
-## Branch Naming Convention
+## Project Structure
+```
+pi-fleet/
+├── terraform/             # Infrastructure as code (K3s setup)
+├── clusters/              # FluxCD GitOps manifests
+│   └── eldertree/         # Control plane cluster configs
+├── helm/                  # Custom Helm charts
+├── scripts/               # Utility scripts
+└── docs/                  # Documentation
+```
 
-Create branches with these prefixes based on work type:
+## Code Conventions
 
+### Terraform
+- Use `.tfvars` files for variables (never commit secrets)
+- Follow Terraform best practices
+- Use modules for reusable components
+- Document variables and outputs
+
+### Kubernetes Manifests
+- Use FluxCD GitOps approach
+- Manifests in `clusters/<cluster-name>/`
+- Follow k8s naming conventions
+- Include labels and annotations
+
+### Helm Charts
+- Custom charts in `helm/`
+- Use Helm v4 compatible syntax
+- Document values.yaml
+- Version charts appropriately
+
+### Git Workflow
+
+**Branch Naming Convention:**
 - `feat/` or `feature/` - New features (e.g., `feat/user-authentication`)
 - `fix/` - Bug fixes (e.g., `fix/login-error`)
 - `chore/` - Maintenance tasks (e.g., `chore/update-dependencies`)
@@ -14,16 +45,15 @@ Create branches with these prefixes based on work type:
 - `infra/` - Infrastructure changes (e.g., `infra/pi-fleet`)
 - `test/` - Test additions/changes (e.g., `test/user-service`)
 
-## Workflow Rules
-
+**Workflow Rules:**
 1. **NEVER commit directly to `main` or `dev`**
 2. **Always create a feature branch** for any work
 3. **Push feature branches to remote** for backup and collaboration
 4. **Keep branches focused** - one feature/fix/task per branch
 5. **Merge to main only when truly complete** (stable, tested, documented)
 
-## Example Workflow
-
+**Example Workflow:**
+```bash
 # Start new work
 git checkout main
 git pull
@@ -38,13 +68,92 @@ git push origin feat/my-new-feature
 git checkout main
 git merge feat/my-new-feature
 git push origin main
+```
 
-## Branch Lifecycle
+## Common Tasks
 
-- **Keep feature branches** until work is fully complete and tested
-- **Push regularly** to remote for backup
-- **Merge to main** only when production-ready
-- **Delete branches** after successful merge (optional)
+### Adding New Cluster
+1. Create directory: `clusters/<cluster-name>/`
+2. Add FluxCD manifests
+3. Update Terraform if needed
+4. Document in README
 
-**Remember: Feature branches allow iteration without polluting main. Main should always be stable.**
+### Updating Terraform
+1. Create branch: `infra/terraform-update`
+2. Make changes in `terraform/`
+3. Test: `terraform plan`
+4. Apply: `terraform apply`
+5. Commit and merge
+
+### Adding Helm Chart
+1. Create chart in `helm/<chart-name>/`
+2. Follow Helm best practices
+3. Document values.yaml
+4. Test locally before deploying
+
+### Updating FluxCD Manifests
+1. Edit manifests in `clusters/<cluster-name>/`
+2. Commit and push
+3. FluxCD will automatically sync
+4. Monitor: `flux get kustomizations`
+
+## Development Setup
+
+### Terraform
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your credentials
+terraform init
+terraform plan
+terraform apply
+```
+
+### Kubernetes Access
+```bash
+export KUBECONFIG=~/.kube/config-eldertree
+kubectl get nodes
+```
+
+### FluxCD
+- Manifests auto-sync from Git
+- Use `flux reconcile` for manual sync
+- Check status: `flux get kustomizations`
+
+## Important Notes
+
+### Cluster Naming
+- Control plane: `eldertree` (192.168.2.83)
+- Workers: `fleet-worker-01`, `fleet-worker-02`, etc.
+
+### Secrets Management
+- Secrets stored in Vault (see `VAULT.md`)
+- Use `scripts/sync-vault-to-k8s.sh` to sync
+- Never commit secrets to Git
+
+### Ingress and SSL
+- Traefik as Ingress Controller
+- Cert-Manager for SSL certificates
+- ExternalDNS for DNS records
+- See `docs/INGRESS.md`
+
+### Hardware
+- Raspberry Pi 5 (8GB, ARM64)
+- Debian 12 Bookworm
+- K3s v1.33.5+k3s1
+- Helm v4.0.0
+
+## Documentation
+- `README.md` - Overview and quick start
+- `NETWORK.md` - DNS and network setup
+- `VAULT.md` - Secrets management
+- `CONTRIBUTING.md` - Git workflow details
+- `docs/INGRESS.md` - Ingress and SSL setup
+
+## Key Principles
+- **GitOps** - Infrastructure and apps defined in Git
+- **Infrastructure as Code** - Terraform for provisioning
+- **Self-hosted** - Runs on Raspberry Pi hardware
+- **FluxCD** - Automatic sync from Git
+- **Secrets in Vault** - Never in Git
 
