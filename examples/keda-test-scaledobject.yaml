@@ -46,3 +46,5 @@ spec:
 #       threshold: '100'
 #       query: sum(rate(http_requests_total{app="my-app"}[2m]))
 
+
+

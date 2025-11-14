@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.0] - 2025-01-XX
+
+### Added
+- WireGuard VPN infrastructure setup and documentation
+- External Secrets Operator configurations for multiple services:
+  - NIMA secrets
+  - Pi-hole secrets
+  - SwimTO secrets
+  - US Law Severity Map secrets
+- WireGuard quickstart and setup guides
+
+### Changed
+- Updated .cursorrules for project conventions
+- Updated NETWORK.md documentation
+- Updated VAULT.md documentation
+- Updated Canopy deployment manifests (deploy.yaml, middleware.yaml, service.yaml)
+- Updated External Secrets kustomization configuration
+
 ## [Unreleased]
 
 ### Added

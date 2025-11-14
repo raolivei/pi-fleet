@@ -1,9 +1,11 @@
 # Pi Fleet - Cursor Rules
 
 ## Project Overview
+
 K3s cluster management on Raspberry Pi using Terraform for infrastructure and FluxCD for GitOps.
 
 ## Project Structure
+
 ```
 pi-fleet/
 ├── terraform/             # Infrastructure as code (K3s setup)
@@ -17,18 +19,21 @@ pi-fleet/
 ## Code Conventions
 
 ### Terraform
+
 - Use `.tfvars` files for variables (never commit secrets)
 - Follow Terraform best practices
 - Use modules for reusable components
 - Document variables and outputs
 
 ### Kubernetes Manifests
+
 - Use FluxCD GitOps approach
 - Manifests in `clusters/<cluster-name>/`
 - Follow k8s naming conventions
 - Include labels and annotations
 
 ### Helm Charts
+
 - Custom charts in `helm/`
 - Use Helm v4 compatible syntax
 - Document values.yaml
@@ -37,6 +42,7 @@ pi-fleet/
 ### Git Workflow
 
 **Branch Naming Convention:**
+
 - `feat/` or `feature/` - New features (e.g., `feat/user-authentication`)
 - `fix/` - Bug fixes (e.g., `fix/login-error`)
 - `chore/` - Maintenance tasks (e.g., `chore/update-dependencies`)
@@ -46,6 +52,7 @@ pi-fleet/
 - `test/` - Test additions/changes (e.g., `test/user-service`)
 
 **Workflow Rules:**
+
 1. **NEVER commit directly to `main` or `dev`**
 2. **Always create a feature branch** for any work
 3. **Push feature branches to remote** for backup and collaboration
@@ -53,6 +60,7 @@ pi-fleet/
 5. **Merge to main only when truly complete** (stable, tested, documented)
 
 **Example Workflow:**
+
 ```bash
 # Start new work
 git checkout main
@@ -73,12 +81,14 @@ git push origin main
 ## Common Tasks
 
 ### Adding New Cluster
+
 1. Create directory: `clusters/<cluster-name>/`
 2. Add FluxCD manifests
 3. Update Terraform if needed
 4. Document in README
 
 ### Updating Terraform
+
 1. Create branch: `infra/terraform-update`
 2. Make changes in `terraform/`
 3. Test: `terraform plan`
@@ -86,12 +96,14 @@ git push origin main
 5. Commit and merge
 
 ### Adding Helm Chart
+
 1. Create chart in `helm/<chart-name>/`
 2. Follow Helm best practices
 3. Document values.yaml
 4. Test locally before deploying
 
 ### Updating FluxCD Manifests
+
 1. Edit manifests in `clusters/<cluster-name>/`
 2. Commit and push
 3. FluxCD will automatically sync
@@ -100,6 +112,7 @@ git push origin main
 ## Development Setup
 
 ### Terraform
+
 ```bash
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
@@ -110,12 +123,14 @@ terraform apply
 ```
 
 ### Kubernetes Access
+
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 kubectl get nodes
 ```
 
 ### FluxCD
+
 - Manifests auto-sync from Git
 - Use `flux reconcile` for manual sync
 - Check status: `flux get kustomizations`
@@ -123,27 +138,32 @@ kubectl get nodes
 ## Important Notes
 
 ### Cluster Naming
+
 - Control plane: `eldertree` (192.168.2.83)
 - Workers: `fleet-worker-01`, `fleet-worker-02`, etc.
 
 ### Secrets Management
+
 - Secrets stored in Vault (see `VAULT.md`)
 - Use `scripts/sync-vault-to-k8s.sh` to sync
 - Never commit secrets to Git
 
 ### Ingress and SSL
+
 - Traefik as Ingress Controller
 - Cert-Manager for SSL certificates
 - ExternalDNS for DNS records
 - See `docs/INGRESS.md`
 
 ### Hardware
+
 - Raspberry Pi 5 (8GB, ARM64)
 - Debian 12 Bookworm
 - K3s v1.33.5+k3s1
 - Helm v4.0.0
 
 ## Documentation
+
 - `README.md` - Overview and quick start
 - `NETWORK.md` - DNS and network setup
 - `VAULT.md` - Secrets management
@@ -151,9 +171,9 @@ kubectl get nodes
 - `docs/INGRESS.md` - Ingress and SSL setup
 
 ## Key Principles
+
 - **GitOps** - Infrastructure and apps defined in Git
 - **Infrastructure as Code** - Terraform for provisioning
 - **Self-hosted** - Runs on Raspberry Pi hardware
 - **FluxCD** - Automatic sync from Git
 - **Secrets in Vault** - Never in Git
-
