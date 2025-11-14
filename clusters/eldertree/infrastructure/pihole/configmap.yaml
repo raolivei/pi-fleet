@@ -9,6 +9,7 @@ data:
   05-custom-dns.conf: |
     # Custom DNS rewrites for eldertree.local domains
     address=/canopy.eldertree.local/192.168.2.83
+    address=/swimto.eldertree.local/192.168.2.83
     address=/grafana.eldertree.local/192.168.2.83
     address=/prometheus.eldertree.local/192.168.2.83
     address=/vault.eldertree.local/192.168.2.83

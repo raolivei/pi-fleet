@@ -5,3 +5,4 @@ resources:
   - monitoring # kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
   - observability # Netdata, Grafana Agent, cAdvisor, Kubernetes Dashboard, metrics-server, KEDA
   - canopy # Personal finance dashboard
+  - swimto # SwimTO pool schedule app

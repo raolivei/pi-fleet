@@ -62,10 +62,11 @@ swimto:
     triggerType: "cpu-memory"
 
 # Nima namespace
+# Disabled - not ready for deployment yet
 nima:
-  enabled: true
+  enabled: false
   api:
-    enabled: true
+    enabled: false
     minReplicas: 0 # Scale to zero in standby
     maxReplicas: 5
     triggerType: "http-rate"
