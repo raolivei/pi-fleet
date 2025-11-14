@@ -1,13 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../../../swimTO/k8s/namespace.yaml
-  - ../../../../swimTO/k8s/configmap.yaml
-  - ../../../../swimTO/k8s/postgres-pvc.yaml
-  - ../../../../swimTO/k8s/postgres-deployment.yaml
-  - ../../../../swimTO/k8s/redis-deployment.yaml
-  - ../../../../swimTO/k8s/api-deployment.yaml
-  - ../../../../swimTO/k8s/web-deployment.yaml
-  - ../../../../swimTO/k8s/ingress.yaml
-  - ../../../../swimTO/k8s/cronjob-refresh.yaml
+  - namespace.yaml
+  - configmap.yaml
+  - postgres-pvc.yaml
+  - postgres-deployment.yaml
+  - redis-deployment.yaml
+  - api-deployment.yaml
+  - web-deployment.yaml
+  - ingress.yaml
+  - cronjob-refresh.yaml
 

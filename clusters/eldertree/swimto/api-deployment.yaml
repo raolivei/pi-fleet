@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swimto-api
+  namespace: swimto
+  labels:
+    app: swimto-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: swimto-api
+  template:
+    metadata:
+      labels:
+        app: swimto-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: api
+          image: ghcr.io/raolivei/swimto-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: swimto-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: swimto-secrets
+                  key: REDIS_URL
+            - name: ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: swimto-secrets
+                  key: ADMIN_TOKEN
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: swimto-secrets
+                  key: SECRET_KEY
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: swimto-secrets
+                  key: OPENAI_API_KEY
+                  optional: true
+            - name: LEONARDO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: swimto-secrets
+                  key: LEONARDO_API_KEY
+                  optional: true
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: swimto-secrets
+                  key: GOOGLE_CLIENT_ID
+                  optional: true
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: swimto-secrets
+                  key: GOOGLE_CLIENT_SECRET
+                  optional: true
+          envFrom:
+            - configMapRef:
+                name: swimto-config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: swimto-api-service
+  namespace: swimto
+spec:
+  selector:
+    app: swimto-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+  type: ClusterIP

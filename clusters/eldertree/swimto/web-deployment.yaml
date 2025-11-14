@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swimto-web
+  namespace: swimto
+  labels:
+    app: swimto-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: swimto-web
+  template:
+    metadata:
+      labels:
+        app: swimto-web
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: web
+          image: ghcr.io/raolivei/swimto-web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: swimto-web-service
+  namespace: swimto
+spec:
+  selector:
+    app: swimto-web
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+  type: ClusterIP

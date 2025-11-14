@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: swimto
+  labels:
+    name: swimto
+    app: swimto
+

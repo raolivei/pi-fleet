@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: swimto-config
+  namespace: swimto
+data:
+  CITY_BASE_URL: "https://www.toronto.ca"
+  OPEN_DATA_BASE_URL: "https://open.toronto.ca"
+  INGEST_WINDOW_DAYS: "56"
+  LOG_LEVEL: "INFO"
+  CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","https://swimto.eldertree.local","http://swimto.eldertree.local","https://swimto.local","http://swimto.local"]'

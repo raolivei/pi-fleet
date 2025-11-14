@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-swimto-images
+  namespace: default
+spec:
+  template:
+    spec:
+      hostNetwork: true
+      containers:
+      - name: build
+        image: docker:dind
+        securityContext:
+          privileged: true
+        command:
+        - sh
+        - -c
+        - |
+          apk add --no-cache docker-cli
+          # Wait for docker daemon
+          sleep 5
+          
+          REGISTRY="ghcr.io"
+          IMAGE_PREFIX="${REGISTRY}/raolivei"
+          
+          # Build API image
+          docker build -t ${IMAGE_PREFIX}/swimto-api:latest /workspace/apps/api || exit 1
+          
+          # Build Web image  
+          docker build -t ${IMAGE_PREFIX}/swimto-web:latest --target production /workspace/apps/web || exit 1
+          
+          # Push to GitHub Container Registry
+          docker push ${IMAGE_PREFIX}/swimto-api:latest || exit 1
+          docker push ${IMAGE_PREFIX}/swimto-web:latest || exit 1
+          
+          # Pull into k3s
+          k3s ctr images pull ${IMAGE_PREFIX}/swimto-api:latest || exit 1
+          k3s ctr images pull ${IMAGE_PREFIX}/swimto-web:latest || exit 1
+          
+          # Verify
+          k3s ctr images ls | grep ${IMAGE_PREFIX}
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        - name: k3s-bin
+          mountPath: /usr/local/bin/k3s
+      volumes:
+      - name: workspace
+        hostPath:
+          path: /home/monkeys-37/swimTO
+          type: Directory
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      - name: k3s-bin
+        hostPath:
+          path: /usr/local/bin/k3s
+          type: File
+      restartPolicy: Never
+  backoffLimit: 2
+
