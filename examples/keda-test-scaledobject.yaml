@@ -1,0 +1,48 @@
+# Example KEDA ScaledObject
+# This demonstrates how to use KEDA to autoscale based on CPU metrics
+# 
+# To test:
+# 1. Create a test deployment: kubectl create deployment test-app --image=nginx:alpine
+# 2. Apply this ScaledObject: kubectl apply -f keda-test-scaledobject.yaml
+# 3. Watch scaling: kubectl get scaledobject -w
+# 4. Check HPA created by KEDA: kubectl get hpa
+
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: test-app-scaler
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: test-app
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  pollingInterval: 30
+  cooldownPeriod: 300
+  triggers:
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "50"
+---
+# Example: Scale based on Prometheus metrics
+# Uncomment and modify for your use case
+#
+# apiVersion: keda.sh/v1alpha1
+# kind: ScaledObject
+# metadata:
+#   name: prometheus-scaler
+#   namespace: default
+# spec:
+#   scaleTargetRef:
+#     name: my-deployment
+#   minReplicaCount: 1
+#   maxReplicaCount: 10
+#   triggers:
+#   - type: prometheus
+#     metadata:
+#       serverAddress: http://prometheus-server.monitoring.svc:9090
+#       metricName: http_requests_per_second
+#       threshold: '100'
+#       query: sum(rate(http_requests_total{app="my-app"}[2m]))
+
