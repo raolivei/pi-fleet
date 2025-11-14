@@ -5,6 +5,8 @@ metadata:
   namespace: pihole
   annotations:
     cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
     traefik.ingress.kubernetes.io/headers.customrequestheaders: X-Forwarded-Proto=https
   labels:
     app: pihole
