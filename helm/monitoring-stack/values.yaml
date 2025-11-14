@@ -40,6 +40,11 @@ prometheus:
       scrape_interval: 30s
       scrape_timeout: 10s
       evaluation_interval: 30s
+    # Additional scrape configs for Traefik and other services
+    additionalScrapeConfigs: []
+    # ServiceMonitor and PodMonitor discovery
+    serviceMonitorSelectorNilUsesAll: true
+    podMonitorSelectorNilUsesAll: true
 
 # Grafana configuration
 grafana:

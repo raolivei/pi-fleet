@@ -48,3 +48,16 @@ app.kubernetes.io/name: {{ include "keda-scaledobjects.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
+{{/*
+Get service name for Prometheus query
+*/}}
+{{- define "keda-scaledobjects.serviceName" -}}
+{{- if .serviceName }}
+{{- .serviceName }}
+{{- else if .scaleTargetRef }}
+{{- .scaleTargetRef.name }}
+{{- else }}
+{{- printf "%s-%s" .namespace .component }}
+{{- end }}
+{{- end }}
+

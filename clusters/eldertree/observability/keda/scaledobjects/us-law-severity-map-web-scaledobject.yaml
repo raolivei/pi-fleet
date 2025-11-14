@@ -1,0 +1,24 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: us-law-severity-map-web-scaler
+  namespace: us-law-severity-map
+spec:
+  scaleTargetRef:
+    name: us-law-severity-map-web
+  minReplicaCount: 1  # Keep 1 for fast response
+  maxReplicaCount: 3
+  pollingInterval: 30
+  cooldownPeriod: 300
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80
+        metricName: http_requests_per_second
+        threshold: "10"
+        query: |
+          sum(rate(traefik_service_requests_total{
+            service="us-law-severity-map-web",
+            namespace="us-law-severity-map"
+          }[2m]))
+

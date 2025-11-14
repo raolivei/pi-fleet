@@ -103,5 +103,3 @@ Consider adding these observability components:
 - [ ] **cAdvisor** - Container resource usage and performance
 - [ ] **Loki** - Log aggregation
 - [ ] **Tempo** - Distributed tracing
-
-

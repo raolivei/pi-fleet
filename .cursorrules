@@ -60,6 +60,10 @@ pi-fleet/
 4. **Keep branches focused** - one feature/fix/task per branch
 5. **Merge to main only when truly complete** (stable, tested, documented)
 
+**Version Consistency:**
+
+- **Git tag versions must match Docker image tag versions** - When creating a release, ensure the git tag (e.g., `v1.2.3`) matches the Docker image tag used in deployment manifests and Helm charts
+
 **Example Workflow:**
 
 ```bash
