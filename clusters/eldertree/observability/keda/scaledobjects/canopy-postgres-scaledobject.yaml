@@ -1,0 +1,23 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: canopy-postgres-scaler
+  namespace: canopy
+spec:
+  scaleTargetRef:
+    name: canopy-postgres
+    kind: StatefulSet
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  pollingInterval: 30
+  cooldownPeriod: 300
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "50"
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
+

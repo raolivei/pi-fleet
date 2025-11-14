@@ -1,8 +1,11 @@
 # Default values for keda-scaledobjects
 # Global settings
 global:
+  prometheus:
+    serverAddress: "http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80"
   pollingInterval: 30
-  cooldownPeriod: 300
+  cooldownPeriod: 300 # 5 min cooldown period
+  # Keep CPU/Memory for stateful services
   cpuThreshold: "50"
   memoryThreshold: "80"
 
@@ -11,54 +14,69 @@ canopy:
   enabled: true
   api:
     enabled: true
-    minReplicas: 2
+    minReplicas: 0 # Scale to zero in standby
     maxReplicas: 5
+    triggerType: "http-rate"
+    httpRateThreshold: "5" # requests/sec to scale up
   frontend:
     enabled: true
-    minReplicas: 2
+    minReplicas: 1 # Keep 1 for fast response
     maxReplicas: 3
+    triggerType: "http-rate"
+    httpRateThreshold: "10" # requests/sec to scale up
   redis:
     enabled: true
-    minReplicas: 1
+    minReplicas: 1 # Keep at least 1 for stateful service
     maxReplicas: 3
+    triggerType: "cpu-memory"
   postgres:
     enabled: true
-    minReplicas: 1
+    minReplicas: 1 # Keep at least 1 for stateful service
     maxReplicas: 2
+    triggerType: "cpu-memory"
 
 # SwimTO namespace
 swimto:
   enabled: true
   api:
     enabled: true
-    minReplicas: 1
+    minReplicas: 0 # Scale to zero in standby
     maxReplicas: 5
+    triggerType: "http-rate"
+    httpRateThreshold: "5" # requests/sec to scale up
   web:
     enabled: true
-    minReplicas: 1
+    minReplicas: 1 # Keep 1 for fast response
     maxReplicas: 3
+    triggerType: "http-rate"
+    httpRateThreshold: "10" # requests/sec to scale up
   postgres:
     enabled: true
-    minReplicas: 1
+    minReplicas: 1 # Keep at least 1 for stateful service
     maxReplicas: 2
+    triggerType: "cpu-memory"
   redis:
     enabled: true
-    minReplicas: 1
+    minReplicas: 1 # Keep at least 1 for stateful service
     maxReplicas: 3
+    triggerType: "cpu-memory"
 
 # Nima namespace
 nima:
   enabled: true
   api:
     enabled: true
-    minReplicas: 2
+    minReplicas: 0 # Scale to zero in standby
     maxReplicas: 5
+    triggerType: "http-rate"
+    httpRateThreshold: "2" # Lower threshold for ML service
 
 # US Law Severity Map namespace
 usLawSeverityMap:
   enabled: true
   web:
     enabled: true
-    minReplicas: 2
+    minReplicas: 1 # Keep 1 for fast response
     maxReplicas: 3
-
+    triggerType: "http-rate"
+    httpRateThreshold: "10" # requests/sec to scale up

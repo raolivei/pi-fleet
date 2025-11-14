@@ -1,0 +1,24 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: swimto-web-scaler
+  namespace: swimto
+spec:
+  scaleTargetRef:
+    name: swimto-web
+  minReplicaCount: 1  # Keep 1 for fast response
+  maxReplicaCount: 3
+  pollingInterval: 30
+  cooldownPeriod: 300
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80
+        metricName: http_requests_per_second
+        threshold: "10"
+        query: |
+          sum(rate(traefik_service_requests_total{
+            service="swimto-web-service",
+            namespace="swimto"
+          }[2m]))
+

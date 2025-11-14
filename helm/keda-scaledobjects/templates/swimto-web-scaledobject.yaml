@@ -14,6 +14,18 @@ spec:
   pollingInterval: {{ .Values.global.pollingInterval }}
   cooldownPeriod: {{ .Values.global.cooldownPeriod }}
   triggers:
+{{- if eq (.Values.swimto.web.triggerType | default "cpu-memory") "http-rate" }}
+    - type: prometheus
+      metadata:
+        serverAddress: {{ .Values.global.prometheus.serverAddress }}
+        metricName: http_requests_per_second
+        threshold: {{ .Values.swimto.web.httpRateThreshold | default "10" | quote }}
+        query: |
+          sum(rate(traefik_service_requests_total{
+            service="swimto-web-service",
+            namespace="swimto"
+          }[2m]))
+{{- else }}
     - type: cpu
       metricType: Utilization
       metadata:
@@ -22,5 +34,6 @@ spec:
       metricType: Utilization
       metadata:
         value: {{ .Values.global.memoryThreshold | quote }}
+{{- end }}
 {{- end }}
 

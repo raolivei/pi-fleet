@@ -1,0 +1,24 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: canopy-api-scaler
+  namespace: canopy
+spec:
+  scaleTargetRef:
+    name: canopy-api
+  minReplicaCount: 0  # Scale to zero in standby
+  maxReplicaCount: 5
+  pollingInterval: 30
+  cooldownPeriod: 300
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80
+        metricName: http_requests_per_second
+        threshold: "5"
+        query: |
+          sum(rate(traefik_service_requests_total{
+            service="canopy-api",
+            namespace="canopy"
+          }[2m]))
+
