@@ -1,0 +1,26 @@
+{{- if and .Values.nima.enabled .Values.nima.api.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: nima-api-scaler
+  namespace: nima
+  labels:
+    {{- include "keda-scaledobjects.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: nima-api
+  minReplicaCount: {{ .Values.nima.api.minReplicas }}
+  maxReplicaCount: {{ .Values.nima.api.maxReplicas }}
+  pollingInterval: {{ .Values.global.pollingInterval }}
+  cooldownPeriod: {{ .Values.global.cooldownPeriod }}
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.cpuThreshold | quote }}
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.memoryThreshold | quote }}
+{{- end }}
+

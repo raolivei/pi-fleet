@@ -1,0 +1,26 @@
+{{- if and .Values.swimto.enabled .Values.swimto.api.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: swimto-api-scaler
+  namespace: swimto
+  labels:
+    {{- include "keda-scaledobjects.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: swimto-api
+  minReplicaCount: {{ .Values.swimto.api.minReplicas }}
+  maxReplicaCount: {{ .Values.swimto.api.maxReplicas }}
+  pollingInterval: {{ .Values.global.pollingInterval }}
+  cooldownPeriod: {{ .Values.global.cooldownPeriod }}
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.cpuThreshold | quote }}
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.memoryThreshold | quote }}
+{{- end }}
+

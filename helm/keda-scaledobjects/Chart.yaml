@@ -1,0 +1,7 @@
+apiVersion: v2
+name: keda-scaledobjects
+description: KEDA ScaledObjects for all application deployments in pi-fleet
+type: application
+version: 0.1.0
+appVersion: "1.0"
+

@@ -1,0 +1,26 @@
+{{- if and .Values.usLawSeverityMap.enabled .Values.usLawSeverityMap.web.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: us-law-severity-map-web-scaler
+  namespace: us-law-severity-map
+  labels:
+    {{- include "keda-scaledobjects.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: us-law-severity-map-web
+  minReplicaCount: {{ .Values.usLawSeverityMap.web.minReplicas }}
+  maxReplicaCount: {{ .Values.usLawSeverityMap.web.maxReplicas }}
+  pollingInterval: {{ .Values.global.pollingInterval }}
+  cooldownPeriod: {{ .Values.global.cooldownPeriod }}
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.cpuThreshold | quote }}
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.global.memoryThreshold | quote }}
+{{- end }}
+

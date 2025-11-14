@@ -34,6 +34,7 @@ pi-fleet/
 
 ### Helm Charts
 
+- **Use Helm charts where applicable** - Prefer Helm charts for deployments when suitable charts exist
 - Custom charts in `helm/`
 - Use Helm v4 compatible syntax
 - Document values.yaml
