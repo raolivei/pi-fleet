@@ -17,7 +17,36 @@ spec:
   values:
     server:
       dev:
+        enabled: false  # Production mode with persistence
+      
+      # Enable persistence for secrets
+      dataStorage:
         enabled: true
+        size: 10Gi
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+      
+      # Standalone mode (single-node cluster)
+      ha:
+        enabled: false
+      standalone:
+        enabled: true
+        config: |
+          ui = true
+          
+          listener "tcp" {
+            tls_disable = 1
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+          }
+          
+          storage "file" {
+            path = "/vault/data"
+          }
+          
+          # Disable mlock for non-root containers
+          disable_mlock = true
+      
       replicas: 1
       ui:
         enabled: true

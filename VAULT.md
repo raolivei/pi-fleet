@@ -1,6 +1,12 @@
 # Vault Secrets Management
 
-Vault stores secrets for all pi-fleet projects. External Secrets Operator automatically syncs secrets from Vault to Kubernetes.
+Vault stores secrets for all pi-fleet projects in **production mode with persistent storage**. External Secrets Operator automatically syncs secrets from Vault to Kubernetes.
+
+## Production Setup
+
+**✅ Persistence Enabled:** Vault now runs in production mode with persistent storage. Secrets survive pod restarts and Raspberry Pi reboots.
+
+**🔒 Manual Unsealing Required:** After each restart, Vault must be manually unsealed using 3 of 5 unseal keys.
 
 ## Quick Start
 
@@ -8,18 +14,43 @@ Vault stores secrets for all pi-fleet projects. External Secrets Operator automa
 # Set kubeconfig
 export KUBECONFIG=~/.kube/config-eldertree
 
+# After restart, unseal Vault
+./scripts/unseal-vault.sh
+
 # External Secrets Operator syncs automatically
-# Manual sync (legacy): ./scripts/sync-vault-to-k8s.sh
 ```
 
-## Setup External Secrets Operator
+## Initial Setup (One-Time)
 
-Create Vault token secret:
+If migrating from dev mode or setting up fresh, see [VAULT_MIGRATION.md](docs/VAULT_MIGRATION.md).
 
+### Quick Setup Steps:
+
+1. **Initialize Vault** (one-time only):
 ```bash
-VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
-VAULT_TOKEN=$(kubectl logs -n vault $VAULT_POD | grep "Root Token" | awk '{print $NF}')
-kubectl create secret generic vault-token --from-literal=token=$VAULT_TOKEN -n external-secrets
+kubectl exec -n vault vault-0 -- vault operator init
+```
+**⚠️ SAVE THE OUTPUT:** You'll get 5 unseal keys and 1 root token. Store these securely!
+
+2. **Unseal Vault** (requires 3 keys):
+```bash
+./scripts/unseal-vault.sh
+```
+
+3. **Login to Vault**:
+```bash
+kubectl exec -n vault vault-0 -- vault login
+# Enter your root token
+```
+
+4. **Create secrets** (see Secret Paths section below)
+
+5. **Setup External Secrets Operator**:
+```bash
+# Create token secret with your root token
+kubectl create secret generic vault-token \
+  --from-literal=token=YOUR_ROOT_TOKEN_HERE \
+  -n external-secrets
 ```
 
 ## Secret Paths
@@ -51,6 +82,44 @@ kubectl create secret generic vault-token --from-literal=token=$VAULT_TOKEN -n e
 ### NIMA
 - (No secrets currently required, placeholder configured for future use)
 
+## After Raspberry Pi Restart
+
+When your Raspberry Pi reboots, Vault starts in a **sealed state**. Follow these steps:
+
+```bash
+# Set kubeconfig
+export KUBECONFIG=~/.kube/config-eldertree
+
+# Wait for Vault pod to be ready
+kubectl wait --for=condition=ready pod/vault-0 -n vault --timeout=300s
+
+# Unseal Vault (you'll be prompted for 3 keys)
+./scripts/unseal-vault.sh
+
+# Verify Vault is unsealed
+kubectl exec -n vault vault-0 -- vault status
+```
+
+External Secrets Operator will automatically resume syncing once Vault is unsealed.
+
+## Backup and Restore
+
+### Backup Secrets
+
+```bash
+# Backup all secrets to JSON file
+./scripts/backup-vault-secrets.sh > vault-backup-$(date +%Y%m%d).json
+```
+
+**⚠️ Store backups securely!** They contain all your secrets in plain text.
+
+### Restore Secrets
+
+```bash
+# Restore from backup
+./scripts/restore-vault-secrets.sh vault-backup-20250115.json
+```
+
 ## Access Vault
 
 ```bash
@@ -58,7 +127,7 @@ kubectl create secret generic vault-token --from-literal=token=$VAULT_TOKEN -n e
 kubectl port-forward -n vault svc/vault 8200:8200
 
 # Access UI: https://localhost:8200
-# Dev mode token: (check pod logs)
+# Login with your root token
 ```
 
 ## Manual Operations
@@ -121,3 +190,73 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/us-law-severity-map/mapb
 ```
 
 **Note:** All secrets are automatically synced to Kubernetes by External Secrets Operator within 24 hours, or immediately on ExternalSecret resource creation/update.
+
+## Troubleshooting
+
+### Vault is Sealed After Restart
+
+This is expected behavior. Run:
+```bash
+./scripts/unseal-vault.sh
+```
+
+### Lost Unseal Keys
+
+⚠️ **Critical:** If you lose your unseal keys, you cannot access Vault data. You must:
+1. Delete the Vault PVC (destroys all secrets)
+2. Re-initialize Vault
+3. Re-enter all secrets
+
+**Prevention:** Always backup unseal keys securely (password manager, encrypted file, etc.)
+
+### External Secrets Not Syncing
+
+Check if Vault is unsealed:
+```bash
+kubectl exec -n vault vault-0 -- vault status
+```
+
+Check External Secrets Operator logs:
+```bash
+kubectl logs -n external-secrets deployment/external-secrets
+```
+
+Verify token secret:
+```bash
+kubectl get secret vault-token -n external-secrets
+```
+
+### Check Secret Sync Status
+
+```bash
+# List all ExternalSecrets
+kubectl get externalsecrets -A
+
+# Check specific ExternalSecret
+kubectl describe externalsecret grafana-admin -n monitoring
+
+# Verify synced Kubernetes secret
+kubectl get secret grafana-admin -n monitoring -o yaml
+```
+
+## Migration from Dev Mode
+
+If you're migrating from the previous dev mode setup (without persistence), see the complete guide:
+
+**[docs/VAULT_MIGRATION.md](docs/VAULT_MIGRATION.md)**
+
+## Security Best Practices
+
+1. **Store unseal keys securely** - Use password manager or split among trusted individuals
+2. **Backup secrets regularly** - Run `./scripts/backup-vault-secrets.sh` weekly
+3. **Rotate root token periodically** - Generate new tokens for applications
+4. **Use policies** - Don't use root token for applications (future enhancement)
+5. **Enable audit logging** - Track all Vault access (future enhancement)
+
+## Future Enhancements
+
+- Auto-unseal using cloud KMS or Kubernetes secrets
+- Vault policies for least-privilege access
+- Automated backup to external storage
+- High availability (HA) mode for multi-node
+- Audit logging for security compliance

@@ -10,13 +10,25 @@
   - SwimTO secrets
   - US Law Severity Map secrets
 - WireGuard quickstart and setup guides
+- **Vault production mode with persistent storage** - secrets now survive restarts
+- Vault management scripts:
+  - `scripts/unseal-vault.sh` - Convenient unsealing after restarts
+  - `scripts/backup-vault-secrets.sh` - Backup all secrets to JSON
+  - `scripts/restore-vault-secrets.sh` - Restore secrets from backup
+- Comprehensive Vault migration guide (`docs/VAULT_MIGRATION.md`)
 
 ### Changed
+- **BREAKING:** Vault migrated from dev mode to production mode with persistence
+  - Requires manual unsealing after each restart (3 of 5 unseal keys)
+  - Root token and unseal keys must be stored securely
+  - See VAULT_MIGRATION.md for migration steps
 - Updated .cursorrules for project conventions
 - Updated NETWORK.md documentation
-- Updated VAULT.md documentation
+- Updated VAULT.md documentation with production setup instructions
+- Updated AI_SETUP_PROMPT.md to reflect production Vault configuration
 - Updated Canopy deployment manifests (deploy.yaml, middleware.yaml, service.yaml)
 - Updated External Secrets kustomization configuration
+- Vault HelmRelease now uses file storage backend with 10Gi PVC
 
 ## [Unreleased]
 

@@ -181,7 +181,7 @@ spec:
 ### 7. Deploy Vault for Secrets Management
 
 ```yaml
-# HelmRelease for Vault (dev mode for single-node)
+# HelmRelease for Vault (production mode with persistence)
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -198,7 +198,35 @@ spec:
   values:
     server:
       dev:
-        enabled: true  # Dev mode for single-node (no persistence)
+        enabled: false  # Production mode with persistence
+      
+      # Enable persistence for secrets
+      dataStorage:
+        enabled: true
+        size: 10Gi
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+      
+      # Standalone mode (single-node cluster)
+      ha:
+        enabled: false
+      standalone:
+        enabled: true
+        config: |
+          ui = true
+          
+          listener "tcp" {
+            tls_disable = 1
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+          }
+          
+          storage "file" {
+            path = "/vault/data"
+          }
+          
+          disable_mlock = true
+      
       ui:
         enabled: true
       ingress:
@@ -214,7 +242,13 @@ spec:
           cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
 ```
 
-**Important:** Vault runs in dev mode (no persistence). Root token is logged on startup. For production, configure proper storage backend.
+**Important:** Vault runs in production mode with persistent storage. After deployment:
+1. Initialize Vault: `kubectl exec -n vault vault-0 -- vault operator init`
+2. Save the 5 unseal keys and root token securely
+3. Unseal Vault using 3 keys: `./scripts/unseal-vault.sh`
+4. After each restart, unseal Vault again
+
+See [VAULT.md](../VAULT.md) and [VAULT_MIGRATION.md](VAULT_MIGRATION.md) for details.
 
 ### 8. Deploy External Secrets Operator
 
