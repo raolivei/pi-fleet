@@ -14,6 +14,8 @@ spec:
     metadata:
       labels:
         app: swimto-web
+      annotations:
+        deployment.kubernetes.io/revision: "2025-11-15-v0.4.0"
     spec:
       securityContext:
         runAsNonRoot: true
