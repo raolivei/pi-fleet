@@ -10,3 +10,4 @@ resources:
   - web-deployment.yaml
   - ingress.yaml
   - cronjob-refresh.yaml
+  - facility-url-validator-cronjob.yaml
