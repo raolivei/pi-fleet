@@ -4,9 +4,9 @@ kind: Kustomization
 # Example: To disable nima, change '  - nima' to '  # - nima'
 resources:
   - infrastructure # Cert-manager, Vault, External-DNS, External-Secrets, Pi-hole
-  - monitoring # Monitoring stack (currently empty)
-  - observability # KEDA autoscaling
-  - canopy # Personal finance dashboard
+  # - monitoring # Monitoring stack (currently empty)
+  # - observability # KEDA autoscaling
+  # - canopy # Personal finance dashboard
   - swimto # Toronto pool schedules
   # - nima          # AI/ML learning project (DISABLED - not needed)
   # - journey       # AI-powered career pathfinder (DISABLED - not deployed yet)
