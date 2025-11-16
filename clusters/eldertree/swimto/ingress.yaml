@@ -5,17 +5,19 @@ metadata:
   name: swimto
   namespace: swimto
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
-    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # HTTPS disabled - cert-manager not available in fresh cluster
+    # traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
+    # cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
   labels:
     app: swimto
 spec:
   ingressClassName: traefik
-  tls:
-    - hosts:
-        - swimto.eldertree.local
-      secretName: swimto-tls
+  # TLS disabled - cert-manager not available in fresh cluster
+  # tls:
+  #   - hosts:
+  #       - swimto.eldertree.local
+  #     secretName: swimto-tls
   rules:
     - host: swimto.eldertree.local
       http:
