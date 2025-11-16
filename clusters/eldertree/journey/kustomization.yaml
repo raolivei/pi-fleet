@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - api-deployment.yaml
+  - frontend-deployment.yaml
+  - postgres-deployment.yaml
+  - postgres-pvc.yaml
+  - redis-deployment.yaml
+  - ingress.yaml
+  # Note: secrets-template.yaml is a template, not deployed via kustomization
+

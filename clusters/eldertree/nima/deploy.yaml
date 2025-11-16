@@ -1,0 +1,66 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nima-api
+  namespace: nima
+  labels:
+    app: nima
+    component: api
+spec:
+  replicas: 0 # Disabled - nima not needed at the moment
+  selector:
+    matchLabels:
+      app: nima
+      component: api
+  template:
+    metadata:
+      labels:
+        app: nima
+        component: api
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: api
+          image: ghcr.io/raolivei/nima-api:v0.3.2
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: NIMA_CHECKPOINT_PATH
+              value: "/app/experiments/nima_technical/checkpoint_best.pt"
+            - name: NIMA_TOKENIZER_PATH
+              value: "/app/data/processed/technical_example/tokenizer_bpe.json"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          volumeMounts:
+            - name: model-data
+              mountPath: /app/experiments
+            - name: tokenizer-data
+              mountPath: /app/data/processed
+      volumes:
+        - name: model-data
+          persistentVolumeClaim:
+            claimName: nima-model-pvc
+        - name: tokenizer-data
+          persistentVolumeClaim:
+            claimName: nima-tokenizer-pvc

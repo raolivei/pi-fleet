@@ -1,0 +1,36 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nima
+  namespace: nima
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+  labels:
+    app: nima
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - nima.eldertree.local
+      secretName: nima-tls
+  rules:
+    - host: nima.eldertree.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: nima-api
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nima-frontend
+                port:
+                  number: 3000

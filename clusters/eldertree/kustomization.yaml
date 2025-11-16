@@ -1,8 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+# To disable a deployment, simply comment out its line below with '#'
+# Example: To disable nima, change '  - nima' to '  # - nima'
 resources:
-  - infrastructure # cert-manager + issuers
-  - monitoring # kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
-  - observability # Netdata, Grafana Agent, cAdvisor, Kubernetes Dashboard, metrics-server, KEDA
+  - infrastructure # Cert-manager, Vault, External-DNS, External-Secrets, Pi-hole
+  - monitoring # Monitoring stack (currently empty)
+  - observability # KEDA autoscaling
   - canopy # Personal finance dashboard
-  - swimto # SwimTO pool schedule app
+  - swimto # Toronto pool schedules
+  # - nima          # AI/ML learning project (DISABLED - not needed)
+  # - journey       # AI-powered career pathfinder (DISABLED - not deployed yet)
+  # - us-law-severity-map  # US law visualization (DISABLED - not deployed yet)
