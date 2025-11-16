@@ -17,6 +17,8 @@ spec:
       annotations:
         deployment.kubernetes.io/revision: "2025-11-15-v0.4.0"
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
