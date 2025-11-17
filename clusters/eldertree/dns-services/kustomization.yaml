@@ -7,3 +7,5 @@ resources:
   - external-dns # Automated DNS record management for external DNS providers
   - wireguard # WireGuard VPN server for secure remote access
 
+
+

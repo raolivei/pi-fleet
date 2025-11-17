@@ -6,3 +6,5 @@ resources:
   - cert-manager # TLS certificate management using cert-manager
   - issuers # ClusterIssuer resources (self-signed certificates)
 
+
+

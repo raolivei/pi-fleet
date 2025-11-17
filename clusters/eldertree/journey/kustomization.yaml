@@ -9,3 +9,5 @@ resources:
   - redis-deployment.yaml
   - ingress.yaml
   # Note: secrets-template.yaml is a template, not deployed via kustomization
+
+

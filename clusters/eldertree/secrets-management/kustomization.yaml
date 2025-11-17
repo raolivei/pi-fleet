@@ -6,3 +6,5 @@ resources:
   - vault # HashiCorp Vault (production mode with persistent storage)
   - external-secrets # External Secrets Operator for automatic secret syncing from Vault
 
+
+

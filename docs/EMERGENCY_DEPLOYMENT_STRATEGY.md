@@ -312,3 +312,5 @@ The goal is **NOT** to bypass GitOps regularly, but to have a well-documented es
 - [GitOps Principles](https://opengitops.dev/)
 - [Cluster README](../clusters/eldertree/README.md)
 - [Troubleshooting Guide](./TROUBLESHOOTING.md)
+
+

@@ -43,6 +43,7 @@ eldertree/
 ```
 
 **Benefits**:
+
 - Clearer organization
 - Easier to enable/disable entire groups
 - Better documentation
@@ -55,8 +56,8 @@ eldertree/
   - Admin user: `admin`
   - Admin password: `admin` (stored in Vault)
   - Status: ✅ Running and ready
-  
-- **Prometheus**: https://prometheus.eldertree.local  
+- **Prometheus**: https://prometheus.eldertree.local
+
   - Status: ✅ Running and ready
   - Persistent storage: 8Gi
 
@@ -109,16 +110,19 @@ swimto            swimto-web                                   Running ✅
 ## 🚀 Access Your Services
 
 ### Grafana
+
 1. Navigate to: https://grafana.eldertree.local
 2. Login with:
    - Username: `admin`
    - Password: `admin`
 
 ### Prometheus
+
 1. Navigate to: https://prometheus.eldertree.local
 2. No authentication required (internal only)
 
 ### Vault
+
 1. Navigate to: https://vault.eldertree.local
 2. Login with root token (see VAULT.md or your password manager)
 
@@ -169,4 +173,3 @@ All changes have been committed and pushed to `main`:
 **Deployment Date**: November 17, 2025  
 **Cluster**: eldertree (Raspberry Pi k3s)  
 **Status**: ✅ ALL SYSTEMS OPERATIONAL
-
