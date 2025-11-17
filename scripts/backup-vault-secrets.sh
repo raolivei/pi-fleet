@@ -44,6 +44,9 @@ SECRET_PATHS=(
     "secret/swimto/api-keys"
     "secret/swimto/oauth"
     "secret/us-law-severity-map/mapbox"
+    "secret/journey/postgres"
+    "secret/journey/database"
+    "secret/external-dns/tsig-secret"
 )
 
 # Start JSON array

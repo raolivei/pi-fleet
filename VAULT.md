@@ -60,8 +60,9 @@ kubectl create secret generic vault-token \
 
 ### Infrastructure
 - `secret/pihole/webpassword` - Pi-hole web admin password
-- `secret/flux/git` - Flux Git SSH private key
+- `secret/flux/git` - Flux Git SSH private key (`sshKey`)
 - `secret/canopy/ghcr-token` - GitHub Container Registry token
+- `secret/external-dns/tsig-secret` - External DNS TSIG secret for RFC2136 DNS updates
 
 ### Canopy Application
 - `secret/canopy/postgres` - Canopy PostgreSQL password
@@ -75,6 +76,10 @@ kubectl create secret generic vault-token \
 - `secret/swimto/app` - SwimTO admin token and secret key
 - `secret/swimto/api-keys` - OpenAI and Leonardo.ai API keys
 - `secret/swimto/oauth` - Google OAuth client ID and secret
+
+### Journey Application
+- `secret/journey/postgres` - Journey PostgreSQL password and user (`password`, `user`)
+- `secret/journey/database` - Journey database URL (`url`)
 
 ### US Law Severity Map
 - `secret/us-law-severity-map/mapbox` - Mapbox API token
@@ -158,6 +163,8 @@ External Secrets Operator syncs secrets from Vault to Kubernetes automatically. 
 ### Applications
 - `canopy/canopy-secrets` - Canopy database, app secrets
 - `swimto/swimto-secrets` - SwimTO database, Redis, API keys, OAuth
+- `journey/journey-secrets` - Journey database credentials and URL
+- `external-dns/external-dns-tsig-secret` - External DNS TSIG secret
 - `us-law-severity-map/us-law-severity-map-secrets` - Mapbox token
 - `nima/nima-secrets` - NIMA secrets (placeholder for future use)
 

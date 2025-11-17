@@ -8,6 +8,8 @@ resources:
   - pihole-secrets.yaml
   - swimto-secrets.yaml
   - us-law-severity-map-secrets.yaml
+  - journey-secrets.yaml
+  - external-dns-tsig-secret.yaml
   # Note: nima-secrets.yaml not included as NIMA has no secrets currently
   # When secrets are needed, uncomment and add data section
 
