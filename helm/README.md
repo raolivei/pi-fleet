@@ -14,12 +14,17 @@ Custom cert-manager ClusterIssuers (self-signed, ACME).
 
 Complete monitoring solution with Prometheus and Grafana.
 
+### flux-ui
+
+Flux UI (Weave GitOps) for visualizing and managing FluxCD deployments.
+
 ## Structure
 
 ```
 helm/
 ├── cert-manager-issuers/
 ├── monitoring-stack/
+├── flux-ui/
 └── <chart-name>/
     ├── Chart.yaml
     ├── values.yaml

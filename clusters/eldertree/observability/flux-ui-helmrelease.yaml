@@ -1,0 +1,70 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: flux-ui
+  namespace: observability
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: weave-gitops
+      version: ">=0.9.0"
+      sourceRef:
+        kind: HelmRepository
+        name: weave-gitops
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: observability
+  install:
+    createNamespace: false
+  upgrade:
+    cleanupOnFail: true
+  values:
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 9001
+    
+    # Ingress configuration
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      hosts:
+        - host: flux-ui.eldertree.local
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: flux-ui-tls
+          hosts:
+            - flux-ui.eldertree.local
+      annotations:
+        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    
+    # Resource limits for Raspberry Pi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    
+    # Replica count
+    replicaCount: 1
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      fsGroup: 65534
+    
+    # Service account
+    serviceAccount:
+      create: true
+      name: flux-ui
+    
+    # RBAC - Weave GitOps needs cluster-admin to manage Flux resources
+    rbac:
+      create: true
+      clusterRole: true
