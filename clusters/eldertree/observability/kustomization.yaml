@@ -3,7 +3,7 @@ kind: Kustomization
 # Observability - Monitoring, metrics, and logging infrastructure
 resources:
   - namespace.yaml # Observability namespace
-  - weave-gitops-helmrepository.yaml # HelmRepository for Weave GitOps (dependency of flux-ui chart)
+  - weave-gitops-gitrepository.yaml # GitRepository for Weave GitOps charts (from GitHub)
   - monitoring-stack-helmrelease.yaml # Prometheus + Grafana monitoring stack
   - flux-ui-helmrelease.yaml # Flux UI (Weave GitOps) for managing FluxCD resources
   # - traefik-servicemonitor.yaml # Traefik metrics (requires Prometheus CRDs, enable after monitoring-stack is deployed)
