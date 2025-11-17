@@ -7,8 +7,8 @@ resources:
   # - ghcr-secret.yaml # DISABLED - canopy namespace not created (canopy app disabled)
   - pihole-secrets.yaml
   - swimto-secrets.yaml
-  - us-law-severity-map-secrets.yaml
-  - journey-secrets.yaml
+  # - us-law-severity-map-secrets.yaml # DISABLED - us-law-severity-map namespace not created (app disabled)
+  # - journey-secrets.yaml # DISABLED - journey namespace not created (journey app disabled)
   - external-dns-tsig-secret.yaml
   # Note: nima-secrets.yaml not included as NIMA has no secrets currently
   # When secrets are needed, uncomment and add data section
