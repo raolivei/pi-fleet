@@ -73,4 +73,4 @@ spec:
       create: true
       createClusterRole: true
       username: admin
-      # Password will be generated automatically if not specified
+      passwordHash: "$2y$10$b9.2/PghT0wFR1VVeEt10.nJ6JxfKMAto5YpIFehLISdeeqP.PuQC" # Password: admin123
