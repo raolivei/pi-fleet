@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Secrets management infrastructure
+# Vault stores secrets, External Secrets Operator syncs them to Kubernetes
+resources:
+  - vault # HashiCorp Vault (production mode with persistent storage)
+  - external-secrets # External Secrets Operator for automatic secret syncing from Vault
+
