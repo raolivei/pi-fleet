@@ -9,8 +9,7 @@ resources:
   - dns-services # DNS and networking (pihole, external-dns, wireguard)
 
   # Observability
-  - monitoring # Monitoring stack (Prometheus, Grafana, Alertmanager)
-  # - observability # KEDA autoscaling
+  - observability # Monitoring stack (Prometheus, Grafana, Alertmanager) + KEDA autoscaling
 
   # Applications
   # - canopy # Personal finance dashboard
