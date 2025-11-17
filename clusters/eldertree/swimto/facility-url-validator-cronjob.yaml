@@ -56,4 +56,4 @@ spec:
                 memory: "256Mi"
                 cpu: "200m"
           imagePullSecrets:
-          - name: ghcr-pull-secret
+          - name: ghcr-secret

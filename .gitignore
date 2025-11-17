@@ -32,3 +32,8 @@ Thumbs.db
 *.log
 
 vault-backup-*.json
+
+# WireGuard client configurations (contain private keys)
+clusters/eldertree/wireguard/clients/*.conf
+clusters/eldertree/wireguard/clients/*.private
+clusters/eldertree/wireguard/clients/*.png
