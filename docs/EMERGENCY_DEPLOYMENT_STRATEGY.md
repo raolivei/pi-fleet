@@ -34,6 +34,7 @@ kubectl apply → Cluster (bypassing Flux)
 Each project maintains **two copies** of Kubernetes manifests:
 
 1. **Project Repository** (`<project>/k8s/`)
+
    - Owned by project team
    - Used for emergency deployments
    - Version controlled with project code
@@ -48,35 +49,38 @@ Each project maintains **two copies** of Kubernetes manifests:
 ✅ **Emergency access**: Deploy without FluxCD dependency  
 ✅ **Project autonomy**: Each project owns its manifests  
 ✅ **Git history**: Changes tracked in project repos  
-✅ **Disaster recovery**: Manifests available if pi-fleet is unavailable  
+✅ **Disaster recovery**: Manifests available if pi-fleet is unavailable
 
 ## Project Emergency Scripts
 
 Each project has three scripts in `scripts/`:
 
 ### 1. `emergency-deploy.sh`
+
 - Suspends Flux reconciliation
 - Applies manifests directly to cluster
 - Shows deployment status
 
 ### 2. `resume-flux.sh`
+
 - Resumes Flux reconciliation
 - Forces immediate sync
 - Restores GitOps control
 
 ### 3. `validate-k8s-sync.sh`
+
 - Compares project manifests with pi-fleet
 - Detects drift between copies
 - Prevents deployment of stale manifests
 
 ## Projects Using This Strategy
 
-| Project | Status | Emergency Scripts | Documentation |
-|---------|--------|------------------|---------------|
-| swimTO | ✅ Active in Flux | ✅ Installed | [EMERGENCY_DEPLOYMENT.md](../../swimTO/EMERGENCY_DEPLOYMENT.md) |
-| canopy | 💤 Disabled in Flux | ✅ Installed | [EMERGENCY_DEPLOYMENT.md](../../canopy/EMERGENCY_DEPLOYMENT.md) |
-| journey | 💤 Disabled in Flux | ✅ Installed | [EMERGENCY_DEPLOYMENT.md](../../journey/EMERGENCY_DEPLOYMENT.md) |
-| nima | 💤 Disabled in Flux | ✅ Installed | [EMERGENCY_DEPLOYMENT.md](../../nima/EMERGENCY_DEPLOYMENT.md) |
+| Project | Status              | Emergency Scripts | Documentation                                                    |
+| ------- | ------------------- | ----------------- | ---------------------------------------------------------------- |
+| swimTO  | ✅ Active in Flux   | ✅ Installed      | [EMERGENCY_DEPLOYMENT.md](../../swimTO/EMERGENCY_DEPLOYMENT.md)  |
+| canopy  | 💤 Disabled in Flux | ✅ Installed      | [EMERGENCY_DEPLOYMENT.md](../../canopy/EMERGENCY_DEPLOYMENT.md)  |
+| journey | 💤 Disabled in Flux | ✅ Installed      | [EMERGENCY_DEPLOYMENT.md](../../journey/EMERGENCY_DEPLOYMENT.md) |
+| nima    | 💤 Disabled in Flux | ✅ Installed      | [EMERGENCY_DEPLOYMENT.md](../../nima/EMERGENCY_DEPLOYMENT.md)    |
 
 ## When to Use Emergency Deployment
 
@@ -100,6 +104,7 @@ Each project has three scripts in `scripts/`:
 ### Standard Process
 
 1. **Confirm Emergency**
+
    ```bash
    # Check if Flux is actually down
    flux get kustomizations -A
@@ -107,44 +112,51 @@ Each project has three scripts in `scripts/`:
    ```
 
 2. **Navigate to Project**
+
    ```bash
    cd /Users/roliveira/WORKSPACE/raolivei/<project>
    ```
 
 3. **Validate Manifests**
+
    ```bash
    ./scripts/validate-k8s-sync.sh
    ```
 
 4. **Deploy**
+
    ```bash
    ./scripts/emergency-deploy.sh
    ```
 
 5. **Verify**
+
    ```bash
    kubectl get pods -n <project>
    kubectl logs -n <project> -l app=<component>
    ```
 
 6. **Document**
+
    - Note what was deployed
    - Why emergency deployment was needed
    - Timestamp and outcome
 
 7. **Resume Flux**
+
    ```bash
    ./scripts/resume-flux.sh
    ```
 
 8. **Commit Changes**
+
    ```bash
    # If you made changes to manifests
    cd pi-fleet
    git add clusters/eldertree/<project>/
    git commit -m "Emergency update: <description>"
    git push
-   
+
    cd ../<project>
    git add k8s/
    git commit -m "Emergency update: <description>"
@@ -236,6 +248,7 @@ kubectl rollout restart -n flux-system deployment/source-controller
 **Cause**: Changes not committed to Git
 
 **Solution**:
+
 ```bash
 # 1. Suspend Flux again
 flux suspend kustomization flux-system --namespace flux-system
@@ -299,4 +312,3 @@ The goal is **NOT** to bypass GitOps regularly, but to have a well-documented es
 - [GitOps Principles](https://opengitops.dev/)
 - [Cluster README](../clusters/eldertree/README.md)
 - [Troubleshooting Guide](./TROUBLESHOOTING.md)
-
