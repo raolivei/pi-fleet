@@ -8,4 +8,3 @@ spec:
   url: https://github.com/weaveworks/weave-gitops
   ref:
     branch: main
-
