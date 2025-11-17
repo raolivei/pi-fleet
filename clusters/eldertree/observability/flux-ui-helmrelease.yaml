@@ -67,3 +67,10 @@ spec:
     rbac:
       create: true
       clusterRole: true
+    
+    # Admin user configuration - required for authentication
+    adminUser:
+      create: true
+      createClusterRole: true
+      username: admin
+      # Password will be generated automatically if not specified
