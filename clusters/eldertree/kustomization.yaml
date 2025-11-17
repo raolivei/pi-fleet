@@ -8,8 +8,9 @@ resources:
   - secrets-management # Secrets storage and syncing (vault, external-secrets)
   - dns-services # DNS and networking (pihole, external-dns, wireguard)
 
-  # Observability
-  - observability # Monitoring stack (Prometheus, Grafana, Alertmanager) + KEDA autoscaling
+  # Observability & Autoscaling
+  - observability # Monitoring stack (Prometheus, Grafana, Alertmanager)
+  - autoscaling # KEDA event-driven autoscaling
 
   # Applications
   # - canopy # Personal finance dashboard
