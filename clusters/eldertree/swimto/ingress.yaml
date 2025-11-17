@@ -76,3 +76,51 @@ spec:
                 name: swimto-web-service
                 port:
                   number: 3000
+---
+# HTTP-only Ingress for IP access (mobile/iPhone via WireGuard)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: swimto-api-ip
+  namespace: swimto
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: swimto-api-path-rewrite@kubernetescrd
+    traefik.ingress.kubernetes.io/router.priority: "10"
+  labels:
+    app: swimto
+spec:
+  ingressClassName: traefik
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: swimto-api-service
+                port:
+                  number: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: swimto-web-ip
+  namespace: swimto
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.priority: "10"
+  labels:
+    app: swimto
+spec:
+  ingressClassName: traefik
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: swimto-web-service
+                port:
+                  number: 3000
