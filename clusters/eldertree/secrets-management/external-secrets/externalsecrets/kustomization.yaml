@@ -3,8 +3,8 @@ kind: Kustomization
 resources:
   - grafana-admin.yaml
   - flux-git-ssh.yaml
-  - canopy-secrets.yaml
-  - ghcr-secret.yaml
+  # - canopy-secrets.yaml # DISABLED - canopy namespace not created (canopy app disabled)
+  # - ghcr-secret.yaml # DISABLED - canopy namespace not created (canopy app disabled)
   - pihole-secrets.yaml
   - swimto-secrets.yaml
   - us-law-severity-map-secrets.yaml
