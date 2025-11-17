@@ -3,7 +3,7 @@ kind: Kustomization
 # To disable a deployment, simply comment out its line below with '#'
 # Example: To disable nima, change '  - nima' to '  # - nima'
 resources:
-  # - infrastructure # Cert-manager, Vault, External-DNS, External-Secrets, Pi-hole (DISABLED - too heavy for fresh cluster)
+  - infrastructure # WireGuard VPN and core infrastructure
   # - monitoring # Monitoring stack (currently empty)
   # - observability # KEDA autoscaling
   # - canopy # Personal finance dashboard

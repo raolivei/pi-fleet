@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "wireguard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wireguard.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "wireguard.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "wireguard.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+      {{- if .Values.initContainers.enabled }}
+      - name: init-wireguard
+        image: alpine:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "Preparing WireGuard configuration..."
+          
+          # Install wireguard-tools
+          apk add --no-cache wireguard-tools gettext
+          
+          # Generate keys if they don't exist
+          if [ ! -f /config/privatekey ]; then
+            echo "Generating WireGuard private key..."
+            wg genkey > /config/privatekey
+            wg pubkey < /config/privatekey > /config/publickey
+            chmod 600 /config/privatekey
+            chmod 644 /config/publickey
+            echo "Keys generated!"
+          else
+            echo "Private key already exists"
+          fi
+          
+          # Read the private key
+          echo "Reading private key from /config/privatekey..."
+          ls -la /config/privatekey || echo "File not found!"
+          WG_PRIVATE_KEY=$(cat /config/privatekey)
+          echo "Private key length: ${#WG_PRIVATE_KEY}"
+          
+          if [ -z "$WG_PRIVATE_KEY" ]; then
+            echo "ERROR: Private key is empty! Regenerating..."
+            wg genkey > /config/privatekey
+            wg pubkey < /config/privatekey > /config/publickey
+            chmod 600 /config/privatekey
+            chmod 644 /config/publickey
+            WG_PRIVATE_KEY=$(cat /config/privatekey)
+            echo "New key generated. Length: ${#WG_PRIVATE_KEY}"
+          fi
+          
+          # Write config directly using echo
+          mkdir -p /config/wg_confs
+          {
+            echo "[Interface]"
+            echo "Address = {{ .Values.wireguard.serverAddress }}"
+            echo "ListenPort = {{ .Values.wireguard.port }}"
+            echo "PrivateKey = $WG_PRIVATE_KEY"
+            echo ""
+            {{- if .Values.customScripts.enabled }}
+            echo "PostUp = iptables -A FORWARD -i wg0 -j ACCEPT"
+            echo "PostUp = iptables -A FORWARD -o wg0 -j ACCEPT"
+            echo "PostUp = iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 10.42.0.0/16 -j MASQUERADE"
+            echo "PostUp = iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 10.43.0.0/16 -j MASQUERADE"
+            echo "PostUp = iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d {{ (index .Values.wireguard.allowedNetworks 2) }} -j MASQUERADE"
+            echo "PostDown = iptables -D FORWARD -i wg0 -j ACCEPT"
+            echo "PostDown = iptables -D FORWARD -o wg0 -j ACCEPT"
+            echo "PostDown = iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d 10.42.0.0/16 -j MASQUERADE"
+            echo "PostDown = iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d 10.43.0.0/16 -j MASQUERADE"
+            echo "PostDown = iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d {{ (index .Values.wireguard.allowedNetworks 2) }} -j MASQUERADE"
+            {{- end }}
+            {{- range .Values.wireguard.peers }}
+            echo ""
+            echo "# Client: {{ .name }}"
+            echo "[Peer]"
+            echo "PublicKey = {{ .publicKey }}"
+            echo "AllowedIPs = {{ .allowedIPs }}"
+            {{- if .persistentKeepalive }}
+            echo "PersistentKeepalive = {{ .persistentKeepalive }}"
+            {{- end }}
+            {{- end }}
+          } > /config/wg_confs/wg0.conf
+          chmod 600 /config/wg_confs/wg0.conf
+          
+          echo "Configuration prepared successfully!"
+          echo "Config contents:"
+          cat /config/wg_confs/wg0.conf
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: wg-config
+          mountPath: /wg-config-template
+        securityContext:
+          runAsUser: 0
+      {{- end }}
+      containers:
+      - name: wireguard
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: {{ .Values.env.TZ | quote }}
+        - name: SERVERURL
+          value: {{ .Values.env.SERVERURL | quote }}
+        - name: SERVERPORT
+          value: {{ .Values.env.SERVERPORT | quote }}
+        - name: PEERDNS
+          value: {{ .Values.env.PEERDNS | quote }}
+        - name: INTERNAL_SUBNET
+          value: {{ .Values.env.INTERNAL_SUBNET | quote }}
+        - name: ALLOWEDIPS
+          value: {{ .Values.env.ALLOWEDIPS | quote }}
+        - name: LOG_CONFS
+          value: "true"
+        ports:
+        - name: wireguard
+          containerPort: {{ .Values.wireguard.port }}
+          protocol: UDP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: modules
+          mountPath: /lib/modules
+          readOnly: true
+        {{- if .Values.dns.enabled }}
+        - name: dns-config
+          mountPath: /etc/dnsmasq.conf
+          subPath: dnsmasq.conf
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - test
+            - -f
+            - /config/wg_confs/wg0.conf
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - test
+            - -f
+            - /config/wg_confs/wg0.conf
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+      {{- if .Values.dns.enabled }}
+      - name: dnsmasq
+        image: strm/dnsmasq:latest
+        imagePullPolicy: IfNotPresent
+        args:
+        - --no-daemon
+        - --conf-file=/etc/dnsmasq.conf
+        ports:
+        - name: dns-udp
+          containerPort: 53
+          protocol: UDP
+        - name: dns-tcp
+          containerPort: 53
+          protocol: TCP
+        volumeMounts:
+        - name: dns-config
+          mountPath: /etc/dnsmasq.conf
+          subPath: dnsmasq.conf
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
+          requests:
+            cpu: 50m
+            memory: 32Mi
+      {{- end }}
+      volumes:
+      - name: config
+        {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.existingClaim | default (include "wireguard.fullname" .) }}
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
+      - name: wg-config
+        configMap:
+          name: {{ include "wireguard.fullname" . }}-config
+      - name: modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
+      {{- if .Values.dns.enabled }}
+      - name: dns-config
+        configMap:
+          name: {{ include "wireguard.fullname" . }}-dns
+      {{- end }}
+

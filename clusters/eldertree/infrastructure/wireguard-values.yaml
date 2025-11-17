@@ -1,0 +1,125 @@
+# WireGuard Helm Chart Values for eldertree cluster
+
+wireguard:
+  serverAddress: "10.8.0.1/24"
+  port: 51820
+
+  # Server private key will be auto-generated on first deployment
+  # To set manually, base64 encode your key and set it here
+  privateKey: ""
+
+  # Networks accessible through VPN
+  allowedNetworks:
+    - "10.42.0.0/16" # k3s Pod network (flannel)
+    - "10.43.0.0/16" # k3s Service ClusterIP network
+    - "192.168.2.0/24" # Home LAN network (your actual subnet)
+
+  # VPN clients/peers
+  peers:
+    - name: macbook
+      publicKey: "IaPKQ28RB9CHVVISvGd08YBJ0JLghc+5tlBz5dSO53Y="
+      allowedIPs: "10.8.0.2/32"
+      persistentKeepalive: 25
+
+    - name: iphone
+      publicKey: "0q2Hmp7wvLUxuH8BuS1uj/Cd51eZw5C8w8G/Cm4njkM="
+      allowedIPs: "10.8.0.3/32"
+      persistentKeepalive: 25
+
+# DNS configuration for cluster.local resolution
+# Disabled for now - dnsmasq image doesn't support ARM64
+dns:
+  enabled: false
+  # k3s CoreDNS service IP (default)
+  coreDNSIP: "10.43.0.10"
+
+  # Domains to forward to k3s CoreDNS
+  customDomains:
+    - "cluster.local"
+    - "swimto.local"
+    - "canopy.local"
+    - "journey.local"
+    - "nima.local"
+
+  cacheSize: 1000
+  logQueries: false
+
+# WireGuard container image
+image:
+  repository: ghcr.io/linuxserver/wireguard
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Resource limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Run on specific node (optional)
+# Uncomment to pin to a specific node
+nodeSelector: {}
+  # kubernetes.io/hostname: pi5-node-01
+
+# Service configuration
+service:
+  type: LoadBalancer
+  port: 51820
+  protocol: UDP
+
+  # MetalLB annotations (if using MetalLB)
+  annotations: {}
+    # metallb.universe.tf/allow-shared-ip: wireguard
+
+  # Specify load balancer IP (your Pi's IP or MetalLB pool IP)
+  # Leave empty for auto-assignment
+  loadBalancerIP: ""
+
+  externalTrafficPolicy: Local
+
+# Enable Prometheus monitoring (requires prometheus-operator)
+monitoring:
+  enabled: false
+  interval: 30s
+
+# Persistent storage for WireGuard keys and config
+persistence:
+  enabled: true
+  storageClass: "" # Use default storage class
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+# Environment variables
+env:
+  TZ: "America/Toronto"
+
+  # Server endpoint (your public IP or domain)
+  # Leave empty to auto-detect
+  SERVERURL: ""
+
+  SERVERPORT: "51820"
+  PEERDNS: "10.8.0.1"
+  INTERNAL_SUBNET: "10.8.0.0/24"
+
+  # Networks clients can access (split-tunnel)
+  ALLOWEDIPS: "10.8.0.0/24,10.42.0.0/16,10.43.0.0/16,192.168.2.0/24"
+
+# Custom iptables rules for routing
+customScripts:
+  enabled: true
+  postUp: |
+    iptables -A FORWARD -i wg0 -j ACCEPT
+    iptables -A FORWARD -o wg0 -j ACCEPT
+    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 10.42.0.0/16 -j MASQUERADE
+    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 10.43.0.0/16 -j MASQUERADE
+    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 192.168.2.0/24 -j MASQUERADE
+
+  postDown: |
+    iptables -D FORWARD -i wg0 -j ACCEPT
+    iptables -D FORWARD -o wg0 -j ACCEPT
+    iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d 10.42.0.0/16 -j MASQUERADE
+    iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d 10.43.0.0/16 -j MASQUERADE
+    iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d 192.168.2.0/24 -j MASQUERADE

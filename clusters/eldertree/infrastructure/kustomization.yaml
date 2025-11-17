@@ -1,9 +1,19 @@
+# Infrastructure components for eldertree cluster
+
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-resources:
-  - cert-manager # TLS certificate management
-  - issuers # ClusterIssuer (self-signed)
-  - vault # HashiCorp Vault (dev mode)
-  - external-secrets # External Secrets Operator for automatic secret syncing
-  - external-dns # Automated DNS record management
-  - pihole # Pi-hole DNS server with custom DNS rewrites
+
+namespace: kube-system
+
+resources: []
+  # MetalLB (not yet configured)
+  # - metallb-system.yaml
+
+  # Cert-manager (not yet configured)
+  # - cert-manager.yaml
+
+  # Add other infrastructure components here as you configure them
+# Note: WireGuard VPN is managed separately via Helm
+# To deploy: helm install wireguard ../../helm/wireguard --namespace wireguard --create-namespace --values wireguard-values.yaml
+# To update: helm upgrade wireguard ../../helm/wireguard --namespace wireguard --values wireguard-values.yaml
+# To disable: helm uninstall wireguard --namespace wireguard

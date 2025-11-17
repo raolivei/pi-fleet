@@ -1,0 +1,162 @@
+# Default values for wireguard helm chart
+
+# WireGuard server configuration
+wireguard:
+  # Server IP in the tunnel network
+  serverAddress: "10.8.0.1/24"
+  
+  # UDP port for WireGuard
+  port: 51820
+  
+  # Server private key (set via secret or generate on first boot)
+  # Leave empty to auto-generate
+  privateKey: ""
+  
+  # Networks to route through VPN (for iptables rules)
+  allowedNetworks:
+    - "10.42.0.0/16"  # k3s Pod network
+    - "10.43.0.0/16"  # k3s Service network
+    - "192.168.1.0/24"  # LAN network (adjust to your network)
+  
+  # WireGuard peers (clients)
+  # Add clients here or manage via secrets
+  peers: []
+  # Example:
+  # - name: iphone
+  #   publicKey: "CLIENT_PUBLIC_KEY_HERE"
+  #   allowedIPs: "10.8.0.2/32"
+  #   persistentKeepalive: 25
+  # - name: macbook
+  #   publicKey: "CLIENT_PUBLIC_KEY_HERE"
+  #   allowedIPs: "10.8.0.3/32"
+  #   persistentKeepalive: 25
+
+# DNS configuration
+dns:
+  enabled: true
+  # CoreDNS service IP (auto-detected if empty)
+  coreDNSIP: "10.43.0.10"
+  
+  # Custom domains to forward to k3s CoreDNS
+  customDomains:
+    - "cluster.local"
+    - "swimto.local"
+    - "canopy.local"
+    - "journey.local"
+    - "nima.local"
+  
+  # Cache size for dnsmasq
+  cacheSize: 1000
+  
+  # Log DNS queries (disable in production)
+  logQueries: false
+
+# Image configuration
+image:
+  repository: ghcr.io/linuxserver/wireguard
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Resource limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Node selector (useful for running on specific nodes)
+nodeSelector: {}
+  # kubernetes.io/hostname: pi-node-01
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Service configuration
+service:
+  type: LoadBalancer
+  port: 51820
+  protocol: UDP
+  annotations: {}
+  # For MetalLB:
+  # metallb.universe.tf/allow-shared-ip: wireguard
+  
+  # Load balancer IP (optional, for MetalLB)
+  loadBalancerIP: ""
+  
+  # External traffic policy
+  externalTrafficPolicy: Local
+
+# ServiceMonitor for Prometheus (if you have prometheus-operator)
+monitoring:
+  enabled: false
+  interval: 30s
+
+# Persistence for WireGuard config
+persistence:
+  enabled: true
+  storageClass: ""  # Use default storage class
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  # Existing claim (optional)
+  existingClaim: ""
+
+# Security context
+securityContext:
+  privileged: true
+  capabilities:
+    add:
+      - NET_ADMIN
+      - SYS_MODULE
+
+# Pod security context
+# Note: sysctls cannot be used with hostNetwork: true
+# IP forwarding must be enabled on the host node instead
+podSecurityContext: {}
+
+# Environment variables
+env:
+  # Timezone
+  TZ: "America/Toronto"
+  
+  # Server URL (set to your public IP or domain)
+  # Leave empty to auto-detect
+  SERVERURL: ""
+  
+  # Server port
+  SERVERPORT: "51820"
+  
+  # Peer DNS (IP of the WireGuard interface)
+  PEERDNS: "10.8.0.1"
+  
+  # Internal subnet
+  INTERNAL_SUBNET: "10.8.0.0/24"
+  
+  # Allow list (networks that can be accessed through VPN)
+  ALLOWEDIPS: "10.8.0.0/24,10.42.0.0/16,10.43.0.0/16,192.168.1.0/24"
+
+# Init container to set up routing
+initContainers:
+  enabled: true
+
+# ConfigMap for post-up/post-down scripts
+customScripts:
+  enabled: true
+  postUp: |
+    iptables -A FORWARD -i wg0 -j ACCEPT
+    iptables -A FORWARD -o wg0 -j ACCEPT
+    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 10.42.0.0/16 -j MASQUERADE
+    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 10.43.0.0/16 -j MASQUERADE
+    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 192.168.1.0/24 -j MASQUERADE
+  
+  postDown: |
+    iptables -D FORWARD -i wg0 -j ACCEPT
+    iptables -D FORWARD -o wg0 -j ACCEPT
+    iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d 10.42.0.0/16 -j MASQUERADE
+    iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d 10.43.0.0/16 -j MASQUERADE
+    iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -d 192.168.1.0/24 -j MASQUERADE
+

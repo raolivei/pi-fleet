@@ -32,3 +32,7 @@ Thumbs.db
 *.log
 
 vault-backup-*.json
+
+# WireGuard private keys
+**/wireguard/clients/*.private
+**/wireguard/clients/*.public

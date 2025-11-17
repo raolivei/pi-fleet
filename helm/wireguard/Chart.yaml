@@ -1,0 +1,16 @@
+apiVersion: v2
+name: wireguard
+description: WireGuard VPN server for k3s cluster access with split-tunnel support
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - wireguard
+  - vpn
+  - networking
+home: https://github.com/raolivei/pi-fleet
+maintainers:
+  - name: raolivei
+sources:
+  - https://www.wireguard.com/
+
