@@ -92,7 +92,7 @@ metadata:
   namespace: swimto
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    traefik.ingress.kubernetes.io/router.middlewares: swimto-redirect-https@kubernetescrd,swimto-api-path-rewrite@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: swimto-api-path-rewrite@kubernetescrd
     external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.xyz
   labels:
     app: swimto
@@ -121,7 +121,6 @@ metadata:
   namespace: swimto
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    traefik.ingress.kubernetes.io/router.middlewares: swimto-redirect-https@kubernetescrd
     external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.xyz
   labels:
     app: swimto
