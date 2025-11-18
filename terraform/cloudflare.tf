@@ -126,8 +126,8 @@ resource "cloudflare_record" "swimto_eldertree_xyz_tunnel" {
   name            = "swimto"
   content         = "${cloudflare_tunnel.eldertree.id}.cfargotunnel.com"
   type            = "CNAME"
-  ttl             = 1  # Must be 1 when proxied=true
-  proxied         = true  # Enable Cloudflare proxy (orange cloud) for automatic HTTPS
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy (orange cloud) for automatic HTTPS
   allow_overwrite = true
   comment         = "swimto.eldertree.xyz - managed by Terraform via Cloudflare Tunnel"
 }
@@ -151,7 +151,7 @@ output "cloudflare_tunnel_name" {
 
 output "cloudflare_tunnel_token" {
   description = "Cloudflare Tunnel token - use this for TUNNEL_TOKEN in Kubernetes. Get from Cloudflare Dashboard after tunnel is created, or use cloudflared tunnel token command."
-  value       = ""  # Token must be obtained from Cloudflare Dashboard or generated via cloudflared CLI
+  value       = "" # Token must be obtained from Cloudflare Dashboard or generated via cloudflared CLI
   sensitive   = true
 }
 
