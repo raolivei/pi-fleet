@@ -6,7 +6,7 @@ metadata:
   namespace: swimto
 spec:
   image: ghcr.io/raolivei/swimto-api
-  interval: 1m
+  interval: 5m
   secretRef:
     name: ghcr-secret
 ---
@@ -17,7 +17,7 @@ metadata:
   namespace: swimto
 spec:
   image: ghcr.io/raolivei/swimto-web
-  interval: 1m
+  interval: 5m
   secretRef:
     name: ghcr-secret
 
