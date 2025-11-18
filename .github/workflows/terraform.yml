@@ -159,11 +159,12 @@ jobs:
       # Note: When skip_k3s_resources=true, Terraform may plan to destroy existing k3s resources
       # This is expected and OK - we treat exit code 2 as success
       # Note: Terraform Cloud remote backend doesn't support -var flags, use TF_VAR_ env vars instead
+      # Note: Terraform Cloud remote backend doesn't support saving plans locally (-out), so we don't use it
       - name: Terraform Plan
         id: plan
         run: |
           set +e
-          terraform plan -input=false -detailed-exitcode -out=tfplan 2>&1 | tee plan-output.txt
+          terraform plan -input=false -detailed-exitcode 2>&1 | tee plan-output.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}
           set -e
           echo ""
@@ -208,18 +209,19 @@ jobs:
           TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
           TF_VAR_pi_user: ${{ secrets.PI_USER }}
 
-      # Show plan output
-      - name: Show Plan
+      # Show plan output (if plan failed)
+      - name: Show Plan Output
         if: steps.plan.outcome == 'failure'
-        run: terraform show tfplan || true
+        run: cat plan-output.txt || true
 
       # Apply Terraform changes (only via manual workflow_dispatch)
       # Note: Terraform Cloud remote backend requires TF_VAR_ environment variables
+      # Note: Terraform Cloud remote backend doesn't support saved plans, so we run plan again during apply
       - name: Terraform Apply
         if: |
           steps.plan.outcome == 'success' && 
           (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
-        run: terraform apply -auto-approve -input=false tfplan
+        run: terraform apply -auto-approve -input=false
         env:
           TF_INPUT: false
           TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
