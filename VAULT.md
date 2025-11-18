@@ -63,6 +63,8 @@ kubectl create secret generic vault-token \
 - `secret/flux/git` - Flux Git SSH private key (`sshKey`)
 - `secret/canopy/ghcr-token` - GitHub Container Registry token
 - `secret/external-dns/tsig-secret` - External DNS TSIG secret for RFC2136 DNS updates
+- `secret/terraform/cloudflare-api-token` - Cloudflare API token for Terraform DNS management (`api-token`)
+- `secret/external-dns/cloudflare-api-token` - Cloudflare API token for External-DNS Cloudflare provider (`api-token`)
 
 ### Canopy Application
 - `secret/canopy/postgres` - Canopy PostgreSQL password
@@ -159,12 +161,13 @@ External Secrets Operator syncs secrets from Vault to Kubernetes automatically. 
 - `pihole/pihole-secrets` - Pi-hole web admin password
 - `flux-system/flux-system` - Flux Git SSH key
 - `canopy/ghcr-secret` - GitHub Container Registry token
+- `external-dns/external-dns-tsig-secret` - External DNS TSIG secret for RFC2136
+- `external-dns/external-dns-cloudflare-secret` - Cloudflare API token for External-DNS
 
 ### Applications
 - `canopy/canopy-secrets` - Canopy database, app secrets
 - `swimto/swimto-secrets` - SwimTO database, Redis, API keys, OAuth
 - `journey/journey-secrets` - Journey database credentials and URL
-- `external-dns/external-dns-tsig-secret` - External DNS TSIG secret
 - `us-law-severity-map/us-law-severity-map-secrets` - Mapbox token
 - `nima/nima-secrets` - NIMA secrets (placeholder for future use)
 
@@ -194,6 +197,10 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/swimto/oauth google-clie
 
 # US Law Severity Map secrets
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/us-law-severity-map/mapbox token=your-mapbox-token
+
+# Cloudflare secrets
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token=your-cloudflare-api-token
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-api-token api-token=your-cloudflare-api-token
 ```
 
 **Note:** All secrets are automatically synced to Kubernetes by External Secrets Operator within 24 hours, or immediately on ExternalSecret resource creation/update.

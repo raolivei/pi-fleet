@@ -15,3 +15,20 @@ pi_password = "Control01!"          # SSH password
 # Kubeconfig Location
 kubeconfig_path = "~/.kube/config-eldertree"
 
+# =============================================================================
+# Cloudflare DNS Configuration
+# =============================================================================
+# Cloudflare API token for DNS management
+# Should be stored in Vault at secret/terraform/cloudflare-api-token
+# Can be read from Vault or set directly here (not recommended for production)
+# cloudflare_api_token = "your-cloudflare-api-token-here"
+
+# Cloudflare Zone ID for eldertree.xyz
+# Obtained after adding domain to Cloudflare account (Add Site)
+# Find in Cloudflare dashboard: Zone Settings > Overview > Zone ID
+# cloudflare_zone_id = "your-zone-id-here"
+
+# Public IP address for DNS A records (root and wildcard)
+# May need dynamic DNS solution or router port forwarding configuration
+# public_ip = "your-public-ip-address-here"
+

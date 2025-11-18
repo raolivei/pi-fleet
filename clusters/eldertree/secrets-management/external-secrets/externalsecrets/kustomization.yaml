@@ -10,6 +10,7 @@ resources:
   # - us-law-severity-map-secrets.yaml # DISABLED - us-law-severity-map namespace not created (app disabled)
   # - journey-secrets.yaml # DISABLED - journey namespace not created (journey app disabled)
   - external-dns-tsig-secret.yaml
+  - external-dns-cloudflare-secret.yaml
   # Note: nima-secrets.yaml not included as NIMA has no secrets currently
   # When secrets are needed, uncomment and add data section
 
