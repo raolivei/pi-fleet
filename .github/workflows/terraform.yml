@@ -127,6 +127,7 @@ jobs:
         run: terraform show tfplan || true
 
       # Apply Terraform changes (only via manual workflow_dispatch)
+      # Note: Terraform Cloud remote backend requires TF_VAR_ environment variables
       - name: Terraform Apply
         if: |
           steps.plan.outcome == 'success' && 
@@ -134,3 +135,10 @@ jobs:
         run: terraform apply -auto-approve -input=false tfplan
         env:
           TF_INPUT: false
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
+          TF_VAR_skip_k3s_resources: "true"
+          TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
+          TF_VAR_pi_user: ${{ secrets.PI_USER }}
