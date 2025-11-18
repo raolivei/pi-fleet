@@ -9,20 +9,10 @@ resource "random_password" "k3s_token" {
 }
 
 locals {
-  # Handle sensitive k3s_token: completely avoid any operations on sensitive values
-  # The crash occurs when Terraform tries to evaluate marked (sensitive) values
-  # Solution: Always use random password, wrapped in try() for safety
-  # If users need a custom token, they should set it via terraform.tfvars (not -var flags)
-  # This prevents crashes when k3s_token is passed as empty string via -var="k3s_token="
-  k3s_token = try(
-    # Only attempt to use provided token if we can safely unmark and verify it's non-empty
-    # Nested try() ensures we catch any errors from nonsensitive() or length()
-    try(
-      try(length(try(nonsensitive(var.k3s_token), "")), 0) > 0,
-      false
-    ) ? var.k3s_token : random_password.k3s_token.result,
-    random_password.k3s_token.result
-  )
+  # Handle sensitive k3s_token: use coalesce with null check
+  # Variable defaults to null (not empty string) to avoid marked value comparison issues
+  # coalesce() safely handles null values without comparing sensitive values
+  k3s_token = coalesce(var.k3s_token, random_password.k3s_token.result)
   k3s_version_flag = var.k3s_version != "" ? "INSTALL_K3S_VERSION=${var.k3s_version}" : ""
   kubeconfig_path  = pathexpand(var.kubeconfig_path)
 }

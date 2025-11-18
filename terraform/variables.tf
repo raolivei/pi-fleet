@@ -25,8 +25,9 @@ variable "k3s_version" {
 variable "k3s_token" {
   description = "K3s cluster token (auto-generated if not provided)"
   type        = string
-  default     = ""
+  default     = null  # Use null instead of empty string to avoid marked value issues
   sensitive   = true
+  nullable    = true
 }
 
 variable "kubeconfig_path" {
