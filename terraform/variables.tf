@@ -38,6 +38,12 @@ variable "kubeconfig_path" {
   default     = "~/.kube/config-eldertree"
 }
 
+variable "skip_k3s_resources" {
+  description = "Skip k3s installation resources (useful for CI where SSH is not available)"
+  type        = bool
+  default     = false
+}
+
 variable "cloudflare_api_token" {
   description = "Cloudflare API token for DNS management. Should be stored in Vault at secret/terraform/cloudflare-api-token"
   type        = string

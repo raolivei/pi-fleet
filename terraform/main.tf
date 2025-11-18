@@ -3,9 +3,9 @@
 # =============================================================================
 
 # Generate a random token if not provided
-# Only create if pi_password is provided and not "dummy" (CI detection)
+# Only create if k3s resources are not skipped (not CI)
 resource "random_password" "k3s_token" {
-  count   = try(nonsensitive(var.pi_password), null) != null && try(nonsensitive(var.pi_password), null) != "dummy" ? 1 : 0
+  count   = var.skip_k3s_resources ? 0 : 1
   length  = 64
   special = false
 }
@@ -14,10 +14,8 @@ locals {
   # Handle sensitive k3s_token: use coalesce with null check
   # Variable defaults to null (not empty string) to avoid marked value comparison issues
   # coalesce() safely handles null values without comparing sensitive values
-  # In CI (when pi_password is "dummy"), always use a placeholder token
-  pi_password_check = try(nonsensitive(var.pi_password), null)
-  is_ci             = local.pi_password_check == null || local.pi_password_check == "dummy"
-  k3s_token = local.is_ci ? "ci-placeholder-token" : coalesce(var.k3s_token, try(random_password.k3s_token[0].result, "placeholder"))
+  # In CI (skip_k3s_resources=true), always use a placeholder token
+  k3s_token = var.skip_k3s_resources ? "ci-placeholder-token" : coalesce(var.k3s_token, try(random_password.k3s_token[0].result, "placeholder"))
   k3s_version_flag = var.k3s_version != "" ? "INSTALL_K3S_VERSION=${var.k3s_version}" : ""
   kubeconfig_path  = pathexpand(var.kubeconfig_path)
 }
@@ -27,7 +25,7 @@ locals {
 # =============================================================================
 
 resource "null_resource" "system_prep" {
-  count = local.is_ci ? 0 : 1  # Skip in CI
+  count = var.skip_k3s_resources ? 0 : 1  # Skip in CI
 
   connection {
     type     = "ssh"
@@ -64,7 +62,7 @@ resource "null_resource" "system_prep" {
 # =============================================================================
 
 resource "null_resource" "install_k3s" {
-  count = local.is_ci ? 0 : 1  # Skip in CI
+  count      = local.is_ci ? 0 : 1 # Skip in CI
   depends_on = [null_resource.system_prep]
 
   connection {
@@ -100,7 +98,7 @@ resource "null_resource" "install_k3s" {
 # =============================================================================
 
 resource "null_resource" "install_k9s" {
-  count = local.is_ci ? 0 : 1  # Skip in CI
+  count      = local.is_ci ? 0 : 1 # Skip in CI
   depends_on = [null_resource.install_k3s]
 
   connection {
@@ -132,7 +130,7 @@ resource "null_resource" "install_k9s" {
 # =============================================================================
 
 resource "null_resource" "retrieve_kubeconfig" {
-  count = local.is_ci ? 0 : 1  # Skip in CI
+  count      = local.is_ci ? 0 : 1 # Skip in CI
   depends_on = [null_resource.install_k3s]
 
   # Download kubeconfig
