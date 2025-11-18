@@ -160,6 +160,8 @@ jobs:
       # This is expected and OK - we treat exit code 2 as success
       # Note: Terraform Cloud remote backend doesn't support -var flags, use TF_VAR_ env vars instead
       # Note: Terraform Cloud remote backend doesn't support saving plans locally (-out), so we don't use it
+      # IMPORTANT: Workspace must be configured for "Local" execution mode in Terraform Cloud
+      # Remote execution mode doesn't have access to TF_VAR_ environment variables
       - name: Terraform Plan
         id: plan
         run: |
@@ -196,8 +198,23 @@ jobs:
             exit 0
           else
             echo "❌ Plan failed with error (exit code $PLAN_EXIT_CODE)"
+            echo ""
             echo "Plan output:"
             cat plan-output.txt || true
+            echo ""
+            # Check if error is about missing variables (indicates remote execution mode)
+            if grep -q "No value for required variable" plan-output.txt 2>/dev/null; then
+              echo ""
+              echo "⚠️  This error usually means Terraform Cloud workspace is using 'Remote' execution mode."
+              echo "   With Remote execution, TF_VAR_ environment variables are not available."
+              echo ""
+              echo "   To fix:"
+              echo "   1. Go to: https://app.terraform.io/app/eldertree/workspaces/pi-fleet-terraform"
+              echo "   2. Click Settings → General"
+              echo "   3. Set Execution Mode to 'Local'"
+              echo "   4. Save settings"
+              echo "   5. Re-run this workflow"
+            fi
             exit 1
           fi
         env:

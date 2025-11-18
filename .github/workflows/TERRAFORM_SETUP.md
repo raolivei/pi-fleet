@@ -62,6 +62,19 @@ The Terraform workflow requires the following secrets to be configured in your G
 3. Click **New repository secret**
 4. Add each secret listed above
 
+## Terraform Cloud Workspace Configuration
+
+**IMPORTANT**: The Terraform Cloud workspace must be configured to use **"Local" execution mode**, not "Remote" execution mode.
+
+When using "Remote" execution mode, Terraform runs plans in Terraform Cloud and doesn't have access to `TF_VAR_` environment variables set in GitHub Actions. With "Local" execution mode, Terraform runs locally in GitHub Actions (so it can access environment variables) but stores state in Terraform Cloud.
+
+**To configure execution mode:**
+
+1. Go to [Terraform Cloud](https://app.terraform.io/app/eldertree/workspaces/pi-fleet-terraform)
+2. Click **Settings** → **General**
+3. Under **Execution Mode**, select **"Local"**
+4. Click **Save settings**
+
 ## Workflow Behavior
 
 ### On Pull Requests
