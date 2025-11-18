@@ -63,6 +63,7 @@ Terraform can manage DNS records for `eldertree.xyz` domain using Cloudflare DNS
 ### Cloudflare API Token Setup
 
 1. **Create API Token**:
+
    - In Cloudflare dashboard, go to "My Profile" → "API Tokens"
    - Click "Create Token"
    - Use "Edit zone DNS" template or create custom token with:
@@ -72,16 +73,17 @@ Terraform can manage DNS records for `eldertree.xyz` domain using Cloudflare DNS
    - Create token and copy it (you won't be able to see it again)
 
 2. **Store Secrets in Vault**:
+
    ```bash
    # Get Vault pod
    VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
-   
+
    # Store Cloudflare API token for Terraform use
    kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token=YOUR_API_TOKEN_HERE
-   
+
    # Store Cloudflare API token for External-DNS use
    kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-api-token api-token=YOUR_API_TOKEN_HERE
-   
+
    # Store Pi SSH username (optional, defaults to "pi")
    kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/pi-user pi-user=YOUR_USERNAME_HERE
    ```
@@ -89,11 +91,13 @@ Terraform can manage DNS records for `eldertree.xyz` domain using Cloudflare DNS
 ### Terraform Configuration
 
 1. **Get Cloudflare Zone ID**:
+
    - After adding domain to Cloudflare, Zone ID is shown in dashboard
    - Navigate to `eldertree.xyz` → Overview → Zone ID (right sidebar)
    - Or use Cloudflare API: `curl -X GET "https://api.cloudflare.com/client/v4/zones?name=eldertree.xyz" -H "Authorization: Bearer YOUR_API_TOKEN"`
 
 2. **Configure terraform.tfvars**:
+
    ```hcl
    # Cloudflare DNS Configuration
    cloudflare_api_token = "your-api-token-here"  # Or read from Vault
@@ -111,6 +115,7 @@ Terraform can manage DNS records for `eldertree.xyz` domain using Cloudflare DNS
 ### DNS Records
 
 Terraform will create:
+
 - Root domain A record: `eldertree.xyz` → `public_ip`
 - Wildcard A record: `*.eldertree.xyz` → `public_ip`
 - `swimto.eldertree.xyz` A record with proxy enabled (orange cloud)
@@ -127,31 +132,37 @@ Terraform manages the Cloudflare Tunnel for `swimto.eldertree.xyz`:
 - **No port forwarding**: Works behind NAT/firewall
 
 **Prerequisites:**
+
 - Cloudflare Account ID (required for tunnels)
 - API token with tunnel permissions
 
 **Setup Steps:**
 
 1. **Get Cloudflare Account ID**:
+
    - Cloudflare Dashboard → Right sidebar → Account ID
    - Or via API: `curl -X GET "https://api.cloudflare.com/client/v4/accounts" -H "Authorization: Bearer YOUR_API_TOKEN"`
 
 2. **Configure terraform.tfvars**:
+
    ```hcl
    cloudflare_account_id = "your-account-id-here"
    ```
 
 3. **Apply Terraform**:
+
    ```bash
    terraform apply
    ```
 
 4. **Get Tunnel Token** (required for Kubernetes deployment):
+
    ```bash
    ./scripts/setup-tunnel-token.sh eldertree
    ```
-   
+
    Or manually:
+
    - Cloudflare Dashboard → Zero Trust → Networks → Tunnels → Configure
    - Copy the token
    - Store in Vault: `kubectl exec -n vault $VAULT_POD -- vault kv put secret/cloudflare-tunnel/token token="YOUR_TOKEN"`
@@ -162,6 +173,7 @@ Terraform manages the Cloudflare Tunnel for `swimto.eldertree.xyz`:
    ```
 
 **Terraform Outputs:**
+
 - `cloudflare_tunnel_id` - Tunnel ID
 - `cloudflare_tunnel_name` - Tunnel name
 - `cloudflare_tunnel_cname` - CNAME target for DNS records
@@ -199,11 +211,13 @@ rm cert.pem key.pem
 ```
 
 **Terraform outputs:**
+
 - `swimto_origin_certificate` - The certificate (PEM format)
 - `swimto_origin_private_key` - The private key (PEM format, sensitive)
 - `swimto_certificate_id` - Cloudflare certificate ID
 
 **Next steps after storing certificate:**
+
 1. Set Cloudflare SSL/TLS mode to "Full (strict)" in Cloudflare Dashboard
 2. Verify ingress is using the secret: `kubectl describe ingress swimto-web-public -n swimto`
 3. Test HTTPS: `curl -v https://swimto.eldertree.xyz`
@@ -211,6 +225,7 @@ rm cert.pem key.pem
 ### Public IP Configuration
 
 The `public_ip` variable should point to your public IP address. Options:
+
 - **Static Public IP**: If you have a static IP, use it directly
 - **Dynamic DNS**: Use a dynamic DNS service to get a hostname that resolves to your current IP
 - **Router Port Forwarding**: Configure router to forward ports to your Raspberry Pi
