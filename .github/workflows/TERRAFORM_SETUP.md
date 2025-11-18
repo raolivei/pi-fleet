@@ -27,8 +27,6 @@ The Terraform workflow requires the following secrets to be configured in your G
 
 ### Cloudflare Secrets
 
-### Cloudflare Secrets
-
 1. **`CLOUDFLARE_API_TOKEN`**
    - Description: Cloudflare API token for managing DNS and tunnels
    - How to get:
