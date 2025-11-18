@@ -18,7 +18,6 @@ spec:
         threshold: "10"
         query: |
           sum(rate(traefik_service_requests_total{
-            service="swimto-web-service",
-            namespace="swimto"
+            service=~"swimto-swimto-web-service-3000@kubernetes"
           }[2m]))
 
