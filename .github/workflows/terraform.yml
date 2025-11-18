@@ -54,10 +54,12 @@ jobs:
         run: terraform fmt -check -recursive
 
       # Validate Terraform configuration
-      # Note: skip_k3s_resources defaults to false, but resources are skipped via count=0
-      # Terraform won't evaluate connection blocks when count=0, so validation is safe
+      # Use environment variable to set skip_k3s_resources=true (terraform validate doesn't support -var)
+      # This prevents Terraform from evaluating k3s resources during validation in CI
       - name: Terraform Validate
         run: terraform validate
+        env:
+          TF_VAR_skip_k3s_resources: "true"
 
       # Generates an execution plan for Terraform
       - name: Terraform Plan
