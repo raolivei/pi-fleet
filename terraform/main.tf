@@ -9,7 +9,11 @@ resource "random_password" "k3s_token" {
 }
 
 locals {
-  k3s_token        = var.k3s_token != "" ? var.k3s_token : random_password.k3s_token.result
+  # Handle sensitive k3s_token: use nonsensitive() to unmark before comparison
+  # This avoids the "value is marked" error during validation
+  # If k3s_token is provided (non-empty), use it; otherwise use random password
+  k3s_token_raw    = try(nonsensitive(var.k3s_token), "")
+  k3s_token        = local.k3s_token_raw != "" ? var.k3s_token : random_password.k3s_token.result
   k3s_version_flag = var.k3s_version != "" ? "INSTALL_K3S_VERSION=${var.k3s_version}" : ""
   kubeconfig_path  = pathexpand(var.kubeconfig_path)
 }
