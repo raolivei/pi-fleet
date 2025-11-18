@@ -13,7 +13,9 @@ variable "pi_user" {
 variable "pi_password" {
   description = "SSH password for the Raspberry Pi"
   type        = string
+  default     = null  # Use null instead of empty string to avoid marked value issues
   sensitive   = true
+  nullable    = true
 }
 
 variable "k3s_version" {

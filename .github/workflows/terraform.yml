@@ -70,7 +70,6 @@ jobs:
             -var="pi_user=raolivei" \
             -var="pi_password=dummy" \
             -var="k3s_version=" \
-            -var="k3s_token=null" \
             -var="kubeconfig_path=~/.kube/config-eldertree"
         continue-on-error: true
 
