@@ -23,7 +23,7 @@ spec:
 
         Automated image update by Flux
     push:
-      branch: main
+      branch: flux/swimto-image-updates
   update:
     path: ./clusters/eldertree/swimto
     strategy: Setters
