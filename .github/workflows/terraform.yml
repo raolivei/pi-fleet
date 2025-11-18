@@ -48,11 +48,9 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       # Initialize Terraform working directory with remote backend
+      # Backend configuration is in providers.tf (organization and workspace are hardcoded)
       - name: Terraform Init
-        run: |
-          terraform init \
-            -backend-config="organization=${{ secrets.TF_CLOUD_ORGANIZATION }}" \
-            -backend-config="workspaces.name=pi-fleet-terraform"
+        run: terraform init -input=false
         env:
           TF_INPUT: false
 
