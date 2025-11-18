@@ -1,19 +1,21 @@
 variable "pi_host" {
-  description = "Hostname or IP address of the Raspberry Pi"
+  description = "Hostname or IP address of the Raspberry Pi (required only when skip_k3s_resources=false)"
   type        = string
-  default     = "eldertree"
+  default     = null
+  nullable    = true
 }
 
 variable "pi_user" {
-  description = "SSH username for the Raspberry Pi"
+  description = "SSH username for the Raspberry Pi (required only when skip_k3s_resources=false)"
   type        = string
-  default     = "raolivei"
+  default     = null
+  nullable    = true
 }
 
 variable "pi_password" {
-  description = "SSH password for the Raspberry Pi"
+  description = "SSH password for the Raspberry Pi (required only when skip_k3s_resources=false)"
   type        = string
-  default     = null  # Use null instead of empty string to avoid marked value issues
+  default     = null
   sensitive   = true
   nullable    = true
 }

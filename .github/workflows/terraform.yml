@@ -54,9 +54,10 @@ jobs:
         run: terraform fmt -check -recursive
 
       # Validate Terraform configuration
-      # Pass skip_k3s_resources to avoid evaluating sensitive values during validation
+      # Note: skip_k3s_resources defaults to false, but resources are skipped via count=0
+      # Terraform won't evaluate connection blocks when count=0, so validation is safe
       - name: Terraform Validate
-        run: terraform validate -var="skip_k3s_resources=true" -var="pi_password=dummy"
+        run: terraform validate
 
       # Generates an execution plan for Terraform
       - name: Terraform Plan
@@ -67,10 +68,6 @@ jobs:
             -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
             -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
             -var="public_ip=${{ secrets.PUBLIC_IP }}" \
-            -var="pi_host=eldertree" \
-            -var="pi_user=raolivei" \
-            -var="pi_password=dummy" \
-            -var="k3s_version=" \
             -var="skip_k3s_resources=true" \
             -var="kubeconfig_path=~/.kube/config-eldertree"
         continue-on-error: true
