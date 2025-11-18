@@ -53,8 +53,20 @@ The Terraform workflow requires the following secrets to be configured in your G
 - **Does NOT apply changes**
 
 ### On Push to Main
-- Runs all PR checks
-- **Applies changes** if plan succeeds (`terraform apply`)
+- Runs all PR checks (plan only)
+- **Does NOT automatically apply changes** (prevents failures after merge)
+
+### Manual Apply (Ad-Hoc)
+- Go to **Actions** → **Terraform** → **Run workflow**
+- Select branch (usually `main`)
+- Check **"Apply Terraform changes"** checkbox
+- Click **Run workflow**
+- This will run plan + apply
+
+**Why manual apply?**
+- PRs can be merged safely after plan succeeds
+- Apply failures won't block merges
+- You control when infrastructure changes are applied
 
 ## What Gets Managed
 

@@ -1,22 +1,29 @@
-name: 'Terraform'
+name: "Terraform"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
-      - 'terraform/**'
-      - '.github/workflows/terraform.yml'
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
   pull_request:
     paths:
-      - 'terraform/**'
-      - '.github/workflows/terraform.yml'
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply Terraform changes"
+        required: false
+        default: "false"
+        type: boolean
 
 permissions:
   contents: read
 
 jobs:
   terraform:
-    name: 'Terraform'
+    name: "Terraform"
     runs-on: ubuntu-latest
     environment: dev
 
@@ -26,63 +33,65 @@ jobs:
         working-directory: terraform
 
     steps:
-    # Checkout the repository to the GitHub Actions runner
-    - name: Checkout
-      uses: actions/checkout@v4
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # Install the latest version of Terraform CLI
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.6.0
+      # Install the latest version of Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
 
-    # Initialize Terraform working directory
-    - name: Terraform Init
-      run: terraform init
-      env:
-        TF_INPUT: false
+      # Initialize Terraform working directory
+      - name: Terraform Init
+        run: terraform init
+        env:
+          TF_INPUT: false
 
-    # Checks that all Terraform configuration files adhere to a canonical format
-    - name: Terraform Format Check
-      run: terraform fmt -check -recursive
+      # Checks that all Terraform configuration files adhere to a canonical format
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
 
-    # Validate Terraform configuration
-    - name: Terraform Validate
-      run: terraform validate
+      # Validate Terraform configuration
+      - name: Terraform Validate
+        run: terraform validate
 
-    # Generates an execution plan for Terraform (Cloudflare resources only)
-    - name: Terraform Plan
-      id: plan
-      run: |
-        terraform plan -input=false -out=tfplan \
-          -target=data.cloudflare_zone.eldertree_xyz \
-          -target=cloudflare_record.eldertree_xyz_root \
-          -target=cloudflare_record.eldertree_xyz_wildcard \
-          -target=tls_private_key.swimto_origin \
-          -target=tls_cert_request.swimto_origin \
-          -target=cloudflare_tunnel.eldertree \
-          -target=cloudflare_tunnel_config.eldertree \
-          -target=cloudflare_record.swimto_eldertree_xyz_tunnel \
-          -var="cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}" \
-          -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
-          -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
-          -var="public_ip=${{ secrets.PUBLIC_IP }}" \
-          -var="pi_host=eldertree" \
-          -var="pi_user=raolivei" \
-          -var="pi_password=dummy" \
-          -var="k3s_version=" \
-          -var="k3s_token=" \
-          -var="kubeconfig_path=~/.kube/config-eldertree"
-      continue-on-error: true
+      # Generates an execution plan for Terraform (Cloudflare resources only)
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -input=false -out=tfplan \
+            -target=data.cloudflare_zone.eldertree_xyz \
+            -target=cloudflare_record.eldertree_xyz_root \
+            -target=cloudflare_record.eldertree_xyz_wildcard \
+            -target=tls_private_key.swimto_origin \
+            -target=tls_cert_request.swimto_origin \
+            -target=cloudflare_tunnel.eldertree \
+            -target=cloudflare_tunnel_config.eldertree \
+            -target=cloudflare_record.swimto_eldertree_xyz_tunnel \
+            -var="cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
+            -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
+            -var="public_ip=${{ secrets.PUBLIC_IP }}" \
+            -var="pi_host=eldertree" \
+            -var="pi_user=raolivei" \
+            -var="pi_password=dummy" \
+            -var="k3s_version=" \
+            -var="k3s_token=" \
+            -var="kubeconfig_path=~/.kube/config-eldertree"
+        continue-on-error: true
 
-    # Show plan output
-    - name: Show Plan
-      if: steps.plan.outcome == 'failure'
-      run: terraform show tfplan || true
+      # Show plan output
+      - name: Show Plan
+        if: steps.plan.outcome == 'failure'
+        run: terraform show tfplan || true
 
-    # On push to "main", apply Terraform changes
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.plan.outcome == 'success'
-      run: terraform apply -auto-approve -input=false tfplan
-      env:
-        TF_INPUT: false
+      # Apply Terraform changes (only via manual workflow_dispatch)
+      - name: Terraform Apply
+        if: |
+          steps.plan.outcome == 'success' && 
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+        run: terraform apply -auto-approve -input=false tfplan
+        env:
+          TF_INPUT: false
