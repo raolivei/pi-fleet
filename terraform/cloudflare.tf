@@ -25,6 +25,7 @@ resource "cloudflare_record" "eldertree_xyz_root" {
   content         = var.public_ip
   type            = "A"
   ttl             = 300
+  proxied         = false
   allow_overwrite = true
   comment         = "Root domain A record for eldertree.xyz - managed by Terraform"
 }
@@ -37,6 +38,7 @@ resource "cloudflare_record" "eldertree_xyz_wildcard" {
   content         = var.public_ip
   type            = "A"
   ttl             = 300
+  proxied         = false
   allow_overwrite = true
   comment         = "Wildcard A record for *.eldertree.xyz - managed by Terraform"
 }
