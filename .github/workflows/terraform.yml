@@ -62,18 +62,26 @@ jobs:
           TF_VAR_skip_k3s_resources: "true"
 
       # Generates an execution plan for Terraform
-      # Use -destroy=false to prevent planning destruction of k3s resources when skip_k3s_resources=true
-      # This allows plan to succeed even when k3s resources exist in state but are skipped in CI
+      # Use -detailed-exitcode: exit code 0 = no changes, 1 = error, 2 = changes detected
+      # Exit code 2 is OK - it means plan succeeded and shows changes (including destruction)
+      # We only fail on exit code 1 (actual error)
       - name: Terraform Plan
         id: plan
         run: |
-          terraform plan -input=false -destroy=false -out=tfplan \
+          terraform plan -input=false -detailed-exitcode -out=tfplan \
             -var="cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}" \
             -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
             -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
             -var="public_ip=${{ secrets.PUBLIC_IP }}" \
             -var="skip_k3s_resources=true" \
-            -var="kubeconfig_path=~/.kube/config-eldertree"
+            -var="kubeconfig_path=~/.kube/config-eldertree" || \
+          if [ $? -eq 2 ]; then
+            echo "Plan succeeded with changes detected (including potential k3s resource destruction)"
+            exit 0
+          else
+            echo "Plan failed with error"
+            exit 1
+          fi
         continue-on-error: true
 
       # Show plan output
