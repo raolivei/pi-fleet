@@ -1,93 +1,250 @@
-# This workflow installs the latest version of Terraform CLI and configures the Terraform CLI configuration file
-# with an API token for Terraform Cloud (app.terraform.io). On pull request events, this workflow will run
-# `terraform init`, `terraform fmt`, and `terraform plan` (speculative plan via Terraform Cloud). On push events
-# to the "main" branch, `terraform apply` will be executed.
-#
-# Documentation for `hashicorp/setup-terraform` is located here: https://github.com/hashicorp/setup-terraform
-#
-# To use this workflow, you will need to complete the following setup steps.
-#
-# 1. Create a `main.tf` file in the root of this repository with the `remote` backend and one or more resources defined.
-#   Example `main.tf`:
-#     # The configuration for the `remote` backend.
-#     terraform {
-#       backend "remote" {
-#         # The name of your Terraform Cloud organization.
-#         organization = "example-organization"
-#
-#         # The name of the Terraform Cloud workspace to store Terraform state files in.
-#         workspaces {
-#           name = "example-workspace"
-#         }
-#       }
-#     }
-#
-#     # An example resource that does nothing.
-#     resource "null_resource" "example" {
-#       triggers = {
-#         value = "A example resource that does nothing!"
-#       }
-#     }
-#
-#
-# 2. Generate a Terraform Cloud user API token and store it as a GitHub secret (e.g. TF_API_TOKEN) on this repository.
-#   Documentation:
-#     - https://www.terraform.io/docs/cloud/users-teams-organizations/api-tokens.html
-#     - https://help.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
-#
-# 3. Reference the GitHub secret in step using the `hashicorp/setup-terraform` GitHub Action.
-#   Example:
-#     - name: Setup Terraform
-#       uses: hashicorp/setup-terraform@v1
-#       with:
-#         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
-name: 'Terraform'
+name: "Terraform"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
   pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply Terraform changes"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
 
 jobs:
   terraform:
-    name: 'Terraform'
+    name: "Terraform"
     runs-on: ubuntu-latest
     environment: dev
 
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
       run:
         shell: bash
+        working-directory: terraform
 
     steps:
-    # Checkout the repository to the GitHub Actions runner
-    - name: Checkout
-      uses: actions/checkout@v4
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      # Install the latest version of Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          # Configure Terraform Cloud backend for remote state
+          # This allows Terraform to check state across CI runs
+          cli_config_credentials_hostname: app.terraform.io
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
-    - name: Terraform Init
-      run: terraform init
+      # Initialize Terraform working directory with remote backend
+      # Backend configuration is in providers.tf (organization and workspace are hardcoded)
+      # If workspace doesn't exist, terraform init will create it (empty)
+      # If workspace exists but is empty, we need to migrate state manually
+      - name: Terraform Init
+        run: |
+          echo "🔧 Initializing Terraform with remote backend..."
+          echo "Backend config: organization=eldertree, workspace=pi-fleet-terraform"
+          echo ""
+          terraform init -input=false 2>&1 | tee init-output.txt
+          echo ""
+          echo "═══════════════════════════════════════════════════════════"
+          echo "Init output summary:"
+          echo "═══════════════════════════════════════════════════════════"
+          grep -E "(Successfully|Error|workspace|backend)" init-output.txt || cat init-output.txt | tail -20
+          echo ""
+          echo "Backend initialization complete"
+        env:
+          TF_INPUT: false
 
-    # Checks that all Terraform configuration files adhere to a canonical format
-    - name: Terraform Format
-      run: terraform fmt -check
+      # Verify state is being read from Terraform Cloud
+      - name: Verify Remote State
+        run: |
+          echo "📋 Verifying Terraform Cloud backend connection..."
+          echo ""
+          echo "Backend configuration (from providers.tf):"
+          echo "  Organization: eldertree"
+          echo "  Workspace: pi-fleet-terraform"
+          echo ""
+          echo "Checking if we can access the remote state..."
+          if terraform state list > /dev/null 2>&1; then
+            STATE_COUNT=$(terraform state list | wc -l | tr -d ' ')
+            echo "✅ Successfully connected to remote state"
+            echo "✅ State contains $STATE_COUNT resources"
+            echo ""
+            echo "Resources in state:"
+            terraform state list | head -20
+            if [ "$STATE_COUNT" -gt 20 ]; then
+              echo "... and $((STATE_COUNT - 20)) more"
+            fi
+            echo ""
+            if [ "$STATE_COUNT" -eq "0" ]; then
+              echo "⚠️  WARNING: State is empty!"
+              echo ""
+              echo "This workspace exists but has no resources in state."
+              echo "If resources already exist in Cloudflare, Terraform will try to recreate them."
+              echo ""
+              echo "To fix this:"
+              echo "1. Run locally: cd terraform && terraform init -migrate-state"
+              echo "2. When prompted, type 'yes' to copy existing state to Terraform Cloud"
+              echo "3. Verify: terraform state list (should show resources)"
+              echo "4. Re-run this workflow"
+              echo ""
+              echo "⚠️  FAILING WORKFLOW to prevent accidental resource recreation"
+              exit 1
+            fi
+          else
+            echo "❌ ERROR: Could not access remote state!"
+            echo ""
+            echo "Attempting to get more details..."
+            terraform state list 2>&1 || true
+            echo ""
+            echo "Possible causes:"
+            echo "  1. Workspace 'pi-fleet-terraform' doesn't exist in organization 'eldertree'"
+            echo "  2. TF_API_TOKEN doesn't have access to this workspace"
+            echo "  3. Network/authentication issue"
+            echo ""
+            echo "To fix:"
+            echo "  1. Verify TF_API_TOKEN secret is set correctly in GitHub Secrets"
+            echo "  2. Check Terraform Cloud: https://app.terraform.io/app/eldertree/workspaces/pi-fleet-terraform"
+            echo "  3. If workspace doesn't exist, run locally: terraform init -migrate-state"
+            echo "  4. Verify state exists: terraform state list (should show 14 resources)"
+            exit 1
+          fi
 
-    # Generates an execution plan for Terraform
-    - name: Terraform Plan
-      run: terraform plan -input=false
+      # Checks that all Terraform configuration files adhere to a canonical format
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
 
-      # On push to "main", build or change infrastructure according to Terraform configuration files
-      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
-      run: terraform apply -auto-approve -input=false
+      # Validate Terraform configuration
+      # Use environment variable to set skip_k3s_resources=true (terraform validate doesn't support -var)
+      # This prevents Terraform from evaluating k3s resources during validation in CI
+      - name: Terraform Validate
+        run: terraform validate
+        env:
+          TF_VAR_skip_k3s_resources: "true"
+
+      # Validate required secrets are set
+      - name: Validate Secrets
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ Error: CLOUDFLARE_API_TOKEN secret is not set"
+            echo "   Please configure it in: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_ZONE_ID }}" ]; then
+            echo "❌ Error: CLOUDFLARE_ZONE_ID secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ Error: CLOUDFLARE_ACCOUNT_ID secret is not set"
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+
+      # Generates an execution plan for Terraform
+      # Use -detailed-exitcode: exit code 0 = no changes, 1 = error, 2 = changes detected
+      # Exit code 2 is OK - it means plan succeeded and shows changes (including destruction)
+      # We only fail on exit code 1 (actual error)
+      # Note: When skip_k3s_resources=true, Terraform may plan to destroy existing k3s resources
+      # This is expected and OK - we treat exit code 2 as success
+      # Note: Terraform Cloud remote backend doesn't support -var flags, use TF_VAR_ env vars instead
+      # Note: Terraform Cloud remote backend doesn't support saving plans locally (-out), so we don't use it
+      # IMPORTANT: Workspace must be configured for "Local" execution mode in Terraform Cloud
+      # Remote execution mode doesn't have access to TF_VAR_ environment variables
+      - name: Terraform Plan
+        id: plan
+        run: |
+          set +e
+          terraform plan -input=false -detailed-exitcode 2>&1 | tee plan-output.txt
+          PLAN_EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          echo ""
+          echo "═══════════════════════════════════════════════════════════"
+          echo "Terraform plan exit code: $PLAN_EXIT_CODE"
+          echo "═══════════════════════════════════════════════════════════"
+          if [ $PLAN_EXIT_CODE -eq 0 ]; then
+            echo "✅ Plan succeeded with no changes"
+            exit 0
+          elif [ $PLAN_EXIT_CODE -eq 2 ]; then
+            echo "✅ Plan succeeded with changes detected"
+            echo ""
+            echo "📋 Plan summary:"
+            echo "───────────────────────────────────────────────────────────"
+            # Extract and show the plan summary
+            grep -A 20 "Plan:" plan-output.txt || cat plan-output.txt | tail -30
+            echo ""
+            echo "🔍 Resources that will be CREATED (should be 0 if state is correct):"
+            grep -E "^  \+ (resource|data)" plan-output.txt | head -20 || echo "  (none or couldn't parse)"
+            echo ""
+            echo "🔍 Resources that will be DESTROYED:"
+            grep -E "^  \- (resource|data)" plan-output.txt | head -20 || echo "  (none or couldn't parse)"
+            echo ""
+            echo "🔍 Resources that will be REPLACED:"
+            grep -E "^  \~\/- (resource|data)" plan-output.txt | head -20 || echo "  (none or couldn't parse)"
+            echo ""
+            echo "Note: Plan may show k3s resources being destroyed - this is expected when skip_k3s_resources=true"
+            echo "⚠️  If you see Cloudflare resources being CREATED, the state migration may have failed!"
+            exit 0
+          else
+            echo "❌ Plan failed with error (exit code $PLAN_EXIT_CODE)"
+            echo ""
+            echo "Plan output:"
+            cat plan-output.txt || true
+            echo ""
+            # Check if error is about missing variables (indicates remote execution mode)
+            if grep -q "No value for required variable" plan-output.txt 2>/dev/null; then
+              echo ""
+              echo "⚠️  This error usually means Terraform Cloud workspace is using 'Remote' execution mode."
+              echo "   With Remote execution, TF_VAR_ environment variables are not available."
+              echo ""
+              echo "   To fix:"
+              echo "   1. Go to: https://app.terraform.io/app/eldertree/workspaces/pi-fleet-terraform"
+              echo "   2. Click Settings → General"
+              echo "   3. Set Execution Mode to 'Local'"
+              echo "   4. Save settings"
+              echo "   5. Re-run this workflow"
+            fi
+            exit 1
+          fi
+        env:
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
+          TF_VAR_skip_k3s_resources: "true"
+          TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
+          TF_VAR_pi_user: ${{ secrets.PI_USER }}
+
+      # Show plan output (if plan failed)
+      - name: Show Plan Output
+        if: steps.plan.outcome == 'failure'
+        run: cat plan-output.txt || true
+
+      # Apply Terraform changes (only via manual workflow_dispatch)
+      # Note: Terraform Cloud remote backend requires TF_VAR_ environment variables
+      # Note: Terraform Cloud remote backend doesn't support saved plans, so we run plan again during apply
+      - name: Terraform Apply
+        if: |
+          steps.plan.outcome == 'success' && 
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+        run: terraform apply -auto-approve -input=false
+        env:
+          TF_INPUT: false
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
+          TF_VAR_skip_k3s_resources: "true"
+          TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
+          TF_VAR_pi_user: ${{ secrets.PI_USER }}

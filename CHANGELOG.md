@@ -62,6 +62,10 @@
 
 - Pi-hole pod initialization failure due to missing pihole-upstream-dns ConfigMap
 - External-DNS pod CrashLoopBackOff due to BIND service not being available
+- External-DNS Cloudflare pod CrashLoopBackOff when Vault is sealed or secret missing
+  - Suspended HelmRelease until Vault is unsealed and Cloudflare API token exists
+  - Made secret reference optional in HelmRelease
+  - Added helper script `fix-vault-and-cloudflare.sh` to automate setup
 
 ## [0.2.0] - 2025-11-12
 

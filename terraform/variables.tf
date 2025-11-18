@@ -1,19 +1,23 @@
 variable "pi_host" {
-  description = "Hostname or IP address of the Raspberry Pi"
+  description = "Hostname or IP address of the Raspberry Pi (required only when skip_k3s_resources=false)"
   type        = string
-  default     = "eldertree"
+  default     = null
+  nullable    = true
 }
 
 variable "pi_user" {
-  description = "SSH username for the Raspberry Pi"
+  description = "SSH username for the Raspberry Pi (required only when skip_k3s_resources=false). Can be retrieved from Vault at secret/terraform/pi-user or GitHub secrets"
   type        = string
-  default     = "raolivei"
+  default     = null
+  nullable    = true
 }
 
 variable "pi_password" {
-  description = "SSH password for the Raspberry Pi"
+  description = "SSH password for the Raspberry Pi (required only when skip_k3s_resources=false)"
   type        = string
+  default     = null
   sensitive   = true
+  nullable    = true
 }
 
 variable "k3s_version" {
@@ -25,14 +29,21 @@ variable "k3s_version" {
 variable "k3s_token" {
   description = "K3s cluster token (auto-generated if not provided)"
   type        = string
-  default     = ""
+  default     = null # Use null instead of empty string to avoid marked value issues
   sensitive   = true
+  nullable    = true
 }
 
 variable "kubeconfig_path" {
   description = "Local path to save the kubeconfig"
   type        = string
   default     = "~/.kube/config-eldertree"
+}
+
+variable "skip_k3s_resources" {
+  description = "Skip k3s installation resources (useful for CI where SSH is not available)"
+  type        = bool
+  default     = false
 }
 
 variable "cloudflare_api_token" {
@@ -49,6 +60,12 @@ variable "cloudflare_zone_id" {
 
 variable "public_ip" {
   description = "Public IP address for DNS A records (root and wildcard). May need dynamic DNS solution or router port forwarding."
+  type        = string
+  default     = ""
+}
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare Account ID (required for tunnels). Found in Cloudflare Dashboard → Right sidebar → Account ID"
   type        = string
   default     = ""
 }

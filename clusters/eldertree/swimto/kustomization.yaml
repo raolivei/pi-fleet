@@ -11,3 +11,6 @@ resources:
   - ingress.yaml
   - cronjob-refresh.yaml
   - facility-url-validator-cronjob.yaml
+  - image-repositories.yaml
+  - image-policies.yaml
+  - image-update-automation.yaml

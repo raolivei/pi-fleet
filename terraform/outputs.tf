@@ -5,7 +5,7 @@ output "cluster_name" {
 
 output "cluster_endpoint" {
   description = "K3s cluster API endpoint"
-  value       = "https://${var.pi_host}:6443"
+  value       = var.skip_k3s_resources ? null : "https://${coalesce(var.pi_host, "eldertree")}:6443"
 }
 
 output "kubeconfig_location" {
@@ -20,12 +20,12 @@ output "node_token_location" {
 
 output "ssh_command" {
   description = "SSH command to connect to the control plane"
-  value       = "ssh ${var.pi_user}@${var.pi_host}"
+  value       = var.skip_k3s_resources ? null : "ssh ${coalesce(var.pi_user, "pi")}@${coalesce(var.pi_host, "eldertree")}"
 }
 
 output "next_steps" {
   description = "Next steps to use your cluster"
-  value       = <<-EOT
+  value       = var.skip_k3s_resources ? "K3s resources are skipped (CI mode)" : <<-EOT
     
     ╔══════════════════════════════════════════════════════════╗
     ║         K3s Control Plane Installation Complete!         ║
@@ -42,10 +42,10 @@ output "next_steps" {
        ${path.module}/k3s-node-token
     
     4. SSH to control plane:
-       ssh ${var.pi_user}@${var.pi_host}
+       ssh ${coalesce(var.pi_user, "pi")}@${coalesce(var.pi_host, "eldertree")}
     
     5. Access the cluster from other machines by updating their
-       /etc/hosts with the Pi's IP address for ${var.pi_host}
+       /etc/hosts with the Pi's IP address for ${coalesce(var.pi_host, "eldertree")}
     
   EOT
 }

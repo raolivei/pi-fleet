@@ -3,13 +3,25 @@
 # =============================================================================
 
 # Generate a random token if not provided
+# Only create if k3s resources are not skipped (not CI)
 resource "random_password" "k3s_token" {
+  count   = var.skip_k3s_resources ? 0 : 1
   length  = 64
   special = false
 }
 
 locals {
-  k3s_token        = var.k3s_token != "" ? var.k3s_token : random_password.k3s_token.result
+  # Handle sensitive k3s_token: completely avoid evaluating sensitive values in CI
+  # In CI (skip_k3s_resources=true), use placeholder without touching sensitive vars
+  # When not in CI, use coalesce to handle null k3s_token safely
+  # Wrap everything in try() to avoid crashes from sensitive value comparisons
+  k3s_token = var.skip_k3s_resources ? "ci-placeholder-token" : try(
+    coalesce(
+      try(var.k3s_token, null),
+      try(random_password.k3s_token[0].result, null)
+    ),
+    "placeholder"
+  )
   k3s_version_flag = var.k3s_version != "" ? "INSTALL_K3S_VERSION=${var.k3s_version}" : ""
   kubeconfig_path  = pathexpand(var.kubeconfig_path)
 }
@@ -19,10 +31,12 @@ locals {
 # =============================================================================
 
 resource "null_resource" "system_prep" {
+  count = var.skip_k3s_resources ? 0 : 1 # Skip in CI
+
   connection {
     type     = "ssh"
-    host     = var.pi_host
-    user     = var.pi_user
+    host     = coalesce(var.pi_host, "eldertree")
+    user     = coalesce(var.pi_user, "pi")
     password = var.pi_password
     timeout  = "5m"
   }
@@ -32,7 +46,7 @@ resource "null_resource" "system_prep" {
     inline = [
       "set -e",
       "echo 'Current hostname: '$(hostname)",
-      "echo 'Verifying we are on ${var.pi_host}...'",
+      "echo 'Verifying we are on ${coalesce(var.pi_host, "eldertree")}...'",
     ]
   }
 
@@ -54,12 +68,13 @@ resource "null_resource" "system_prep" {
 # =============================================================================
 
 resource "null_resource" "install_k3s" {
+  count      = var.skip_k3s_resources ? 0 : 1 # Skip in CI
   depends_on = [null_resource.system_prep]
 
   connection {
     type     = "ssh"
-    host     = var.pi_host
-    user     = var.pi_user
+    host     = coalesce(var.pi_host, "eldertree")
+    user     = coalesce(var.pi_user, "pi")
     password = var.pi_password
     timeout  = "10m"
   }
@@ -68,7 +83,7 @@ resource "null_resource" "install_k3s" {
     inline = [
       "set -e",
       "echo 'Installing K3s control plane...'",
-      "curl -sfL https://get.k3s.io | ${local.k3s_version_flag} K3S_TOKEN='${local.k3s_token}' sh -s - server --cluster-init --write-kubeconfig-mode=644 --tls-san=${var.pi_host}",
+      "curl -sfL https://get.k3s.io | ${local.k3s_version_flag} K3S_TOKEN='${local.k3s_token}' sh -s - server --cluster-init --write-kubeconfig-mode=644 --tls-san=${coalesce(var.pi_host, "eldertree")}",
       "echo 'Waiting for K3s to be ready...'",
       "until echo ${var.pi_password} | sudo -S k3s kubectl get nodes 2>/dev/null; do sleep 5; done",
       "echo 'K3s installation complete!'",
@@ -89,12 +104,13 @@ resource "null_resource" "install_k3s" {
 # =============================================================================
 
 resource "null_resource" "install_k9s" {
+  count      = var.skip_k3s_resources ? 0 : 1 # Skip in CI
   depends_on = [null_resource.install_k3s]
 
   connection {
     type     = "ssh"
-    host     = var.pi_host
-    user     = var.pi_user
+    host     = coalesce(var.pi_host, "eldertree")
+    user     = coalesce(var.pi_user, "pi")
     password = var.pi_password
     timeout  = "5m"
   }
@@ -120,14 +136,15 @@ resource "null_resource" "install_k9s" {
 # =============================================================================
 
 resource "null_resource" "retrieve_kubeconfig" {
+  count      = var.skip_k3s_resources ? 0 : 1 # Skip in CI
   depends_on = [null_resource.install_k3s]
 
   # Download kubeconfig
   provisioner "local-exec" {
     command = <<-EOT
       mkdir -p $(dirname ${local.kubeconfig_path})
-      sshpass -p '${var.pi_password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.pi_user}@${var.pi_host} 'sudo cat /etc/rancher/k3s/k3s.yaml' > ${local.kubeconfig_path}
-      sed -i.bak 's/127.0.0.1/${var.pi_host}/g' ${local.kubeconfig_path}
+      sshpass -p '${var.pi_password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${coalesce(var.pi_user, "pi")}@${coalesce(var.pi_host, "eldertree")} 'sudo cat /etc/rancher/k3s/k3s.yaml' > ${local.kubeconfig_path}
+      sed -i.bak 's/127.0.0.1/${coalesce(var.pi_host, "eldertree")}/g' ${local.kubeconfig_path}
       chmod 600 ${local.kubeconfig_path}
       rm -f ${local.kubeconfig_path}.bak
       # Update cluster and context names to eldertree
@@ -138,7 +155,7 @@ resource "null_resource" "retrieve_kubeconfig" {
   # Download node token for future worker nodes
   provisioner "local-exec" {
     command = <<-EOT
-      sshpass -p '${var.pi_password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.pi_user}@${var.pi_host} 'echo ${var.pi_password} | sudo -S cat /var/lib/rancher/k3s/server/node-token' > ${path.module}/k3s-node-token
+      sshpass -p '${var.pi_password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${coalesce(var.pi_user, "pi")}@${coalesce(var.pi_host, "eldertree")} 'echo ${var.pi_password} | sudo -S cat /var/lib/rancher/k3s/server/node-token' > ${path.module}/k3s-node-token
       chmod 600 ${path.module}/k3s-node-token
     EOT
   }

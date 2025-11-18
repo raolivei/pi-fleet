@@ -21,9 +21,21 @@ if ! kubectl get pod vault-0 -n vault &>/dev/null; then
     exit 1
 fi
 
-# Wait for pod to be ready
-echo "Waiting for Vault pod to be ready..."
-kubectl wait --for=condition=ready pod/vault-0 -n vault --timeout=300s
+# Wait for pod to be running (sealed Vault won't pass readiness probe, so check Running phase instead)
+echo "Waiting for Vault pod to be running..."
+for i in {1..30}; do
+    PHASE=$(kubectl get pod vault-0 -n vault -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+    if [ "$PHASE" = "Running" ]; then
+        echo "✅ Vault pod is running"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo "❌ Vault pod did not start running within 5 minutes"
+        kubectl get pod vault-0 -n vault
+        exit 1
+    fi
+    sleep 10
+done
 
 # Check if already unsealed
 SEAL_STATUS=$(kubectl exec -n vault vault-0 -- vault status -format=json 2>/dev/null | jq -r '.sealed' || echo "true")

@@ -8,5 +8,5 @@ data:
   OPEN_DATA_BASE_URL: "https://open.toronto.ca"
   INGEST_WINDOW_DAYS: "56"
   LOG_LEVEL: "INFO"
-  GOOGLE_REDIRECT_URI: "https://swimto.eldertree.local/auth/callback"
-  CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","https://swimto.eldertree.local","http://swimto.eldertree.local","https://swimto.local","http://swimto.local"]'
+  GOOGLE_REDIRECT_URI: "https://swimto.eldertree.xyz/auth/callback"
+  CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","https://swimto.eldertree.local","http://swimto.eldertree.local","https://swimto.eldertree.xyz","http://swimto.eldertree.xyz","https://swimto.local","http://swimto.local"]'

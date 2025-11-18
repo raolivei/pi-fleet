@@ -20,40 +20,24 @@ spec:
         spec:
           restartPolicy: Never
           containers:
-          - name: validator
-            image: ghcr.io/raolivei/swimto-api:latest
-            imagePullPolicy: Always
-            command:
-            - python3
-            - /data-pipeline/jobs/validate_facility_urls.py
-            env:
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: swimto-db-credentials
-                  key: connection-string
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: swimto-db-credentials
-                  key: username
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: swimto-db-credentials
-                  key: password
-            - name: POSTGRES_DB
-              value: "pools"
-            - name: POSTGRES_HOST
-              value: "swimto-postgresql.swimto.svc.cluster.local"
-            - name: POSTGRES_PORT
-              value: "5432"
-            resources:
-              requests:
-                memory: "128Mi"
-                cpu: "100m"
-              limits:
-                memory: "256Mi"
-                cpu: "200m"
+            - name: validator
+              image: ghcr.io/raolivei/swimto-api:latest
+              imagePullPolicy: Always
+              command:
+                - python3
+                - /data-pipeline/jobs/validate_facility_urls.py
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: swimto-secrets
+                      key: DATABASE_URL
+              resources:
+                requests:
+                  memory: "128Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "256Mi"
+                  cpu: "200m"
           imagePullSecrets:
-          - name: ghcr-secret
+            - name: ghcr-secret
