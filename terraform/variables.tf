@@ -29,7 +29,7 @@ variable "k3s_version" {
 variable "k3s_token" {
   description = "K3s cluster token (auto-generated if not provided)"
   type        = string
-  default     = null  # Use null instead of empty string to avoid marked value issues
+  default     = null # Use null instead of empty string to avoid marked value issues
   sensitive   = true
   nullable    = true
 }
