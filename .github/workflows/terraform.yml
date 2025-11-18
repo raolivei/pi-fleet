@@ -42,10 +42,17 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
+          # Configure Terraform Cloud backend for remote state
+          # This allows Terraform to check state across CI runs
+          terraform_cloud_hostname: app.terraform.io
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      # Initialize Terraform working directory
+      # Initialize Terraform working directory with remote backend
       - name: Terraform Init
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="organization=${{ secrets.TF_CLOUD_ORGANIZATION }}" \
+            -backend-config="workspaces.name=pi-fleet-terraform"
         env:
           TF_INPUT: false
 

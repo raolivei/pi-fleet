@@ -6,6 +6,27 @@ This document explains how to configure GitHub Actions to run Terraform workflow
 
 The Terraform workflow requires the following secrets to be configured in your GitHub repository:
 
+### Terraform Cloud Secrets (for Remote State)
+
+1. **`TF_API_TOKEN`**
+   - Description: Terraform Cloud API token for remote state backend
+   - How to get:
+     1. Go to [Terraform Cloud](https://app.terraform.io/app/settings/tokens)
+     2. Click "Create an API token"
+     3. Give it a description (e.g., "GitHub Actions")
+     4. Copy the token (you won't be able to see it again)
+   - **Required**: Yes (for remote state persistence in CI)
+
+2. **`TF_CLOUD_ORGANIZATION`**
+   - Description: Your Terraform Cloud organization name
+   - How to get:
+     1. Go to [Terraform Cloud](https://app.terraform.io)
+     2. Your organization name is shown in the URL or top navigation
+     3. Or create a new organization if you don't have one (free tier available)
+   - **Required**: Yes (for remote state persistence in CI)
+
+### Cloudflare Secrets
+
 ### Cloudflare Secrets
 
 1. **`CLOUDFLARE_API_TOKEN`**
