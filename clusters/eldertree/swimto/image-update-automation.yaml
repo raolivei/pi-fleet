@@ -1,11 +1,11 @@
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta1
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageUpdateAutomation
 metadata:
   name: swimto-updates
   namespace: swimto
 spec:
-  interval: 5m
+  interval: 1m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -19,16 +19,14 @@ spec:
         name: Flux Image Automation
         email: flux-image-automation@eldertree.local
       messageTemplate: |
-        Update swimto images to {{range .Updated.Images}}{{println .}}{{end}}
-        
+        chore: update swimto images
+
+        {{range .Updated.Images}}{{println .}}{{end}}
+
         Automated image update by Flux
     push:
       branch: main
   update:
+    path: ./clusters/eldertree/swimto
     strategy: Setters
-    setters:
-      - paths:
-          - spec.template.spec.containers.[name=api].image
-          - spec.template.spec.containers.[name=web].image
-        value: '{{ .Image }}'
 

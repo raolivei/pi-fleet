@@ -1,23 +1,23 @@
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta2
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageRepository
 metadata:
   name: swimto-api
   namespace: swimto
 spec:
   image: ghcr.io/raolivei/swimto-api
-  interval: 5m
+  interval: 1m
   secretRef:
     name: ghcr-secret
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta2
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageRepository
 metadata:
   name: swimto-web
   namespace: swimto
 spec:
   image: ghcr.io/raolivei/swimto-web
-  interval: 5m
+  interval: 1m
   secretRef:
     name: ghcr-secret
 
