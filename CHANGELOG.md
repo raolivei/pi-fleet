@@ -40,18 +40,28 @@
 - Grafana dashboards: 9 comprehensive K8s dashboards
 - kube-state-metrics for detailed Kubernetes object metrics
 - DASHBOARDS.md guide with PromQL queries
+- ExternalSecret for BIND TSIG secret in pihole namespace (pihole-bind-tsig-secret)
 
 ### Removed
 
 - Consolidated DNS scripts: removed 8 redundant scripts
 - Redundant Canopy Vault documentation and migration guides
 - Unused Canopy sync-secrets.sh script
+- Hardcoded TSIG secret from BIND ConfigMap (now uses Vault)
 
 ### Changed
 
 - NETWORK.md: External-DNS as recommended DNS approach
 - Pi-hole deployment: BIND sidecar for RFC2136 support
 - Grafana: use Kubernetes secret from Vault instead of hardcoded password
+- Pi-hole BIND configuration: TSIG secret now injected from Vault via External Secrets Operator
+- Pi-hole deployment: bind-init container now injects TSIG secret from mounted secret volume
+- Fixed missing pihole-upstream-dns ConfigMap in kustomization.yaml
+
+### Fixed
+
+- Pi-hole pod initialization failure due to missing pihole-upstream-dns ConfigMap
+- External-DNS pod CrashLoopBackOff due to BIND service not being available
 
 ## [0.2.0] - 2025-11-12
 

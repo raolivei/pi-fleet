@@ -35,3 +35,21 @@ variable "kubeconfig_path" {
   default     = "~/.kube/config-eldertree"
 }
 
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token for DNS management. Should be stored in Vault at secret/terraform/cloudflare-api-token"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare Zone ID for eldertree.xyz. Obtained after adding domain to Cloudflare account."
+  type        = string
+  default     = ""
+}
+
+variable "public_ip" {
+  description = "Public IP address for DNS A records (root and wildcard). May need dynamic DNS solution or router port forwarding."
+  type        = string
+  default     = ""
+}
+

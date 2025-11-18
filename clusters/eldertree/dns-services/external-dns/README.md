@@ -99,3 +99,77 @@ External-DNS will automatically create the DNS record.
 - **Policy**: `sync` (creates/updates/deletes records)
 - **Registry**: `txt` (tracks ownership via TXT records)
 
+## Cloudflare Integration
+
+External-DNS also supports Cloudflare DNS for public domain `eldertree.xyz`. Two External-DNS instances run simultaneously:
+
+1. **RFC2136 Provider** (`external-dns`): Manages `.eldertree.local` domains via BIND
+2. **Cloudflare Provider** (`external-dns-cloudflare`): Manages `.eldertree.xyz` domains via Cloudflare DNS
+
+### Cloudflare Setup
+
+1. **Prerequisites**:
+   - Domain `eldertree.xyz` must be added to Cloudflare account
+   - Nameservers must be changed at Porkbun to Cloudflare nameservers
+   - Cloudflare API token must be stored in Vault
+
+2. **Store Cloudflare API Token in Vault**:
+   ```bash
+   # Get Vault pod
+   VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
+   
+   # Store token for External-DNS
+   kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-api-token api-token=YOUR_API_TOKEN_HERE
+   ```
+
+3. **Verify External-DNS Cloudflare Instance**:
+   ```bash
+   kubectl get pods -n external-dns
+   kubectl logs -n external-dns deployment/external-dns-cloudflare
+   ```
+
+### Usage with Cloudflare
+
+Create Ingress with hostname in `eldertree.xyz` domain:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-service
+spec:
+  rules:
+    - host: myservice.eldertree.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+```
+
+External-DNS Cloudflare instance will automatically create the DNS record in Cloudflare.
+
+### Domain Filters
+
+- **RFC2136 Provider**: Handles `eldertree.local` domains (internal services)
+- **Cloudflare Provider**: Handles `eldertree.xyz` domains (public services)
+
+Each provider only manages records for its configured domain filter, ensuring no conflicts.
+
+### Troubleshooting Cloudflare
+
+**DNS records not created:**
+- Check external-dns-cloudflare logs: `kubectl logs -n external-dns deployment/external-dns-cloudflare`
+- Verify Cloudflare API token is stored in Vault at `secret/external-dns/cloudflare-api-token`
+- Check ExternalSecret sync status: `kubectl describe externalsecret external-dns-cloudflare-secret -n external-dns`
+- Verify domain is added to Cloudflare and nameservers are changed at Porkbun
+
+**API token errors:**
+- Ensure token has Zone:Read and DNS:Edit permissions
+- Verify token is for correct zone (`eldertree.xyz`)
+- Check token hasn't expired or been revoked
+

@@ -4,5 +4,6 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
+  - helmrelease-cloudflare.yaml
   # secret.yaml removed - now using External Secrets Operator with Vault
 

@@ -32,13 +32,21 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
+              # Copy zone file
               cp /etc/named/eldertree.local.zone /var/named/eldertree.local.zone
               chmod 644 /var/named/eldertree.local.zone
+              # Generate named.conf with TSIG secret from Vault
+              TSIG_SECRET=$(cat /etc/bind-tsig/tsig-secret)
+              sed "s|TSIG_SECRET_PLACEHOLDER|${TSIG_SECRET}|g" /etc/named/named.conf > /var/named/named.conf
+              chmod 644 /var/named/named.conf
           volumeMounts:
             - name: bind-config
               mountPath: /etc/named
             - name: bind-data
               mountPath: /var/named
+            - name: bind-tsig-secret
+              mountPath: /etc/bind-tsig
+              readOnly: true
       containers:
         - name: pihole
           image: pihole/pihole:latest
@@ -127,7 +135,7 @@ spec:
           args:
             - "-4"
             - "-c"
-            - "/etc/named/named.conf"
+            - "/var/named/named.conf"
             - "-f"
           volumeMounts:
             - name: bind-config
@@ -159,3 +167,6 @@ spec:
         - name: upstream-dns
           configMap:
             name: pihole-upstream-dns
+        - name: bind-tsig-secret
+          secret:
+            secretName: pihole-bind-tsig-secret

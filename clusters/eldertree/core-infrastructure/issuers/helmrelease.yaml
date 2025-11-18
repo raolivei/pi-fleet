@@ -22,4 +22,7 @@ spec:
       enabled: true
       name: selfsigned-cluster-issuer
     acme:
-      enabled: false
+      enabled: true
+      email: "your-email@example.com"  # TODO: Update with your email address
+      server: https://acme-v02.api.letsencrypt.org/directory
+      name: letsencrypt-prod

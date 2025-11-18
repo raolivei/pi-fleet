@@ -20,10 +20,10 @@ data:
       dnssec-validation no;
     };
 
-    // TSIG key for external-dns
+    // TSIG key for external-dns (injected by bind-init from Vault secret)
     key "externaldns-key" {
       algorithm hmac-sha256;
-      secret "L1BhWEliMFI3anJXS1ZUbnRiZER2S1JmRWkvTi9QZmpCSnZiR1hNbkR1Zz0=";
+      secret "TSIG_SECRET_PLACEHOLDER";
     };
 
     // Zone for eldertree.local

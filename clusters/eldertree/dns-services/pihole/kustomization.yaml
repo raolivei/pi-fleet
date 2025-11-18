@@ -5,6 +5,7 @@ resources:
   - pvc.yaml
   - configmap.yaml
   - bind-configmap.yaml
+  - dnsmasq-upstream-configmap.yaml
   - deployment.yaml
   - service.yaml
   - bind-service.yaml
