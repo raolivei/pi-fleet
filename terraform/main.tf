@@ -70,8 +70,8 @@ resource "null_resource" "install_k3s" {
 
   connection {
     type     = "ssh"
-    host     = var.pi_host
-    user     = var.pi_user
+    host     = coalesce(var.pi_host, "eldertree")
+    user     = coalesce(var.pi_user, "raolivei")
     password = var.pi_password
     timeout  = "10m"
   }
@@ -80,7 +80,7 @@ resource "null_resource" "install_k3s" {
     inline = [
       "set -e",
       "echo 'Installing K3s control plane...'",
-      "curl -sfL https://get.k3s.io | ${local.k3s_version_flag} K3S_TOKEN='${local.k3s_token}' sh -s - server --cluster-init --write-kubeconfig-mode=644 --tls-san=${var.pi_host}",
+      "curl -sfL https://get.k3s.io | ${local.k3s_version_flag} K3S_TOKEN='${local.k3s_token}' sh -s - server --cluster-init --write-kubeconfig-mode=644 --tls-san=${coalesce(var.pi_host, "eldertree")}",
       "echo 'Waiting for K3s to be ready...'",
       "until echo ${var.pi_password} | sudo -S k3s kubectl get nodes 2>/dev/null; do sleep 5; done",
       "echo 'K3s installation complete!'",
