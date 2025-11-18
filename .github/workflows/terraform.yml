@@ -62,10 +62,12 @@ jobs:
           TF_VAR_skip_k3s_resources: "true"
 
       # Generates an execution plan for Terraform
+      # Use -destroy=false to prevent planning destruction of k3s resources when skip_k3s_resources=true
+      # This allows plan to succeed even when k3s resources exist in state but are skipped in CI
       - name: Terraform Plan
         id: plan
         run: |
-          terraform plan -input=false -out=tfplan \
+          terraform plan -input=false -destroy=false -out=tfplan \
             -var="cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}" \
             -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
             -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
