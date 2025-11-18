@@ -15,7 +15,7 @@ locals {
   # Variable defaults to null (not empty string) to avoid marked value comparison issues
   # coalesce() safely handles null values without comparing sensitive values
   # In CI (skip_k3s_resources=true), always use a placeholder token
-  k3s_token = var.skip_k3s_resources ? "ci-placeholder-token" : coalesce(var.k3s_token, try(random_password.k3s_token[0].result, "placeholder"))
+  k3s_token        = var.skip_k3s_resources ? "ci-placeholder-token" : coalesce(var.k3s_token, try(random_password.k3s_token[0].result, "placeholder"))
   k3s_version_flag = var.k3s_version != "" ? "INSTALL_K3S_VERSION=${var.k3s_version}" : ""
   kubeconfig_path  = pathexpand(var.kubeconfig_path)
 }
@@ -25,7 +25,7 @@ locals {
 # =============================================================================
 
 resource "null_resource" "system_prep" {
-  count = var.skip_k3s_resources ? 0 : 1  # Skip in CI
+  count = var.skip_k3s_resources ? 0 : 1 # Skip in CI
 
   connection {
     type     = "ssh"
@@ -62,7 +62,7 @@ resource "null_resource" "system_prep" {
 # =============================================================================
 
 resource "null_resource" "install_k3s" {
-  count      = local.is_ci ? 0 : 1 # Skip in CI
+  count      = var.skip_k3s_resources ? 0 : 1  # Skip in CI
   depends_on = [null_resource.system_prep]
 
   connection {
@@ -98,7 +98,7 @@ resource "null_resource" "install_k3s" {
 # =============================================================================
 
 resource "null_resource" "install_k9s" {
-  count      = local.is_ci ? 0 : 1 # Skip in CI
+  count      = var.skip_k3s_resources ? 0 : 1  # Skip in CI
   depends_on = [null_resource.install_k3s]
 
   connection {
@@ -130,7 +130,7 @@ resource "null_resource" "install_k9s" {
 # =============================================================================
 
 resource "null_resource" "retrieve_kubeconfig" {
-  count      = local.is_ci ? 0 : 1 # Skip in CI
+  count      = var.skip_k3s_resources ? 0 : 1  # Skip in CI
   depends_on = [null_resource.install_k3s]
 
   # Download kubeconfig
