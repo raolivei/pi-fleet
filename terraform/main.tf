@@ -13,12 +13,14 @@ resource "random_password" "k3s_token" {
 locals {
   # Handle sensitive k3s_token: completely avoid evaluating sensitive values in CI
   # In CI (skip_k3s_resources=true), use placeholder without touching sensitive vars
-  # When not in CI, use coalesce to handle null k3s_token
-  # Check count first to avoid accessing random_password when it doesn't exist
-  k3s_token = var.skip_k3s_resources ? "ci-placeholder-token" : (
-    var.k3s_token != null ? var.k3s_token : (
-      length(random_password.k3s_token) > 0 ? random_password.k3s_token[0].result : "placeholder"
-    )
+  # When not in CI, use coalesce to handle null k3s_token safely
+  # Wrap everything in try() to avoid crashes from sensitive value comparisons
+  k3s_token = var.skip_k3s_resources ? "ci-placeholder-token" : try(
+    coalesce(
+      try(var.k3s_token, null),
+      try(random_password.k3s_token[0].result, null)
+    ),
+    "placeholder"
   )
   k3s_version_flag = var.k3s_version != "" ? "INSTALL_K3S_VERSION=${var.k3s_version}" : ""
   kubeconfig_path  = pathexpand(var.kubeconfig_path)
