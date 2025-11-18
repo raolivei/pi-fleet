@@ -53,3 +53,9 @@ variable "public_ip" {
   default     = ""
 }
 
+variable "cloudflare_account_id" {
+  description = "Cloudflare Account ID (required for tunnels). Found in Cloudflare Dashboard → Right sidebar → Account ID"
+  type        = string
+  default     = ""
+}
+

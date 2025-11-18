@@ -77,12 +77,14 @@ spec:
                 port:
                   number: 3000
 ---
-# Public domain Ingress with Let's Encrypt (for mobile location services)
-# TODO: Replace 'swimto.yourdomain.com' with your actual public domain
-# This requires:
-# 1. Public domain DNS pointing to your server's public IP
-# 2. Ports 80 and 443 open on your router/firewall
-# 3. Email address updated in clusters/eldertree/core-infrastructure/issuers/helmrelease.yaml
+# Public domain Ingress with Cloudflare Origin Certificate (for mobile location services)
+# Configured for swimto.eldertree.xyz
+# Requires:
+# 1. Cloudflare Origin Certificate generated in Cloudflare Dashboard
+# 2. Certificate stored as Kubernetes secret: swimto-cloudflare-origin-tls
+# 3. Cloudflare SSL/TLS mode set to "Full (strict)" in Cloudflare Dashboard
+# 4. DNS record managed by External-DNS (automatic via annotation)
+# 5. Cloudflare proxy enabled (orange cloud) for automatic HTTPS
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -91,18 +93,17 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.middlewares: swimto-redirect-https@kubernetescrd,swimto-api-path-rewrite@kubernetescrd
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    external-dns.alpha.kubernetes.io/hostname: swimto.yourdomain.com  # TODO: Update with your domain
+    external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.xyz
   labels:
     app: swimto
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - swimto.yourdomain.com  # TODO: Update with your domain
-      secretName: swimto-public-tls
+        - swimto.eldertree.xyz
+      secretName: swimto-cloudflare-origin-tls
   rules:
-    - host: swimto.yourdomain.com  # TODO: Update with your domain
+    - host: swimto.eldertree.xyz
       http:
         paths:
           - path: /api
@@ -121,18 +122,17 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.middlewares: swimto-redirect-https@kubernetescrd
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    external-dns.alpha.kubernetes.io/hostname: swimto.yourdomain.com  # TODO: Update with your domain
+    external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.xyz
   labels:
     app: swimto
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - swimto.yourdomain.com  # TODO: Update with your domain
-      secretName: swimto-public-tls
+        - swimto.eldertree.xyz
+      secretName: swimto-cloudflare-origin-tls
   rules:
-    - host: swimto.yourdomain.com  # TODO: Update with your domain
+    - host: swimto.eldertree.xyz
       http:
         paths:
           - path: /

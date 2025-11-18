@@ -32,3 +32,8 @@ kubeconfig_path = "~/.kube/config-eldertree"
 # May need dynamic DNS solution or router port forwarding configuration
 # public_ip = "your-public-ip-address-here"
 
+# Cloudflare Account ID (required for tunnels)
+# Found in Cloudflare Dashboard → Right sidebar → Account ID
+# Or via API: curl -X GET "https://api.cloudflare.com/client/v4/accounts" -H "Authorization: Bearer YOUR_API_TOKEN"
+# cloudflare_account_id = "your-account-id-here"
+
