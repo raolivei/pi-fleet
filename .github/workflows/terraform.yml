@@ -68,18 +68,23 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: |
+          set +e
           terraform plan -input=false -detailed-exitcode -out=tfplan \
             -var="cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}" \
             -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
             -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
             -var="public_ip=${{ secrets.PUBLIC_IP }}" \
             -var="skip_k3s_resources=true" \
-            -var="kubeconfig_path=~/.kube/config-eldertree" || \
-          if [ $? -eq 2 ]; then
+            -var="kubeconfig_path=~/.kube/config-eldertree"
+          PLAN_EXIT_CODE=$?
+          if [ $PLAN_EXIT_CODE -eq 0 ]; then
+            echo "Plan succeeded with no changes"
+            exit 0
+          elif [ $PLAN_EXIT_CODE -eq 2 ]; then
             echo "Plan succeeded with changes detected (including potential k3s resource destruction)"
             exit 0
           else
-            echo "Plan failed with error"
+            echo "Plan failed with error (exit code $PLAN_EXIT_CODE)"
             exit 1
           fi
         continue-on-error: true
