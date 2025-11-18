@@ -1,0 +1,29 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: swimto-api-policy
+  namespace: swimto
+spec:
+  imageRepositoryRef:
+    name: swimto-api
+  filterTags:
+    pattern: '^latest$'
+  policy:
+    alphabetical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: swimto-web-policy
+  namespace: swimto
+spec:
+  imageRepositoryRef:
+    name: swimto-web
+  filterTags:
+    pattern: '^latest$'
+  policy:
+    alphabetical:
+      order: asc
+
