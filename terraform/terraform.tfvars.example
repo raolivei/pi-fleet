@@ -6,7 +6,7 @@
 
 # Raspberry Pi Connection Details
 pi_host     = "eldertree"           # Hostname or IP address
-pi_user     = "raolivei"            # SSH username
+pi_user     = "pi"                  # SSH username (default: pi)
 pi_password = "Control01!"          # SSH password
 
 # Cluster Configuration

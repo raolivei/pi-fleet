@@ -20,7 +20,7 @@ output "node_token_location" {
 
 output "ssh_command" {
   description = "SSH command to connect to the control plane"
-  value       = var.skip_k3s_resources ? null : "ssh ${coalesce(var.pi_user, "raolivei")}@${coalesce(var.pi_host, "eldertree")}"
+  value       = var.skip_k3s_resources ? null : "ssh ${coalesce(var.pi_user, "pi")}@${coalesce(var.pi_host, "eldertree")}"
 }
 
 output "next_steps" {
@@ -42,7 +42,7 @@ output "next_steps" {
        ${path.module}/k3s-node-token
     
     4. SSH to control plane:
-       ssh ${coalesce(var.pi_user, "raolivei")}@${coalesce(var.pi_host, "eldertree")}
+       ssh ${coalesce(var.pi_user, "pi")}@${coalesce(var.pi_host, "eldertree")}
     
     5. Access the cluster from other machines by updating their
        /etc/hosts with the Pi's IP address for ${coalesce(var.pi_host, "eldertree")}

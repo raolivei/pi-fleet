@@ -36,7 +36,7 @@ resource "null_resource" "system_prep" {
   connection {
     type     = "ssh"
     host     = coalesce(var.pi_host, "eldertree")
-    user     = coalesce(var.pi_user, "raolivei")
+    user     = coalesce(var.pi_user, "pi")
     password = var.pi_password
     timeout  = "5m"
   }
@@ -74,7 +74,7 @@ resource "null_resource" "install_k3s" {
   connection {
     type     = "ssh"
     host     = coalesce(var.pi_host, "eldertree")
-    user     = coalesce(var.pi_user, "raolivei")
+    user     = coalesce(var.pi_user, "pi")
     password = var.pi_password
     timeout  = "10m"
   }
@@ -110,7 +110,7 @@ resource "null_resource" "install_k9s" {
   connection {
     type     = "ssh"
     host     = coalesce(var.pi_host, "eldertree")
-    user     = coalesce(var.pi_user, "raolivei")
+    user     = coalesce(var.pi_user, "pi")
     password = var.pi_password
     timeout  = "5m"
   }
@@ -143,7 +143,7 @@ resource "null_resource" "retrieve_kubeconfig" {
   provisioner "local-exec" {
     command = <<-EOT
       mkdir -p $(dirname ${local.kubeconfig_path})
-      sshpass -p '${var.pi_password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${coalesce(var.pi_user, "raolivei")}@${coalesce(var.pi_host, "eldertree")} 'sudo cat /etc/rancher/k3s/k3s.yaml' > ${local.kubeconfig_path}
+      sshpass -p '${var.pi_password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${coalesce(var.pi_user, "pi")}@${coalesce(var.pi_host, "eldertree")} 'sudo cat /etc/rancher/k3s/k3s.yaml' > ${local.kubeconfig_path}
       sed -i.bak 's/127.0.0.1/${coalesce(var.pi_host, "eldertree")}/g' ${local.kubeconfig_path}
       chmod 600 ${local.kubeconfig_path}
       rm -f ${local.kubeconfig_path}.bak
@@ -155,7 +155,7 @@ resource "null_resource" "retrieve_kubeconfig" {
   # Download node token for future worker nodes
   provisioner "local-exec" {
     command = <<-EOT
-      sshpass -p '${var.pi_password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${coalesce(var.pi_user, "raolivei")}@${coalesce(var.pi_host, "eldertree")} 'echo ${var.pi_password} | sudo -S cat /var/lib/rancher/k3s/server/node-token' > ${path.module}/k3s-node-token
+      sshpass -p '${var.pi_password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${coalesce(var.pi_user, "pi")}@${coalesce(var.pi_host, "eldertree")} 'echo ${var.pi_password} | sudo -S cat /var/lib/rancher/k3s/server/node-token' > ${path.module}/k3s-node-token
       chmod 600 ${path.module}/k3s-node-token
     EOT
   }
