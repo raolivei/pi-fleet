@@ -21,8 +21,6 @@ spec:
       messageTemplate: |
         chore: update swimto images
 
-        {{range .Changed.Images}}{{println .}}{{end}}
-
         Automated image update by Flux
     push:
       branch: main
