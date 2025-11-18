@@ -13,7 +13,7 @@ spec:
   triggers:
     - type: prometheus
       metadata:
-        serverAddress: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80
+        serverAddress: http://observability-monitoring-stack-prometheus-server.observability.svc.cluster.local:80
         metricName: http_requests_per_second
         threshold: "5"
         query: |
