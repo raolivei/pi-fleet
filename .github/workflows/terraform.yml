@@ -65,6 +65,8 @@ jobs:
       # Use -detailed-exitcode: exit code 0 = no changes, 1 = error, 2 = changes detected
       # Exit code 2 is OK - it means plan succeeded and shows changes (including destruction)
       # We only fail on exit code 1 (actual error)
+      # Note: When skip_k3s_resources=true, Terraform may plan to destroy existing k3s resources
+      # This is expected and OK - we treat exit code 2 as success
       - name: Terraform Plan
         id: plan
         run: |
@@ -77,17 +79,18 @@ jobs:
             -var="skip_k3s_resources=true" \
             -var="kubeconfig_path=~/.kube/config-eldertree"
           PLAN_EXIT_CODE=$?
+          set -e
           if [ $PLAN_EXIT_CODE -eq 0 ]; then
-            echo "Plan succeeded with no changes"
+            echo "✅ Plan succeeded with no changes"
             exit 0
           elif [ $PLAN_EXIT_CODE -eq 2 ]; then
-            echo "Plan succeeded with changes detected (including potential k3s resource destruction)"
+            echo "✅ Plan succeeded with changes detected"
+            echo "Note: Plan may show k3s resources being destroyed - this is expected when skip_k3s_resources=true"
             exit 0
           else
-            echo "Plan failed with error (exit code $PLAN_EXIT_CODE)"
+            echo "❌ Plan failed with error (exit code $PLAN_EXIT_CODE)"
             exit 1
           fi
-        continue-on-error: true
 
       # Show plan output
       - name: Show Plan
