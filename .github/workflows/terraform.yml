@@ -90,24 +90,12 @@ jobs:
       # We only fail on exit code 1 (actual error)
       # Note: When skip_k3s_resources=true, Terraform may plan to destroy existing k3s resources
       # This is expected and OK - we treat exit code 2 as success
+      # Note: Terraform Cloud remote backend doesn't support -var flags, use TF_VAR_ env vars instead
       - name: Terraform Plan
         id: plan
         run: |
           set +e
-          # Build terraform plan command with optional pi_user from GitHub secrets
-          PLAN_CMD="terraform plan -input=false -detailed-exitcode -out=tfplan \
-            -var=\"cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}\" \
-            -var=\"cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}\" \
-            -var=\"cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}\" \
-            -var=\"public_ip=${{ secrets.PUBLIC_IP }}\" \
-            -var=\"skip_k3s_resources=true\" \
-            -var=\"kubeconfig_path=~/.kube/config-eldertree\""
-          # Add pi_user if secret is set
-          if [ -n "${{ secrets.PI_USER }}" ]; then
-            PLAN_CMD="$PLAN_CMD -var=\"pi_user=${{ secrets.PI_USER }}\""
-          fi
-          # Execute plan command
-          eval $PLAN_CMD 2>&1 | tee plan-output.txt
+          terraform plan -input=false -detailed-exitcode -out=tfplan 2>&1 | tee plan-output.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}
           set -e
           echo "Terraform plan exit code: $PLAN_EXIT_CODE"
@@ -124,6 +112,14 @@ jobs:
             cat plan-output.txt || true
             exit 1
           fi
+        env:
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
+          TF_VAR_skip_k3s_resources: "true"
+          TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
+          TF_VAR_pi_user: ${{ secrets.PI_USER }}
 
       # Show plan output
       - name: Show Plan
