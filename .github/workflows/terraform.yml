@@ -61,6 +61,24 @@ jobs:
         env:
           TF_VAR_skip_k3s_resources: "true"
 
+      # Validate required secrets are set
+      - name: Validate Secrets
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ Error: CLOUDFLARE_API_TOKEN secret is not set"
+            echo "   Please configure it in: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_ZONE_ID }}" ]; then
+            echo "❌ Error: CLOUDFLARE_ZONE_ID secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ Error: CLOUDFLARE_ACCOUNT_ID secret is not set"
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+
       # Generates an execution plan for Terraform
       # Use -detailed-exitcode: exit code 0 = no changes, 1 = error, 2 = changes detected
       # Exit code 2 is OK - it means plan succeeded and shows changes (including destruction)
