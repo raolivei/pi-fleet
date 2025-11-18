@@ -77,9 +77,10 @@ jobs:
             -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
             -var="public_ip=${{ secrets.PUBLIC_IP }}" \
             -var="skip_k3s_resources=true" \
-            -var="kubeconfig_path=~/.kube/config-eldertree"
-          PLAN_EXIT_CODE=$?
+            -var="kubeconfig_path=~/.kube/config-eldertree" 2>&1 | tee plan-output.txt
+          PLAN_EXIT_CODE=${PIPESTATUS[0]}
           set -e
+          echo "Terraform plan exit code: $PLAN_EXIT_CODE"
           if [ $PLAN_EXIT_CODE -eq 0 ]; then
             echo "✅ Plan succeeded with no changes"
             exit 0
@@ -89,6 +90,8 @@ jobs:
             exit 0
           else
             echo "❌ Plan failed with error (exit code $PLAN_EXIT_CODE)"
+            echo "Plan output:"
+            cat plan-output.txt || true
             exit 1
           fi
 
