@@ -91,7 +91,8 @@ resource "random_password" "tunnel_secret" {
 
 # Cloudflare Tunnel for eldertree cluster
 # Creates secure outbound connection from cluster to Cloudflare
-resource "cloudflare_tunnel" "eldertree" {
+# Using cloudflare_zero_trust_tunnel_cloudflared (replaces deprecated cloudflare_tunnel)
+resource "cloudflare_zero_trust_tunnel_cloudflared" "eldertree" {
   account_id = var.cloudflare_account_id
   name       = "eldertree"
   secret     = base64encode(random_password.tunnel_secret.result)
@@ -99,9 +100,10 @@ resource "cloudflare_tunnel" "eldertree" {
 
 # Cloudflare Tunnel Configuration
 # Defines ingress rules for routing traffic
-resource "cloudflare_tunnel_config" "eldertree" {
+# Using cloudflare_zero_trust_tunnel_cloudflared_config (replaces deprecated cloudflare_tunnel_config)
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
   account_id = var.cloudflare_account_id
-  tunnel_id  = cloudflare_tunnel.eldertree.id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.eldertree.id
 
   config {
     # Web service route
@@ -130,7 +132,7 @@ resource "cloudflare_tunnel_config" "eldertree" {
 resource "cloudflare_record" "swimto_eldertree_xyz_tunnel" {
   zone_id         = data.cloudflare_zone.eldertree_xyz.id
   name            = "swimto"
-  content         = "${cloudflare_tunnel.eldertree.id}.cfargotunnel.com"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree.id}.cfargotunnel.com"
   type            = "CNAME"
   ttl             = 1    # Must be 1 when proxied=true
   proxied         = true # Enable Cloudflare proxy (orange cloud) for automatic HTTPS
@@ -147,12 +149,12 @@ output "cloudflare_zone_id" {
 # Output Cloudflare Tunnel information
 output "cloudflare_tunnel_id" {
   description = "Cloudflare Tunnel ID for eldertree"
-  value       = cloudflare_tunnel.eldertree.id
+  value       = cloudflare_zero_trust_tunnel_cloudflared.eldertree.id
 }
 
 output "cloudflare_tunnel_name" {
   description = "Cloudflare Tunnel name"
-  value       = cloudflare_tunnel.eldertree.name
+  value       = cloudflare_zero_trust_tunnel_cloudflared.eldertree.name
 }
 
 output "cloudflare_tunnel_token" {
@@ -163,7 +165,7 @@ output "cloudflare_tunnel_token" {
 
 output "cloudflare_tunnel_cname" {
   description = "CNAME target for tunnel DNS records"
-  value       = "${cloudflare_tunnel.eldertree.id}.cfargotunnel.com"
+  value       = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree.id}.cfargotunnel.com"
 }
 
 # Output Origin Certificate components for Kubernetes secret creation
