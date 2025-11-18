@@ -71,14 +71,20 @@ jobs:
         id: plan
         run: |
           set +e
-          terraform plan -input=false -detailed-exitcode -out=tfplan \
-            -var="cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}" \
-            -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
-            -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
-            -var="public_ip=${{ secrets.PUBLIC_IP }}" \
-            ${{ secrets.PI_USER != '' && format('-var="pi_user=%s"', secrets.PI_USER) || '' }} \
-            -var="skip_k3s_resources=true" \
-            -var="kubeconfig_path=~/.kube/config-eldertree" 2>&1 | tee plan-output.txt
+          # Build terraform plan command with optional pi_user from GitHub secrets
+          PLAN_CMD="terraform plan -input=false -detailed-exitcode -out=tfplan \
+            -var=\"cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}\" \
+            -var=\"cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}\" \
+            -var=\"cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}\" \
+            -var=\"public_ip=${{ secrets.PUBLIC_IP }}\" \
+            -var=\"skip_k3s_resources=true\" \
+            -var=\"kubeconfig_path=~/.kube/config-eldertree\""
+          # Add pi_user if secret is set
+          if [ -n "${{ secrets.PI_USER }}" ]; then
+            PLAN_CMD="$PLAN_CMD -var=\"pi_user=${{ secrets.PI_USER }}\""
+          fi
+          # Execute plan command
+          eval $PLAN_CMD 2>&1 | tee plan-output.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}
           set -e
           echo "Terraform plan exit code: $PLAN_EXIT_CODE"
