@@ -6,6 +6,7 @@ resources:
   # - canopy-secrets.yaml # DISABLED - canopy namespace not created (canopy app disabled)
   # - ghcr-secret.yaml # DISABLED - canopy namespace not created (canopy app disabled)
   - pihole-secrets.yaml
+  - pihole-bind-tsig-secret.yaml
   - swimto-secrets.yaml
   # - us-law-severity-map-secrets.yaml # DISABLED - us-law-severity-map namespace not created (app disabled)
   # - journey-secrets.yaml # DISABLED - journey namespace not created (journey app disabled)
