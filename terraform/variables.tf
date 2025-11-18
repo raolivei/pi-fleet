@@ -6,7 +6,7 @@ variable "pi_host" {
 }
 
 variable "pi_user" {
-  description = "SSH username for the Raspberry Pi (required only when skip_k3s_resources=false)"
+  description = "SSH username for the Raspberry Pi (required only when skip_k3s_resources=false). Can be retrieved from Vault at secret/terraform/pi-user or GitHub secrets"
   type        = string
   default     = null
   nullable    = true

@@ -76,6 +76,7 @@ jobs:
             -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
             -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
             -var="public_ip=${{ secrets.PUBLIC_IP }}" \
+            ${{ secrets.PI_USER != '' && format('-var="pi_user=%s"', secrets.PI_USER) || '' }} \
             -var="skip_k3s_resources=true" \
             -var="kubeconfig_path=~/.kube/config-eldertree" 2>&1 | tee plan-output.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}

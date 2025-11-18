@@ -71,16 +71,19 @@ Terraform can manage DNS records for `eldertree.xyz` domain using Cloudflare DNS
      - Zone Resources: Include `eldertree.xyz`
    - Create token and copy it (you won't be able to see it again)
 
-2. **Store API Token in Vault**:
+2. **Store Secrets in Vault**:
    ```bash
    # Get Vault pod
    VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
    
-   # Store token for Terraform use
+   # Store Cloudflare API token for Terraform use
    kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token=YOUR_API_TOKEN_HERE
    
-   # Store token for External-DNS use
+   # Store Cloudflare API token for External-DNS use
    kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-api-token api-token=YOUR_API_TOKEN_HERE
+   
+   # Store Pi SSH username (optional, defaults to "pi")
+   kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/pi-user pi-user=YOUR_USERNAME_HERE
    ```
 
 ### Terraform Configuration
