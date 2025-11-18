@@ -54,8 +54,9 @@ jobs:
         run: terraform fmt -check -recursive
 
       # Validate Terraform configuration
+      # Pass skip_k3s_resources to avoid evaluating sensitive values during validation
       - name: Terraform Validate
-        run: terraform validate
+        run: terraform validate -var="skip_k3s_resources=true" -var="pi_password=dummy"
 
       # Generates an execution plan for Terraform
       - name: Terraform Plan

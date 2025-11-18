@@ -11,11 +11,14 @@ resource "random_password" "k3s_token" {
 }
 
 locals {
-  # Handle sensitive k3s_token: use coalesce with null check
-  # Variable defaults to null (not empty string) to avoid marked value comparison issues
-  # coalesce() safely handles null values without comparing sensitive values
-  # In CI (skip_k3s_resources=true), always use a placeholder token
-  k3s_token        = var.skip_k3s_resources ? "ci-placeholder-token" : coalesce(var.k3s_token, try(random_password.k3s_token[0].result, "placeholder"))
+  # Handle sensitive k3s_token: completely avoid evaluating sensitive values in CI
+  # In CI (skip_k3s_resources=true), use placeholder without touching sensitive vars
+  # When not in CI, use coalesce to handle null k3s_token
+  # Wrap in try() to prevent any evaluation errors during validation
+  k3s_token = var.skip_k3s_resources ? "ci-placeholder-token" : try(
+    coalesce(var.k3s_token, try(random_password.k3s_token[0].result, "placeholder")),
+    "placeholder"
+  )
   k3s_version_flag = var.k3s_version != "" ? "INSTALL_K3S_VERSION=${var.k3s_version}" : ""
   kubeconfig_path  = pathexpand(var.kubeconfig_path)
 }
@@ -62,7 +65,7 @@ resource "null_resource" "system_prep" {
 # =============================================================================
 
 resource "null_resource" "install_k3s" {
-  count      = var.skip_k3s_resources ? 0 : 1  # Skip in CI
+  count      = var.skip_k3s_resources ? 0 : 1 # Skip in CI
   depends_on = [null_resource.system_prep]
 
   connection {
@@ -98,7 +101,7 @@ resource "null_resource" "install_k3s" {
 # =============================================================================
 
 resource "null_resource" "install_k9s" {
-  count      = var.skip_k3s_resources ? 0 : 1  # Skip in CI
+  count      = var.skip_k3s_resources ? 0 : 1 # Skip in CI
   depends_on = [null_resource.install_k3s]
 
   connection {
@@ -130,7 +133,7 @@ resource "null_resource" "install_k9s" {
 # =============================================================================
 
 resource "null_resource" "retrieve_kubeconfig" {
-  count      = var.skip_k3s_resources ? 0 : 1  # Skip in CI
+  count      = var.skip_k3s_resources ? 0 : 1 # Skip in CI
   depends_on = [null_resource.install_k3s]
 
   # Download kubeconfig
