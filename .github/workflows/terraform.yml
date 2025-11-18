@@ -57,19 +57,11 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-      # Generates an execution plan for Terraform (Cloudflare resources only)
+      # Generates an execution plan for Terraform
       - name: Terraform Plan
         id: plan
         run: |
           terraform plan -input=false -out=tfplan \
-            -target=data.cloudflare_zone.eldertree_xyz \
-            -target=cloudflare_record.eldertree_xyz_root \
-            -target=cloudflare_record.eldertree_xyz_wildcard \
-            -target=tls_private_key.swimto_origin \
-            -target=tls_cert_request.swimto_origin \
-            -target=cloudflare_tunnel.eldertree \
-            -target=cloudflare_tunnel_config.eldertree \
-            -target=cloudflare_record.swimto_eldertree_xyz_tunnel \
             -var="cloudflare_api_token=${{ secrets.CLOUDFLARE_API_TOKEN }}" \
             -var="cloudflare_zone_id=${{ secrets.CLOUDFLARE_ZONE_ID }}" \
             -var="cloudflare_account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \

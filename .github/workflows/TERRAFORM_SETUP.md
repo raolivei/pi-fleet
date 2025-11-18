@@ -70,12 +70,12 @@ The Terraform workflow requires the following secrets to be configured in your G
 
 ## What Gets Managed
 
-The workflow manages Cloudflare resources:
-- DNS records (A, CNAME)
-- Cloudflare Tunnel
-- Tunnel configuration (ingress rules)
+The workflow manages all Terraform resources defined in the `terraform/` directory:
+- Cloudflare DNS records (A, CNAME)
+- Cloudflare Tunnel and configuration
+- Any other resources you add to Terraform
 
-**Note**: K3s installation resources are skipped in CI (they require SSH access to Raspberry Pi).
+**Note**: Resources that require SSH access (like k3s installation) will fail in CI but won't block other resources from being managed.
 
 ## Troubleshooting
 
