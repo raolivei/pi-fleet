@@ -4,6 +4,7 @@ metadata:
   name: external-dns-cloudflare
   namespace: external-dns
 spec:
+  suspend: true  # Suspended until Vault is unsealed and Cloudflare API token secret exists
   interval: 30m
   chart:
     spec:
@@ -26,6 +27,7 @@ spec:
           secretKeyRef:
             name: external-dns-cloudflare-secret
             key: api-token
+            optional: true
       - name: EXTERNAL_DNS_CLOUDFLARE_PROXIED
         value: "false"
     sources:
