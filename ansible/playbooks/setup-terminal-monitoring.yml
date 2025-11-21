@@ -1,0 +1,193 @@
+---
+- name: Setup Terminal Monitoring Tools for Eldertree
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    target_user: raolivei
+    # Password should be set via Ansible Vault or environment variable
+    # Use: ansible-playbook --ask-vault-pass or set env_target_password environment variable
+    target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('CHANGE_ME')) }}"
+
+  tasks:
+    # =========================================================================
+    # Install Monitoring Tools
+    # =========================================================================
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install btop and tmux
+      apt:
+        name:
+          - btop
+          - tmux
+        state: present
+
+    - name: Try to install neofetch (optional)
+      apt:
+        name: neofetch
+        state: present
+      ignore_errors: yes
+      register: neofetch_result
+
+    - name: Install neofetch from source if apt package unavailable
+      block:
+        - name: Install dependencies for neofetch
+          apt:
+            name:
+              - git
+              - bash
+            state: present
+
+        - name: Clone neofetch repository
+          git:
+            repo: https://github.com/dylanaraps/neofetch.git
+            dest: /tmp/neofetch
+            version: master
+
+        - name: Install neofetch
+          copy:
+            src: /tmp/neofetch/neofetch
+            dest: /usr/local/bin/neofetch
+            mode: "0755"
+            remote_src: yes
+
+        - name: Create neofetch config directory
+          file:
+            path: /home/{{ target_user }}/.config/neofetch
+            state: directory
+            owner: "{{ target_user }}"
+            group: "{{ target_user }}"
+            mode: "0755"
+
+        - name: Clean up neofetch source
+          file:
+            path: /tmp/neofetch
+            state: absent
+      when: neofetch_result.failed | default(false)
+
+    # =========================================================================
+    # Create System Info Display Script
+    # =========================================================================
+    - name: Create system info script
+      copy:
+        dest: /home/{{ target_user }}/.system-info.sh
+        content: |
+          #!/bin/bash
+          # System info display for Raspberry Pi
+          # Shows key metrics on login
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🖥️  ELDERTREE - Raspberry Pi System Status"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Hostname and uptime
+          echo "Hostname: $(hostname)"
+          echo "Uptime: $(uptime -p)"
+          echo ""
+
+          # CPU Temperature
+          if command -v vcgencmd &> /dev/null; then
+              TEMP=$(vcgencmd measure_temp | cut -d= -f2)
+              echo "🌡️  CPU Temperature: $TEMP"
+          else
+              if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
+                  TEMP=$(cat /sys/class/thermal/thermal_zone0/temp)
+                  TEMP=$((TEMP / 1000))
+                  echo "🌡️  CPU Temperature: ${TEMP}°C"
+              fi
+          fi
+
+          # CPU Load
+          echo "⚡ CPU Load: $(uptime | awk -F'load average:' '{print $2}')"
+
+          # Memory
+          MEM_TOTAL=$(free -h | awk '/^Mem:/ {print $2}')
+          MEM_USED=$(free -h | awk '/^Mem:/ {print $3}')
+          MEM_PERCENT=$(free | awk '/^Mem:/ {printf "%.1f", $3/$2 * 100}')
+          echo "💾 Memory: $MEM_USED / $MEM_TOTAL (${MEM_PERCENT}% used)"
+
+          # Disk Usage
+          DISK_USED=$(df -h / | awk 'NR==2 {print $3}')
+          DISK_TOTAL=$(df -h / | awk 'NR==2 {print $2}')
+          DISK_PERCENT=$(df / | awk 'NR==2 {print $5}')
+          echo "💿 Disk: $DISK_USED / $DISK_TOTAL ($DISK_PERCENT used)"
+
+          # Network IP
+          IP=$(hostname -I | awk '{print $1}')
+          echo "🌐 IP Address: $IP"
+
+          # Kubernetes status (if available)
+          if command -v kubectl &> /dev/null && kubectl cluster-info &> /dev/null 2>&1; then
+              NODES=$(kubectl get nodes --no-headers 2>/dev/null | wc -l)
+              PODS=$(kubectl get pods --all-namespaces --no-headers 2>/dev/null | wc -l)
+              echo "☸️  Kubernetes: $NODES node(s), $PODS pod(s)"
+          fi
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "💡 Run 'btop' for interactive monitoring"
+          if command -v neofetch &> /dev/null; then
+              echo "💡 Run 'neofetch' for system info with ASCII art"
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        mode: "0755"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    # =========================================================================
+    # Configure .bashrc to Show System Info on Login
+    # =========================================================================
+    - name: Check if system-info.sh is already in bashrc
+      shell: grep -q "system-info.sh" /home/{{ target_user }}/.bashrc || echo "not_found"
+      register: bashrc_check
+      changed_when: false
+      failed_when: false
+
+    - name: Add system info display to bashrc
+      blockinfile:
+        path: /home/{{ target_user }}/.bashrc
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Terminal Monitoring"
+        block: |
+          # Show system info on login (only for interactive shells)
+          if [ -t 0 ]; then
+              ~/.system-info.sh
+          fi
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+      when: "'not_found' in bashrc_check.stdout"
+
+    # =========================================================================
+    # Configure btop (Optional - create config directory)
+    # =========================================================================
+    - name: Create btop config directory
+      file:
+        path: /home/{{ target_user }}/.config/btop
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0755"
+
+    # =========================================================================
+    # Summary
+    # =========================================================================
+    - name: Check if neofetch is installed
+      command: which neofetch
+      register: neofetch_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display configuration summary
+      debug:
+        msg:
+          - "=== Terminal Monitoring Setup Complete ==="
+          - "Installed: btop, tmux"
+          - "Neofetch: {{ 'Installed' if neofetch_check.rc == 0 else 'Not available' }}"
+          - "System info script: ~/.system-info.sh"
+          - "Login banner: Configured in ~/.bashrc"
+          - ""
+          - "Usage:"
+          - "  - System info will show automatically on login"
+          - "  - Run 'btop' for interactive system monitoring"
+          - "  - Run 'neofetch' for system info with ASCII art (if installed)"
+          - "  - Run 'htop' for classic process monitor (already installed)"

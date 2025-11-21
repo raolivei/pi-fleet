@@ -28,7 +28,11 @@ ansible/
 ├── inventory/
 │   └── hosts.yml            # Inventory file with host definitions
 ├── playbooks/
-│   └── configure-user.yml   # User configuration playbook
+│   ├── configure-user.yml              # User configuration playbook (legacy)
+│   ├── setup-system.yml                # Complete system setup playbook
+│   ├── bootstrap-flux.yml              # FluxCD GitOps bootstrap playbook
+│   ├── setup-eldertree.yml             # Master playbook (orchestrates all steps)
+│   └── setup-terminal-monitoring.yml   # Terminal monitoring tools setup
 └── README.md                # This file
 ```
 
@@ -95,6 +99,122 @@ static_ip: "192.168.2.83" # Set to null/empty for DHCP
 backup_device: "/dev/sdb1"
 backup_mount: "/mnt/backup"
 ```
+
+### Bootstrap FluxCD (`playbooks/bootstrap-flux.yml`)
+
+Bootstrap FluxCD GitOps on the eldertree cluster. This playbook is idempotent and will skip bootstrap if FluxCD is already installed.
+
+**Features**:
+
+- Checks if FluxCD is already bootstrapped (idempotent)
+- Verifies kubeconfig exists before proceeding
+- Installs Flux CLI locally if not present
+- Bootstraps FluxCD with GitHub repository sync
+- Verifies installation after bootstrap
+
+**Usage**:
+
+```bash
+cd ansible
+ansible-playbook playbooks/bootstrap-flux.yml \
+  -e bootstrap_flux=true \
+  -e kubeconfig_path=~/.kube/config-eldertree
+```
+
+**Variables** (can be overridden):
+
+```yaml
+bootstrap_flux: true # Enable/disable bootstrap
+kubeconfig_path: "~/.kube/config-eldertree" # Path to kubeconfig
+flux_github_owner: "raolivei" # GitHub owner
+flux_github_repo: "raolivei" # GitHub repository
+flux_github_branch: "main" # Git branch
+flux_github_path: "clusters/eldertree" # Path in repository
+flux_github_personal: true # Use personal GitHub token
+```
+
+**Example with custom variables**:
+
+```bash
+ansible-playbook playbooks/bootstrap-flux.yml \
+  -e bootstrap_flux=true \
+  -e flux_github_owner=myorg \
+  -e flux_github_repo=myrepo
+```
+
+**Note**: This playbook runs on `localhost` and requires Flux CLI to be installed locally. The kubeconfig must exist before running this playbook (k3s must be installed via Terraform first).
+
+### Setup Eldertree (`playbooks/setup-eldertree.yml`)
+
+Master playbook that orchestrates the complete eldertree cluster setup. This playbook includes system configuration and optional FluxCD bootstrap.
+
+**Note**: k3s installation is handled separately by Terraform. This playbook assumes Terraform has already been run.
+
+**Usage**:
+
+```bash
+cd ansible
+ansible-playbook playbooks/setup-eldertree.yml \
+  -e bootstrap_flux=true
+```
+
+**Variables**:
+
+All variables from `setup-system.yml` plus:
+
+- `bootstrap_flux`: Boolean to enable/disable FluxCD bootstrap (default: false)
+- `kubeconfig_path`: Path to kubeconfig file (default: `~/.kube/config-eldertree`)
+
+**Workflow**:
+
+1. Runs `setup-system.yml` for system configuration
+2. Notes that k3s installation should be done via Terraform
+3. Optionally runs `bootstrap-flux.yml` if `bootstrap_flux=true`
+
+**Recommended**: Use the `setup-eldertree.sh` script instead, which properly orchestrates Ansible and Terraform.
+
+### Setup Terminal Monitoring (`playbooks/setup-terminal-monitoring.yml`)
+
+Installs and configures terminal-based monitoring tools that display system information on login.
+
+**Features**:
+
+- **btop**: Modern, colorful terminal-based system monitor (replacement for htop)
+- **neofetch**: System information with ASCII art
+- **tmux**: Terminal multiplexer for persistent sessions
+- **Login Banner**: Custom system info script that displays on SSH/login
+- **Raspberry Pi Metrics**: CPU temperature, voltage, throttling status
+
+**What it does**:
+
+- Installs `btop`, `neofetch`, and `tmux` packages
+- Creates `~/.system-info.sh` script with system metrics
+- Configures `.bashrc` to display system info on login (interactive shells only)
+- Shows: hostname, uptime, CPU temp, load, memory, disk, IP, Kubernetes status
+
+**Usage**:
+
+```bash
+cd ansible
+ansible-playbook playbooks/setup-terminal-monitoring.yml --ask-pass --ask-become-pass
+```
+
+**To target specific host**:
+
+```bash
+ansible-playbook playbooks/setup-terminal-monitoring.yml --limit eldertree --ask-pass --ask-become-pass
+```
+
+**After installation**:
+
+- System info will automatically display when you SSH/login
+- Run `btop` for interactive system monitoring
+- Run `neofetch` for system info with ASCII art
+- Run `htop` for classic process monitor (already installed)
+
+**Variables**:
+
+Uses the same `target_user` variable as other playbooks (defaults to `raolivei`).
 
 ### Configure User (`playbooks/configure-user.yml`)
 
@@ -209,13 +329,49 @@ python3 -c "import crypt; print(crypt.crypt('YourPassword', crypt.mksalt(crypt.M
 ansible localhost -m debug -a "msg={{ 'YourPassword' | password_hash('sha512') }}"
 ```
 
+## Complete Setup Workflow
+
+For a complete eldertree cluster setup, use the automated script:
+
+```bash
+cd pi-fleet
+./scripts/setup-eldertree.sh
+```
+
+This script orchestrates:
+
+1. **Ansible** - System configuration (`setup-system.yml`)
+2. **Terraform** - k3s cluster installation
+3. **Ansible** - FluxCD bootstrap (`bootstrap-flux.yml`)
+
+The script is idempotent and can be run multiple times safely.
+
+### Manual Step-by-Step Setup
+
+If you prefer manual control:
+
+```bash
+# 1. System configuration
+cd ansible
+ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
+
+# 2. Install k3s (Terraform)
+cd ../terraform
+terraform init
+terraform apply
+
+# 3. Bootstrap FluxCD (optional)
+cd ../ansible
+ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true
+```
+
 ## Running Playbooks
 
 ### Basic Usage
 
 ```bash
 cd ansible
-ansible-playbook playbooks/configure-user.yml
+ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
 ```
 
 ### Common Options
@@ -309,6 +465,19 @@ Test with specific user:
 ```bash
 ansible all -m ping -u pi
 ```
+
+### FluxCD Bootstrap Issues
+
+- **Kubeconfig not found**: Ensure Terraform has been run to install k3s and generate kubeconfig
+- **Flux CLI not found**: Install with `brew install fluxcd/tap/flux`
+- **GitHub token**: Ensure GitHub token is configured for Flux bootstrap (check `~/.config/gh/` or set `GITHUB_TOKEN`)
+- **Already bootstrapped**: Playbook will skip bootstrap if FluxCD is already installed (idempotent)
+
+### k3s Installation Issues
+
+- **Terraform fails**: Check SSH connectivity and credentials in `terraform.tfvars`
+- **k3s not ready**: Check k3s service on Pi: `ssh pi@<IP> 'sudo systemctl status k3s'`
+- **Kubeconfig missing**: Re-run Terraform apply to regenerate kubeconfig
 
 ## Security Considerations
 
