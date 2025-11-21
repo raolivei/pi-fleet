@@ -4,9 +4,11 @@
   become: yes
   vars:
     target_user: raolivei
-    target_password: "Control01!"
+    # Password should be set via Ansible Vault or environment variable
+    # Use: ansible-playbook --ask-vault-pass or set env_target_password environment variable
+    target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('CHANGE_ME')) }}"
     hostname: eldertree
-    static_ip: "192.168.2.83"  # Set to null if using DHCP
+    static_ip: "192.168.2.83" # Set to null if using DHCP
     static_netmask: "255.255.255.0"
     static_gateway: "192.168.2.1"
     static_dns: ["192.168.2.1", "8.8.8.8"]
@@ -204,9 +206,9 @@
         line: "{{ item.line }}"
         backup: yes
       loop:
-        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
-        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication yes' }
-        - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+        - {regexp: "^#?PermitRootLogin", line: "PermitRootLogin no"}
+        - {regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication yes"}
+        - {regexp: "^#?PubkeyAuthentication", line: "PubkeyAuthentication yes"}
       notify: restart ssh
 
     # =========================================================================
@@ -220,7 +222,7 @@
     - name: Reset UFW to defaults
       ufw:
         state: reset
-      when: false  # Disabled by default - enable if needed
+      when: false # Disabled by default - enable if needed
 
     - name: Allow SSH through firewall
       ufw:
@@ -231,7 +233,7 @@
     - name: Enable UFW (optional - disabled by default)
       ufw:
         state: enabled
-      when: false  # Disabled by default - enable if needed
+      when: false # Disabled by default - enable if needed
 
     # =========================================================================
     # System Optimization
@@ -239,8 +241,8 @@
     - name: Configure cgroups for containers
       lineinfile:
         path: /boot/firmware/cmdline.txt
-        regexp: 'cgroup_memory=1 cgroup_enable=memory'
-        line: ' cgroup_memory=1 cgroup_enable=memory'
+        regexp: "cgroup_memory=1 cgroup_enable=memory"
+        line: " cgroup_memory=1 cgroup_enable=memory"
         backrefs: yes
         state: present
       when: "'cgroup_memory=1' not in lookup('file', '/boot/firmware/cmdline.txt', errors='ignore') | default('')"
@@ -264,7 +266,7 @@
           - "=== System Configuration Complete ==="
           - "Hostname: {{ hostname }}"
           - "User: {{ target_user }}"
-          - "Password: {{ target_password }}"
+          - "Password: [REDACTED]"
           - "Static IP: {{ static_ip if static_ip else 'DHCP' }}"
           - "Bluetooth: Enabled"
           - "Backup mount: {{ backup_mount }} (nofail configured)"
@@ -279,4 +281,3 @@
       systemd:
         name: sshd
         state: restarted
-

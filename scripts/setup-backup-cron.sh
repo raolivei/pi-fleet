@@ -8,12 +8,19 @@ BACKUP_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_SCRIPT="${BACKUP_SCRIPT_DIR}/backup-all.sh"
 CRON_SCHEDULE="0 2 * * *"  # Daily at 2 AM
 BACKUP_DIR="/mnt/backup"
+PI_PASSWORD="${PI_PASSWORD:-}"
+
+if [ -z "$PI_PASSWORD" ]; then
+    echo "❌ Error: PI_PASSWORD environment variable is required"
+    echo "Usage: PI_PASSWORD='your-password' $0"
+    exit 1
+fi
 
 echo "=== Setting up automated backups ==="
 echo ""
 
 # Check if running on the Pi
-if ! sshpass -p 'Control01!' ssh -o ConnectTimeout=5 raolivei@eldertree.local "echo 'Connected'" &>/dev/null; then
+if ! sshpass -p "$PI_PASSWORD" ssh -o ConnectTimeout=5 raolivei@eldertree.local "echo 'Connected'" &>/dev/null; then
     echo "❌ Cannot connect to eldertree.local"
     echo "Please run this script from a machine that can SSH to the Pi"
     exit 1
@@ -21,11 +28,11 @@ fi
 
 # Copy backup script to Pi
 echo "📋 Copying backup script to Pi..."
-sshpass -p 'Control01!' scp "${BACKUP_SCRIPT}" raolivei@eldertree.local:~/backup-all.sh
+sshpass -p "$PI_PASSWORD" scp "${BACKUP_SCRIPT}" raolivei@eldertree.local:~/backup-all.sh
 
 # Setup cron job on Pi
 echo "⏰ Setting up cron job..."
-sshpass -p 'Control01!' ssh raolivei@eldertree.local << 'EOF'
+sshpass -p "$PI_PASSWORD" ssh raolivei@eldertree.local << 'EOF'
 # Create backup directory if it doesn't exist
 sudo mkdir -p /mnt/backup/backups
 sudo chown -R raolivei:raolivei /mnt/backup

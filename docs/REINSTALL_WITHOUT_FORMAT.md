@@ -3,6 +3,7 @@
 ## Short Answer
 
 **You don't need to manually format** - Raspberry Pi Imager automatically handles everything in one step. When you "write" the OS image, it:
+
 1. Automatically partitions the SD card
 2. Formats the partitions
 3. Writes the OS files
@@ -30,6 +31,7 @@ This is all done in **one operation** - you just click "Write" and it handles ev
 ## What Gets Wiped vs Preserved
 
 ### ❌ **Wiped from SD Card** (everything):
+
 - All files on the SD card
 - All partitions
 - All configuration files
@@ -37,6 +39,7 @@ This is all done in **one operation** - you just click "Write" and it handles ev
 - All user data on SD card
 
 ### ✅ **Preserved** (separate from SD card):
+
 - **USB Backup Drive**: Completely separate, not touched
   - Your backups at `/mnt/backup` are safe
   - USB drive is physically separate device
@@ -69,12 +72,14 @@ Fresh OS ready for setup!
 
 ## Why This is Safe
 
-1. **You've Backed Up**: 
+1. **You've Backed Up**:
+
    - Vault secrets → USB backup drive
    - Databases → USB backup drive
    - Configs → Git repository
 
 2. **USB Drive is Separate**:
+
    - USB backup drive is NOT the SD card
    - It's a completely separate physical device
    - Writing to SD card doesn't touch USB drive
@@ -89,6 +94,7 @@ Fresh OS ready for setup!
 ## Alternative: In-Place Upgrade (Not Recommended)
 
 **Technically possible but risky:**
+
 - You could try upgrading packages in-place
 - But this often leaves leftover configs causing issues
 - Boot problems (like yours) usually need clean install
@@ -118,4 +124,3 @@ Fresh OS ready for setup!
 - ⚠️ **SD card gets wiped** - but that's expected and safe since you backed up
 
 **Just click "Write" and let Imager handle everything!**
-

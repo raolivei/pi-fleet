@@ -59,7 +59,7 @@ raspberry_pi:
 
 Complete system setup playbook that configures:
 
-- **User Management**: Creates `raolivei` user with password `Control01!`
+- **User Management**: Creates `raolivei` user (password set via Ansible Vault)
 - **Hostname**: Sets hostname to `eldertree`
 - **Network**: Configures static IP (optional, defaults to DHCP)
 - **Bluetooth**: Enables and starts Bluetooth service
@@ -91,7 +91,7 @@ ansible-playbook playbooks/setup-system.yml --check
 
 ```yaml
 hostname: eldertree
-static_ip: "192.168.2.83"  # Set to null/empty for DHCP
+static_ip: "192.168.2.83" # Set to null/empty for DHCP
 backup_device: "/dev/sdb1"
 backup_mount: "/mnt/backup"
 ```
@@ -103,7 +103,7 @@ Legacy playbook - use `setup-system.yml` instead for fresh installs.
 Creates and configures the `raolivei` user with:
 
 - Admin privileges (sudo access)
-- Password: `Control01!`
+- Password: Set via Ansible Vault (see Password Management section)
 - Passwordless sudo
 - Proper home directory setup
 
@@ -128,22 +128,15 @@ ansible-playbook playbooks/configure-user.yml --check
 
 ## Password Management
 
-### Current Password
+### ⚠️ Security: Passwords Must Not Be Committed to Git
 
-The password for `raolivei` is set to `Control01!` in the playbook. The password is hashed using SHA-512 at runtime using Ansible's `password_hash` filter.
+**NEVER commit passwords to git repositories.** All passwords must be managed via Ansible Vault or environment variables.
 
-### Changing the Password
+### Setting the Password
 
-To change the password:
+The password for `raolivei` is hashed using SHA-512 at runtime using Ansible's `password_hash` filter. The password can be set using one of these methods:
 
-1. **Option 1: Edit the playbook** (less secure):
-
-   ```yaml
-   vars:
-     target_password: "NewPassword123!"
-   ```
-
-2. **Option 2: Use Ansible Vault** (recommended):
+1. **Option 1: Use Ansible Vault** (recommended):
 
    ```bash
    # Create encrypted variables file
@@ -153,7 +146,36 @@ To change the password:
    Add to vault file:
 
    ```yaml
-   target_password: "NewPassword123!"
+   vault_target_password: "YourSecurePassword123!"
+   ```
+
+   The playbook automatically uses `vault_target_password` if available.
+
+   Run playbook with vault:
+
+   ```bash
+   ansible-playbook playbooks/setup-system.yml --ask-vault-pass
+   ```
+
+2. **Option 2: Use Environment Variable**:
+
+   ```bash
+   export env_target_password="YourSecurePassword123!"
+   ansible-playbook playbooks/setup-system.yml
+   ```
+
+3. **Option 3: Use Ansible Vault Encrypt String** (for inventory):
+
+   ```bash
+   ansible-vault encrypt_string 'YourSecurePassword123!' --name 'ansible_password'
+   ```
+
+   Add the encrypted string to `inventory/hosts.yml`:
+
+   ```yaml
+   ansible_password: !vault |
+     $ANSIBLE_VAULT;1.1;AES256
+     ...
    ```
 
    Update playbook to use vault variable:
@@ -169,7 +191,7 @@ To change the password:
    ansible-playbook playbooks/configure-user.yml --ask-vault-pass
    ```
 
-3. **Option 3: Use command-line variable**:
+4. **Option 3: Use command-line variable**:
    ```bash
    ansible-playbook playbooks/configure-user.yml \
      -e "target_password=NewPassword123!"
@@ -318,5 +340,3 @@ Example structure:
     - name: Task description
       # ... task configuration
 ```
-
-

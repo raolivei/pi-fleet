@@ -32,9 +32,23 @@
 
 ## [Unreleased]
 
+### Security
+
+- **CRITICAL:** Removed all hardcoded passwords from codebase
+  - Ansible playbooks now use Ansible Vault or environment variables
+  - Scripts require `PI_PASSWORD` environment variable (no default)
+  - Inventory file uses `ANSIBLE_PASSWORD` environment variable
+  - Terraform example file uses placeholder instead of real password
+  - All documentation updated to remove password references
+  - Added `.gitignore` entries for Ansible Vault files
+  - Created `vault.yml.example` template for secure password management
+  - **Note:** Password was previously committed to git history - consider rotating it
+
 ### Added
 
 - External Secrets Operator for automatic Vault to Kubernetes secret syncing
+- Ansible Vault template (`ansible/group_vars/raspberry_pi/vault.yml.example`)
+- Security fix summary documentation (`SECURITY_FIX_SUMMARY.md`)
 - External-DNS with RFC2136 support for automated DNS record management
 - Vault secrets management sync script (legacy, now automated)
 - Grafana dashboards: 9 comprehensive K8s dashboards

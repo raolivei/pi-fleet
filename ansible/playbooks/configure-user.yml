@@ -4,7 +4,9 @@
   become: yes
   vars:
     target_user: raolivei
-    target_password: "Control01!"
+    # Password should be set via Ansible Vault or environment variable
+    # Use: ansible-playbook --ask-vault-pass or set env_target_password environment variable
+    target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('CHANGE_ME')) }}"
     # Generate password hash using SHA-512 (Linux default)
     # This will be generated at runtime using the password_hash filter
     password_hash: "{{ target_password | password_hash('sha512') }}"
@@ -64,6 +66,6 @@
       debug:
         msg:
           - "User {{ target_user }} has been configured"
-          - "Password: {{ target_password }}"
+          - "Password: [REDACTED]"
           - "Home directory: /home/{{ target_user }}"
           - "Sudo access: Enabled (passwordless)"

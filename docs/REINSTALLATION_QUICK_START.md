@@ -14,6 +14,7 @@ Fast reference for reinstalling the OS and restoring the eldertree cluster.
 **⚠️ FIRST STEP**: Flash a fresh OS before running automation!
 
 1. **Install Raspberry Pi Imager** (if needed):
+
    ```bash
    brew install --cask raspberry-pi-imager
    ```
@@ -21,15 +22,18 @@ Fast reference for reinstalling the OS and restoring the eldertree cluster.
 2. **Open Raspberry Pi Imager**
 
 3. **Choose OS**:
+
    - Click "Choose OS"
    - Navigate to: **"Other general-purpose OS"** → **"Debian"** → **"Debian Bookworm (64-bit)"**
 
 4. **Choose Storage**:
+
    - Click "Choose Storage"
    - Select your microSD card
    - ⚠️ **WARNING**: This will erase everything!
 
 5. **Configure** (Click gear icon ⚙️):
+
    - ✅ **Enable SSH**: Checked
    - **Username**: `pi`
    - **Password**: `raspberry` (or your choice)
@@ -37,6 +41,7 @@ Fast reference for reinstalling the OS and restoring the eldertree cluster.
    - Click "Save"
 
 6. **Write**:
+
    - Click "Write"
    - Wait for completion (5-10 minutes)
    - Eject SD card safely
@@ -64,12 +69,14 @@ cd ~/WORKSPACE/raolivei/pi-fleet
 ```
 
 Follow prompts:
+
 - Enter Pi IP address
 - Enter SSH username (default: `pi`)
 - Enter SSH password
 - Enter sudo password (same as SSH password)
 
 The script will:
+
 1. ✅ Configure system (Ansible)
 2. ✅ Install k3s (Terraform)
 3. ✅ Bootstrap FluxCD (optional)
@@ -120,7 +127,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet/terraform
 # Edit terraform.tfvars:
 # - pi_host: "eldertree" (or IP)
 # - pi_user: "raolivei"
-# - pi_password: "Control01!"
+# - pi_password: "your-password-here" (DO NOT commit this file to git)
 
 terraform init
 terraform apply
@@ -181,12 +188,14 @@ sudo systemctl restart k3s
 ## What Gets Preserved
 
 ✅ **Preserved**:
+
 - Vault secrets (if backed up)
 - Application data (on USB backup drive)
 - Kubernetes manifests (in Git)
 - Helm charts (in Git)
 
 ❌ **Rebuilt**:
+
 - OS and system packages
 - k3s cluster (fresh install)
 - System users and permissions
@@ -195,4 +204,3 @@ sudo systemctl restart k3s
 ## Full Documentation
 
 See [OS_REINSTALLATION_GUIDE.md](./OS_REINSTALLATION_GUIDE.md) for complete details.
-

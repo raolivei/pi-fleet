@@ -13,7 +13,7 @@ Follow these exact steps to flash Debian Bookworm to your SD card.
 ### Step 1: Insert SD Card
 
 1. Insert your microSD card into your Mac (using adapter if needed)
-2. **⚠️ IMPORTANT**: 
+2. **⚠️ IMPORTANT**:
    - This will **erase everything on the SD card**
    - **USB backup drive is safe** - it's a separate device and won't be touched
    - **No manual formatting needed** - Imager handles format + install automatically
@@ -33,13 +33,15 @@ open -a "Raspberry Pi Imager"
 2. Scroll down and click **"Other general-purpose OS"**
 3. Click **"Debian"**
 4. Select your Debian version:
+
    - **"Debian Trixie (64-bit)"** ← **Recommended** (Latest stable, Debian 13)
    - **"Debian Bookworm (64-bit)"** ← Alternative (Debian 12, matches current docs)
 
    **Which to choose?**
+
    - **Trixie**: Latest stable, newer packages, recommended for fresh installs
    - **Bookworm**: More conservative, matches existing documentation exactly
-   
+
    **Both work fine with k3s!** Choose based on preference.
 
 ### Step 4: Choose Storage
@@ -58,14 +60,14 @@ Click the **gear icon (⚙️)** in the bottom right corner.
 
 1. **Enable SSH**: ✅ **CHECK THIS BOX** (required!)
 2. **Set username**: `pi` (default is fine)
-3. **Set password**: 
+3. **Set password**:
    - Default: `raspberry` (you can use this)
    - Or set your own password (remember it!)
 4. **SSH public key** (optional): Leave empty for now
 
 #### Network Settings (Optional):
 
-- **Configure wireless LAN**: 
+- **Configure wireless LAN**:
   - Check if you want WiFi
   - Enter your WiFi SSID and password
   - Select country
@@ -86,6 +88,7 @@ Click **"Save"** when done.
 3. **Confirm** by clicking **"Yes"**
 4. Enter your Mac password if prompted
 5. **Wait for completion**:
+
    - Progress bar will show: "Writing image..."
    - This typically takes 5-10 minutes
    - **DO NOT** remove the SD card during this process!
@@ -127,10 +130,12 @@ diskutil eject /dev/disk2
 After the Pi boots:
 
 1. **Find the Pi's IP address**:
+
    - Check your router admin panel (look for device named `raspberrypi`)
    - Or scan network: `nmap -sn 192.168.2.0/24`
 
 2. **SSH to the Pi**:
+
    ```bash
    ssh pi@<PI_IP_ADDRESS>
    # Password: raspberry (or what you set)
@@ -181,10 +186,10 @@ After the Pi boots:
 ## Summary
 
 You're flashing:
+
 - **OS**: Debian Bookworm (64-bit)
 - **Username**: `pi`
 - **Password**: `raspberry` (or your choice)
 - **SSH**: Enabled ✅
 
 After boot, find the IP and SSH in, then run the setup script!
-

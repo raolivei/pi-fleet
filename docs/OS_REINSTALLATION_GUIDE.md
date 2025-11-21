@@ -207,7 +207,7 @@ ansible-playbook playbooks/setup-system.yml \
 
 # This will:
 # - Set hostname to 'eldertree'
-# - Create raolivei user with password 'Control01!'
+# - Create raolivei user (password set via Ansible Vault)
 # - Configure SSH keys
 # - Set up static IP (if configured)
 # - Configure Bluetooth
@@ -226,7 +226,7 @@ cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars:
 # - pi_host: "eldertree" (or IP address)
 # - pi_user: "raolivei"
-# - pi_password: "Control01!"
+# - pi_password: "your-password-here" (DO NOT commit this file to git)
 
 # Initialize and apply
 terraform init

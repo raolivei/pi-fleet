@@ -35,9 +35,11 @@ open -a "Raspberry Pi Imager"
 
 1. **Insert SD card** into your Mac (using adapter if needed)
 2. **Check disk name**:
+
    ```bash
    diskutil list
    ```
+
    Note the disk identifier (e.g., `/dev/disk2`)
 
 3. **⚠️ IMPORTANT**: Make sure you have backups! This will erase everything on the SD card.
@@ -59,6 +61,7 @@ open -a "Raspberry Pi Imager"
 2. Navigate to: **"Other general-purpose OS"** → **"Debian"** → **"Debian Bookworm (64-bit)"**
 
    **Why Debian Bookworm?**
+
    - Matches current cluster setup
    - Minimal, server-focused
    - Better performance for k3s
@@ -84,7 +87,7 @@ Click the **gear icon (⚙️)** to open settings:
 
 #### Network Settings (Optional)
 
-- **Configure wireless LAN**: 
+- **Configure wireless LAN**:
   - Check if using WiFi
   - Enter SSID and password
   - Select country
@@ -105,6 +108,7 @@ Click **"Save"** when done.
 2. Confirm when prompted (it will warn you about erasing data)
 3. Enter your Mac password if prompted
 4. **Wait for completion**:
+
    - Progress bar will show status
    - Typically takes 5-10 minutes depending on SD card speed
    - Don't remove the SD card during this process!
@@ -193,6 +197,7 @@ ssh pi@192.168.2.100
 ### First SSH Connection
 
 You'll see a message about host key verification:
+
 ```
 The authenticity of host '192.168.2.100' can't be established.
 Are you sure you want to continue connecting (yes/no/[fingerprint])?
@@ -283,4 +288,3 @@ Once you can SSH into the Pi, proceed to:
 ssh pi@<PI_IP>
 # Password: raspberry (or what you set)
 ```
-

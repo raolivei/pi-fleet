@@ -31,7 +31,7 @@ This will:
 
 ### Option 2: Manual Fix at Console
 
-If you have physical access and can log in (try passwords: `pi` or `Control01!`):
+If you have physical access and can log in (try default passwords: `pi` or check your password manager):
 
 #### Step 1: Fix fstab
 
@@ -75,7 +75,7 @@ sudo reboot
 
 If you're stuck at the emergency console:
 
-1. **Try passwords**: `pi` or `Control01!`
+1. **Try default password**: `pi` (Raspberry Pi default) or check your password manager
 2. **If root is locked**, you may need to boot from recovery media or:
 
    ```bash
