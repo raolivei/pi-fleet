@@ -1,0 +1,229 @@
+---
+- name: Install k3s on Raspberry Pi
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    k3s_version: ""  # Empty for latest, or specify like "v1.28.5+k3s1"
+    k3s_token: ""  # Auto-generated if empty
+    k3s_hostname: "eldertree"  # Hostname for TLS SAN
+    kubeconfig_path: "~/.kube/config-eldertree"  # Local path to save kubeconfig
+    k3s_install_k9s: true  # Install k9s CLI tool
+
+  tasks:
+    - name: Check if k3s is already installed
+      command: which k3s
+      register: k3s_check
+      changed_when: false
+      failed_when: false
+
+    - name: Check if k3s service is running
+      systemd:
+        name: k3s
+      register: k3s_service_status
+      changed_when: false
+      failed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Fail if k3s is already running
+      fail:
+        msg: "k3s is already installed and running. Uninstall k3s manually first if you want to reinstall."
+      when: k3s_check.rc == 0 and k3s_service_status.status.ActiveState == "active"
+
+    # =========================================================================
+    # System Prerequisites
+    # =========================================================================
+    - name: Ensure cgroups are enabled in cmdline.txt
+      lineinfile:
+        path: /boot/firmware/cmdline.txt
+        regexp: "cgroup_memory=1 cgroup_enable=memory"
+        line: " cgroup_memory=1 cgroup_enable=memory systemd.unified_cgroup_hierarchy=0"
+        backrefs: yes
+        state: present
+      register: cmdline_updated
+      failed_when: false
+
+    - name: Reboot if cmdline.txt was updated
+      reboot:
+        msg: "Rebooting to apply cgroup configuration"
+        reboot_timeout: 300
+      when: cmdline_updated.changed
+
+    - name: Wait for system to come back online after reboot
+      wait_for_connection:
+        timeout: 300
+      when: cmdline_updated.changed
+
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - iptables
+        state: present
+        update_cache: yes
+
+    # =========================================================================
+    # Generate k3s token if not provided
+    # =========================================================================
+    - name: Generate k3s token if not provided
+      command: openssl rand -hex 32
+      register: generated_token
+      changed_when: false
+      when: k3s_token == ""
+
+    - name: Set k3s token
+      set_fact:
+        k3s_token: "{{ generated_token.stdout if k3s_token == '' else k3s_token }}"
+
+    # =========================================================================
+    # Install k3s
+    # =========================================================================
+    - name: Install k3s
+      shell: |
+        set -e
+        export INSTALL_K3S_VERSION="{{ k3s_version }}"
+        export K3S_TOKEN="{{ k3s_token }}"
+        curl -sfL https://get.k3s.io | sh -s - server \
+          --cluster-init \
+          --write-kubeconfig-mode=644 \
+          --tls-san={{ k3s_hostname }}
+      args:
+        creates: /usr/local/bin/k3s
+      register: k3s_install
+
+    - name: Wait for k3s to be ready
+      command: k3s kubectl get nodes
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 30
+      delay: 5
+      when: k3s_install.changed
+
+    - name: Display k3s status
+      command: k3s kubectl get nodes
+      register: k3s_nodes
+      changed_when: false
+
+    - name: Show k3s nodes
+      debug:
+        var: k3s_nodes.stdout_lines
+
+    # =========================================================================
+    # Install k9s (optional)
+    # =========================================================================
+    - name: Get latest k9s version
+      uri:
+        url: https://api.github.com/repos/derailed/k9s/releases/latest
+        return_content: yes
+      register: k9s_release
+      changed_when: false
+      when: k3s_install_k9s
+
+    - name: Extract k9s version
+      set_fact:
+        k9s_version: "{{ k9s_release.json.tag_name | regex_replace('^v', '') }}"
+      when: k3s_install_k9s and k9s_release.json is defined
+
+    - name: Download and install k9s
+      unarchive:
+        src: "https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_Linux_arm64.tar.gz"
+        dest: /tmp
+        remote_src: yes
+        creates: /usr/local/bin/k9s
+      when: k3s_install_k9s
+
+    - name: Move k9s to /usr/local/bin
+      copy:
+        src: /tmp/k9s
+        dest: /usr/local/bin/k9s
+        mode: '0755'
+        remote_src: yes
+      when: k3s_install_k9s
+
+    - name: Verify k9s installation
+      command: k9s version
+      register: k9s_version_check
+      changed_when: false
+      when: k3s_install_k9s
+
+    - name: Display k9s version
+      debug:
+        msg: "k9s version: {{ k9s_version_check.stdout }}"
+      when: k3s_install_k9s
+
+    # =========================================================================
+    # Retrieve kubeconfig and node token (local tasks)
+    # =========================================================================
+    - name: Create local kubeconfig directory
+      delegate_to: localhost
+      file:
+        path: "{{ kubeconfig_path | expanduser | dirname }}"
+        state: directory
+        mode: '0755'
+
+    - name: Download kubeconfig from Pi
+      delegate_to: localhost
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ kubeconfig_path | expanduser }}"
+        flat: yes
+      register: kubeconfig_fetch
+
+    - name: Update kubeconfig with Pi hostname
+      delegate_to: localhost
+      replace:
+        path: "{{ kubeconfig_path | expanduser }}"
+        regexp: '127\.0\.0\.1'
+        replace: "{{ k3s_hostname }}"
+      when: kubeconfig_fetch.changed
+
+    - name: Update kubeconfig cluster name
+      delegate_to: localhost
+      replace:
+        path: "{{ kubeconfig_path | expanduser }}"
+        regexp: 'name: default'
+        replace: 'name: eldertree'
+      when: kubeconfig_fetch.changed
+
+    - name: Update kubeconfig context name
+      delegate_to: localhost
+      replace:
+        path: "{{ kubeconfig_path | expanduser }}"
+        regexp: 'context: default'
+        replace: 'context: eldertree'
+      when: kubeconfig_fetch.changed
+
+    - name: Set kubeconfig permissions
+      delegate_to: localhost
+      file:
+        path: "{{ kubeconfig_path | expanduser }}"
+        mode: '0600'
+      when: kubeconfig_fetch.changed
+
+    - name: Download node token
+      delegate_to: localhost
+      fetch:
+        src: /var/lib/rancher/k3s/server/node-token
+        dest: "{{ playbook_dir }}/../k3s-node-token"
+        flat: yes
+      when: k3s_install.changed
+
+    - name: Set node token permissions
+      delegate_to: localhost
+      file:
+        path: "{{ playbook_dir }}/../k3s-node-token"
+        mode: '0600'
+      when: k3s_install.changed
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ k3s installation complete!"
+          - ""
+          - "Cluster endpoint: https://{{ k3s_hostname }}:6443"
+          - "Kubeconfig saved to: {{ kubeconfig_path }}"
+          - "Node token saved to: {{ playbook_dir }}/../k3s-node-token"
+          - ""
+          - "Next steps:"
+          - "  export KUBECONFIG={{ kubeconfig_path }}"
+          - "  kubectl get nodes"
+

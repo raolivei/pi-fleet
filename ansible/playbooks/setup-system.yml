@@ -238,6 +238,12 @@
     # =========================================================================
     # System Optimization
     # =========================================================================
+    - name: Get cmdline.txt content
+      set_fact:
+        cmdline_content: "{{ lookup('file', '/boot/firmware/cmdline.txt', errors='ignore') | default('') | string }}"
+      changed_when: false
+      failed_when: false
+
     - name: Configure cgroups for containers
       lineinfile:
         path: /boot/firmware/cmdline.txt
@@ -245,7 +251,7 @@
         line: " cgroup_memory=1 cgroup_enable=memory"
         backrefs: yes
         state: present
-      when: "'cgroup_memory=1' not in lookup('file', '/boot/firmware/cmdline.txt', errors='ignore') | default('')"
+      when: cmdline_content is defined and 'cgroup_memory=1' not in cmdline_content
 
     - name: Set timezone
       timezone:
@@ -272,8 +278,8 @@
           - "Backup mount: {{ backup_mount }} (nofail configured)"
           - ""
           - "Next steps:"
-          - "1. Run Terraform to install k3s"
-          - "2. Bootstrap FluxCD GitOps"
+          - "1. Install k3s: ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass"
+          - "2. Bootstrap FluxCD GitOps: ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true"
           - "3. Deploy applications"
 
   handlers:

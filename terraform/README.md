@@ -1,37 +1,32 @@
-# Terraform K3s Setup
+# Terraform Infrastructure Setup
 
-Automates k3s control plane installation on Raspberry Pi.
+**NOTE**: k3s installation is handled by Ansible (`ansible/playbooks/install-k3s.yml`), not Terraform.
+
+Terraform is used only for Cloudflare infrastructure:
+- DNS records (A, CNAME)
+- Cloudflare Tunnel
+- TLS certificates
 
 ## Cluster Name
 
-The cluster is named **eldertree** (matching the control plane hostname). Kubeconfig contexts are automatically configured with this name.
+The cluster is named **eldertree** (matching the control plane hostname).
 
 ## Usage
 
 ```bash
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars
+# Edit terraform.tfvars with Cloudflare credentials
 
 terraform init
 terraform plan
 terraform apply
 ```
 
-## Post-Install
+## Prerequisites
 
-```bash
-export KUBECONFIG=~/.kube/config-eldertree
-kubectl config use-context eldertree
-kubectl get nodes
-```
-
-## Update Existing Kubeconfig
-
-If you have an existing kubeconfig with default names:
-
-```bash
-./update-kubeconfig.sh ~/.kube/config-eldertree
-```
+- k3s must be installed first (use Ansible: `ansible-playbook ansible/playbooks/install-k3s.yml`)
+- Cloudflare account with domain `eldertree.xyz` added
+- Cloudflare API token with appropriate permissions
 
 ## Cleanup
 

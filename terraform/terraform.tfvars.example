@@ -1,19 +1,11 @@
 # =============================================================================
-# Terraform Variables for K3s Cluster Setup
+# Terraform Variables for Cloudflare Infrastructure
 # =============================================================================
+# NOTE: k3s installation is handled by Ansible (ansible/playbooks/install-k3s.yml)
+# Terraform is used only for Cloudflare DNS and Tunnel infrastructure
+#
 # Copy this file to terraform.tfvars and fill in your values
 # cp terraform.tfvars.example terraform.tfvars
-
-# Raspberry Pi Connection Details
-pi_host     = "eldertree"           # Hostname or IP address
-pi_user     = "pi"                  # SSH username (default: pi)
-pi_password = "CHANGE_ME"           # SSH password - DO NOT COMMIT THIS FILE TO GIT
-
-# Cluster Configuration
-# k3s_version = "v1.28.5+k3s1"     # Optional: specific k3s version (leave commented for latest)
-
-# Kubeconfig Location
-kubeconfig_path = "~/.kube/config-eldertree"
 
 # =============================================================================
 # Cloudflare DNS Configuration

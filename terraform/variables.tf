@@ -1,55 +1,12 @@
-variable "pi_host" {
-  description = "Hostname or IP address of the Raspberry Pi (required only when skip_k3s_resources=false)"
-  type        = string
-  default     = null
-  nullable    = true
-}
-
-variable "pi_user" {
-  description = "SSH username for the Raspberry Pi (required only when skip_k3s_resources=false). Can be retrieved from Vault at secret/terraform/pi-user or GitHub secrets"
-  type        = string
-  default     = null
-  nullable    = true
-}
-
-variable "pi_password" {
-  description = "SSH password for the Raspberry Pi (required only when skip_k3s_resources=false)"
-  type        = string
-  default     = null
-  sensitive   = true
-  nullable    = true
-}
-
-variable "k3s_version" {
-  description = "Version of k3s to install (leave empty for latest)"
-  type        = string
-  default     = ""
-}
-
-variable "k3s_token" {
-  description = "K3s cluster token (auto-generated if not provided)"
-  type        = string
-  default     = null # Use null instead of empty string to avoid marked value issues
-  sensitive   = true
-  nullable    = true
-}
-
-variable "kubeconfig_path" {
-  description = "Local path to save the kubeconfig"
-  type        = string
-  default     = "~/.kube/config-eldertree"
-}
-
-variable "skip_k3s_resources" {
-  description = "Skip k3s installation resources (useful for CI where SSH is not available)"
-  type        = bool
-  default     = false
-}
+# NOTE: k3s installation is handled by Ansible (ansible/playbooks/install-k3s.yml)
+# These variables are no longer needed in Terraform.
+# For k3s installation, use Ansible playbooks instead.
 
 variable "cloudflare_api_token" {
-  description = "Cloudflare API token for DNS management. Should be stored in Vault at secret/terraform/cloudflare-api-token"
+  description = "Cloudflare API token for DNS management. Should be stored in Vault at secret/terraform/cloudflare-api-token. Leave empty to skip Cloudflare resources (can be added later)."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "cloudflare_zone_id" {

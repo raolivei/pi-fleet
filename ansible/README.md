@@ -30,6 +30,7 @@ ansible/
 ├── playbooks/
 │   ├── configure-user.yml              # User configuration playbook (legacy)
 │   ├── setup-system.yml                # Complete system setup playbook
+│   ├── install-k3s.yml                 # k3s cluster installation playbook
 │   ├── bootstrap-flux.yml              # FluxCD GitOps bootstrap playbook
 │   ├── setup-eldertree.yml             # Master playbook (orchestrates all steps)
 │   └── setup-terminal-monitoring.yml   # Terminal monitoring tools setup
@@ -100,6 +101,47 @@ backup_device: "/dev/sdb1"
 backup_mount: "/mnt/backup"
 ```
 
+### Install k3s (`playbooks/install-k3s.yml`)
+
+Install k3s lightweight Kubernetes cluster on Raspberry Pi. This playbook handles the complete k3s installation including system prerequisites, cgroup configuration, and kubeconfig retrieval.
+
+**Features**:
+
+- Checks if k3s is already installed (idempotent)
+- Configures cgroups for container support (Raspberry Pi requirement)
+- Installs k3s control plane with cluster-init mode
+- Installs k9s CLI tool (optional)
+- Retrieves and configures kubeconfig locally
+- Saves node token for worker node joins
+
+**Usage**:
+
+```bash
+cd ansible
+ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass
+```
+
+**Variables** (can be overridden):
+
+```yaml
+k3s_version: ""  # Empty for latest, or specify like "v1.28.5+k3s1"
+k3s_token: ""  # Auto-generated if empty
+k3s_hostname: "eldertree"  # Hostname for TLS SAN
+kubeconfig_path: "~/.kube/config-eldertree"  # Local path to save kubeconfig
+k3s_install_k9s: true  # Install k9s CLI tool
+```
+
+**Example with custom variables**:
+
+```bash
+ansible-playbook playbooks/install-k3s.yml \
+  --ask-pass --ask-become-pass \
+  -e k3s_version="v1.28.5+k3s1" \
+  -e k3s_hostname="my-cluster"
+```
+
+**Note**: This playbook will reboot the Pi if cgroup configuration is updated. The playbook will wait for the Pi to come back online automatically.
+
 ### Bootstrap FluxCD (`playbooks/bootstrap-flux.yml`)
 
 Bootstrap FluxCD GitOps on the eldertree cluster. This playbook is idempotent and will skip bootstrap if FluxCD is already installed.
@@ -142,13 +184,11 @@ ansible-playbook playbooks/bootstrap-flux.yml \
   -e flux_github_repo=myrepo
 ```
 
-**Note**: This playbook runs on `localhost` and requires Flux CLI to be installed locally. The kubeconfig must exist before running this playbook (k3s must be installed via Terraform first).
+**Note**: This playbook runs on `localhost` and requires Flux CLI to be installed locally. The kubeconfig must exist before running this playbook (k3s must be installed first).
 
 ### Setup Eldertree (`playbooks/setup-eldertree.yml`)
 
-Master playbook that orchestrates the complete eldertree cluster setup. This playbook includes system configuration and optional FluxCD bootstrap.
-
-**Note**: k3s installation is handled separately by Terraform. This playbook assumes Terraform has already been run.
+Master playbook that orchestrates the complete eldertree cluster setup. This playbook includes system configuration, k3s installation, and optional FluxCD bootstrap.
 
 **Usage**:
 
@@ -168,10 +208,10 @@ All variables from `setup-system.yml` plus:
 **Workflow**:
 
 1. Runs `setup-system.yml` for system configuration
-2. Notes that k3s installation should be done via Terraform
+2. Runs `install-k3s.yml` for k3s cluster installation
 3. Optionally runs `bootstrap-flux.yml` if `bootstrap_flux=true`
 
-**Recommended**: Use the `setup-eldertree.sh` script instead, which properly orchestrates Ansible and Terraform.
+**Recommended**: Use the `setup-eldertree.sh` script instead, which properly orchestrates all steps.
 
 ### Setup Terminal Monitoring (`playbooks/setup-terminal-monitoring.yml`)
 
@@ -341,7 +381,7 @@ cd pi-fleet
 This script orchestrates:
 
 1. **Ansible** - System configuration (`setup-system.yml`)
-2. **Terraform** - k3s cluster installation
+2. **Ansible** - k3s cluster installation (`install-k3s.yml`)
 3. **Ansible** - FluxCD bootstrap (`bootstrap-flux.yml`)
 
 The script is idempotent and can be run multiple times safely.
@@ -355,13 +395,10 @@ If you prefer manual control:
 cd ansible
 ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
 
-# 2. Install k3s (Terraform)
-cd ../terraform
-terraform init
-terraform apply
+# 2. Install k3s
+ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass
 
 # 3. Bootstrap FluxCD (optional)
-cd ../ansible
 ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true
 ```
 
@@ -468,16 +505,18 @@ ansible all -m ping -u pi
 
 ### FluxCD Bootstrap Issues
 
-- **Kubeconfig not found**: Ensure Terraform has been run to install k3s and generate kubeconfig
+- **Kubeconfig not found**: Ensure Ansible playbook `install-k3s.yml` has been run to install k3s and generate kubeconfig
 - **Flux CLI not found**: Install with `brew install fluxcd/tap/flux`
 - **GitHub token**: Ensure GitHub token is configured for Flux bootstrap (check `~/.config/gh/` or set `GITHUB_TOKEN`)
 - **Already bootstrapped**: Playbook will skip bootstrap if FluxCD is already installed (idempotent)
 
 ### k3s Installation Issues
 
-- **Terraform fails**: Check SSH connectivity and credentials in `terraform.tfvars`
+- **Ansible fails**: Check SSH connectivity and credentials
 - **k3s not ready**: Check k3s service on Pi: `ssh pi@<IP> 'sudo systemctl status k3s'`
-- **Kubeconfig missing**: Re-run Terraform apply to regenerate kubeconfig
+- **Cgroup errors**: The playbook will automatically configure cgroups and reboot if needed
+- **Kubeconfig missing**: Re-run `install-k3s.yml` to regenerate kubeconfig
+- **Reboot required**: If cgroups are updated, the Pi will reboot automatically. The playbook waits for it to come back online.
 
 ## Security Considerations
 

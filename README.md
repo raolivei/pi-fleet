@@ -1,6 +1,6 @@
 # Pi Fleet
 
-K3s cluster on Raspberry Pi, managed with Terraform.
+K3s cluster on Raspberry Pi, managed with Ansible and Terraform.
 
 > **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for git workflow and branching strategy.
 
@@ -19,30 +19,72 @@ K3s cluster on Raspberry Pi, managed with Terraform.
 
 ## Quick Start
 
+### Automated Setup (Recommended)
+
+Use the automated setup script for complete cluster setup:
+
 ```bash
-# Install sshpass
-brew install hudochenkov/sshpass/sshpass
+# Install prerequisites
+brew install ansible terraform kubectl fluxcd/tap/flux hudochenkov/sshpass/sshpass
 
-# Configure
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your credentials
+# Run automated setup
+./scripts/setup-eldertree.sh
+```
 
-# Deploy
-terraform init
-terraform apply
+This script orchestrates:
+1. **Ansible** - System configuration (user, hostname, network, packages)
+2. **Ansible** - k3s cluster installation
+3. **Ansible** - FluxCD GitOps bootstrap (optional)
+
+The script is idempotent and can be run multiple times safely.
+
+### Manual Setup
+
+For manual control:
+
+```bash
+# 1. System configuration and k3s installation (Ansible)
+cd ansible
+ansible-playbook playbooks/setup-eldertree.yml --ask-pass --ask-become-pass
+
+# Or run separately:
+ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
+ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass
+
+# 2. Bootstrap FluxCD (Ansible, optional)
+ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true
 
 # Use cluster
 export KUBECONFIG=~/.kube/config-eldertree
 kubectl get nodes
 ```
 
+## Tool Selection
+
+This project uses a hybrid approach:
+
+- **Ansible**: System configuration and operational tasks
+  - User management, hostname, network configuration
+  - Package installation
+  - k3s cluster installation
+  - FluxCD GitOps bootstrap
+  - Idempotent configuration management
+
+- **Terraform**: Infrastructure provisioning
+  - Cloudflare DNS configuration (optional)
+  - Cloudflare Tunnel creation (optional)
+  - Infrastructure state management
+
+See [ansible/README.md](ansible/README.md) for Ansible playbook documentation.
+
 ## Structure
 
 ```
-terraform/         # Infrastructure as code (K3s setup)
+ansible/           # Ansible playbooks (system configuration, k3s installation, FluxCD bootstrap)
+terraform/         # Infrastructure as code (Cloudflare DNS/Tunnel)
 clusters/eldertree/     # FluxCD manifests (GitOps)
 helm/              # Custom Helm charts
+scripts/           # Helper scripts (setup-eldertree.sh, etc.)
 ```
 
 ## Helm Charts
@@ -105,8 +147,8 @@ Secrets stored in Vault. See [VAULT.md](VAULT.md).
 ## Add Worker Nodes
 
 ```bash
-# Get token
-cat terraform/k3s-node-token
+# Get token (saved by Ansible install-k3s.yml playbook)
+cat ansible/k3s-node-token
 
 # On worker node (fleet-worker-01, fleet-worker-02, etc.)
 curl -sfL https://get.k3s.io | K3S_URL=https://eldertree:6443 K3S_TOKEN=<token> sh -
