@@ -1,0 +1,69 @@
+---
+- name: Configure raolivei user on Raspberry Pi
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    target_user: raolivei
+    target_password: "Control01!"
+    # Generate password hash using SHA-512 (Linux default)
+    # This will be generated at runtime using the password_hash filter
+    password_hash: "{{ target_password | password_hash('sha512') }}"
+
+  tasks:
+    - name: Check if user {{ target_user }} exists
+      getent:
+        database: passwd
+        key: "{{ target_user }}"
+      register: user_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create user {{ target_user }}
+      user:
+        name: "{{ target_user }}"
+        password: "{{ password_hash }}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        create_home: yes
+        home: /home/{{ target_user }}
+        state: present
+      when: user_check.ansible_facts.getent_passwd[target_user] is not defined
+
+    - name: Update password for existing user {{ target_user }}
+      user:
+        name: "{{ target_user }}"
+        password: "{{ password_hash }}"
+      when: user_check.ansible_facts.getent_passwd[target_user] is defined
+
+    - name: Ensure user {{ target_user }} is in sudo group
+      user:
+        name: "{{ target_user }}"
+        groups: sudo
+        append: yes
+
+    - name: Configure passwordless sudo for {{ target_user }}
+      lineinfile:
+        path: /etc/sudoers.d/{{ target_user }}
+        line: "{{ target_user }} ALL=(ALL) NOPASSWD: ALL"
+        create: yes
+        validate: "visudo -cf %s"
+        mode: "0440"
+        owner: root
+        group: root
+
+    - name: Ensure home directory has correct permissions
+      file:
+        path: /home/{{ target_user }}
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0755"
+        state: directory
+
+    - name: Display user configuration summary
+      debug:
+        msg:
+          - "User {{ target_user }} has been configured"
+          - "Password: {{ target_password }}"
+          - "Home directory: /home/{{ target_user }}"
+          - "Sudo access: Enabled (passwordless)"

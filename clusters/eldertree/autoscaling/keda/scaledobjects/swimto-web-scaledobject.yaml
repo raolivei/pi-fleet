@@ -6,7 +6,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: swimto-web
-  minReplicaCount: 1  # Keep 1 for fast response
+  minReplicaCount: 1 # Keep 1 for fast response
   maxReplicaCount: 3
   pollingInterval: 30
   cooldownPeriod: 300
@@ -20,4 +20,3 @@ spec:
           sum(rate(traefik_service_requests_total{
             service=~"swimto-swimto-web-service-3000@kubernetes"
           }[2m]))
-
