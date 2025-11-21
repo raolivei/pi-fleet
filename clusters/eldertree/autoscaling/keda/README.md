@@ -41,7 +41,7 @@ spec:
   triggers:
     - type: prometheus
       metadata:
-        serverAddress: http://prometheus-server.monitoring.svc.cluster.local:9090
+        serverAddress: http://prometheus-stack.observability.svc.cluster.local:9090
         metricName: http_requests_total
         threshold: "100"
         query: sum(rate(http_requests_total{job="my-app"}[2m]))
@@ -116,6 +116,3 @@ kubectl get apiservice | grep keda
 - [KEDA Documentation](https://keda.sh/docs/)
 - [Scalers List](https://keda.sh/docs/scalers/)
 - [GitHub Repository](https://github.com/kedacore/keda)
-
-
-

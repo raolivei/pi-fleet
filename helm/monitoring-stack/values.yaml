@@ -65,7 +65,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://monitoring-stack-prometheus-server.observability.svc.cluster.local
+          url: http://prometheus-stack.observability.svc.cluster.local
           access: proxy
           isDefault: true
   dashboardProviders:

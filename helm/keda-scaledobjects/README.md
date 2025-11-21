@@ -12,21 +12,25 @@ Helm chart for managing KEDA ScaledObjects across all application deployments in
 ## Supported Services
 
 ### Canopy Namespace
+
 - `canopy-api` - API service (min: 0, max: 5) - Scale-to-zero with HTTP rate trigger
 - `canopy-frontend` - Frontend service (min: 1, max: 3) - HTTP rate trigger, kept at 1 for fast response
 - `canopy-redis` - Redis cache (min: 1, max: 3) - CPU/Memory trigger
 - `canopy-postgres` - PostgreSQL database StatefulSet (min: 1, max: 2) - CPU/Memory trigger
 
 ### SwimTO Namespace
+
 - `swimto-api` - API service (min: 0, max: 5) - Scale-to-zero with HTTP rate trigger
 - `swimto-web` - Web frontend (min: 1, max: 3) - HTTP rate trigger, kept at 1 for fast response
 - `swimto-postgres` - PostgreSQL database (min: 1, max: 2) - CPU/Memory trigger
 - `swimto-redis` - Redis cache (min: 1, max: 3) - CPU/Memory trigger
 
 ### Nima Namespace
+
 - `nima-api` - API service (min: 0, max: 5) - Scale-to-zero with HTTP rate trigger (lower threshold for ML service)
 
 ### US Law Severity Map Namespace
+
 - `us-law-severity-map-web` - Web frontend (min: 1, max: 3) - HTTP rate trigger, kept at 1 for fast response
 
 ## Configuration
@@ -36,11 +40,11 @@ Helm chart for managing KEDA ScaledObjects across all application deployments in
 ```yaml
 global:
   prometheus:
-    serverAddress: "http://monitoring-stack-prometheus-server.observability.svc.cluster.local:9090"
-  pollingInterval: 30      # Seconds between metric checks
-  cooldownPeriod: 300      # Seconds to wait before scaling down (5 minutes)
-  cpuThreshold: "50"       # CPU utilization percentage threshold (for stateful services)
-  memoryThreshold: "80"    # Memory utilization percentage threshold (for stateful services)
+    serverAddress: "http://prometheus-stack.observability.svc.cluster.local:9090"
+  pollingInterval: 30 # Seconds between metric checks
+  cooldownPeriod: 300 # Seconds to wait before scaling down (5 minutes)
+  cpuThreshold: "50" # CPU utilization percentage threshold (for stateful services)
+  memoryThreshold: "80" # Memory utilization percentage threshold (for stateful services)
 ```
 
 ### Per-Service Settings
@@ -48,29 +52,31 @@ global:
 Each service can be enabled/disabled and have custom replica ranges and trigger types:
 
 **Stateless Services (HTTP Rate Triggers):**
+
 ```yaml
 canopy:
   enabled: true
   api:
     enabled: true
-    minReplicas: 0         # Scale to zero in standby
+    minReplicas: 0 # Scale to zero in standby
     maxReplicas: 5
     triggerType: "http-rate"
     httpRateThreshold: "5" # requests/sec to scale up
   frontend:
     enabled: true
-    minReplicas: 1         # Keep 1 for fast response
+    minReplicas: 1 # Keep 1 for fast response
     maxReplicas: 3
     triggerType: "http-rate"
     httpRateThreshold: "10" # requests/sec to scale up
 ```
 
 **Stateful Services (CPU/Memory Triggers):**
+
 ```yaml
 canopy:
   redis:
     enabled: true
-    minReplicas: 1         # Keep at least 1 for stateful service
+    minReplicas: 1 # Keep at least 1 for stateful service
     maxReplicas: 3
     triggerType: "cpu-memory"
   postgres:
@@ -129,6 +135,7 @@ Stateless services (APIs and frontends) use **HTTP request rate** triggers via P
 - **APIs**: Scale to zero to save resources during standby
 
 **Prometheus Query Example:**
+
 ```promql
 sum(rate(traefik_service_requests_total{
   service="canopy-api",
@@ -137,6 +144,7 @@ sum(rate(traefik_service_requests_total{
 ```
 
 **Thresholds:**
+
 - Frontends: 10 requests/sec
 - APIs: 5 requests/sec
 - ML services (nima-api): 2 requests/sec (lower threshold)
@@ -159,6 +167,7 @@ Stateful services (PostgreSQL, Redis) use **CPU and Memory** utilization trigger
 ### Scale-to-Zero Behavior
 
 **Cold Start Implications:**
+
 - When scaled to zero, first request triggers pod creation
 - Cold start latency: 5-60 seconds depending on service
   - `nima-api`: ~60s (30s readiness + model loading)
@@ -168,6 +177,7 @@ Stateful services (PostgreSQL, Redis) use **CPU and Memory** utilization trigger
 - **Subsequent Requests**: Normal response time once pod is ready
 
 **Best Practices:**
+
 - Frontends kept at min 1 replica for better UX
 - APIs can tolerate cold start for resource savings
 - Monitor readiness probe delays to ensure they're within tolerance
@@ -198,19 +208,22 @@ kubectl logs -n keda deployment/keda-operator
 KEDA uses Traefik ingress metrics for HTTP rate scaling. Traefik exposes Prometheus metrics at `/metrics` endpoint.
 
 **Required Metrics:**
+
 - `traefik_service_requests_total` - Total HTTP requests per service
 
 **Verification:**
+
 ```bash
 # Check if Traefik exposes metrics
 kubectl port-forward -n kube-system svc/traefik 8080:8080
 curl http://localhost:8080/metrics | grep traefik_service_requests_total
 
 # Query Prometheus directly
-curl 'http://monitoring-stack-prometheus-server.observability.svc.cluster.local:9090/api/v1/query?query=traefik_service_requests_total'
+curl 'http://prometheus-stack.observability.svc.cluster.local:9090/api/v1/query?query=traefik_service_requests_total'
 ```
 
 **Service Name Matching:**
+
 - Ensure Traefik service names match Kubernetes service names
 - Service names used in queries:
   - `canopy-api`, `canopy-frontend`
@@ -226,4 +239,3 @@ curl 'http://monitoring-stack-prometheus-server.observability.svc.cluster.local:
 - **Scale-to-Zero**: First request after scale-to-zero may experience cold start delay (5-60s)
 - **Frontend Strategy**: Frontends kept at min 1 replica to avoid cold start delays for better UX
 - **Monitoring**: Monitor ScaledObject status and HPA metrics to verify scaling behavior
-
