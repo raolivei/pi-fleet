@@ -3,6 +3,7 @@
 **NOTE**: k3s installation is handled by Ansible (`ansible/playbooks/install-k3s.yml`), not Terraform.
 
 Terraform is used only for Cloudflare infrastructure:
+
 - DNS records (A, CNAME)
 - Cloudflare Tunnel
 - TLS certificates

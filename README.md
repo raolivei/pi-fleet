@@ -12,9 +12,11 @@ K3s cluster on Raspberry Pi, managed with Ansible and Terraform.
 ## Fleet Naming
 
 **Control Plane:**
+
 - **eldertree** - Main control plane node (192.168.2.83)
 
 **Worker Nodes:**
+
 - **fleet-worker-01**, **fleet-worker-02**, etc. (future)
 
 ## Quick Start
@@ -32,6 +34,7 @@ brew install ansible terraform kubectl fluxcd/tap/flux hudochenkov/sshpass/sshpa
 ```
 
 This script orchestrates:
+
 1. **Ansible** - System configuration (user, hostname, network, packages)
 2. **Ansible** - k3s cluster installation
 3. **Ansible** - FluxCD GitOps bootstrap (optional)
@@ -64,6 +67,7 @@ kubectl get nodes
 This project uses a hybrid approach:
 
 - **Ansible**: System configuration and operational tasks
+
   - User management, hostname, network configuration
   - Package installation
   - k3s cluster installation
@@ -99,6 +103,7 @@ See [helm/README.md](helm/README.md) for details.
 ## Cluster Status
 
 **Current State:**
+
 - Single-node K3s cluster (eldertree)
 - K3s v1.33.5+k3s1, Helm v4.0.0
 - Flux GitOps, cert-manager, Pi-hole DNS
@@ -106,6 +111,7 @@ See [helm/README.md](helm/README.md) for details.
 - Storage: local-path-provisioner
 
 **Deployed Applications:**
+
 - Grafana: https://grafana.eldertree.local (admin/admin)
 - Prometheus: https://prometheus.eldertree.local
 - Canopy: https://canopy.eldertree.local
@@ -118,6 +124,7 @@ See [NETWORK.md](NETWORK.md) for DNS setup.
 The cluster uses Traefik as the Ingress Controller (pre-installed with k3s), Cert-Manager for automatic SSL/TLS certificate management, and ExternalDNS for automatic DNS record creation.
 
 **Quick Start:**
+
 ```bash
 # Validate ingress setup
 ./scripts/validate-ingress-setup.sh
@@ -130,6 +137,7 @@ kubectl get certificates -A
 ```
 
 **Components:**
+
 - **Traefik**: Ingress Controller (IngressClass: `traefik`)
 - **Cert-Manager**: SSL certificate management (ClusterIssuer: `selfsigned-cluster-issuer`)
 - **ExternalDNS**: Automatic DNS records for `*.eldertree.local` domains

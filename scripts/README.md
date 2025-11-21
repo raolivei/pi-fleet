@@ -9,6 +9,7 @@ Helper scripts for managing pi-fleet and workspace infrastructure.
 Complete automated setup script for the eldertree Raspberry Pi cluster. This script orchestrates both Ansible (system configuration) and Terraform (k3s infrastructure) to set up the cluster.
 
 **Features**:
+
 - Idempotent (can be run multiple times safely)
 - Checks if k3s is already installed before running Terraform
 - Verifies each step before proceeding
@@ -23,6 +24,7 @@ cd pi-fleet
 ```
 
 **What it does**:
+
 1. Checks prerequisites (ansible, kubectl, flux CLI)
 2. Prompts for Pi IP address and SSH credentials
 3. Updates Ansible inventory
@@ -33,16 +35,19 @@ cd pi-fleet
 8. Optionally bootstraps FluxCD GitOps via Ansible
 
 **Tool Selection**:
+
 - **Ansible**: Used for system configuration, k3s installation, and operational tasks (user setup, hostname, network, FluxCD bootstrap)
 - **Terraform**: Used for infrastructure provisioning (Cloudflare DNS/Tunnel only)
 
 **Prerequisites**:
+
 - Ansible installed (`brew install ansible`)
 - kubectl installed (`brew install kubectl`)
 - Flux CLI installed (`brew install fluxcd/tap/flux`)
 - sshpass installed (`brew install hudochenkov/sshpass/sshpass`)
 
 **Troubleshooting**:
+
 - If Ansible fails: Check SSH connectivity and credentials
 - If k3s installation fails: Check verbose output: `ansible-playbook playbooks/install-k3s.yml -vvv`
 - If k3s not ready: Check k3s service on Pi: `ssh pi@<IP> 'sudo systemctl status k3s'`

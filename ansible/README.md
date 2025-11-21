@@ -124,11 +124,11 @@ ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass
 **Variables** (can be overridden):
 
 ```yaml
-k3s_version: ""  # Empty for latest, or specify like "v1.28.5+k3s1"
-k3s_token: ""  # Auto-generated if empty
-k3s_hostname: "eldertree"  # Hostname for TLS SAN
-kubeconfig_path: "~/.kube/config-eldertree"  # Local path to save kubeconfig
-k3s_install_k9s: true  # Install k9s CLI tool
+k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
+k3s_token: "" # Auto-generated if empty
+k3s_hostname: "eldertree" # Hostname for TLS SAN
+kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig
+k3s_install_k9s: true # Install k9s CLI tool
 ```
 
 **Example with custom variables**:
