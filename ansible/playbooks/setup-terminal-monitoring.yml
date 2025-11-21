@@ -1,7 +1,7 @@
 ---
 - name: Setup Terminal Monitoring Tools for Eldertree
   hosts: raspberry_pi
-  become: yes
+  become: true
   vars:
     target_user: raolivei
     # Password should be set via Ansible Vault or environment variable
@@ -28,7 +28,7 @@
       apt:
         name: neofetch
         state: present
-      ignore_errors: yes
+      ignore_errors: true
       register: neofetch_result
 
     - name: Install neofetch from source if apt package unavailable
@@ -136,26 +136,26 @@
         group: "{{ target_user }}"
 
     # =========================================================================
-    # Configure .bashrc to Show System Info on Login
+    # Configure .bashrc to Show System Info and Auto-Start btop on Login
     # =========================================================================
-    - name: Check if system-info.sh is already in bashrc
-      shell: grep -q "system-info.sh" /home/{{ target_user }}/.bashrc || echo "not_found"
-      register: bashrc_check
-      changed_when: false
-      failed_when: false
-
-    - name: Add system info display to bashrc
+    - name: Add system info display and auto-start btop to bashrc
       blockinfile:
         path: /home/{{ target_user }}/.bashrc
         marker: "# {mark} ANSIBLE MANAGED BLOCK - Terminal Monitoring"
         block: |
-          # Show system info on login (only for interactive shells)
+          # Show system info and auto-start real-time monitor on login (only for interactive shells)
           if [ -t 0 ]; then
+              # Quick system status banner
               ~/.system-info.sh
+              echo ""
+              echo "Starting real-time monitor (btop)..."
+              echo "Press 'q' to quit and return to shell"
+              sleep 2
+              # Auto-start btop for real-time monitoring
+              btop
           fi
         owner: "{{ target_user }}"
         group: "{{ target_user }}"
-      when: "'not_found' in bashrc_check.stdout"
 
     # =========================================================================
     # Configure btop (Optional - create config directory)
@@ -184,10 +184,11 @@
           - "Installed: btop, tmux"
           - "Neofetch: {{ 'Installed' if neofetch_check.rc == 0 else 'Not available' }}"
           - "System info script: ~/.system-info.sh"
-          - "Login banner: Configured in ~/.bashrc"
+          - "Login banner + auto-start btop: Configured in ~/.bashrc"
           - ""
           - "Usage:"
-          - "  - System info will show automatically on login"
-          - "  - Run 'btop' for interactive system monitoring"
+          - "  - Real-time monitor (btop) will auto-start on login"
+          - "  - Press 'q' in btop to quit and return to shell"
+          - "  - Run 'btop' manually anytime for monitoring"
           - "  - Run 'neofetch' for system info with ASCII art (if installed)"
           - "  - Run 'htop' for classic process monitor (already installed)"
