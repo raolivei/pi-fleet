@@ -12,9 +12,11 @@
 # 6. Get tunnel token and store in Vault: secret/cloudflare-tunnel/token
 # 7. FluxCD deploys cloudflared via Helm chart (clusters/eldertree/dns-services/cloudflare-tunnel)
 #
-# IMPORTANT: Tunnel configuration (ingress rules) is managed via Helm chart values
-# See: clusters/eldertree/dns-services/cloudflare-tunnel/helmrelease.yaml
-# Terraform only creates the tunnel itself. Configuration is GitOps-managed via FluxCD.
+# IMPORTANT: Tunnel configuration (ingress rules) is managed via Terraform (Cloudflare API)
+# This is infrastructure provisioning, not application configuration.
+# The tunnel connector pod is deployed via Kubernetes (FluxCD), but ingress rules
+# are configured via Cloudflare API through Terraform.
+# See: clusters/eldertree/dns-services/cloudflare-tunnel/ for Kubernetes deployment
 #
 # Prerequisites (when adding Cloudflare resources):
 # 1. Domain eldertree.xyz must be added to Cloudflare account (Add Site)
@@ -70,45 +72,14 @@ resource "cloudflare_record" "eldertree_xyz_wildcard" {
   comment         = "Wildcard A record for *.eldertree.xyz - managed by Terraform"
 }
 
-# Generate private key for Origin Certificate
-resource "tls_private_key" "swimto_origin" {
-  algorithm = "RSA"
-  rsa_bits  = 2048
-}
-
-# Generate CSR for Origin Certificate
-resource "tls_cert_request" "swimto_origin" {
-  private_key_pem = tls_private_key.swimto_origin.private_key_pem
-
-  subject {
-    common_name  = "swimto.eldertree.xyz"
-    organization = "Eldertree"
-  }
-
-  dns_names = [
-    "swimto.eldertree.xyz",
-    "*.eldertree.xyz"
-  ]
-}
-
-# Cloudflare Origin Certificate for swimto.eldertree.xyz
+# NOTE: TLS certificates are managed by cert-manager via Helm charts
+# See: clusters/eldertree/core-infrastructure/issuers/
 # 
-# NOTE: Creating Origin CA certificates via API requires special permissions:
-# - API token needs "SSL and Certificates:Edit" permission
-# - Standard DNS tokens don't have this permission
-# 
-# If you get error 1016 (not authorized), you have two options:
-# 1. Create certificate manually via Cloudflare Dashboard (see CLOUDFLARE_ORIGIN_CERT_SETUP.md)
-# 2. Update API token to include SSL/Certificates permissions
-#
-# To make this optional, uncomment the resource below and ensure your API token has the right permissions
-#
-# resource "cloudflare_origin_ca_certificate" "swimto" {
-#   csr              = tls_cert_request.swimto_origin.cert_request_pem
-#   hostnames        = ["swimto.eldertree.xyz", "*.eldertree.xyz"]
-#   request_type     = "origin-rsa"
-#   requested_validity = 5475  # 15 years (maximum, in days)
-# }
+# For Cloudflare Origin Certificates (if needed):
+# 1. Create certificate manually via Cloudflare Dashboard
+# 2. Store certificate and key in Vault
+# 3. Use External Secrets Operator to sync to Kubernetes
+# See: clusters/eldertree/swimto/CLOUDFLARE_ORIGIN_CERT_SETUP.md
 
 # Generate tunnel secret
 resource "random_password" "tunnel_secret" {
@@ -204,28 +175,6 @@ output "cloudflare_tunnel_cname" {
   value       = var.cloudflare_api_token != "" && var.cloudflare_account_id != "" ? "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com" : null
 }
 
-# Output Origin Certificate components for Kubernetes secret creation
-# Note: Certificate must be created manually in Cloudflare Dashboard (see ORIGIN_CERT_API_PERMISSIONS.md)
-# Terraform generates the private key and CSR, which you use to create the certificate
-output "swimto_origin_private_key" {
-  description = "Private key for Cloudflare Origin Certificate (use with kubectl create secret tls). Always available from Terraform."
-  value       = tls_private_key.swimto_origin.private_key_pem
-  sensitive   = true
-}
-
-output "swimto_origin_csr" {
-  description = "Certificate Signing Request (CSR) - use this when creating certificate manually in Cloudflare Dashboard"
-  value       = tls_cert_request.swimto_origin.cert_request_pem
-  sensitive   = false
-}
-
-# Note: If you uncomment the cloudflare_origin_ca_certificate resource above and have proper API permissions,
-# you can add these outputs:
-# output "swimto_origin_certificate" {
-#   value = cloudflare_origin_ca_certificate.swimto.certificate
-#   sensitive = false
-# }
-# output "swimto_certificate_id" {
-#   value = cloudflare_origin_ca_certificate.swimto.id
-# }
+# NOTE: TLS certificate outputs removed - certificates are managed by cert-manager via Helm
+# See: clusters/eldertree/core-infrastructure/issuers/ for cert-manager configuration
 

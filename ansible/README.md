@@ -33,7 +33,9 @@ ansible/
 │   ├── install-k3s.yml                 # k3s cluster installation playbook
 │   ├── bootstrap-flux.yml              # FluxCD GitOps bootstrap playbook
 │   ├── setup-eldertree.yml             # Master playbook (orchestrates all steps)
-│   └── setup-terminal-monitoring.yml   # Terminal monitoring tools setup
+│   ├── setup-terminal-monitoring.yml   # Terminal monitoring tools setup
+│   ├── configure-dns.yml               # DNS configuration (/etc/hosts)
+│   └── manage-secrets.yml              # Secret management in Vault
 └── README.md                # This file
 ```
 
@@ -255,6 +257,62 @@ ansible-playbook playbooks/setup-terminal-monitoring.yml --limit eldertree --ask
 **Variables**:
 
 Uses the same `target_user` variable as other playbooks (defaults to `raolivei`).
+
+### Configure DNS (`playbooks/configure-dns.yml`)
+
+Configure DNS for eldertree cluster services. This playbook manages local DNS configuration via `/etc/hosts` entries.
+
+**Features**:
+
+- Adds DNS entries for cluster services (\*.eldertree.local)
+- Supports Pi-hole DNS (recommended) or /etc/hosts fallback
+- Idempotent (won't duplicate entries)
+
+**Usage**:
+
+```bash
+cd ansible
+ansible-playbook playbooks/configure-dns.yml \
+  -e configure_hosts_file=true \
+  -e eldertree_ip=192.168.2.83
+```
+
+**Variables**:
+
+- `eldertree_ip`: Cluster IP address (default: 192.168.2.83)
+- `configure_hosts_file`: Enable /etc/hosts configuration (default: false)
+- `services`: List of services to configure (default: predefined list)
+
+**Note**: For better automation, use the convenience script: `./scripts/setup-dns.sh`
+
+### Manage Secrets (`playbooks/manage-secrets.yml`)
+
+Manage secrets in Vault. This playbook provides a declarative way to store secrets in Vault.
+
+**Features**:
+
+- Store multiple secrets in a single run
+- Idempotent secret management
+- Works with External Secrets Operator
+
+**Usage**:
+
+```bash
+cd ansible
+ansible-playbook playbooks/manage-secrets.yml \
+  -e 'secrets=[
+    {path: "secret/terraform/cloudflare-api-token", data: {api-token: "YOUR_TOKEN"}},
+    {path: "secret/external-dns/cloudflare-api-token", data: {api-token: "YOUR_TOKEN"}}
+  ]'
+```
+
+**Variables**:
+
+- `kubeconfig_path`: Path to kubeconfig (default: ~/.kube/config-eldertree)
+- `vault_namespace`: Vault namespace (default: vault)
+- `secrets`: List of secrets to store (see example above)
+
+**Note**: For convenience, use the wrapper script: `./scripts/store-cloudflare-token.sh YOUR_TOKEN`
 
 ### Configure User (`playbooks/configure-user.yml`)
 

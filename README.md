@@ -64,7 +64,7 @@ kubectl get nodes
 
 ## Tool Selection
 
-This project uses a hybrid approach:
+This project uses a hybrid approach with clear separation of concerns:
 
 - **Ansible**: System configuration and operational tasks
 
@@ -72,12 +72,23 @@ This project uses a hybrid approach:
   - Package installation
   - k3s cluster installation
   - FluxCD GitOps bootstrap
+  - DNS configuration (local /etc/hosts)
+  - Secret management (Vault operations)
   - Idempotent configuration management
 
 - **Terraform**: Infrastructure provisioning
-  - Cloudflare DNS configuration (optional)
-  - Cloudflare Tunnel creation (optional)
+
+  - Cloudflare DNS records (A, CNAME)
+  - Cloudflare Tunnel creation and configuration
   - Infrastructure state management
+  - **Note**: TLS certificates are managed by cert-manager via Helm, not Terraform
+
+- **Helm**: Kubernetes application deployment
+  - Custom Helm charts for cluster components
+  - cert-manager issuers (TLS certificate management)
+  - Monitoring stack (Prometheus + Grafana)
+  - KEDA scaled objects
+  - Application configuration via values.yaml
 
 See [ansible/README.md](ansible/README.md) for Ansible playbook documentation.
 
