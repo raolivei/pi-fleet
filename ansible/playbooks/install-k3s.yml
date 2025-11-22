@@ -1,0 +1,449 @@
+---
+- name: Install k3s on Raspberry Pi
+  hosts: raspberry_pi
+  become: true
+  vars:
+    k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
+    k3s_token: "" # Auto-generated if empty
+    k3s_hostname: "eldertree" # Hostname for TLS SAN
+    kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig
+    k3s_install_k9s: true # Install k9s CLI tool
+
+  tasks:
+    # =========================================================================
+    # Check k3s installation status
+    # =========================================================================
+    - name: Check if k3s is already installed
+      command: which k3s
+      register: k3s_check
+      changed_when: false
+      failed_when: false
+
+    - name: Check if k3s service is running
+      systemd:
+        name: k3s
+      register: k3s_service_status
+      changed_when: false
+      failed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Set fact for k3s already installed
+      set_fact:
+        k3s_already_installed: "{{ k3s_check.rc == 0 and k3s_service_status.status.ActiveState == 'active' }}"
+      when: k3s_check.rc == 0
+      changed_when: false
+
+    - name: Set fact for k3s already installed (when not found)
+      set_fact:
+        k3s_already_installed: false
+      when: k3s_check.rc != 0
+      changed_when: false
+
+    # =========================================================================
+    # System Prerequisites - Cgroup Configuration
+    # =========================================================================
+    - name: Read current cmdline.txt
+      slurp:
+        src: /boot/firmware/cmdline.txt
+      register: cmdline_content
+      changed_when: false
+      failed_when: false
+
+    - name: Check if cgroup setting exists in cmdline.txt
+      set_fact:
+        cgroup_setting_exists: "{{ cmdline_content.content | b64decode | default('') | regex_search('systemd\\.unified_cgroup_hierarchy=0') is not none }}"
+      changed_when: false
+
+    - name: Check if cgroup setting exists in running kernel
+      shell: cat /proc/cmdline | grep -q 'systemd.unified_cgroup_hierarchy=0' && echo 'yes' || echo 'no'
+      register: cgroup_running_check
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure cgroups are enabled in cmdline.txt
+      lineinfile:
+        path: /boot/firmware/cmdline.txt
+        regexp: 'systemd\.unified_cgroup_hierarchy'
+        line: " systemd.unified_cgroup_hierarchy=0"
+        backrefs: false
+        state: present
+      register: cmdline_updated
+      failed_when: false
+      when: not cgroup_setting_exists | default(false)
+
+    - name: Set fact for reboot needed
+      set_fact:
+        reboot_needed: "{{ (cmdline_updated.changed | default(false)) or (cgroup_running_check.stdout | default('no') == 'no') }}"
+      changed_when: false
+
+    - name: Reboot if cmdline.txt was updated or cgroup not active
+      reboot:
+        msg: "Rebooting to apply cgroup configuration"
+        reboot_timeout: 300
+      when: reboot_needed | default(false)
+
+    - name: Wait for system to come back online after reboot
+      wait_for_connection:
+        timeout: 300
+      when: reboot_needed | default(false)
+
+    - name: Verify cgroup setting is active after reboot
+      shell: cat /proc/cmdline | grep -q 'systemd.unified_cgroup_hierarchy=0' && echo 'yes' || echo 'no'
+      register: cgroup_verify
+      changed_when: false
+      failed_when: false
+      when: reboot_needed | default(false)
+
+    - name: Verify cgroup setting is active (final check)
+      shell: cat /proc/cmdline | grep -q 'systemd.unified_cgroup_hierarchy=0' && echo 'yes' || echo 'no'
+      register: cgroup_final_check
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if cgroup setting is not active after reboot
+      fail:
+        msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is not active in kernel after reboot. Check /boot/firmware/cmdline.txt and ensure the setting is present."
+      when: reboot_needed | default(false) and cgroup_verify.stdout | default('no') == 'no'
+
+    - name: Fail if cgroup setting is not active (general check)
+      fail:
+        msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is not active in kernel. A reboot may be required."
+      when: not reboot_needed | default(false) and cgroup_final_check.stdout | default('no') == 'no'
+
+    # =========================================================================
+    # Install prerequisites
+    # =========================================================================
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - iptables
+        state: present
+        update_cache: true
+      when: not (k3s_already_installed | default(false))
+
+    # =========================================================================
+    # Generate k3s token if not provided
+    # =========================================================================
+    - name: Generate k3s token if not provided
+      command: openssl rand -hex 32
+      register: generated_token
+      changed_when: false
+      when: k3s_token == "" and not (k3s_already_installed | default(false))
+
+    - name: Set k3s token
+      set_fact:
+        k3s_token: "{{ generated_token.stdout if k3s_token == '' else k3s_token }}"
+      when: not (k3s_already_installed | default(false))
+
+    # =========================================================================
+    # Install k3s
+    # =========================================================================
+    - name: Install k3s
+      shell: |
+        set -e
+        export INSTALL_K3S_VERSION="{{ k3s_version }}"
+        export K3S_TOKEN="{{ k3s_token }}"
+        curl -sfL https://get.k3s.io | sh -s - server \
+          --cluster-init \
+          --write-kubeconfig-mode=644 \
+          --tls-san={{ k3s_hostname }}
+      args:
+        creates: /usr/local/bin/k3s
+      register: k3s_install
+      when: not (k3s_already_installed | default(false))
+
+    # =========================================================================
+    # Ensure k3s service is running
+    # =========================================================================
+    - name: Check k3s service status before starting
+      systemd:
+        name: k3s
+      register: k3s_service_status_before
+      changed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Ensure k3s service is started
+      systemd:
+        name: k3s
+        state: started
+        enabled: true
+      register: k3s_service_start
+      when: k3s_check.rc == 0
+
+    - name: Wait for k3s service to be active
+      systemd:
+        name: k3s
+      register: k3s_service_wait
+      until: k3s_service_wait.status.ActiveState == 'active'
+      retries: 30
+      delay: 2
+      failed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Check k3s logs if service failed to start
+      shell: sudo journalctl -u k3s --no-pager -n 5 | tail -5
+      register: k3s_logs_check
+      changed_when: false
+      failed_when: false
+      when: k3s_check.rc == 0 and k3s_service_wait.status.ActiveState | default('') != 'active'
+
+    - name: Display k3s logs if service failed
+      debug:
+        var: k3s_logs_check.stdout_lines
+      when: k3s_check.rc == 0 and k3s_service_wait.status.ActiveState | default('') != 'active'
+
+    - name: Wait for k3s kubeconfig file to exist
+      wait_for:
+        path: /etc/rancher/k3s/k3s.yaml
+        timeout: 120
+      register: kubeconfig_wait
+      failed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Wait for k3s to be ready
+      command: k3s kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml get nodes
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 60
+      delay: 5
+      failed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Fail if k3s is not ready
+      fail:
+        msg: "k3s service is not responding after 5 minutes. Check logs with: sudo journalctl -u k3s -n 50. Service status: {{ k3s_service_wait.status.ActiveState | default('unknown') }}"
+      when: k3s_check.rc == 0 and k3s_ready.rc != 0
+
+    - name: Display k3s status
+      command: k3s kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml get nodes
+      register: k3s_nodes
+      changed_when: false
+      failed_when: false
+
+    - name: Show k3s nodes
+      debug:
+        var: k3s_nodes.stdout_lines
+      when: k3s_nodes.rc == 0
+
+    # =========================================================================
+    # Install k9s (optional)
+    # =========================================================================
+    - name: Check if k9s is already installed
+      stat:
+        path: /usr/local/bin/k9s
+      register: k9s_installed_check
+      changed_when: false
+
+    - name: Get latest k9s version
+      uri:
+        url: https://api.github.com/repos/derailed/k9s/releases/latest
+        return_content: true
+      register: k9s_release
+      changed_when: false
+      when: k3s_install_k9s and not (k9s_installed_check.stat.exists | default(false))
+
+    - name: Extract k9s version
+      set_fact:
+        k9s_version: "{{ k9s_release.json.tag_name | regex_replace('^v', '') }}"
+      when: k3s_install_k9s and not (k9s_installed_check.stat.exists | default(false)) and k9s_release.json is defined
+
+    - name: Download and install k9s
+      unarchive:
+        src: "https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_Linux_arm64.tar.gz"
+        dest: /tmp
+        remote_src: true
+      register: k9s_download
+      when: k3s_install_k9s and not (k9s_installed_check.stat.exists | default(false))
+
+    - name: Move k9s to /usr/local/bin
+      copy:
+        src: /tmp/k9s
+        dest: /usr/local/bin/k9s
+        mode: "0755"
+        remote_src: true
+      when: k3s_install_k9s and k9s_download.changed | default(false)
+
+    - name: Verify k9s installation
+      command: k9s version
+      register: k9s_version_check
+      changed_when: false
+      when: k3s_install_k9s
+
+    - name: Display k9s version
+      debug:
+        msg: "k9s version: {{ k9s_version_check.stdout }}"
+      when: k3s_install_k9s
+
+    # =========================================================================
+    # Retrieve kubeconfig and node token
+    # =========================================================================
+    - name: Check if local kubeconfig exists
+      delegate_to: localhost
+      stat:
+        path: "{{ kubeconfig_path | expanduser }}"
+      register: local_kubeconfig_check
+      changed_when: false
+
+    - name: Wait for k3s kubeconfig file to be created
+      wait_for:
+        path: /etc/rancher/k3s/k3s.yaml
+        timeout: 120
+      register: kubeconfig_wait
+      failed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Check if remote kubeconfig exists
+      stat:
+        path: /etc/rancher/k3s/k3s.yaml
+      register: remote_kubeconfig_check
+      changed_when: false
+      failed_when: false
+
+    - name: Create local kubeconfig directory
+      delegate_to: localhost
+      file:
+        path: "{{ kubeconfig_path | expanduser | dirname }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy kubeconfig to temp location
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /tmp/k3s.yaml
+        remote_src: true
+        mode: "0644"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      register: kubeconfig_copy
+      failed_when: false
+      when: remote_kubeconfig_check.stat.exists | default(false)
+
+    - name: Read kubeconfig content from Pi
+      slurp:
+        src: /tmp/k3s.yaml
+      register: kubeconfig_content
+      failed_when: false
+      when: remote_kubeconfig_check.stat.exists | default(false) and not local_kubeconfig_check.stat.exists
+
+    - name: Get current user for local file ownership
+      delegate_to: localhost
+      command: whoami
+      register: local_user
+      changed_when: false
+
+    - name: Write kubeconfig to local file
+      delegate_to: localhost
+      become: false
+      copy:
+        content: "{{ kubeconfig_content.content | b64decode }}"
+        dest: "{{ kubeconfig_path | expanduser }}"
+        mode: "0600"
+        owner: "{{ local_user.stdout }}"
+      register: kubeconfig_fetch
+      when: kubeconfig_content.content is defined
+
+    - name: Check if kubeconfig needs updates
+      delegate_to: localhost
+      stat:
+        path: "{{ kubeconfig_path | expanduser }}"
+      register: kubeconfig_local_check
+      changed_when: false
+
+    - name: Update kubeconfig with Pi hostname
+      delegate_to: localhost
+      replace:
+        path: "{{ kubeconfig_path | expanduser }}"
+        regexp: '127\.0\.0\.1'
+        replace: "{{ k3s_hostname }}"
+      when: kubeconfig_local_check.stat.exists | default(false)
+
+    - name: Update kubeconfig cluster name
+      delegate_to: localhost
+      replace:
+        path: "{{ kubeconfig_path | expanduser }}"
+        regexp: "name: default"
+        replace: "name: {{ k3s_hostname }}"
+      when: kubeconfig_local_check.stat.exists | default(false)
+
+    - name: Update kubeconfig context cluster reference
+      delegate_to: localhost
+      replace:
+        path: "{{ kubeconfig_path | expanduser }}"
+        regexp: "cluster: default"
+        replace: "cluster: {{ k3s_hostname }}"
+      when: kubeconfig_local_check.stat.exists | default(false)
+
+    - name: Update kubeconfig context user reference
+      delegate_to: localhost
+      replace:
+        path: "{{ kubeconfig_path | expanduser }}"
+        regexp: "user: default"
+        replace: "user: {{ k3s_hostname }}"
+      when: kubeconfig_local_check.stat.exists | default(false)
+
+    - name: Update kubeconfig current-context
+      delegate_to: localhost
+      replace:
+        path: "{{ kubeconfig_path | expanduser }}"
+        regexp: "current-context: default"
+        replace: "current-context: {{ k3s_hostname }}"
+      when: kubeconfig_local_check.stat.exists | default(false)
+
+    - name: Set kubeconfig permissions
+      delegate_to: localhost
+      file:
+        path: "{{ kubeconfig_path | expanduser }}"
+        mode: "0600"
+        owner: "{{ local_user.stdout }}"
+      when: kubeconfig_local_check.stat.exists | default(false)
+
+    # =========================================================================
+    # Retrieve node token
+    # =========================================================================
+    - name: Check if local node token exists
+      delegate_to: localhost
+      stat:
+        path: "{{ playbook_dir }}/../k3s-node-token"
+      register: local_token_check
+      changed_when: false
+
+    - name: Check if remote node token exists
+      stat:
+        path: /var/lib/rancher/k3s/server/node-token
+      register: remote_token_check
+      changed_when: false
+      failed_when: false
+
+    - name: Download node token
+      delegate_to: localhost
+      fetch:
+        src: /var/lib/rancher/k3s/server/node-token
+        dest: "{{ playbook_dir }}/../k3s-node-token"
+        flat: true
+      register: token_fetch
+      failed_when: false
+      when: not local_token_check.stat.exists and remote_token_check.stat.exists | default(false)
+
+    - name: Set node token permissions
+      delegate_to: localhost
+      file:
+        path: "{{ playbook_dir }}/../k3s-node-token"
+        mode: "0600"
+      when: token_fetch.changed | default(false)
+
+    # =========================================================================
+    # Completion message
+    # =========================================================================
+    - name: Display completion message
+      debug:
+        msg:
+          - "{{ '✅ k3s installation complete!' if not (k3s_already_installed | default(false)) else '✅ k3s is already installed and running' }}"
+          - ""
+          - "Cluster endpoint: https://{{ k3s_hostname }}:6443"
+          - "Kubeconfig saved to: {{ kubeconfig_path }}"
+          - "Node token saved to: {{ playbook_dir }}/../k3s-node-token"
+          - ""
+          - "Next steps:"
+          - "  export KUBECONFIG={{ kubeconfig_path }}"
+          - "  kubectl get nodes"

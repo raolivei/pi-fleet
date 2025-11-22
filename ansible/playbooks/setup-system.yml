@@ -1,0 +1,289 @@
+---
+- name: Complete System Setup for Eldertree Raspberry Pi
+  hosts: raspberry_pi
+  become: yes
+  vars:
+    target_user: raolivei
+    # Password should be set via Ansible Vault or environment variable
+    # Use: ansible-playbook --ask-vault-pass or set env_target_password environment variable
+    target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('CHANGE_ME')) }}"
+    hostname: eldertree
+    static_ip: "192.168.2.83" # Set to null if using DHCP
+    static_netmask: "255.255.255.0"
+    static_gateway: "192.168.2.1"
+    static_dns: ["192.168.2.1", "8.8.8.8"]
+    backup_device: "/dev/sdb1"
+    backup_mount: "/mnt/backup"
+    password_hash: "{{ target_password | password_hash('sha512') }}"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install essential packages
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - vim
+          - htop
+          - iptables
+          - ufw
+          - bluez
+          - bluez-tools
+          - bluetooth
+          - openssh-server
+          - sudo
+          - rsync
+        state: present
+
+    # =========================================================================
+    # User Configuration
+    # =========================================================================
+    - name: Check if user {{ target_user }} exists
+      getent:
+        database: passwd
+        key: "{{ target_user }}"
+      register: user_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create user {{ target_user }}
+      user:
+        name: "{{ target_user }}"
+        password: "{{ password_hash }}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        create_home: yes
+        home: /home/{{ target_user }}
+        state: present
+      when: user_check.ansible_facts.getent_passwd[target_user] is not defined
+
+    - name: Update password for existing user {{ target_user }}
+      user:
+        name: "{{ target_user }}"
+        password: "{{ password_hash }}"
+      when: user_check.ansible_facts.getent_passwd[target_user] is defined
+
+    - name: Ensure user {{ target_user }} is in sudo group
+      user:
+        name: "{{ target_user }}"
+        groups: sudo
+        append: yes
+
+    - name: Configure passwordless sudo for {{ target_user }}
+      lineinfile:
+        path: /etc/sudoers.d/{{ target_user }}
+        line: "{{ target_user }} ALL=(ALL) NOPASSWD: ALL"
+        create: yes
+        validate: "visudo -cf %s"
+        mode: "0440"
+        owner: root
+        group: root
+
+    - name: Ensure home directory has correct permissions
+      file:
+        path: /home/{{ target_user }}
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0755"
+        state: directory
+
+    # =========================================================================
+    # Hostname Configuration
+    # =========================================================================
+    - name: Set hostname
+      hostname:
+        name: "{{ hostname }}"
+
+    - name: Update /etc/hosts with hostname
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1.*'
+        line: "127.0.1.1 {{ hostname }}"
+        state: present
+
+    # =========================================================================
+    # Network Configuration (Static IP - Optional)
+    # =========================================================================
+    - name: Configure static IP (if specified)
+      block:
+        - name: Check if using Netplan (Ubuntu/Debian)
+          stat:
+            path: /etc/netplan
+          register: netplan_dir
+
+        - name: Configure static IP with Netplan
+          copy:
+            dest: /etc/netplan/01-netcfg.yaml
+            content: |
+              network:
+                version: 2
+                renderer: networkd
+                ethernets:
+                  eth0:
+                    dhcp4: no
+                    addresses:
+                      - {{ static_ip }}/24
+                    gateway4: {{ static_gateway }}
+                    nameservers:
+                      addresses: {{ static_dns }}
+          when: netplan_dir.stat.exists
+
+        - name: Apply Netplan configuration
+          command: netplan apply
+          when: netplan_dir.stat.exists
+
+      when: static_ip is defined and static_ip != ""
+
+    # =========================================================================
+    # Bluetooth Configuration
+    # =========================================================================
+    - name: Enable Bluetooth service
+      systemd:
+        name: bluetooth
+        enabled: yes
+        state: started
+
+    - name: Check Bluetooth status
+      command: systemctl status bluetooth
+      register: bluetooth_status
+      changed_when: false
+      failed_when: false
+
+    - name: Display Bluetooth status
+      debug:
+        msg: "{{ bluetooth_status.stdout_lines }}"
+
+    # =========================================================================
+    # Backup Mount Configuration
+    # =========================================================================
+    - name: Create backup mount directory
+      file:
+        path: "{{ backup_mount }}"
+        state: directory
+        mode: "0755"
+
+    - name: Check if backup device exists in fstab
+      shell: grep "{{ backup_device }}" /etc/fstab || echo "not_found"
+      register: fstab_check
+      changed_when: false
+      failed_when: false
+
+    - name: Add backup mount to fstab with nofail option (if not exists)
+      lineinfile:
+        path: /etc/fstab
+        line: "{{ backup_device }} {{ backup_mount }} ext4 defaults,nofail 0 2"
+        state: present
+        backup: yes
+      when: "'not_found' in fstab_check.stdout"
+
+    - name: Update existing fstab entry to include nofail
+      replace:
+        path: /etc/fstab
+        regexp: '^({{ backup_device }}[^\s]+)\s+([^\s]+)\s+(ext4)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
+        replace: '\1 \2 \3 \4,nofail\5\6'
+        backup: yes
+      when: "'not_found' not in fstab_check.stdout and 'nofail' not in fstab_check.stdout"
+
+    # =========================================================================
+    # SSH Configuration
+    # =========================================================================
+    - name: Ensure SSH service is enabled and started
+      systemd:
+        name: ssh
+        enabled: yes
+        state: started
+
+    - name: Configure SSH (optional hardening)
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: yes
+      loop:
+        - {regexp: "^#?PermitRootLogin", line: "PermitRootLogin no"}
+        - {regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication yes"}
+        - {regexp: "^#?PubkeyAuthentication", line: "PubkeyAuthentication yes"}
+      notify: restart ssh
+
+    # =========================================================================
+    # Firewall Configuration
+    # =========================================================================
+    - name: Ensure UFW is installed
+      apt:
+        name: ufw
+        state: present
+
+    - name: Reset UFW to defaults
+      ufw:
+        state: reset
+      when: false # Disabled by default - enable if needed
+
+    - name: Allow SSH through firewall
+      ufw:
+        rule: allow
+        name: OpenSSH
+        state: enabled
+
+    - name: Enable UFW (optional - disabled by default)
+      ufw:
+        state: enabled
+      when: false # Disabled by default - enable if needed
+
+    # =========================================================================
+    # System Optimization
+    # =========================================================================
+    - name: Get cmdline.txt content
+      set_fact:
+        cmdline_content: "{{ lookup('file', '/boot/firmware/cmdline.txt', errors='ignore') | default('') | string }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Configure cgroups for containers
+      lineinfile:
+        path: /boot/firmware/cmdline.txt
+        regexp: "cgroup_memory=1 cgroup_enable=memory"
+        line: " cgroup_memory=1 cgroup_enable=memory"
+        backrefs: yes
+        state: present
+      when: cmdline_content is defined and 'cgroup_memory=1' not in cmdline_content
+
+    - name: Set timezone
+      timezone:
+        name: America/Toronto
+
+    - name: Configure NTP
+      systemd:
+        name: systemd-timesyncd
+        enabled: yes
+        state: started
+
+    # =========================================================================
+    # Summary
+    # =========================================================================
+    - name: Display configuration summary
+      debug:
+        msg:
+          - "=== System Configuration Complete ==="
+          - "Hostname: {{ hostname }}"
+          - "User: {{ target_user }}"
+          - "Password: [REDACTED]"
+          - "Static IP: {{ static_ip if static_ip else 'DHCP' }}"
+          - "Bluetooth: Enabled"
+          - "Backup mount: {{ backup_mount }} (nofail configured)"
+          - ""
+          - "Next steps:"
+          - "1. Install k3s: ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass"
+          - "2. Bootstrap FluxCD GitOps: ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true"
+          - "3. Deploy applications"
+
+  handlers:
+    - name: restart ssh
+      systemd:
+        name: sshd
+        state: restarted

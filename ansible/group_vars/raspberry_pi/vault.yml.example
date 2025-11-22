@@ -1,0 +1,31 @@
+---
+# Ansible Vault Encrypted Variables
+# 
+# This is an example template. To create the actual vault file:
+#
+# 1. Copy this file to vault.yml (without .example):
+#    cp vault.yml.example vault.yml
+#
+# 2. Encrypt it with Ansible Vault:
+#    ansible-vault encrypt vault.yml
+#
+# 3. Add your sensitive variables:
+#    ansible-vault edit vault.yml
+#
+# 4. Add vault.yml to .gitignore (already done)
+#
+# Variables to set:
+#   vault_target_password: "YourSecurePassword123!"
+#
+# Usage:
+#   ansible-playbook playbooks/setup-system.yml --ask-vault-pass
+#   OR
+#   ansible-playbook playbooks/setup-system.yml --vault-password-file ~/.ansible-vault-password
+
+# Example encrypted variable (replace with your actual encrypted value):
+# vault_target_password: !vault |
+#     $ANSIBLE_VAULT;1.1;AES256
+#     66386439653966316632643031613032316131383265373732376566386439653966316632643031
+#     61303231613138326537373237656638643965396631663264303161303231613138326537373237
+#     6566386439653966316632643031613032316131383265373732376566
+

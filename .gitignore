@@ -37,3 +37,8 @@ vault-backup-*.json
 clusters/eldertree/wireguard/clients/*.conf
 clusters/eldertree/wireguard/clients/*.private
 clusters/eldertree/wireguard/clients/*.png
+
+# Ansible Vault files (contain encrypted passwords)
+ansible/group_vars/**/vault.yml
+ansible/vault_passwords.txt
+*.vault

@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cloudflare-tunnel
+
+resources:
+  - namespace.yaml
+  - externalsecret.yaml
+  # Deployment uses TUNNEL_TOKEN mode (simpler than credentials file)
+  # Tunnel configuration (ingress rules) is managed via Terraform
+  # See: terraform/cloudflare.tf (cloudflare_zero_trust_tunnel_cloudflared_config)
+  #
+  # Note: We use deployment.yaml instead of Helm chart because:
+  # - cloudflare-tunnel Helm chart expects credentials file format (JSON)
+  # - TUNNEL_TOKEN mode is simpler and works well with ExternalSecret
+  # - Still GitOps-managed via FluxCD (just not via Helm chart)
+  # - Tunnel configuration managed via Terraform (consistent with tunnel creation)
+  - deployment.yaml

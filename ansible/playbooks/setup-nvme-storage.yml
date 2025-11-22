@@ -1,0 +1,333 @@
+---
+- name: Setup NVMe Storage for K3s Cluster
+  hosts: raspberry_pi
+  become: true
+  vars:
+    nvme_device: "/dev/nvme0n1"
+    nvme_mount: "/mnt/nvme"
+    k3s_data_backup: "/var/lib/rancher/k3s.backup"
+    
+  tasks:
+    # =========================================================================
+    # Pre-flight Checks
+    # =========================================================================
+    - name: Check if NVMe device exists
+      stat:
+        path: "{{ nvme_device }}"
+      register: nvme_device_check
+      failed_when: false
+
+    - name: Fail if NVMe device not found
+      fail:
+        msg: "NVMe device {{ nvme_device }} not found. Please verify the device is connected and recognized."
+      when: not nvme_device_check.stat.exists
+
+    - name: Check if NVMe is already partitioned
+      command: "parted {{ nvme_device }} print"
+      register: nvme_partition_check
+      changed_when: false
+      failed_when: false
+      ignore_errors: true
+
+    - name: Set fact for partition table exists
+      set_fact:
+        nvme_has_partition_table: "{{ 'Partition Table' in nvme_partition_check.stdout and 'unrecognised disk label' not in nvme_partition_check.stderr | default('') }}"
+      changed_when: false
+
+    - name: Check if NVMe is already mounted
+      mount:
+        path: "{{ nvme_mount }}"
+      register: nvme_mount_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display current status
+      debug:
+        msg:
+          - "NVMe device: {{ nvme_device }}"
+          - "Already partitioned: {{ nvme_has_partition_table | default(false) }}"
+          - "Already mounted: {{ nvme_mount_check.mounted | default(false) }}"
+          - ""
+          - "⚠️  WARNING: This will format the NVMe device!"
+          - "⚠️  Make sure you have backups before proceeding!"
+
+    # =========================================================================
+    # Partition NVMe Device
+    # =========================================================================
+    - name: Install parted if not present
+      apt:
+        name: parted
+        state: present
+        update_cache: true
+
+    - name: Create partition table (GPT)
+      command: "parted {{ nvme_device }} --script mklabel gpt"
+      when: not (nvme_has_partition_table | default(false))
+
+    - name: Create primary partition using all space
+      command: "parted {{ nvme_device }} --script mkpart primary ext4 0% 100%"
+      when: not (nvme_has_partition_table | default(false))
+
+    # =========================================================================
+    # Format NVMe Partition
+    # =========================================================================
+    - name: Wait for partition device to appear
+      wait_for:
+        path: "{{ nvme_device }}p1"
+        timeout: 10
+      when: not (nvme_has_partition_table | default(false))
+
+    - name: Check if partition is already formatted
+      command: "blkid {{ nvme_device }}p1"
+      register: nvme_format_check
+      changed_when: false
+      failed_when: false
+      ignore_errors: true
+
+    - name: Set fact for partition formatted
+      set_fact:
+        nvme_is_formatted: "{{ nvme_format_check.rc == 0 }}"
+      changed_when: false
+
+    - name: Format NVMe partition as ext4
+      filesystem:
+        fstype: ext4
+        dev: "{{ nvme_device }}p1"
+        force: yes
+      when: not (nvme_is_formatted | default(false))
+
+    - name: Set filesystem label
+      command: "e2label {{ nvme_device }}p1 nvme-k3s"
+      when: not (nvme_is_formatted | default(false))
+
+    # =========================================================================
+    # Create Mount Points
+    # =========================================================================
+    - name: Create NVMe mount directory
+      file:
+        path: "{{ nvme_mount }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create K3s data directory on NVMe
+      file:
+        path: "{{ nvme_mount }}/k3s"
+        state: directory
+        mode: "0755"
+
+    - name: Create storage directory for PVCs
+      file:
+        path: "{{ nvme_mount }}/storage"
+        state: directory
+        mode: "0755"
+
+    # =========================================================================
+    # Mount NVMe
+    # =========================================================================
+    - name: Get UUID of NVMe partition
+      command: "blkid -s UUID -o value {{ nvme_device }}p1"
+      register: nvme_uuid
+      changed_when: false
+      # Wait a moment for filesystem to be ready after formatting
+      when: nvme_is_formatted | default(false) or not (nvme_is_formatted | default(false))
+
+    - name: Mount NVMe partition
+      mount:
+        path: "{{ nvme_mount }}"
+        src: "UUID={{ nvme_uuid.stdout }}"
+        fstype: ext4
+        opts: defaults,noatime
+        state: mounted
+
+    # =========================================================================
+    # Move K3s Data Directory
+    # =========================================================================
+    - name: Check if K3s is installed
+      stat:
+        path: /var/lib/rancher/k3s
+      register: k3s_data_check
+      changed_when: false
+
+    - name: Check if K3s service is running
+      systemd:
+        name: k3s
+      register: k3s_service_status
+      changed_when: false
+      failed_when: false
+
+    - name: Stop K3s service
+      systemd:
+        name: k3s
+        state: stopped
+      when: k3s_data_check.stat.exists and k3s_service_status.status.ActiveState == 'active'
+
+    - name: Wait for K3s to stop
+      wait_for:
+        timeout: 30
+      when: k3s_data_check.stat.exists and k3s_service_status.status.ActiveState == 'active'
+
+    - name: Check if K3s data already moved (symlink exists)
+      stat:
+        path: /var/lib/rancher/k3s
+      register: k3s_symlink_check
+      changed_when: false
+      when: k3s_data_check.stat.exists
+
+    - name: Copy K3s data to NVMe
+      shell: "cp -a /var/lib/rancher/k3s/* {{ nvme_mount }}/k3s/"
+      args:
+        creates: "{{ nvme_mount }}/k3s/agent"
+      when: 
+        - k3s_data_check.stat.exists
+        - not k3s_symlink_check.stat.islnk
+      async: 3600
+      poll: 10
+
+    - name: Backup original K3s directory
+      command: "mv /var/lib/rancher/k3s {{ k3s_data_backup }}"
+      when:
+        - k3s_data_check.stat.exists
+        - not k3s_symlink_check.stat.islnk
+
+    - name: Create symlink to NVMe K3s directory
+      file:
+        src: "{{ nvme_mount }}/k3s"
+        dest: /var/lib/rancher/k3s
+        state: link
+        force: yes
+      when: k3s_data_check.stat.exists
+
+    - name: Set correct permissions on K3s directory
+      file:
+        path: "{{ nvme_mount }}/k3s"
+        owner: root
+        group: root
+        mode: "0755"
+        recurse: yes
+      when: k3s_data_check.stat.exists
+
+    # =========================================================================
+    # Configure Local-Path Storage
+    # =========================================================================
+    # Note: Since we're symlinking /var/lib/rancher/k3s to /mnt/nvme/k3s,
+    # the default path /var/lib/rancher/k3s/storage will automatically
+    # point to /mnt/nvme/k3s/storage. However, we can optionally update
+    # the configmap to use /mnt/nvme/storage directly for clarity.
+    
+    - name: Check if kubectl is available
+      command: which kubectl
+      register: kubectl_check
+      changed_when: false
+      failed_when: false
+
+    - name: Check if local-path-config configmap exists
+      command: "kubectl get configmap local-path-config -n kube-system"
+      register: local_path_config_check
+      changed_when: false
+      failed_when: false
+      when: kubectl_check.rc == 0
+
+    - name: Update local-path-config to use NVMe storage directly
+      command: >
+        kubectl patch configmap local-path-config -n kube-system
+        --type merge
+        -p '{"data":{"config.json":"{\"nodePathMap\":[{\"node\":\"DEFAULT_PATH_FOR_NON_LISTED_NODES\",\"paths\":[\"{{ nvme_mount }}/storage\"]}]}"}}'
+      when:
+        - kubectl_check.rc == 0
+        - local_path_config_check.rc == 0
+      # Note: This is optional since the symlink will work, but it's cleaner
+      # to point directly to the NVMe mount for clarity and future-proofing
+
+    # =========================================================================
+    # Add to fstab
+    # =========================================================================
+    - name: Check if fstab entry exists
+      lineinfile:
+        path: /etc/fstab
+        regexp: "{{ nvme_mount }}"
+        state: absent
+      check_mode: yes
+      register: fstab_check
+      changed_when: false
+
+    - name: Add NVMe to fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "UUID={{ nvme_uuid.stdout }} {{ nvme_mount }} ext4 defaults,noatime 0 2"
+        state: present
+      when: fstab_check.changed == false
+
+    - name: Test fstab mount
+      command: mount -a
+      changed_when: false
+      failed_when: false
+      # Note: This may fail if backup USB drive is not connected, which is OK
+
+    # =========================================================================
+    # Start K3s
+    # =========================================================================
+    - name: Start K3s service
+      systemd:
+        name: k3s
+        state: started
+        enabled: true
+      when: k3s_data_check.stat.exists
+
+    - name: Wait for K3s to be ready
+      command: "kubectl get nodes"
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 30
+      delay: 5
+      failed_when: false
+      when: k3s_data_check.stat.exists
+
+    - name: Display K3s status
+      debug:
+        var: k3s_ready.stdout_lines
+      when: k3s_data_check.stat.exists and k3s_ready.rc == 0
+
+    # =========================================================================
+    # Verification
+    # =========================================================================
+    - name: Verify NVMe is mounted
+      command: "df -h {{ nvme_mount }}"
+      register: nvme_mount_verify
+      changed_when: false
+
+    - name: Display NVMe mount status
+      debug:
+        var: nvme_mount_verify.stdout_lines
+
+    - name: Verify K3s symlink
+      command: "ls -la /var/lib/rancher/k3s"
+      register: k3s_symlink_verify
+      changed_when: false
+      when: k3s_data_check.stat.exists
+
+    - name: Display K3s symlink status
+      debug:
+        var: k3s_symlink_verify.stdout_lines
+      when: k3s_data_check.stat.exists
+
+    # =========================================================================
+    # Completion
+    # =========================================================================
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ NVMe storage setup complete!"
+          - ""
+          - "NVMe mounted at: {{ nvme_mount }}"
+          - "K3s data directory: {{ nvme_mount }}/k3s (symlinked from /var/lib/rancher/k3s)"
+          - "PVC storage: {{ nvme_mount }}/storage"
+          - ""
+          - "Next steps:"
+          - "  1. Verify K3s is running: sudo systemctl status k3s"
+          - "  2. Check cluster: kubectl get nodes"
+          - "  3. Verify storage: kubectl get pvc --all-namespaces"
+          - ""
+          - "⚠️  Note: Existing PVCs will continue using old location."
+          - "   To migrate, you'll need to recreate PVCs (data will be lost)."
+          - "   Restore from backups after recreating PVCs."
+

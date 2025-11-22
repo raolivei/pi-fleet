@@ -1,12 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # DNS and networking services
-# Pi-hole for ad-blocking DNS, External DNS for automation, WireGuard for VPN access
+# Pi-hole for ad-blocking DNS, External DNS for automation, WireGuard for VPN access, Cloudflare Tunnel for secure outbound connections
 resources:
   - pihole # Pi-hole DNS server with ad-blocking and custom DNS rewrites
   - external-dns # Automated DNS record management for external DNS providers
   - wireguard # WireGuard VPN server for secure remote access
-
-
-
+  - cloudflare-tunnel # Cloudflare Tunnel for secure outbound connections (deployed via Helm)
 

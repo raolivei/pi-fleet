@@ -1,0 +1,121 @@
+---
+- name: Bootstrap FluxCD GitOps on Eldertree Cluster
+  hosts: localhost
+  connection: local
+  vars:
+    bootstrap_flux_default: false
+    kubeconfig_path_default: "~/.kube/config-eldertree"
+    flux_github_owner_default: "raolivei"
+    flux_github_repo_default: "raolivei"
+    flux_github_branch_default: "main"
+    flux_github_path_default: "clusters/eldertree"
+    flux_github_personal_default: true
+
+  tasks:
+    - name: Set variables with defaults
+      set_fact:
+        bootstrap_flux: "{{ bootstrap_flux | default(bootstrap_flux_default) | bool }}"
+        kubeconfig_path: "{{ kubeconfig_path | default(kubeconfig_path_default) }}"
+        flux_github_owner: "{{ flux_github_owner | default(flux_github_owner_default) }}"
+        flux_github_repo: "{{ flux_github_repo | default(flux_github_repo_default) }}"
+        flux_github_branch: "{{ flux_github_branch | default(flux_github_branch_default) }}"
+        flux_github_path: "{{ flux_github_path | default(flux_github_path_default) }}"
+        flux_github_personal: "{{ flux_github_personal | default(flux_github_personal_default) | bool }}"
+
+    - name: Expand kubeconfig path
+      set_fact:
+        kubeconfig_expanded: "{{ kubeconfig_path | expanduser }}"
+
+    - name: Check if kubeconfig exists
+      stat:
+        path: "{{ kubeconfig_expanded }}"
+      register: kubeconfig_stat
+      failed_when: false
+
+    - name: Fail if kubeconfig does not exist
+      fail:
+        msg: "Kubeconfig not found at {{ kubeconfig_expanded }}. Please run Ansible playbook install-k3s.yml to install k3s first."
+      when: not kubeconfig_stat.stat.exists
+
+    - name: Check if Flux CLI is installed
+      command: which flux
+      register: flux_cli_check
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if Flux CLI is not installed
+      fail:
+        msg: "Flux CLI not found. Install with: brew install fluxcd/tap/flux"
+      when: flux_cli_check.rc != 0
+
+    - name: Check if FluxCD is already bootstrapped
+      command: >
+        kubectl get gitrepository flux-system -n flux-system
+        --kubeconfig={{ kubeconfig_expanded }}
+      register: flux_check
+      changed_when: false
+      failed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_expanded }}"
+
+    - name: Set FluxCD bootstrap status
+      set_fact:
+        flux_bootstrapped: "{{ flux_check.rc == 0 }}"
+
+    - name: Skip bootstrap if already bootstrapped
+      debug:
+        msg: "FluxCD is already bootstrapped. Skipping bootstrap step."
+      when: flux_bootstrapped and (bootstrap_flux | bool)
+
+    - name: Skip bootstrap if disabled
+      debug:
+        msg: "FluxCD bootstrap is disabled. Set bootstrap_flux=true to enable."
+      when: not (bootstrap_flux | bool)
+
+    - name: Bootstrap FluxCD GitOps
+      command: >
+        flux bootstrap github
+        --owner={{ flux_github_owner }}
+        --repository={{ flux_github_repo }}
+        --branch={{ flux_github_branch }}
+        --path={{ flux_github_path }}
+        {{ '--personal' if flux_github_personal else '' }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
+        GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') | default('', true) }}"
+      register: flux_bootstrap_result
+      when:
+        - bootstrap_flux | bool
+        - not (flux_bootstrapped | default(false))
+      failed_when: false
+      no_log: true
+
+    - name: Check FluxCD bootstrap result
+      fail:
+        msg: "FluxCD bootstrap failed. Error: {{ flux_bootstrap_result.stderr }}"
+      when:
+        - bootstrap_flux | bool
+        - not flux_bootstrapped
+        - flux_bootstrap_result.rc != 0
+
+    - name: Verify FluxCD installation
+      command: >
+        kubectl get pods -n flux-system
+        --kubeconfig={{ kubeconfig_path | expanduser }}
+      register: flux_pods
+      changed_when: false
+      when: bootstrap_flux | bool
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
+
+    - name: Display FluxCD status
+      debug:
+        msg:
+          - "=== FluxCD Bootstrap Complete ==="
+          - "FluxCD pods:"
+          - "{{ flux_pods.stdout_lines | default(['Not available']) }}"
+          - ""
+          - "Check FluxCD status with:"
+          - "  export KUBECONFIG={{ kubeconfig_path | expanduser }}"
+          - "  flux get all"
+      when: bootstrap_flux | bool

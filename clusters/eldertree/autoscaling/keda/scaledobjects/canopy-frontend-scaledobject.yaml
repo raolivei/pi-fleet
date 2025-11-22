@@ -6,14 +6,14 @@ metadata:
 spec:
   scaleTargetRef:
     name: canopy-frontend
-  minReplicaCount: 1  # Keep 1 for fast response
+  minReplicaCount: 1 # Keep 1 for fast response
   maxReplicaCount: 3
   pollingInterval: 30
   cooldownPeriod: 300
   triggers:
     - type: prometheus
       metadata:
-        serverAddress: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80
+        serverAddress: http://prometheus-stack.observability.svc.cluster.local:80
         metricName: http_requests_per_second
         threshold: "10"
         query: |
@@ -21,4 +21,3 @@ spec:
             service="canopy-frontend",
             namespace="canopy"
           }[2m]))
-
