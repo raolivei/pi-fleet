@@ -3,15 +3,25 @@
   hosts: localhost
   connection: local
   vars:
-    bootstrap_flux: "{{ bootstrap_flux | default(false) }}"
-    kubeconfig_path: "{{ kubeconfig_path | default('~/.kube/config-eldertree') }}"
-    flux_github_owner: "{{ flux_github_owner | default('raolivei') }}"
-    flux_github_repo: "{{ flux_github_repo | default('raolivei') }}"
-    flux_github_branch: "{{ flux_github_branch | default('main') }}"
-    flux_github_path: "{{ flux_github_path | default('clusters/eldertree') }}"
-    flux_github_personal: "{{ flux_github_personal | default(true) }}"
+    bootstrap_flux_default: false
+    kubeconfig_path_default: "~/.kube/config-eldertree"
+    flux_github_owner_default: "raolivei"
+    flux_github_repo_default: "raolivei"
+    flux_github_branch_default: "main"
+    flux_github_path_default: "clusters/eldertree"
+    flux_github_personal_default: true
 
   tasks:
+    - name: Set variables with defaults
+      set_fact:
+        bootstrap_flux: "{{ bootstrap_flux | default(bootstrap_flux_default) | bool }}"
+        kubeconfig_path: "{{ kubeconfig_path | default(kubeconfig_path_default) }}"
+        flux_github_owner: "{{ flux_github_owner | default(flux_github_owner_default) }}"
+        flux_github_repo: "{{ flux_github_repo | default(flux_github_repo_default) }}"
+        flux_github_branch: "{{ flux_github_branch | default(flux_github_branch_default) }}"
+        flux_github_path: "{{ flux_github_path | default(flux_github_path_default) }}"
+        flux_github_personal: "{{ flux_github_personal | default(flux_github_personal_default) | bool }}"
+
     - name: Expand kubeconfig path
       set_fact:
         kubeconfig_expanded: "{{ kubeconfig_path | expanduser }}"
@@ -55,12 +65,12 @@
     - name: Skip bootstrap if already bootstrapped
       debug:
         msg: "FluxCD is already bootstrapped. Skipping bootstrap step."
-      when: flux_bootstrapped and bootstrap_flux
+      when: flux_bootstrapped and (bootstrap_flux | bool)
 
     - name: Skip bootstrap if disabled
       debug:
         msg: "FluxCD bootstrap is disabled. Set bootstrap_flux=true to enable."
-      when: not bootstrap_flux
+      when: not (bootstrap_flux | bool)
 
     - name: Bootstrap FluxCD GitOps
       command: >
@@ -72,17 +82,19 @@
         {{ '--personal' if flux_github_personal else '' }}
       environment:
         KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
+        GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') | default('', true) }}"
       register: flux_bootstrap_result
       when:
-        - bootstrap_flux
+        - bootstrap_flux | bool
         - not (flux_bootstrapped | default(false))
       failed_when: false
+      no_log: true
 
     - name: Check FluxCD bootstrap result
       fail:
         msg: "FluxCD bootstrap failed. Error: {{ flux_bootstrap_result.stderr }}"
       when:
-        - bootstrap_flux
+        - bootstrap_flux | bool
         - not flux_bootstrapped
         - flux_bootstrap_result.rc != 0
 
@@ -92,7 +104,7 @@
         --kubeconfig={{ kubeconfig_path | expanduser }}
       register: flux_pods
       changed_when: false
-      when: bootstrap_flux
+      when: bootstrap_flux | bool
       environment:
         KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
 
@@ -106,4 +118,4 @@
           - "Check FluxCD status with:"
           - "  export KUBECONFIG={{ kubeconfig_path | expanduser }}"
           - "  flux get all"
-      when: bootstrap_flux
+      when: bootstrap_flux | bool

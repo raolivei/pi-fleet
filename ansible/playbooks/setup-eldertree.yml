@@ -3,7 +3,8 @@
 # This playbook orchestrates:
 # 1. System configuration (user, hostname, network, packages)
 # 2. k3s installation
-# 3. FluxCD bootstrap (optional)
+# 3. Terminal monitoring tools (btop, neofetch, tmux)
+# 4. FluxCD bootstrap (optional)
 
 - name: System Configuration
   import_playbook: setup-system.yml
@@ -22,6 +23,11 @@
   vars:
     k3s_hostname: "eldertree"
     kubeconfig_path: "~/.kube/config-eldertree"
+
+- name: Setup Terminal Monitoring
+  import_playbook: setup-terminal-monitoring.yml
+  vars:
+    target_user: raolivei
 
 - name: Display k3s Installation Note
   hosts: localhost
@@ -46,9 +52,14 @@
   hosts: localhost
   connection: local
   vars:
-    bootstrap_flux: "{{ bootstrap_flux | default(false) }}"
-    kubeconfig_path: "{{ kubeconfig_path | default('~/.kube/config-eldertree') }}"
+    bootstrap_flux_default: false
+    kubeconfig_path_default: "~/.kube/config-eldertree"
   tasks:
+    - name: Set variables with defaults
+      set_fact:
+        bootstrap_flux: "{{ bootstrap_flux | default(bootstrap_flux_default) | bool }}"
+        kubeconfig_path: "{{ kubeconfig_path | default(kubeconfig_path_default) }}"
+    
     - name: Check if kubeconfig exists
       stat:
         path: "{{ kubeconfig_path | expanduser }}"
