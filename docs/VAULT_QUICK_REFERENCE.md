@@ -13,7 +13,7 @@ export KUBECONFIG=~/.kube/config-eldertree
 **Most Common Task:** Unseal Vault after restart
 
 ```bash
-./scripts/unseal-vault.sh
+./scripts/operations/unseal-vault.sh
 ```
 
 You'll be prompted for 3 unseal keys. Enter them when prompted.
@@ -93,7 +93,7 @@ kubectl get secret grafana-admin -n monitoring -o yaml
 
 ```bash
 # This is normal after restart
-./scripts/unseal-vault.sh
+./scripts/operations/unseal-vault.sh
 ```
 
 ### External Secrets Not Syncing

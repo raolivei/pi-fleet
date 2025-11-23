@@ -166,7 +166,7 @@ Run the complete setup script from your Mac:
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet
-./scripts/setup-eldertree.sh
+./scripts/setup/setup-eldertree.sh
 ```
 
 This script will:

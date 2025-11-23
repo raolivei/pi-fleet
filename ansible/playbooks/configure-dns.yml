@@ -78,3 +78,4 @@
               - "  - https://pihole.eldertree.local"
               - "  - https://swimto.eldertree.local"
       when: configure_hosts_file
+

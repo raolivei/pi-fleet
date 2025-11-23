@@ -155,7 +155,7 @@ echo -e "${GREEN}✅ Created .envrc-template${NC}"
 # Create new project helper script
 echo ""
 echo -e "${BLUE}🛠️  Creating new-project helper script...${NC}"
-cat > ~/WORKSPACE/raolivei/pi-fleet/scripts/new-project.sh << 'EOF'
+cat > ~/WORKSPACE/raolivei/pi-fleet/scripts/utils/new-project.sh << 'EOF'
 #!/bin/bash
 # Quick setup for new personal Python projects
 
@@ -293,7 +293,7 @@ echo "  pip install <packages>"
 echo ""
 EOF
 
-chmod +x ~/WORKSPACE/raolivei/pi-fleet/scripts/new-project.sh
+chmod +x ~/WORKSPACE/raolivei/pi-fleet/scripts/utils/new-project.sh
 echo -e "${GREEN}✅ Created new-project.sh helper script${NC}"
 
 # Setup global gitignore for direnv files
@@ -343,7 +343,7 @@ Corporate work at `~/WORKSPACE/momentive_emu/` continues to use pyenv.
 
 ```bash
 cd ~/WORKSPACE/raolivei
-./pi-fleet/scripts/new-project.sh my-new-app
+./pi-fleet/scripts/utils/new-project.sh my-new-app
 
 cd my-new-app
 # Environment activates automatically!
@@ -419,7 +419,7 @@ direnv allow .
 ~/WORKSPACE/raolivei/           # Personal workspace
 ├── .envrc                      # Workspace-level config
 ├── .envrc-template             # Template for new projects
-├── pi-fleet/scripts/new-project.sh  # Helper script
+├── pi-fleet/scripts/utils/new-project.sh  # Helper script
 ├── DIRENV_GUIDE.md             # This file
 │
 ├── swimTO/                     # Existing project
@@ -492,7 +492,7 @@ echo "   ${YELLOW}echo \$VIRTUAL_ENV${NC}  # Should show swimTO venv"
 echo ""
 echo "3. Create a new project:"
 echo "   ${YELLOW}cd ~/WORKSPACE/raolivei${NC}"
-echo "   ${YELLOW}./pi-fleet/scripts/new-project.sh my-test-project${NC}"
+echo "   ${YELLOW}./pi-fleet/scripts/utils/new-project.sh my-test-project${NC}"
 echo ""
 echo "4. Read the guide:"
 echo "   ${YELLOW}cat ~/WORKSPACE/raolivei/DIRENV_GUIDE.md${NC}"
@@ -501,7 +501,7 @@ echo -e "${GREEN}📝 Files created:${NC}"
 echo "   • ~/WORKSPACE/raolivei/.envrc (workspace config)"
 echo "   • ~/WORKSPACE/raolivei/swimTO/.envrc (swimTO config)"
 echo "   • ~/WORKSPACE/raolivei/.envrc-template (project template)"
-echo "   • ~/WORKSPACE/raolivei/pi-fleet/scripts/new-project.sh (helper script)"
+echo "   • ~/WORKSPACE/raolivei/pi-fleet/scripts/utils/new-project.sh (helper script)"
 echo "   • ~/WORKSPACE/raolivei/DIRENV_GUIDE.md (reference guide)"
 echo ""
 echo -e "${BLUE}💡 Remember:${NC}"

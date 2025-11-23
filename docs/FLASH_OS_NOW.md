@@ -144,7 +144,7 @@ After the Pi boots:
 3. **Run automated setup**:
    ```bash
    cd ~/WORKSPACE/raolivei/pi-fleet
-   ./scripts/setup-eldertree.sh
+   ./scripts/setup/setup-eldertree.sh
    ```
 
 ## Troubleshooting

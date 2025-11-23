@@ -2,10 +2,10 @@
 # Store Cloudflare Origin Certificate in Kubernetes secret
 #
 # Usage:
-#   ./scripts/store-cloudflare-origin-cert.sh <certificate-file> <private-key-file> [namespace]
+#   ./scripts/secrets/store-cloudflare-origin-cert.sh <certificate-file> <private-key-file> [namespace]
 #
 # Example:
-#   ./scripts/store-cloudflare-origin-cert.sh origin.pem origin.key swimto
+#   ./scripts/secrets/store-cloudflare-origin-cert.sh origin.pem origin.key swimto
 
 set -e
 

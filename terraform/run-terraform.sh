@@ -32,7 +32,7 @@ VAULT_STATUS=$(kubectl exec -n vault $VAULT_POD -- vault status 2>&1 | grep "Sea
 
 if [ "$VAULT_STATUS" = "true" ]; then
     echo "❌ Error: Vault is sealed. Please unseal it first:"
-    echo "   cd $SCRIPT_DIR/.. && ./scripts/unseal-vault.sh"
+    echo "   cd $SCRIPT_DIR/.. && ./scripts/operations/unseal-vault.sh"
     exit 1
 fi
 

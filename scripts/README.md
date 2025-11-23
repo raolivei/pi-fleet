@@ -1,10 +1,20 @@
 # Scripts
 
-Helper scripts for managing pi-fleet and workspace infrastructure.
+Helper scripts for managing pi-fleet and workspace infrastructure, organized by category.
+
+## Organization
+
+Scripts are organized into subdirectories:
+
+- **`setup/`** - Initial setup and configuration scripts
+- **`operations/`** - Day-to-day operational tasks (backups, restores, deployments)
+- **`secrets/`** - Secret management (Cloudflare tokens, certificates)
+- **`diagnostics/`** - Health checks and troubleshooting tools
+- **`utils/`** - Utility scripts and helpers
 
 ## Setup Scripts
 
-### setup-eldertree.sh
+### setup/setup-eldertree.sh
 
 Complete automated setup script for the eldertree Raspberry Pi cluster. This script orchestrates both Ansible (system configuration) and Terraform (k3s infrastructure) to set up the cluster.
 
@@ -20,7 +30,7 @@ Complete automated setup script for the eldertree Raspberry Pi cluster. This scr
 
 ```bash
 cd pi-fleet
-./scripts/setup-eldertree.sh
+./scripts/setup/setup-eldertree.sh
 ```
 
 **What it does**:
@@ -53,72 +63,216 @@ cd pi-fleet
 - If k3s not ready: Check k3s service on Pi: `ssh pi@<IP> 'sudo systemctl status k3s'`
 - If FluxCD bootstrap fails: Ensure GitHub token is configured
 
-## Infrastructure Scripts
-
-### sync-vault-to-k8s.sh
-
-Sync secrets from Vault to Kubernetes secrets.
-
-```bash
-./scripts/sync-vault-to-k8s.sh
-```
-
-### setup-dns.sh
+### setup/setup-dns.sh
 
 Setup DNS for \*.eldertree.local domains (Pi-hole or /etc/hosts).
 
 ```bash
-./scripts/setup-dns.sh
+./scripts/setup/setup-dns.sh
 ```
 
-### load-images-manual.sh
-
-Load Docker images into k3s from tar.gz files. Run on the cluster node.
-
-```bash
-./scripts/load-images-manual.sh
-```
-
-### transfer-images.sh
-
-Transfer Docker images to cluster node and load into k3s.
-
-```bash
-./scripts/transfer-images.sh
-```
-
-### trigger-all-workflows.sh
-
-Trigger GitHub Actions workflows across all repositories.
-
-```bash
-./scripts/trigger-all-workflows.sh
-```
-
-## Development Scripts
-
-### setup-direnv.sh
+### setup/setup-direnv.sh
 
 Setup direnv for the workspace with automatic Python virtual environment activation.
 
 ```bash
-./scripts/setup-direnv.sh
+./scripts/setup/setup-direnv.sh
 ```
 
-### test-direnv-setup.sh
+### setup/setup-github-secrets.sh
 
-Test that direnv is configured correctly.
+Setup GitHub Secrets for Terraform workflow. Supports both interactive and non-interactive modes.
+
+**Interactive mode**:
+```bash
+./scripts/setup/setup-github-secrets.sh
+```
+
+**Non-interactive mode**:
+```bash
+CLOUDFLARE_API_TOKEN='your-token' ./scripts/setup/setup-github-secrets.sh
+# OR
+./scripts/setup/setup-github-secrets.sh your-api-token-here
+```
+
+### setup/setup-backup-cron.sh
+
+Setup automated backup cron jobs.
 
 ```bash
-./scripts/test-direnv-setup.sh
+./scripts/setup/setup-backup-cron.sh
 ```
 
-### new-project.sh
+## Operations Scripts
+
+### operations/sync-vault-to-k8s.sh
+
+Sync secrets from Vault to Kubernetes secrets.
+
+```bash
+./scripts/operations/sync-vault-to-k8s.sh
+```
+
+### operations/backup-all.sh
+
+Comprehensive backup script for eldertree cluster. Backs up PostgreSQL databases, Vault secrets, Kubernetes configs, and PVCs.
+
+```bash
+./scripts/operations/backup-all.sh [backup-dir]
+```
+
+### operations/backup-vault-secrets.sh
+
+Backup all Vault secrets to JSON file.
+
+```bash
+./scripts/operations/backup-vault-secrets.sh > vault-backup-$(date +%Y%m%d).json
+```
+
+### operations/restore-all.sh
+
+Restore cluster from backup directory.
+
+```bash
+./scripts/operations/restore-all.sh <backup-directory>
+```
+
+### operations/restore-vault-secrets.sh
+
+Restore Vault secrets from backup JSON file.
+
+```bash
+./scripts/operations/restore-vault-secrets.sh vault-backup-20250115.json
+```
+
+### operations/unseal-vault.sh
+
+Unseal Vault using the 3 unseal keys.
+
+```bash
+./scripts/operations/unseal-vault.sh
+```
+
+### operations/deploy-all-images.sh
+
+Build and deploy all project images to pi-fleet cluster.
+
+```bash
+./scripts/operations/deploy-all-images.sh
+```
+
+### operations/trigger-all-workflows.sh
+
+Trigger GitHub Actions workflows across all repositories.
+
+```bash
+./scripts/operations/trigger-all-workflows.sh
+```
+
+## Secrets Scripts
+
+### secrets/get-cloudflare-token.sh
+
+Get Cloudflare API token from Vault for Terraform use.
+
+```bash
+source ./scripts/secrets/get-cloudflare-token.sh
+# OR
+export TF_VAR_cloudflare_api_token=$(./scripts/secrets/get-cloudflare-token.sh)
+```
+
+### secrets/store-cloudflare-token.sh
+
+Store Cloudflare API token in Vault for Terraform and External-DNS.
+
+```bash
+./scripts/secrets/store-cloudflare-token.sh YOUR_API_TOKEN_HERE
+# OR
+./scripts/secrets/store-cloudflare-token.sh  # Will prompt for token
+```
+
+### secrets/store-cloudflare-origin-cert.sh
+
+Store Cloudflare Origin Certificate in Vault.
+
+```bash
+./scripts/secrets/store-cloudflare-origin-cert.sh <certificate-file> <private-key-file> [namespace]
+```
+
+## Diagnostics Scripts
+
+### diagnostics/validate-ingress-setup.sh
+
+Validate that ingress setup is correct (Traefik, Cert-Manager, ExternalDNS).
+
+```bash
+./scripts/diagnostics/validate-ingress-setup.sh
+```
+
+### diagnostics/check-keda.sh
+
+Check KEDA installation and status.
+
+```bash
+./scripts/diagnostics/check-keda.sh
+```
+
+### diagnostics/check-wireguard-server.sh
+
+Check WireGuard server status and configuration.
+
+```bash
+./scripts/diagnostics/check-wireguard-server.sh
+```
+
+### diagnostics/diagnose-wireguard.sh
+
+Diagnose WireGuard connection issues.
+
+```bash
+./scripts/diagnostics/diagnose-wireguard.sh
+```
+
+### diagnostics/test-vpc-dns.sh
+
+Test VPC DNS resolution.
+
+```bash
+./scripts/diagnostics/test-vpc-dns.sh [hostname]
+```
+
+## Utility Scripts
+
+### utils/new-project.sh
 
 Create a new project with standard structure and conventions.
 
 ```bash
-./scripts/new-project.sh <project-name>
+./scripts/utils/new-project.sh <project-name>
+```
+
+### utils/list-and-open-services.sh
+
+List all services and open them in browser.
+
+```bash
+./scripts/utils/list-and-open-services.sh
+```
+
+### utils/install-glances.sh
+
+Install Glances system monitoring tool.
+
+```bash
+./scripts/utils/install-glances.sh
+```
+
+### utils/update-hosts.sh
+
+Update /etc/hosts file with cluster services.
+
+```bash
+./scripts/utils/update-hosts.sh
 ```
 
 ## Adding Secrets to Vault

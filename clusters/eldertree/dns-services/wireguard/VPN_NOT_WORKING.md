@@ -77,7 +77,7 @@ PI_PASSWORD="${PI_PASSWORD}" sshpass -p "$PI_PASSWORD" ssh raolivei@192.168.2.83
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet
-./scripts/check-wireguard-server.sh
+./scripts/diagnostics/check-wireguard-server.sh
 ```
 
 This will show:

@@ -22,7 +22,7 @@ fi
 # Check if Vault is unsealed
 SEAL_STATUS=$(kubectl exec -n vault vault-0 -- vault status -format=json 2>/dev/null | jq -r '.sealed' || echo "true")
 if [ "$SEAL_STATUS" = "true" ]; then
-    echo "❌ Vault is sealed. Please unseal it first: ./scripts/unseal-vault.sh" >&2
+    echo "❌ Vault is sealed. Please unseal it first: ./scripts/operations/unseal-vault.sh" >&2
     exit 1
 fi
 

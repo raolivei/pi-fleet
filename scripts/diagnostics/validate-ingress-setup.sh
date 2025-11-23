@@ -1,6 +1,6 @@
 #!/bin/bash
 # Validate Ingress, Cert-Manager and ExternalDNS setup
-# Usage: ./scripts/validate-ingress-setup.sh
+# Usage: ./scripts/diagnostics/validate-ingress-setup.sh
 
 set -e
 

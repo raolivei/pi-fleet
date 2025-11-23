@@ -15,7 +15,7 @@ Vault stores secrets for all pi-fleet projects in **production mode with persist
 export KUBECONFIG=~/.kube/config-eldertree
 
 # After restart, unseal Vault
-./scripts/unseal-vault.sh
+./scripts/operations/unseal-vault.sh
 
 # External Secrets Operator syncs automatically
 ```
@@ -34,7 +34,7 @@ kubectl exec -n vault vault-0 -- vault operator init
 
 2. **Unseal Vault** (requires 3 keys):
 ```bash
-./scripts/unseal-vault.sh
+./scripts/operations/unseal-vault.sh
 ```
 
 3. **Login to Vault**:
@@ -101,7 +101,7 @@ export KUBECONFIG=~/.kube/config-eldertree
 kubectl wait --for=condition=ready pod/vault-0 -n vault --timeout=300s
 
 # Unseal Vault (you'll be prompted for 3 keys)
-./scripts/unseal-vault.sh
+./scripts/operations/unseal-vault.sh
 
 # Verify Vault is unsealed
 kubectl exec -n vault vault-0 -- vault status
@@ -211,7 +211,7 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-
 
 This is expected behavior. Run:
 ```bash
-./scripts/unseal-vault.sh
+./scripts/operations/unseal-vault.sh
 ```
 
 ### Lost Unseal Keys

@@ -172,10 +172,10 @@ Use o script de teste para encontrar qual DNS resolve o ambiente non-prod:
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet
-./scripts/test-vpc-dns.sh
+./scripts/diagnostics/test-vpc-dns.sh
 
 # Ou testar hostname específico:
-./scripts/test-vpc-dns.sh argo-hq.shipyard.non-prod.us-west-2.momentive.internal
+./scripts/diagnostics/test-vpc-dns.sh argo-hq.shipyard.non-prod.us-west-2.momentive.internal
 ```
 
 O script vai testar todos os DNS candidates baseados nas rotas da VPN e identificar qual resolve o ambiente non-prod.
@@ -333,7 +333,7 @@ Execute os comandos abaixo e inclua os outputs no report:
 ```bash
 # 1. Identificar DNS correto do non-prod
 cd ~/WORKSPACE/raolivei/pi-fleet
-./scripts/test-vpc-dns.sh argo-hq.shipyard.non-prod.us-west-2.momentive.internal
+./scripts/diagnostics/test-vpc-dns.sh argo-hq.shipyard.non-prod.us-west-2.momentive.internal
 
 # 2. Verificar rotas da VPN
 netstat -rn | grep utun6
@@ -379,7 +379,7 @@ O script vai:
 
    ```bash
    cd ~/WORKSPACE/raolivei/pi-fleet
-   ./scripts/test-vpc-dns.sh
+   ./scripts/diagnostics/test-vpc-dns.sh
    ```
 
    Anote o DNS que resolve o non-prod (ex: `10.48.0.2`)

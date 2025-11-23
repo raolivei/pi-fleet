@@ -246,7 +246,7 @@ spec:
 
 1. Initialize Vault: `kubectl exec -n vault vault-0 -- vault operator init`
 2. Save the 5 unseal keys and root token securely
-3. Unseal Vault using 3 keys: `./scripts/unseal-vault.sh`
+3. Unseal Vault using 3 keys: `./scripts/operations/unseal-vault.sh`
 4. After each restart, unseal Vault again
 
 See [VAULT.md](../VAULT.md) and [VAULT_MIGRATION.md](VAULT_MIGRATION.md) for details.

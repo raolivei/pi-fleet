@@ -124,3 +124,4 @@ Fresh OS ready for setup!
 - ⚠️ **SD card gets wiped** - but that's expected and safe since you backed up
 
 **Just click "Write" and let Imager handle everything!**
+

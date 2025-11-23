@@ -201,3 +201,4 @@ cd terraform
 - **Infrastructure**: Update Terraform, run `terraform apply`
 - **Kubernetes**: Update Helm chart or Kustomization, FluxCD syncs automatically
 
+

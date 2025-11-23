@@ -97,7 +97,7 @@ kubectl exec -n vault vault-0 -- vault status
 
 **Tip:** Use the provided script for easier unsealing:
 ```bash
-./scripts/unseal-vault.sh
+./scripts/operations/unseal-vault.sh
 ```
 
 ### 4. Restore Secrets
@@ -162,7 +162,7 @@ export KUBECONFIG=~/.kube/config-eldertree
 kubectl wait --for=condition=ready pod/vault-0 -n vault --timeout=300s
 
 # Unseal Vault (requires 3 keys)
-./scripts/unseal-vault.sh
+./scripts/operations/unseal-vault.sh
 
 # Verify unsealed
 kubectl exec -n vault vault-0 -- vault status
