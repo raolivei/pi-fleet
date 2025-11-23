@@ -75,10 +75,8 @@ create_policy() {
         return 1
     fi
     
-    # Create policy in Vault
-    kubectl exec -n vault vault-0 -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN='${VAULT_ROOT_TOKEN}' && cat > /tmp/policy.hcl" < "$policy_file"
-    
-    if kubectl exec -n vault vault-0 -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN='${VAULT_ROOT_TOKEN}' && vault policy write ${policy_name} /tmp/policy.hcl" > /dev/null 2>&1; then
+    # Create policy in Vault using stdin
+    if cat "$policy_file" | kubectl exec -i -n vault vault-0 -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN='${VAULT_ROOT_TOKEN}' && vault policy write ${policy_name} -" > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Policy ${policy_name} created${NC}"
         return 0
     else
