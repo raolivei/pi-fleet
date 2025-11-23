@@ -32,7 +32,7 @@ The script will:
 ### Step 1: Connect and Verify
 
 1. Connect Extreme SSD to Raspberry Pi USB port
-2. SSH to Pi: `sshpass -p 'Control01!' ssh raolivei@eldertree.local`
+2. SSH to Pi: `PI_PASSWORD='your-password' sshpass -p "$PI_PASSWORD" ssh raolivei@eldertree.local`
 3. Verify drive detected: `lsblk`
 4. Note device name (e.g., `/dev/sda`, `/dev/sdb`)
 

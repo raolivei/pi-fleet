@@ -2,9 +2,11 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # Secrets management infrastructure
 # Vault stores secrets, External Secrets Operator syncs them to Kubernetes
+# Order matters: External Secrets Operator must be installed first (for CRDs),
+# then Vault, then ClusterSecretStore can reference Vault
 resources:
+  - external-secrets # External Secrets Operator (installs CRDs first)
   - vault # HashiCorp Vault (production mode with persistent storage)
-  - external-secrets # External Secrets Operator for automatic secret syncing from Vault
 
 
 

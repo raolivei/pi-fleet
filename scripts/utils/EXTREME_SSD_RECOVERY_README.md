@@ -35,18 +35,12 @@ The script will:
 
 Edit the script to customize:
 
-```bash
-PI_HOST="eldertree.local"      # Your Pi hostname
-PI_USER="raolivei"             # SSH username
-PI_PASSWORD="Control01!"        # SSH password
-```
-
-Or set environment variables:
+Set environment variables (required):
 
 ```bash
-export PI_HOST="your-pi.local"
-export PI_USER="youruser"
-export PI_PASSWORD="yourpass"
+export PI_HOST="eldertree.local"  # Your Pi hostname
+export PI_USER="raolivei"         # SSH username
+export PI_PASSWORD="your-password" # SSH password (REQUIRED)
 ./scripts/utils/extreme-ssd-recovery.sh
 ```
 

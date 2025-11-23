@@ -47,6 +47,9 @@ SECRET_PATHS=(
     "secret/journey/postgres"
     "secret/journey/database"
     "secret/external-dns/tsig-secret"
+    "secret/terraform/cloudflare-api-token"
+    "secret/external-dns/cloudflare-api-token"
+    "secret/cloudflare-tunnel/token"
 )
 
 # Start JSON array

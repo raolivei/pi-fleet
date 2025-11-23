@@ -1,10 +1,17 @@
 #!/bin/bash
 # Scan entire device for APFS structures, even beyond visible partition table
 
-PI_HOST="eldertree.local"
-PI_USER="raolivei"
-PI_PASSWORD="Control01!"
+PI_HOST="${PI_HOST:-eldertree.local}"
+PI_USER="${PI_USER:-raolivei}"
+PI_PASSWORD="${PI_PASSWORD:-}"
 DEVICE="/dev/sda"
+
+# Validate required environment variables
+if [ -z "$PI_PASSWORD" ]; then
+    echo "Error: PI_PASSWORD environment variable is required"
+    echo "Usage: PI_PASSWORD='your-password' $0"
+    exit 1
+fi
 
 run_on_pi() {
     sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no "$PI_USER@$PI_HOST" "$1"

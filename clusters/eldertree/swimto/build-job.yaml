@@ -49,7 +49,7 @@ spec:
       volumes:
       - name: workspace
         hostPath:
-          path: /home/monkeys-37/swimTO
+          path: /home/raolivei/WORKSPACE/raolivei/swimTO
           type: Directory
       - name: docker-sock
         hostPath:
