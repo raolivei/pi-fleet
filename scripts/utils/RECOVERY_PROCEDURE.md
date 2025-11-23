@@ -18,6 +18,7 @@
 ```
 
 The script will:
+
 1. Detect the Extreme SSD
 2. Check drive health
 3. Ask you to select recovery destination
@@ -47,6 +48,7 @@ sudo smartctl -a /dev/sdX
 ```
 
 Look for:
+
 - Reallocated sectors (should be 0)
 - Current pending sector (should be 0)
 - Overall health status
@@ -54,16 +56,19 @@ Look for:
 ### Step 3: Select Recovery Destination
 
 **Option A: Use Extreme SSD itself**
+
 - Requires at least 900 GB free space
 - Recovered files on same drive
 - Convenient but less safe
 
 **Option B: Use external drive**
+
 - Recommended for critical data
 - Separate from source drive
 - More reliable
 
 **Option C: Use Pi's storage**
+
 - Only if Pi has enough space
 - May be slower (SD card)
 
@@ -75,6 +80,7 @@ sudo apt-get install -y testdisk gddrescue apfs-fuse smartmontools
 ```
 
 Verify installation:
+
 ```bash
 which photorec ddrescue apfs-fuse smartctl
 ```
@@ -149,6 +155,7 @@ photorec /log photorec.log /dev/sdX
 ```
 
 **PhotoRec Interactive Steps**:
+
 1. Select disk (choose the Extreme SSD)
 2. Select partition (or "Whole disk")
 3. Select filesystem (choose "Other" for APFS)
@@ -222,41 +229,46 @@ tail -f /path/to/recovery/ddrescue.log
 ## Troubleshooting
 
 ### Drive Not Detected
+
 - Check USB connection
 - Try different USB port
 - Check `dmesg | tail -50` for errors
 - Verify drive powers on
 
 ### APFS Mount Fails
+
 - Normal if metadata corrupted
 - Proceed to PhotoRec
 - Try different partition if multiple exist
 
 ### PhotoRec Slow
+
 - Normal for large drives
 - Can take 24+ hours
 - Let it run, don't interrupt
 
 ### Out of Space
+
 - Check: `df -h`
 - Free up space or use different destination
 - Can pause and resume PhotoRec
 
 ### Network Disconnect
+
 - tmux sessions continue running
 - Reconnect and attach to sessions
 - All operations are logged
 
 ## Recovery Time Estimates
 
-| Operation | Time | Can Pause? |
-|-----------|------|------------|
-| Disk Image (ddrescue) | 4-8 hours | Yes (resume) |
-| APFS Mount | 5-10 min | No |
-| APFS Extract | 2-4 hours | Yes |
-| PhotoRec | 8-24 hours | Yes (resume) |
-| Verification | 2-4 hours | Yes |
-| Organization | 1-2 hours | Yes |
+| Operation             | Time       | Can Pause?   |
+| --------------------- | ---------- | ------------ |
+| Disk Image (ddrescue) | 4-8 hours  | Yes (resume) |
+| APFS Mount            | 5-10 min   | No           |
+| APFS Extract          | 2-4 hours  | Yes          |
+| PhotoRec              | 8-24 hours | Yes (resume) |
+| Verification          | 2-4 hours  | Yes          |
+| Organization          | 1-2 hours  | Yes          |
 
 **Total**: 15-38 hours (most unattended)
 
@@ -275,4 +287,3 @@ tail -f /path/to/recovery/ddrescue.log
 3. **Organize files** by type/date
 4. **Document what was recovered**
 5. **Consider drive replacement** (if hardware issues found)
-

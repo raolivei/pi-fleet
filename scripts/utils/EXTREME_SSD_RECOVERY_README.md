@@ -25,6 +25,7 @@ chmod +x scripts/utils/extreme-ssd-recovery.sh
 ```
 
 The script will:
+
 1. Detect the Extreme SSD
 2. Prompt for recovery destination
 3. Install required tools (testdisk/PhotoRec)
@@ -90,6 +91,7 @@ ssh raolivei@eldertree.local 'df -h /path/to/recovery'
 - **Very large drives (2TB+):** 24-48 hours
 
 Time depends on:
+
 - Drive speed (USB 2.0 vs 3.0)
 - Amount of data
 - File types being recovered
@@ -118,6 +120,7 @@ Time depends on:
 ## What PhotoRec Recovers
 
 PhotoRec recovers files by:
+
 - **File signatures:** Identifies files by their content, not metadata
 - **No directory structure:** Files organized by type in `recup_dir.1`, `recup_dir.2`, etc.
 - **No original filenames:** Files named `f1234567.jpg`, `f1234568.pdf`, etc.
@@ -248,6 +251,7 @@ ssh raolivei@eldertree.local 'lsblk'
 ## Support
 
 If recovery fails:
+
 1. Check PhotoRec log for errors
 2. Verify drive health: `sudo smartctl -a /dev/sda`
 3. Try different recovery destination
@@ -256,4 +260,3 @@ If recovery fails:
 ## License
 
 This utility is part of the pi-fleet project. Use at your own risk.
-

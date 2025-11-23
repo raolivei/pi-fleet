@@ -50,7 +50,7 @@ spec:
       - name: workspace
         hostPath:
           path: /home/raolivei/WORKSPACE/raolivei/swimTO
-          type: Directory
+          type: DirectoryOrCreate
       - name: docker-sock
         hostPath:
           path: /var/run/docker.sock

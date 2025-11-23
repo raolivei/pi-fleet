@@ -43,10 +43,14 @@ if kubectl get pod vault-0 -n vault &>/dev/null; then
     else
         echo "⚠️  Vault is sealed, cannot backup secrets"
         echo "   Secrets will be lost unless you have a previous backup"
-        read -p "Continue anyway? (y/n) " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
+        if [ "${NON_INTERACTIVE:-false}" != "true" ]; then
+            read -p "Continue anyway? (y/n) " -n 1 -r
+            echo ""
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        else
+            echo "   Continuing in non-interactive mode..."
         fi
     fi
 else
@@ -201,7 +205,12 @@ else
         echo "⚠️  No unseal keys found, please unseal manually:"
         echo "   ./scripts/operations/unseal-vault.sh"
         echo ""
-        read -p "Press Enter after you've unsealed Vault..."
+        if [ "${NON_INTERACTIVE:-false}" != "true" ]; then
+            read -p "Press Enter after you've unsealed Vault..."
+        else
+            echo "   Waiting 30 seconds for manual unseal..."
+            sleep 30
+        fi
     fi
 fi
 echo ""
