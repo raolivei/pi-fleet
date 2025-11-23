@@ -53,6 +53,63 @@ kubectl create secret generic vault-token \
   -n external-secrets
 ```
 
+6. **Setup Vault Policies and Service Tokens** (recommended):
+```bash
+# Create per-project policies and service tokens
+./scripts/operations/setup-vault-policies.sh
+```
+
+This creates:
+- Per-project policies (canopy, swimto, journey, nima, us-law-severity-map, monitoring, infrastructure)
+- Service tokens for each project stored in Kubernetes secrets
+- GitHub Container Registry tokens stored in Vault
+
+## Policy-Based Access Control
+
+Vault uses policies to enforce least-privilege access. Each project has its own policy that grants access only to its own secrets.
+
+### Policies
+
+- **canopy-policy** - Access to `secret/canopy/*`
+- **swimto-policy** - Access to `secret/swimto/*`
+- **journey-policy** - Access to `secret/journey/*`
+- **nima-policy** - Access to `secret/nima/*`
+- **us-law-severity-map-policy** - Access to `secret/us-law-severity-map/*`
+- **monitoring-policy** - Access to `secret/monitoring/*`
+- **infrastructure-policy** - Access to `secret/pihole/*`, `secret/flux/*`, `secret/external-dns/*`, `secret/terraform/*`, `secret/cloudflare-tunnel/*`
+- **eso-readonly-policy** - Read-only access to all secrets (for External Secrets Operator)
+
+### Service Tokens
+
+Each project has a service token stored in Kubernetes secrets in the `external-secrets` namespace:
+
+- `vault-token-canopy` - Token with `canopy-policy`
+- `vault-token-swimto` - Token with `swimto-policy`
+- `vault-token-journey` - Token with `journey-policy`
+- `vault-token-nima` - Token with `nima-policy`
+- `vault-token-us-law-severity-map` - Token with `us-law-severity-map-policy`
+- `vault-token-monitoring` - Token with `monitoring-policy`
+- `vault-token-infrastructure` - Token with `infrastructure-policy`
+
+### Using Project-Specific Tokens
+
+Project scripts should use their project-specific token instead of the root token:
+
+```bash
+# Get project token from Kubernetes secret
+VAULT_TOKEN=$(kubectl get secret vault-token-swimto -n external-secrets -o jsonpath='{.data.token}' | base64 -d)
+
+# Use token in Vault operations
+kubectl exec -n vault vault-0 -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN='${VAULT_TOKEN}' && vault kv put secret/swimto/app key=value"
+```
+
+### Benefits
+
+1. **Isolation**: Each project can only access its own secrets
+2. **Principle of Least Privilege**: Tokens have minimal required permissions
+3. **Prevents Accidents**: Scripts cannot accidentally write to wrong project paths
+4. **Auditability**: Each project's access is tracked separately
+
 ## Secret Paths
 
 ### Monitoring
@@ -259,18 +316,28 @@ If you're migrating from the previous dev mode setup (without persistence), see 
 
 **[docs/VAULT_MIGRATION.md](docs/VAULT_MIGRATION.md)**
 
+## GitHub Container Registry Tokens
+
+GitHub Container Registry (GHCR) tokens are stored in Vault for each project:
+
+- `secret/swimto/ghcr-token` - SwimTO GitHub token
+- `secret/us-law-severity-map/ghcr-token` - US Law Severity Map GitHub token
+- `secret/nima/ghcr-token` - NIMA GitHub token
+- `secret/canopy/ghcr-token` - Canopy GitHub token
+
+These tokens are automatically stored when running `./scripts/operations/setup-vault-policies.sh`.
+
 ## Security Best Practices
 
 1. **Store unseal keys securely** - Use password manager or split among trusted individuals
 2. **Backup secrets regularly** - Run `./scripts/backup-vault-secrets.sh` weekly
-3. **Rotate root token periodically** - Generate new tokens for applications
-4. **Use policies** - Don't use root token for applications (future enhancement)
+3. **Use project-specific tokens** - Don't use root token in project scripts
+4. **Rotate tokens periodically** - Regenerate service tokens when needed
 5. **Enable audit logging** - Track all Vault access (future enhancement)
 
 ## Future Enhancements
 
 - Auto-unseal using cloud KMS or Kubernetes secrets
-- Vault policies for least-privilege access
 - Automated backup to external storage
 - High availability (HA) mode for multi-node
 - Audit logging for security compliance
