@@ -13,42 +13,42 @@ spec:
           securityContext:
             privileged: true
           command:
-          - sh
-          - -c
-          - |
-            # Install required packages
-            apk add --no-cache docker-cli git
-            
-            # Wait for docker daemon
-            sleep 5
-            
-            # Clone the repository
-            echo "Cloning swimTO repository..."
-            git clone https://github.com/raolivei/swimTO.git /workspace || exit 1
-            cd /workspace
-            
-            # Checkout main branch (or use specific branch/tag if needed)
-            git checkout main || git checkout master || true
-            
-            REGISTRY="ghcr.io"
-            IMAGE_PREFIX="${REGISTRY}/raolivei"
-            
-            # Build API image
-            docker build -t ${IMAGE_PREFIX}/swimto-api:latest /workspace/apps/api || exit 1
-            
-            # Build Web image  
-            docker build -t ${IMAGE_PREFIX}/swimto-web:latest /workspace/apps/web || exit 1
-            
-            # Push to GitHub Container Registry
-            docker push ${IMAGE_PREFIX}/swimto-api:latest || exit 1
-            docker push ${IMAGE_PREFIX}/swimto-web:latest || exit 1
-            
-            # Pull into k3s
-            k3s ctr images pull ${IMAGE_PREFIX}/swimto-api:latest || exit 1
-            k3s ctr images pull ${IMAGE_PREFIX}/swimto-web:latest || exit 1
-            
-            # Verify
-            k3s ctr images ls | grep ${IMAGE_PREFIX}
+            - sh
+            - -c
+            - |
+              # Install required packages
+              apk add --no-cache docker-cli git
+
+              # Wait for docker daemon
+              sleep 5
+
+              # Clone the repository
+              echo "Cloning swimTO repository..."
+              git clone https://github.com/raolivei/swimTO.git /workspace || exit 1
+              cd /workspace
+
+              # Checkout main branch (or use specific branch/tag if needed)
+              git checkout main || git checkout master || true
+
+              REGISTRY="ghcr.io"
+              IMAGE_PREFIX="${REGISTRY}/raolivei"
+
+              # Build API image
+              docker build -t ${IMAGE_PREFIX}/swimto-api:latest /workspace/apps/api || exit 1
+
+              # Build Web image  
+              docker build -t ${IMAGE_PREFIX}/swimto-web:latest /workspace/apps/web || exit 1
+
+              # Push to GitHub Container Registry
+              docker push ${IMAGE_PREFIX}/swimto-api:latest || exit 1
+              docker push ${IMAGE_PREFIX}/swimto-web:latest || exit 1
+
+              # Pull into k3s
+              k3s ctr images pull ${IMAGE_PREFIX}/swimto-api:latest || exit 1
+              k3s ctr images pull ${IMAGE_PREFIX}/swimto-web:latest || exit 1
+
+              # Verify
+              k3s ctr images ls | grep ${IMAGE_PREFIX}
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -57,15 +57,15 @@ spec:
             - name: k3s-bin
               mountPath: /usr/local/bin/k3s
       volumes:
-      - name: workspace
-        emptyDir: {}
-      - name: docker-sock
-        hostPath:
-          path: /var/run/docker.sock
-          type: Socket
-      - name: k3s-bin
-        hostPath:
-          path: /usr/local/bin/k3s
-          type: File
+        - name: workspace
+          emptyDir: {}
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+        - name: k3s-bin
+          hostPath:
+            path: /usr/local/bin/k3s
+            type: File
       restartPolicy: Never
   backoffLimit: 2
