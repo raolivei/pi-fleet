@@ -72,7 +72,7 @@ spec:
   triggers:
     - type: prometheus
       metadata:
-        serverAddress: http://prometheus-server.monitoring.svc:9090
+        serverAddress: http://prometheus-stack.observability.svc.cluster.local:9090
         metricName: http_requests_per_second
         threshold: "100"
         query: |

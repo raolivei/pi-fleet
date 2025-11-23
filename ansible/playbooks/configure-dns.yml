@@ -1,0 +1,80 @@
+---
+- name: Configure DNS for Eldertree Cluster
+  hosts: localhost
+  connection: local
+  vars:
+    eldertree_ip: "{{ eldertree_ip | default('192.168.2.83') }}"
+    configure_hosts_file: "{{ configure_hosts_file | default(false) }}"
+    services:
+      - "eldertree"
+      - "canopy.eldertree.local"
+      - "grafana.eldertree.local"
+      - "prometheus.eldertree.local"
+      - "vault.eldertree.local"
+      - "pihole.eldertree.local"
+      - "swimto.eldertree.local"
+
+  tasks:
+    - name: Display DNS configuration options
+      debug:
+        msg:
+          - "=== DNS Configuration for Eldertree Cluster ==="
+          - ""
+          - "Cluster IP: {{ eldertree_ip }}"
+          - ""
+          - "Option 1: Router DNS (Recommended - Network-wide)"
+          - "  Set router DNS to: {{ eldertree_ip }}:30053 (if Pi-hole is deployed)"
+          - ""
+          - "Option 2: macOS System Settings"
+          - "  System Settings → Network → DNS → Add: {{ eldertree_ip }}"
+          - ""
+          - "Option 3: /etc/hosts (Fallback)"
+          - "  Set configure_hosts_file=true to add entries automatically"
+
+    - name: Check if /etc/hosts configuration is requested
+      debug:
+        msg: "Skipping /etc/hosts configuration (set configure_hosts_file=true to enable)"
+      when: not configure_hosts_file
+
+    - name: Configure /etc/hosts entries
+      block:
+        - name: Check current /etc/hosts content
+          slurp:
+            src: /etc/hosts
+          register: hosts_content
+          become: true
+          changed_when: false
+          failed_when: false
+
+        - name: Add DNS entries to /etc/hosts
+          lineinfile:
+            path: /etc/hosts
+            regexp: "^{{ eldertree_ip }}\\s+{{ item }}"
+            line: "{{ eldertree_ip }}  {{ item }}"
+            state: present
+            backup: true
+          become: true
+          loop: "{{ services }}"
+          register: hosts_updated
+
+        - name: Display updated entries
+          debug:
+            msg:
+              - "✅ DNS entries added to /etc/hosts:"
+              - "{{ item.item }}"
+          loop: "{{ hosts_updated.results }}"
+          when: item.changed
+
+        - name: Display summary
+          debug:
+            msg:
+              - "✅ DNS configuration complete"
+              - ""
+              - "Services accessible at:"
+              - "  - https://canopy.eldertree.local"
+              - "  - https://grafana.eldertree.local"
+              - "  - https://prometheus.eldertree.local"
+              - "  - https://vault.eldertree.local"
+              - "  - https://pihole.eldertree.local"
+              - "  - https://swimto.eldertree.local"
+      when: configure_hosts_file

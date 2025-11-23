@@ -6,7 +6,13 @@ set -e
 
 PI_HOST="${PI_HOST:-192.168.2.83}"
 PI_USER="${PI_USER:-raolivei}"
-PI_PASSWORD="${PI_PASSWORD:-Control01!}"
+PI_PASSWORD="${PI_PASSWORD:-}"
+
+if [ -z "$PI_PASSWORD" ]; then
+    echo "❌ Error: PI_PASSWORD environment variable is required"
+    echo "Usage: PI_PASSWORD='your-password' $0"
+    exit 1
+fi
 
 echo "🔍 WireGuard Server Diagnostic"
 echo "=============================="

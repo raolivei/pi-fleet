@@ -6,19 +6,17 @@ metadata:
 spec:
   scaleTargetRef:
     name: swimto-api
-  minReplicaCount: 0  # Scale to zero in standby
+  minReplicaCount: 0 # Scale to zero in standby
   maxReplicaCount: 5
   pollingInterval: 30
   cooldownPeriod: 300
   triggers:
     - type: prometheus
       metadata:
-        serverAddress: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80
+        serverAddress: http://prometheus-stack.observability.svc.cluster.local:80
         metricName: http_requests_per_second
         threshold: "5"
         query: |
           sum(rate(traefik_service_requests_total{
-            service="swimto-api-service",
-            namespace="swimto"
+            service=~"swimto-swimto-api-service-8000@kubernetes"
           }[2m]))
-

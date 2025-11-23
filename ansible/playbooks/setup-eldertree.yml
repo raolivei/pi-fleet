@@ -1,0 +1,80 @@
+---
+# Master playbook for Eldertree cluster setup
+# This playbook orchestrates:
+# 1. System configuration (user, hostname, network, packages)
+# 2. k3s installation
+# 3. Terminal monitoring tools (btop, neofetch, tmux)
+# 4. FluxCD bootstrap (optional)
+
+- name: System Configuration
+  import_playbook: setup-system.yml
+  vars:
+    target_user: raolivei
+    hostname: eldertree
+    static_ip: "192.168.2.83"
+    static_netmask: "255.255.255.0"
+    static_gateway: "192.168.2.1"
+    static_dns: ["192.168.2.1", "8.8.8.8"]
+    backup_device: "/dev/sdb1"
+    backup_mount: "/mnt/backup"
+
+- name: Install k3s
+  import_playbook: install-k3s.yml
+  vars:
+    k3s_hostname: "eldertree"
+    kubeconfig_path: "~/.kube/config-eldertree"
+
+- name: Setup Terminal Monitoring
+  import_playbook: setup-terminal-monitoring.yml
+  vars:
+    target_user: raolivei
+
+- name: Display k3s Installation Note
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Note about k3s installation
+      debug:
+        msg:
+          - "=== System Configuration Complete ==="
+          - ""
+          - "k3s installation is handled by the playbook above"
+          - ""
+          - "After k3s is installed, you can run FluxCD bootstrap:"
+          - "  ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true"
+
+# Note: FluxCD bootstrap is handled by bootstrap-flux.yml playbook
+# It checks bootstrap_flux variable internally and skips if disabled
+# To enable: ansible-playbook playbooks/setup-eldertree.yml -e bootstrap_flux=true
+# Or run separately: ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true
+
+- name: Setup Summary
+  hosts: localhost
+  connection: local
+  vars:
+    bootstrap_flux_default: false
+    kubeconfig_path_default: "~/.kube/config-eldertree"
+  tasks:
+    - name: Set variables with defaults
+      set_fact:
+        bootstrap_flux: "{{ bootstrap_flux | default(bootstrap_flux_default) | bool }}"
+        kubeconfig_path: "{{ kubeconfig_path | default(kubeconfig_path_default) }}"
+    
+    - name: Check if kubeconfig exists
+      stat:
+        path: "{{ kubeconfig_path | expanduser }}"
+      register: kubeconfig_check
+      changed_when: false
+
+    - name: Display completion summary
+      debug:
+        msg:
+          - "=== Setup Summary ==="
+          - "System configuration: Complete"
+          - "k3s installation: {{ 'Complete (verified)' if kubeconfig_check.stat.exists | default(false) else 'Complete (installed by playbook above)' }}"
+          - "FluxCD bootstrap: {{ 'Complete' if (bootstrap_flux | bool and kubeconfig_check.stat.exists | default(false)) else 'Skipped' }}"
+          - ""
+          - "Next steps:"
+          - "  1. Verify cluster: kubectl get nodes --kubeconfig={{ kubeconfig_path }}"
+          - "  2. Check FluxCD: flux get all --kubeconfig={{ kubeconfig_path }}"
+          - "  3. Configure Cloudflare DNS (optional): cd ../terraform && terraform apply"

@@ -1,0 +1,13 @@
+---
+all:
+  children:
+    raspberry_pi:
+      hosts:
+        eldertree:
+          ansible_host: 192.168.2.83
+          ansible_user: raolivei
+          ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+          # Password should be set via environment variable or Ansible Vault
+          # Use: export ANSIBLE_PASSWORD="your-password" or ansible-vault encrypt_string
+          ansible_password: "{{ lookup('env', 'ANSIBLE_PASSWORD') | default('CHANGE_ME') }}"
+          # Using raolivei user - playbook will ensure it exists and is configured correctly

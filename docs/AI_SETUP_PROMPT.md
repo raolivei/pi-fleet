@@ -142,7 +142,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local
+          url: http://prometheus-stack.monitoring.svc.cluster.local
   dashboards:
     default:
       kubernetes-cluster:
@@ -198,15 +198,15 @@ spec:
   values:
     server:
       dev:
-        enabled: false  # Production mode with persistence
-      
+        enabled: false # Production mode with persistence
+
       # Enable persistence for secrets
       dataStorage:
         enabled: true
         size: 10Gi
         storageClass: local-path
         accessMode: ReadWriteOnce
-      
+
       # Standalone mode (single-node cluster)
       ha:
         enabled: false
@@ -214,19 +214,19 @@ spec:
         enabled: true
         config: |
           ui = true
-          
+
           listener "tcp" {
             tls_disable = 1
             address = "[::]:8200"
             cluster_address = "[::]:8201"
           }
-          
+
           storage "file" {
             path = "/vault/data"
           }
-          
+
           disable_mlock = true
-      
+
       ui:
         enabled: true
       ingress:
@@ -243,6 +243,7 @@ spec:
 ```
 
 **Important:** Vault runs in production mode with persistent storage. After deployment:
+
 1. Initialize Vault: `kubectl exec -n vault vault-0 -- vault operator init`
 2. Save the 5 unseal keys and root token securely
 3. Unseal Vault using 3 keys: `./scripts/unseal-vault.sh`
@@ -364,6 +365,7 @@ kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:82
 ```
 
 **Secret Paths Structure:**
+
 - `secret/monitoring/grafana` - Grafana admin username and password (`adminUser`, `adminPassword`)
 - `secret/pihole/webpassword` - Pi-hole web admin password
 - `secret/canopy/postgres` - Canopy PostgreSQL password
@@ -444,22 +446,26 @@ chmod 600 ~/.kube/config-CLUSTER
 **Solution:**
 
 1. Check if secret exists in Vault:
+
 ```bash
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
 kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN=root && vault kv get secret/PATH"
 ```
 
 2. Verify ClusterSecretStore is configured correctly:
+
 ```bash
 kubectl get clustersecretstore vault -o yaml
 ```
 
 3. Check External Secrets Operator logs:
+
 ```bash
 kubectl logs -n external-secrets deployment/external-secrets
 ```
 
 4. Ensure vault-token secret exists:
+
 ```bash
 kubectl get secret vault-token -n external-secrets
 ```
@@ -471,6 +477,7 @@ kubectl get secret vault-token -n external-secrets
 **Solution:**
 
 Create the secret in Vault using the correct path structure:
+
 ```bash
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
 kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN=root && vault kv put secret/PATH key=value"
