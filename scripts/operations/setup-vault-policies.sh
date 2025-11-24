@@ -148,6 +148,7 @@ create_policy "journey-policy" "$POLICIES_DIR/journey-policy.hcl"
 create_policy "nima-policy" "$POLICIES_DIR/nima-policy.hcl"
 create_policy "us-law-severity-map-policy" "$POLICIES_DIR/us-law-severity-map-policy.hcl"
 create_policy "monitoring-policy" "$POLICIES_DIR/monitoring-policy.hcl"
+create_policy "aeron-policy" "$POLICIES_DIR/aeron-policy.hcl"
 create_policy "infrastructure-policy" "$POLICIES_DIR/infrastructure-policy.hcl"
 create_policy "eso-readonly-policy" "$POLICIES_DIR/eso-readonly-policy.hcl"
 
@@ -165,6 +166,7 @@ create_service_token "journey-token" "journey-policy" "vault-token-journey"
 create_service_token "nima-token" "nima-policy" "vault-token-nima"
 create_service_token "us-law-severity-map-token" "us-law-severity-map-policy" "vault-token-us-law-severity-map"
 create_service_token "monitoring-token" "monitoring-policy" "vault-token-monitoring"
+create_service_token "aeron-token" "aeron-policy" "vault-token-aeron"
 create_service_token "infrastructure-token" "infrastructure-policy" "vault-token-infrastructure"
 
 echo ""
@@ -200,6 +202,12 @@ else
     echo -e "${YELLOW}Skipping canopy GHCR token (set CANOPY_GHCR_TOKEN env var to store)${NC}"
 fi
 
+if [ -n "$AERON_GHCR_TOKEN" ]; then
+    store_ghcr_token "aeron" "$AERON_GHCR_TOKEN"
+else
+    echo -e "${YELLOW}Skipping aeron GHCR token (set AERON_GHCR_TOKEN env var to store)${NC}"
+fi
+
 echo ""
 
 # Summary
@@ -214,6 +222,7 @@ echo "  - journey-policy"
 echo "  - nima-policy"
 echo "  - us-law-severity-map-policy"
 echo "  - monitoring-policy"
+echo "  - aeron-policy"
 echo "  - infrastructure-policy"
 echo "  - eso-readonly-policy"
 echo ""
@@ -224,6 +233,7 @@ echo "  - vault-token-journey"
 echo "  - vault-token-nima"
 echo "  - vault-token-us-law-severity-map"
 echo "  - vault-token-monitoring"
+echo "  - vault-token-aeron"
 echo "  - vault-token-infrastructure"
 echo ""
 echo -e "${GREEN}Stored GitHub Tokens in Vault:${NC}"
@@ -231,6 +241,7 @@ echo "  - secret/swimto/ghcr-token"
 echo "  - secret/us-law-severity-map/ghcr-token"
 echo "  - secret/nima/ghcr-token"
 echo "  - secret/canopy/ghcr-token"
+echo "  - secret/aeron/ghcr-token"
 echo ""
 echo -e "${YELLOW}Next Steps:${NC}"
 echo "  1. Update project scripts to use their respective tokens"
