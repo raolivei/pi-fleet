@@ -266,7 +266,7 @@ sudo apt update && sudo apt upgrade -y
 
 Once you can SSH into the Pi, proceed to:
 
-1. **Run automated setup**: `./scripts/setup-eldertree.sh`
+1. **Run automated setup**: `./scripts/setup/setup-eldertree.sh`
 2. **Or manual setup**: Follow [OS_REINSTALLATION_GUIDE.md](./OS_REINSTALLATION_GUIDE.md)
 
 ## Quick Reference
@@ -288,3 +288,4 @@ Once you can SSH into the Pi, proceed to:
 ssh pi@<PI_IP>
 # Password: raspberry (or what you set)
 ```
+

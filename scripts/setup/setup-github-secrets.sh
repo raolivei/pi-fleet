@@ -1,20 +1,25 @@
 #!/bin/bash
 # Setup GitHub Secrets for Terraform workflow
 #
-# Usage:
-#   ./scripts/setup-github-secrets.sh
+# Usage (interactive):
+#   ./scripts/setup/setup-github-secrets.sh
+#
+# Usage (non-interactive):
+#   CLOUDFLARE_API_TOKEN='your-token' ./scripts/setup/setup-github-secrets.sh
+#   OR
+#   ./scripts/setup/setup-github-secrets.sh your-api-token-here
 #
 # This script sets up the required GitHub secrets for the Terraform workflow.
 # It will:
 # 1. Read Cloudflare values from terraform.tfvars
-# 2. Prompt for Cloudflare API token (or get from Vault)
-# 3. Prompt for Cloudflare Account ID (or get from Cloudflare API)
+# 2. Get Cloudflare API token (from arg, env var, Vault, or prompt)
+# 3. Get Cloudflare Account ID (from API or prompt)
 # 4. Set all secrets in GitHub repository
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TERRAFORM_DIR="$REPO_DIR/terraform"
 
 # Colors for output
@@ -69,10 +74,10 @@ echo "  Zone ID: $CLOUDFLARE_ZONE_ID"
 echo "  Public IP: $PUBLIC_IP"
 echo ""
 
-# Try to get Cloudflare API token from environment variable first
-CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-}"
+# Get API token from argument, environment variable, Vault, or prompt
+CLOUDFLARE_API_TOKEN="${1:-${CLOUDFLARE_API_TOKEN:-}}"
 
-# Try to get Cloudflare API token from Vault
+# Try to get Cloudflare API token from Vault (if not provided)
 if [ -z "$CLOUDFLARE_API_TOKEN" ] && command -v kubectl &> /dev/null; then
     export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config-eldertree}"
     VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
@@ -147,4 +152,6 @@ echo ""
 echo -e "${GREEN}✅ All secrets set successfully!${NC}"
 echo ""
 echo "You can verify secrets at: https://github.com/$REPO/settings/secrets/actions"
+
+
 

@@ -7,10 +7,11 @@ spec:
   interval: 30m
   chart:
     spec:
-      chart: ./charts/gitops-server
+      chart: ./helm/flux-ui
+      version: "0.1.1"
       sourceRef:
         kind: GitRepository
-        name: weave-gitops-charts
+        name: flux-system
         namespace: flux-system
       interval: 12h
   targetNamespace: observability
@@ -19,58 +20,68 @@ spec:
   upgrade:
     cleanupOnFail: true
   values:
-    # Service configuration
-    service:
-      type: ClusterIP
-      port: 9001
+    # Global configuration
+    global:
+      domain: eldertree.local
+      clusterIssuer: selfsigned-cluster-issuer
 
-    # Ingress configuration
-    ingress:
+    # Weave GitOps configuration
+    # Values passed to weave-gitops dependency (gitops-server chart)
+    weave-gitops:
       enabled: true
-      ingressClassName: traefik
-      hosts:
-        - host: flux-ui.eldertree.local
-          paths:
-            - path: /
-              pathType: Prefix
-      tls:
-        - secretName: flux-ui-tls
-          hosts:
-            - flux-ui.eldertree.local
-      annotations:
-        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
-
-    # Resource limits for Raspberry Pi
-    resources:
-      limits:
-        cpu: 500m
-        memory: 512Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
-
-    # Replica count
-    replicaCount: 1
-
-    # Security context
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 65534
-      fsGroup: 65534
-
-    # Service account
-    serviceAccount:
-      create: true
-      name: flux-ui
-
-    # RBAC - Weave GitOps needs cluster-admin to manage Flux resources
-    rbac:
-      create: true
-      clusterRole: true
-
-    # Admin user configuration - required for authentication
-    adminUser:
-      create: true
-      createClusterRole: true
-      username: admin
-      passwordHash: "$2y$10$b9.2/PghT0wFR1VVeEt10.nJ6JxfKMAto5YpIFehLISdeeqP.PuQC" # Password: admin123
+      
+      # Service configuration
+      service:
+        type: ClusterIP
+        port: 9001
+      
+      # Ingress configuration
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        hosts:
+          - host: flux-ui.eldertree.local
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - secretName: flux-ui-tls
+            hosts:
+              - flux-ui.eldertree.local
+        annotations:
+          cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+      
+      # Resource limits for Raspberry Pi
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+      
+      # Replica count
+      replicaCount: 1
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      
+      # Service account
+      serviceAccount:
+        create: true
+        name: flux-ui
+      
+      # RBAC - Weave GitOps needs cluster-admin to manage Flux resources
+      rbac:
+        create: true
+        clusterRole: true
+      
+      # Admin user configuration - required for authentication
+      adminUser:
+        create: true
+        createClusterRole: true
+        username: admin
+        passwordHash: "$2y$10$b9.2/PghT0wFR1VVeEt10.nJ6JxfKMAto5YpIFehLISdeeqP.PuQC" # Password: admin123

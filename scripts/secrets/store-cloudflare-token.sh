@@ -2,9 +2,9 @@
 # Store Cloudflare API token in Vault for Terraform and External-DNS
 #
 # Usage:
-#   ./scripts/store-cloudflare-token.sh YOUR_API_TOKEN_HERE
+#   ./scripts/secrets/store-cloudflare-token.sh YOUR_API_TOKEN_HERE
 #   OR
-#   ./scripts/store-cloudflare-token.sh  # Will prompt for token
+#   ./scripts/secrets/store-cloudflare-token.sh  # Will prompt for token
 #
 # NOTE: This script is a convenience wrapper. For better automation, use:
 #   ansible-playbook ansible/playbooks/manage-secrets.yml \
@@ -54,7 +54,7 @@ ansible-playbook playbooks/manage-secrets.yml \
     
     if [ "$VAULT_STATUS" = "true" ]; then
         echo "Error: Vault is sealed. Please unseal it first:"
-        echo "  ./scripts/unseal-vault.sh"
+        echo "  ./scripts/operations/unseal-vault.sh"
         exit 1
     fi
     

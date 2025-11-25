@@ -30,7 +30,7 @@ Use the automated setup script for complete cluster setup:
 brew install ansible terraform kubectl fluxcd/tap/flux hudochenkov/sshpass/sshpass
 
 # Run automated setup
-./scripts/setup-eldertree.sh
+./scripts/setup/setup-eldertree.sh
 ```
 
 This script orchestrates:
@@ -138,7 +138,7 @@ The cluster uses Traefik as the Ingress Controller (pre-installed with k3s), Cer
 
 ```bash
 # Validate ingress setup
-./scripts/validate-ingress-setup.sh
+./scripts/diagnostics/validate-ingress-setup.sh
 
 # Check ingress resources
 kubectl get ingress -A
@@ -160,7 +160,7 @@ See [docs/INGRESS.md](docs/INGRESS.md) for complete documentation on creating in
 Secrets stored in Vault. See [VAULT.md](VAULT.md).
 
 ```bash
-./scripts/sync-vault-to-k8s.sh
+./scripts/operations/sync-vault-to-k8s.sh
 ```
 
 ## Add Worker Nodes
@@ -184,7 +184,7 @@ kubectl get pods -A
 kubectl get helmreleases -A
 
 # Validate ingress setup
-./scripts/validate-ingress-setup.sh
+./scripts/diagnostics/validate-ingress-setup.sh
 ```
 
 ## Cleanup

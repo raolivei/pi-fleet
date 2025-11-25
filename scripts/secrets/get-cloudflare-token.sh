@@ -2,9 +2,9 @@
 # Get Cloudflare API token from Vault for Terraform use
 #
 # Usage:
-#   source ./scripts/get-cloudflare-token.sh
+#   source ./scripts/secrets/get-cloudflare-token.sh
 #   OR
-#   export TF_VAR_cloudflare_api_token=$(./scripts/get-cloudflare-token.sh)
+#   export TF_VAR_cloudflare_api_token=$(./scripts/secrets/get-cloudflare-token.sh)
 
 set -e
 
@@ -24,7 +24,7 @@ VAULT_STATUS=$(kubectl exec -n vault $VAULT_POD -- vault status 2>&1 | grep "Sea
 
 if [ "$VAULT_STATUS" = "true" ]; then
     echo "Error: Vault is sealed. Please unseal it first:" >&2
-    echo "  ./scripts/unseal-vault.sh" >&2
+    echo "  ./scripts/operations/unseal-vault.sh" >&2
     exit 1
 fi
 

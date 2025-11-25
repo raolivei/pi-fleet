@@ -2,7 +2,11 @@ apiVersion: v2
 name: flux-ui
 description: Flux UI (Weave GitOps) for visualizing and managing FluxCD deployments
 type: application
-version: 0.1.0
-appVersion: "2.0.0"
-# Note: Weave GitOps will be deployed via HelmRelease referencing HelmRepository
-# This chart structure is ready for future dependency management
+version: 0.1.1
+appVersion: "0.38.0"
+dependencies:
+  - name: weave-gitops
+    version: "4.0.36"
+    repository: oci://ghcr.io/weaveworks/charts
+    alias: weave-gitops
+    condition: weave-gitops.enabled

@@ -7,8 +7,8 @@ global:
   clusterIssuer: selfsigned-cluster-issuer
 
 # Weave GitOps configuration
-# Values passed directly to weave-gitops dependency
-# See: https://github.com/weaveworks/weave-gitops/blob/main/charts/weave-gitops/values.yaml
+# Values passed directly to weave-gitops dependency (gitops-server chart)
+# See: https://github.com/weaveworks/weave-gitops/blob/main/charts/gitops-server/values.yaml
 weave-gitops:
   enabled: true
   
@@ -60,4 +60,11 @@ weave-gitops:
   rbac:
     create: true
     clusterRole: true
+  
+  # Admin user configuration - required for authentication
+  adminUser:
+    create: true
+    createClusterRole: true
+    username: admin
+    passwordHash: "$2y$10$b9.2/PghT0wFR1VVeEt10.nJ6JxfKMAto5YpIFehLISdeeqP.PuQC" # Password: admin123
 

@@ -65,7 +65,7 @@ ping raspberrypi.local
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet
-./scripts/setup-eldertree.sh
+./scripts/setup/setup-eldertree.sh
 ```
 
 Follow prompts:

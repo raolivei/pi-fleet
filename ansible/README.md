@@ -283,7 +283,7 @@ ansible-playbook playbooks/configure-dns.yml \
 - `configure_hosts_file`: Enable /etc/hosts configuration (default: false)
 - `services`: List of services to configure (default: predefined list)
 
-**Note**: For better automation, use the convenience script: `./scripts/setup-dns.sh`
+**Note**: For better automation, use the convenience script: `./scripts/setup/setup-dns.sh`
 
 ### Manage Secrets (`playbooks/manage-secrets.yml`)
 
@@ -312,7 +312,7 @@ ansible-playbook playbooks/manage-secrets.yml \
 - `vault_namespace`: Vault namespace (default: vault)
 - `secrets`: List of secrets to store (see example above)
 
-**Note**: For convenience, use the wrapper script: `./scripts/store-cloudflare-token.sh YOUR_TOKEN`
+**Note**: For convenience, use the wrapper script: `./scripts/secrets/store-cloudflare-token.sh YOUR_TOKEN`
 
 ### Configure User (`playbooks/configure-user.yml`)
 
@@ -433,7 +433,7 @@ For a complete eldertree cluster setup, use the automated script:
 
 ```bash
 cd pi-fleet
-./scripts/setup-eldertree.sh
+./scripts/setup/setup-eldertree.sh
 ```
 
 This script orchestrates:
