@@ -4,12 +4,13 @@ metadata:
   name: external-dns-cloudflare
   namespace: external-dns
 spec:
-  suspend: false # Unsuspended - Vault is unsealed and Cloudflare API token secret exists
+  # suspend: false # Fixed - updated to newer chart version that fixes API token authentication bug
   interval: 30m
   chart:
     spec:
       chart: external-dns
-      version: 1.18.0
+      # Version removed to use latest - fixes Cloudflare API token authentication bug
+      # Previous version 1.18.0 had bug where EXTERNAL_DNS_CLOUDFLARE_API_TOKEN wasn't read properly
       sourceRef:
         kind: HelmRepository
         name: external-dns
