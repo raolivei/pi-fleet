@@ -42,3 +42,4 @@ clusters/eldertree/wireguard/clients/*.png
 ansible/group_vars/**/vault.yml
 ansible/vault_passwords.txt
 *.vault
+backups/vault-*
