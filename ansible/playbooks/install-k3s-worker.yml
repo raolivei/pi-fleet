@@ -1,0 +1,201 @@
+---
+- name: Install k3s worker node on Raspberry Pi
+  hosts: raspberry_pi
+  become: true
+  vars:
+    k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
+    k3s_token: "" # Required - node token from control plane
+    k3s_server_url: "https://eldertree:6443" # Control plane URL
+    k3s_install_k9s: false # k9s not needed on worker nodes
+
+  tasks:
+    # =========================================================================
+    # Check k3s installation status
+    # =========================================================================
+    - name: Check if k3s is already installed
+      command: which k3s
+      register: k3s_check
+      changed_when: false
+      failed_when: false
+
+    - name: Check if k3s service is running
+      systemd:
+        name: k3s-agent
+      register: k3s_service_status
+      changed_when: false
+      failed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Set fact for k3s already installed
+      set_fact:
+        k3s_already_installed: "{{ k3s_check.rc == 0 and k3s_service_status.status.ActiveState == 'active' }}"
+      when: k3s_check.rc == 0
+      changed_when: false
+
+    - name: Set fact for k3s already installed (when not found)
+      set_fact:
+        k3s_already_installed: false
+      when: k3s_check.rc != 0
+      changed_when: false
+
+    - name: Fail if k3s token is not provided
+      fail:
+        msg: "k3s_token is required. Get it from the control plane: cat /var/lib/rancher/k3s/server/node-token"
+      when: k3s_token == "" and not (k3s_already_installed | default(false))
+
+    # =========================================================================
+    # System Prerequisites - Cgroup Configuration
+    # =========================================================================
+    - name: Read current cmdline.txt
+      slurp:
+        src: /boot/firmware/cmdline.txt
+      register: cmdline_content
+      changed_when: false
+      failed_when: false
+
+    - name: Check if cgroup setting exists in cmdline.txt
+      set_fact:
+        cgroup_setting_exists: "{{ cmdline_content.content | b64decode | default('') | regex_search('systemd\\.unified_cgroup_hierarchy=0') is not none }}"
+      changed_when: false
+
+    - name: Check if cgroup setting exists in running kernel
+      shell: cat /proc/cmdline | grep -q 'systemd.unified_cgroup_hierarchy=0' && echo 'yes' || echo 'no'
+      register: cgroup_running_check
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure cgroups are enabled in cmdline.txt
+      lineinfile:
+        path: /boot/firmware/cmdline.txt
+        regexp: 'systemd\.unified_cgroup_hierarchy'
+        line: " systemd.unified_cgroup_hierarchy=0"
+        backrefs: false
+        state: present
+      register: cmdline_updated
+      failed_when: false
+      when: not cgroup_setting_exists | default(false)
+
+    - name: Set fact for reboot needed
+      set_fact:
+        reboot_needed: "{{ (cmdline_updated.changed | default(false)) or (cgroup_running_check.stdout | default('no') == 'no') }}"
+      changed_when: false
+
+    - name: Reboot if cmdline.txt was updated or cgroup not active
+      reboot:
+        msg: "Rebooting to apply cgroup configuration"
+        reboot_timeout: 300
+      when: reboot_needed | default(false)
+
+    - name: Wait for system to come back online after reboot
+      wait_for_connection:
+        timeout: 300
+      when: reboot_needed | default(false)
+
+    - name: Verify cgroup setting is active after reboot
+      shell: cat /proc/cmdline | grep -q 'systemd.unified_cgroup_hierarchy=0' && echo 'yes' || echo 'no'
+      register: cgroup_verify
+      changed_when: false
+      failed_when: false
+      when: reboot_needed | default(false)
+
+    - name: Verify cgroup setting is active (final check)
+      shell: cat /proc/cmdline | grep -q 'systemd.unified_cgroup_hierarchy=0' && echo 'yes' || echo 'no'
+      register: cgroup_final_check
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if cgroup setting is not active after reboot
+      fail:
+        msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is not active in kernel after reboot. Check /boot/firmware/cmdline.txt and ensure the setting is present."
+      when: reboot_needed | default(false) and cgroup_verify.stdout | default('no') == 'no'
+
+    - name: Fail if cgroup setting is not active (general check)
+      fail:
+        msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is not active in kernel. A reboot may be required."
+      when: not reboot_needed | default(false) and cgroup_final_check.stdout | default('no') == 'no'
+
+    # =========================================================================
+    # Install prerequisites
+    # =========================================================================
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - iptables
+        state: present
+        update_cache: true
+      when: not (k3s_already_installed | default(false))
+
+    # =========================================================================
+    # Install k3s worker
+    # =========================================================================
+    - name: Install k3s worker
+      shell: |
+        set -e
+        export INSTALL_K3S_VERSION="{{ k3s_version }}"
+        export K3S_TOKEN="{{ k3s_token }}"
+        export K3S_URL="{{ k3s_server_url }}"
+        curl -sfL https://get.k3s.io | sh -
+      args:
+        creates: /usr/local/bin/k3s
+      register: k3s_install
+      when: not (k3s_already_installed | default(false))
+
+    # =========================================================================
+    # Ensure k3s-agent service is running
+    # =========================================================================
+    - name: Check k3s-agent service status before starting
+      systemd:
+        name: k3s-agent
+      register: k3s_service_status_before
+      changed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Ensure k3s-agent service is started
+      systemd:
+        name: k3s-agent
+        state: started
+        enabled: true
+      register: k3s_service_start
+      when: k3s_check.rc == 0
+
+    - name: Wait for k3s-agent service to be active
+      systemd:
+        name: k3s-agent
+      register: k3s_service_wait
+      until: k3s_service_wait.status.ActiveState == 'active'
+      retries: 30
+      delay: 2
+      failed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Check k3s-agent logs if service failed to start
+      shell: sudo journalctl -u k3s-agent --no-pager -n 10 | tail -10
+      register: k3s_logs_check
+      changed_when: false
+      failed_when: false
+      when: k3s_check.rc == 0 and k3s_service_wait.status.ActiveState | default('') != 'active'
+
+    - name: Display k3s-agent logs if service failed
+      debug:
+        var: k3s_logs_check.stdout_lines
+      when: k3s_check.rc == 0 and k3s_service_wait.status.ActiveState | default('') != 'active'
+
+    - name: Wait for k3s to register with cluster
+      pause:
+        seconds: 10
+      when: k3s_install.changed | default(false)
+
+    # =========================================================================
+    # Completion message
+    # =========================================================================
+    - name: Display completion message
+      debug:
+        msg:
+          - "{{ '✅ k3s worker installation complete!' if not (k3s_already_installed | default(false)) else '✅ k3s worker is already installed and running' }}"
+          - ""
+          - "Worker node should now be registered with the cluster"
+          - ""
+          - "Verify on control plane:"
+          - "  export KUBECONFIG=~/.kube/config-eldertree"
+          - "  kubectl get nodes"
