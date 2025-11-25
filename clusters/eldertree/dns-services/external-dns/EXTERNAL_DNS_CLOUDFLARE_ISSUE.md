@@ -14,11 +14,17 @@ External-DNS v0.18.0 (Helm chart 1.18.0) had a bug where it checks for `CF_API_K
 
 ## Resolution
 
-**Fixed on:** 2024-11-24
+**Updated on:** 2025-11-25
+
+- ✅ Identified that `EXTERNAL_DNS_CLOUDFLARE_API_TOKEN` was incorrect; standard External-DNS image expects `CF_API_TOKEN`
+- ✅ Changed environment variable to `CF_API_TOKEN` in HelmRelease
+- ✅ Deployment should now pick up the token correctly
+
+**Fixed on:** 2024-11-24 (Partial)
 
 - ✅ Updated Helm chart to use latest version (removed version pin)
 - ✅ Removed suspend flag to enable deployment
-- ✅ Newer chart versions properly support `EXTERNAL_DNS_CLOUDFLARE_API_TOKEN`
+- ✅ Newer chart versions properly support `EXTERNAL_DNS_CLOUDFLARE_API_TOKEN` (Incorrect assumption)
 
 ## Current Status
 
