@@ -18,7 +18,9 @@ External-DNS v0.18.0 (Helm chart 1.18.0) had a bug where it checks for `CF_API_K
 
 - ✅ Identified that `EXTERNAL_DNS_CLOUDFLARE_API_TOKEN` was incorrect; standard External-DNS image expects `CF_API_TOKEN`
 - ✅ Changed environment variable to `CF_API_TOKEN` in HelmRelease
-- ✅ Deployment should now pick up the token correctly
+- ✅ Updated Vault with valid Cloudflare API Token
+- ✅ Manually patched deployment to `CF_API_TOKEN` (workaround for stalled Flux)
+- ✅ **Deployment is now healthy and syncing records**
 
 **Fixed on:** 2024-11-24 (Partial)
 
@@ -30,8 +32,9 @@ External-DNS v0.18.0 (Helm chart 1.18.0) had a bug where it checks for `CF_API_K
 
 - ✅ Cloudflare API token is valid and stored in Vault
 - ✅ Secret `external-dns-cloudflare-secret` exists and is synced
-- ✅ Environment variable `EXTERNAL_DNS_CLOUDFLARE_API_TOKEN` is configured correctly
-- ✅ **HelmRelease is active** - Using latest chart version that fixes API token authentication
+- ✅ Environment variable `CF_API_TOKEN` is configured correctly
+- ✅ **HelmRelease is active**
+- ✅ **Pod is Running** and logs show "All records are already up to date"
 
 ## Impact
 
