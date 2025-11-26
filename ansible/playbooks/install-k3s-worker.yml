@@ -4,9 +4,9 @@
   become: true
   vars:
     k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
-    k3s_token: "" # Required - node token from control plane
-    k3s_server_url: "{{ k3s_server_url | default('https://eldertree:6443') }}" # Control plane URL
-    k3s_server_ip: "{{ k3s_server_ip | default(eldertree_ip | default('192.168.2.83')) }}"
+    k3s_token: "{{ k3s_token | default('') }}" # Required - node token from control plane
+    k3s_server_url: "{{ k3s_server_url | default('https://node-0:6443') }}" # Control plane URL (use node-0 hostname)
+    k3s_server_ip: "{{ k3s_server_ip | default(node_0_ip | default('192.168.2.86')) }}"
     k3s_install_k9s: false # k9s not needed on worker nodes
 
   tasks:

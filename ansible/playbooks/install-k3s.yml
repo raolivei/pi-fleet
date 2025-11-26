@@ -5,7 +5,7 @@
   vars:
     k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
     k3s_token: "" # Auto-generated if empty
-    k3s_hostname: "eldertree" # Hostname for TLS SAN
+    k3s_hostname: "{{ node_hostname | default('node-0') }}" # Hostname for TLS SAN (use actual node hostname)
     kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig
     k3s_install_k9s: true # Install k9s CLI tool
 
@@ -77,7 +77,7 @@
       register: cmdline_updated
       when:
         - not cgroup_setting_exists | default(false)
-        - or not cgroup_memory_exists | default(false)
+        - not (cgroup_memory_exists | default(false))
         - or not cgroup_enable_exists | default(false)
 
     - name: Set fact for reboot needed (ONLY if cmdline.txt was changed)

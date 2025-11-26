@@ -50,17 +50,21 @@ pi-fleet/
 **CRITICAL Requirements for Raspberry Pi 5 NVMe Boot:**
 
 1. **ESP Flag Required**: Boot partition MUST have ESP (EFI System Partition) flag set:
+
    ```bash
    sudo parted /dev/nvme0n1 set 1 esp on
    ```
+
    The `setup-nvme-boot.yml` playbook handles this automatically.
 
 2. **Use rsync, NOT dd**: For cloning root partition, use `rsync` instead of `dd`:
+
    - `dd` causes filesystem size mismatch issues (source 63GB → destination 30GB)
    - `rsync` copies only actual files, not empty space
    - Example: `rsync -aAXHv --exclude={/dev/*,/proc/*,/sys/*,...} /mnt/sd-root/ /mnt/nvme-root/`
 
 3. **fstab PARTUUIDs**: After cloning, MUST update fstab to use NVMe PARTUUIDs:
+
    - Get PARTUUIDs: `sudo blkid /dev/nvme0n1p1 /dev/nvme0n1p2`
    - Update fstab: Replace SD card PARTUUIDs with NVMe PARTUUIDs
    - The playbook handles this automatically
@@ -74,12 +78,14 @@ pi-fleet/
 **CRITICAL**: Root account locks when switching boot devices. Always apply prevention:
 
 1. **Before Boot Device Switch**:
+
    - Unlock root: `sudo passwd -u root`
    - Set root password: `sudo passwd root` (use same password as user)
    - Disable PAM faillock for root: Comment out `pam_faillock.so` in `/etc/pam.d/common-auth`
    - Reset faillock: `sudo faillock --user root --reset`
 
 2. **In Cloned Filesystem** (before unmounting):
+
    - Apply all root lock prevention steps using `chroot`
    - The `setup-nvme-boot.yml` playbook handles this automatically
 
@@ -90,6 +96,7 @@ pi-fleet/
 ### Essential Packages
 
 Always install these packages via `setup-system.yml`:
+
 - `sshpass` - For password-based SSH automation
 - `btop` - Terminal monitoring (preferred over htop)
 - `curl`, `wget`, `git`, `vim`, `htop`, `tmux`
@@ -100,6 +107,7 @@ Always install these packages via `setup-system.yml`:
 ### SSH Key Automation
 
 **ALWAYS** use `setup-ssh-keys.yml` playbook for node-to-node SSH:
+
 - Automatically installs `sshpass`
 - Generates SSH keys if missing
 - Distributes public keys to all nodes
@@ -108,6 +116,7 @@ Always install these packages via `setup-system.yml`:
 ### Fresh OS Installation Procedure
 
 1. **Flash OS** using Raspberry Pi Imager:
+
    - OS: Debian Bookworm (64-bit) or Debian Trixie (64-bit)
    - Enable SSH
    - Username: `raolivei` (or `pi` for default)
@@ -116,6 +125,7 @@ Always install these packages via `setup-system.yml`:
 2. **Find IP**: Check router DHCP leases or scan network
 
 3. **Update Inventory**: Add to `ansible/inventory/hosts.yml`:
+
    ```yaml
    node-X:
      ansible_host: 192.168.2.XX
@@ -126,6 +136,7 @@ Always install these packages via `setup-system.yml`:
    ```
 
 4. **Run System Setup**:
+
    ```bash
    cd ansible
    ansible-playbook -i inventory/hosts.yml \
@@ -140,10 +151,12 @@ Always install these packages via `setup-system.yml`:
 ### Ansible Playbook Structure
 
 **Master Playbooks** (orchestrate multiple steps):
+
 - `setup-eldertree.yml` - Complete control plane setup
 - `setup-worker-node.yml` - Complete worker node setup
 
 **Component Playbooks** (used by master playbooks):
+
 - `setup-system.yml` - System configuration (user, hostname, network, packages)
 - `setup-ssh-keys.yml` - SSH key generation and distribution
 - `setup-nvme-boot.yml` - NVMe boot configuration
@@ -152,12 +165,14 @@ Always install these packages via `setup-system.yml`:
 - `setup-terminal-monitoring.yml` - Terminal tools (btop, etc.)
 
 **Recovery Playbooks**:
+
 - `fix-root-lock.yml` - Unlock root account
 - `fix-emergency-mode.yml` - Fix emergency mode and root lock
 
 ### Variables Centralization
 
 **ALWAYS** use variables from `group_vars/all.yml`:
+
 - Network config: `network_base`, `network_gateway`, `network_dns`
 - Node IPs: `node_0_ip`, `node_1_ip`, etc.
 - k3s config: `k3s_server_url`, `k3s_server_ip`
@@ -167,6 +182,7 @@ Always install these packages via `setup-system.yml`:
 ### Reboot Minimization
 
 **ALWAYS** minimize reboots:
+
 - Use `netplan apply` instead of reboot for network changes
 - Only reboot if `cmdline.txt` is actually modified (for cgroup settings)
 - Use service restarts instead of reboots when possible

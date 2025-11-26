@@ -10,9 +10,9 @@
   import_playbook: setup-system.yml
   vars:
     target_user: raolivei
-    hostname: eldertree
-    node_ip: "{{ eldertree_ip | default('192.168.2.83') }}"
-    node_hostname: eldertree
+    hostname: node-0  # Hostname is node-0, not eldertree
+    node_ip: "{{ node_0_ip | default('192.168.2.86') }}"
+    node_hostname: node-0  # Hostname is node-0, not eldertree
     backup_device: "/dev/sdb1"
 
 - name: Setup SSH Keys for Node-to-Node Communication
@@ -21,8 +21,9 @@
 - name: Install k3s
   import_playbook: install-k3s.yml
   vars:
-    k3s_hostname: "eldertree"
-    kubeconfig_path: "~/.kube/config-eldertree"
+    k3s_hostname: "node-0"  # Hostname for TLS SAN (use node hostname)
+    k3s_cluster_name: "eldertree"  # Cluster name (for reference, not used in k3s)
+    kubeconfig_path: "~/.kube/config-eldertree"  # kubeconfig filename uses cluster name
 
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml

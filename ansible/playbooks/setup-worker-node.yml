@@ -9,7 +9,7 @@
     target_user: raolivei
     node_hostname: "{{ hostname_var | default(node_hostname | default('eldertree-node-1')) }}"
     node_ip: "{{ static_ip_var | default(node_ip | default('')) }}" # Empty for DHCP
-    backup_device: "{{ backup_device_var | default('') }}"
+    backup_device: "{{ backup_device | default('') }}"
 
 - name: Setup SSH Keys for Node-to-Node Communication
   import_playbook: setup-ssh-keys.yml
@@ -22,9 +22,9 @@
 - name: Install k3s Worker
   import_playbook: install-k3s-worker.yml
   vars:
-    k3s_url: "https://eldertree:6443"
-    k3s_token: "{{ k3s_token | default('') }}" # Must be provided
-    k3s_node_name: "{{ hostname | default('eldertree-node-1') }}"
+    k3s_server_url: "https://node-0:6443"  # Use node-0 hostname, not eldertree
+    k3s_token: "{{ k3s_token_input | default(lookup('env', 'K3S_TOKEN') | default('')) }}" # Must be provided via -e k3s_token_input=... or K3S_TOKEN env var
+    k3s_node_name: "{{ node_hostname | default('node-1') }}"
 
 - name: Setup Summary
   hosts: localhost
