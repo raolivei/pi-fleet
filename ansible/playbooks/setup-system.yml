@@ -8,7 +8,11 @@
     # Use: ansible-playbook --ask-vault-pass or set env_target_password environment variable
     target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('CHANGE_ME')) }}"
     hostname: "{{ node_hostname | default(hostname | default('eldertree')) }}"
-    static_ip: "{{ node_ip | default(static_ip | default('')) }}" # Set to null if using DHCP
+    # Network Configuration - DHCP by default (SAFER)
+    # Router DHCP reservations are recommended - router assigns reserved IPs automatically
+    # To configure static IP (NOT recommended if router has reservations), you MUST pass: -e "configure_static_ip=true" AND -e "static_ip=192.168.2.86"
+    configure_static_ip_var: "{{ configure_static_ip | default(false) | bool }}" # MUST be explicitly set to true
+    static_ip: "{{ node_ip | default(static_ip | default('')) }}" # Set to null/empty to use DHCP (default, recommended with router reservations)
     static_netmask: "{{ network_netmask | default('255.255.255.0') }}"
     static_gateway: "{{ network_gateway | default('192.168.2.1') }}"
     static_dns: "{{ network_dns | default(['192.168.2.1', '8.8.8.8']) }}"
@@ -66,7 +70,7 @@
         state: present
       when: user_check.ansible_facts.getent_passwd[target_user] is not defined
 
-    - name: Update password for existing user {{ target_user }} (only if password provided)
+    - name: Update password for existing user {{ target_user }} (only if password explicitly provided)
       user:
         name: "{{ target_user }}"
         password: "{{ password_hash }}"
@@ -74,6 +78,7 @@
         - user_check.ansible_facts.getent_passwd[target_user] is defined
         - target_password != "CHANGE_ME"
         - target_password is defined
+        - vault_target_password is defined or lookup('env', 'env_target_password') | default('') != ''
 
     - name: Ensure user {{ target_user }} is in sudo group
       user:
@@ -114,16 +119,39 @@
         state: present
 
     # =========================================================================
-    # Network Configuration (Static IP - Optional)
+    # Network Configuration (Static IP - Optional, DISABLED BY DEFAULT)
     # =========================================================================
-    - name: Configure static IP (if specified)
+    # WARNING: Static IP configuration is DISABLED by default to prevent network breakage
+    # Only enable if you explicitly want static IP and understand the risks
+    # To enable: pass -e "configure_static_ip=true" AND -e "static_ip=192.168.2.86"
+    - name: Configure static IP (ONLY if explicitly requested)
       block:
         - name: Check if using Netplan (Ubuntu/Debian)
           stat:
             path: /etc/netplan
           register: netplan_dir
 
-        - name: Configure static IP with Netplan
+        - name: Backup existing netplan config
+          copy:
+            src: "{{ item }}"
+            dest: "{{ item }}.backup-{{ ansible_date_time.epoch }}"
+            remote_src: yes
+          loop: "{{ netplan_files.files | default([]) | map(attribute='path') | list }}"
+          when:
+            - netplan_dir.stat.exists
+            - netplan_files.files is defined
+          failed_when: false
+          changed_when: false
+
+        - name: Get existing netplan files
+          find:
+            paths: /etc/netplan
+            patterns: "*.yaml"
+          register: netplan_files
+          when: netplan_dir.stat.exists
+          changed_when: false
+
+        - name: Configure static IP with Netplan (ONLY if explicitly enabled)
           copy:
             dest: /etc/netplan/01-netcfg.yaml
             mode: "0600"
@@ -139,13 +167,38 @@
                     gateway4: {{ static_gateway }}
                     nameservers:
                       addresses: {{ static_dns }}
-          when: netplan_dir.stat.exists
+                  wlan0:
+                    dhcp4: yes
+                    optional: true
+          when:
+            - netplan_dir.stat.exists
+            - configure_static_ip_var | default(false) | bool
+            - static_ip is defined
+            - static_ip != ""
 
-        - name: Apply Netplan configuration
+        - name: Apply Netplan configuration (ONLY if static IP was configured)
           command: netplan apply
-          when: netplan_dir.stat.exists
+          when:
+            - netplan_dir.stat.exists
+            - configure_static_ip_var | default(false) | bool
+            - static_ip is defined
+            - static_ip != ""
 
-      when: static_ip is defined and static_ip != ""
+      when:
+        - configure_static_ip_var | default(false) | bool
+        - static_ip is defined
+        - static_ip != ""
+
+    - name: Warn if static IP was requested but not configured
+      debug:
+        msg:
+          - "⚠️  Static IP configuration was requested but not applied"
+          - "To enable static IP, you must pass: -e 'configure_static_ip=true' -e 'static_ip=192.168.2.86'"
+          - "Network will remain on DHCP (safer default, recommended with router reservations)"
+      when:
+        - static_ip is defined
+        - static_ip != ""
+        - not (configure_static_ip_var | default(false) | bool)
 
     # =========================================================================
     # Bluetooth Configuration
@@ -202,6 +255,35 @@
         - backup_device_var != ""
         - "'not_found' not in fstab_check.stdout"
         - "'nofail' not in fstab_check.stdout"
+
+    # =========================================================================
+    # Root Account Configuration (Prevent Lock on Boot Device Switch)
+    # =========================================================================
+    - name: Ensure root account is unlocked
+      command: passwd -u root
+      changed_when: false
+      failed_when: false
+
+    - name: Set root password if not set
+      user:
+        name: root
+        password: "{{ password_hash }}"
+        update_password: always
+      when: target_password != "CHANGE_ME" and target_password is defined
+      failed_when: false
+
+    - name: Configure PAM to not lock root on boot device changes
+      lineinfile:
+        path: /etc/pam.d/common-auth
+        regexp: '^auth\s+required\s+pam_faillock\.so'
+        line: "# auth required pam_faillock.so deny=5 unlock_time=900  # Disabled to prevent root lock on boot device switch"
+        backup: yes
+      failed_when: false
+
+    - name: Disable root account lockout in faillock
+      command: faillock --user root --reset
+      changed_when: false
+      failed_when: false
 
     # =========================================================================
     # SSH Configuration

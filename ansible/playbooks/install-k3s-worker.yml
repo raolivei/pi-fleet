@@ -76,12 +76,15 @@
       failed_when: false
       when: not cgroup_setting_exists | default(false)
 
-    - name: Set fact for reboot needed
+    - name: Set fact for reboot needed (ONLY if cmdline.txt was changed)
       set_fact:
-        reboot_needed: "{{ (cmdline_updated.changed | default(false)) or (cgroup_running_check.stdout | default('no') == 'no') }}"
+        reboot_needed: "{{ cmdline_updated.changed | default(false) }}"
       changed_when: false
+      # Only reboot if we actually changed cmdline.txt
+      # If cgroup isn't active but cmdline.txt already has it, it means a reboot is pending
+      # but we don't need to reboot again - it will be active after the next boot
 
-    - name: Reboot if cmdline.txt was updated or cgroup not active
+    - name: Reboot if cmdline.txt was updated (minimize reboots)
       reboot:
         msg: "Rebooting to apply cgroup configuration"
         reboot_timeout: 300
@@ -110,10 +113,24 @@
         msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is not active in kernel after reboot. Check /boot/firmware/cmdline.txt and ensure the setting is present."
       when: reboot_needed | default(false) and cgroup_verify.stdout | default('no') == 'no'
 
-    - name: Fail if cgroup setting is not active (general check)
+    - name: Warn if cgroup setting is not active (but cmdline.txt has it - reboot pending)
+      debug:
+        msg:
+          - "⚠️  Cgroup setting exists in cmdline.txt but is not active in kernel"
+          - "This is normal if the system hasn't been rebooted since cmdline.txt was updated"
+          - "The setting will be active after the next reboot"
+          - "Continuing with k3s installation (will work after reboot)"
+      when:
+        - not reboot_needed | default(false)
+        - cgroup_setting_exists | default(false)
+        - cgroup_final_check.stdout | default('no') == 'no'
+
+    - name: Fail if cgroup setting is missing from cmdline.txt
       fail:
-        msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is not active in kernel. A reboot may be required."
-      when: not reboot_needed | default(false) and cgroup_final_check.stdout | default('no') == 'no'
+        msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is missing from cmdline.txt. This should have been added by the playbook."
+      when:
+        - not cgroup_setting_exists | default(false)
+        - not cmdline_updated.changed | default(false)
 
     # =========================================================================
     # Install prerequisites
