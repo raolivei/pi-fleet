@@ -54,13 +54,15 @@ ssh raolivei@node-1.local "sudo mkdir -p /mnt/backup-nvme && sudo mount /dev/nvm
 **Recommended approach** - Use router DHCP reservations instead of static IP:
 
 1. Get eth0 MAC address:
+
    ```bash
    ssh raolivei@node-1.local "ip link show eth0 | grep ether"
    ```
 
 2. Configure router:
+
    - Login to router admin (192.168.2.1)
-   - Add DHCP reservation: MAC → 192.168.2.85
+   - Add DHCP reservation: MAC → 192.168.2.85 (or appropriate IP for the node)
 
 3. Verify:
    ```bash
@@ -73,7 +75,7 @@ ssh raolivei@node-1.local "sudo mkdir -p /mnt/backup-nvme && sudo mount /dev/nvm
 cd pi-fleet/ansible
 
 # Get k3s token from node-0
-K3S_TOKEN=$(ssh raolivei@192.168.2.83 "sudo cat /var/lib/rancher/k3s/server/node-token")
+K3S_TOKEN=$(ssh raolivei@192.168.2.86 "sudo cat /var/lib/rancher/k3s/server/node-token")
 
 # Install k3s worker
 ansible-playbook -i inventory/hosts.yml \
@@ -122,7 +124,7 @@ ansible-playbook -i inventory/hosts.yml \
   --ask-pass
 
 # Then get k3s token and install worker
-K3S_TOKEN=$(ssh raolivei@192.168.2.83 "sudo cat /var/lib/rancher/k3s/server/node-token")
+K3S_TOKEN=$(ssh raolivei@192.168.2.86 "sudo cat /var/lib/rancher/k3s/server/node-token")
 
 ansible-playbook -i inventory/hosts.yml \
   playbooks/install-k3s-worker.yml \
@@ -139,7 +141,7 @@ After setup, verify:
 - [ ] Hostname is correct: `node-1`
 - [ ] User `raolivei` exists
 - [ ] NVMe backup partition is mounted at `/mnt/backup-nvme`
-- [ ] eth0 gets correct IP (192.168.2.85) via DHCP
+- [ ] eth0 configured (if using isolated switch: 10.0.0.X/24, or via DHCP if connected to router)
 - [ ] Internet connectivity works
 - [ ] k3s worker joined cluster (if applicable)
 - [ ] Can ping node-0 from node-1
@@ -173,4 +175,3 @@ echo '/dev/nvme0n1p3 /mnt/backup-nvme ext4 defaults 0 2' | sudo tee -a /etc/fsta
 2. Check node-0 is accessible
 3. Check firewall rules
 4. Check k3s logs: `sudo journalctl -u k3s-agent -f`
-

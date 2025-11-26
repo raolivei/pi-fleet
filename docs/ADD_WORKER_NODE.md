@@ -100,7 +100,7 @@ Since both Pis are on the TP-Link SG105 switch, check which IPs are active:
 # Check which IPs respond to ping
 for ip in {1..254}; do
   ping -c 1 -W 1 192.168.2.$ip &>/dev/null && echo "192.168.2.$ip is up"
-done | grep -v "192.168.2.83"  # Exclude eldertree
+done | grep -v "192.168.2.86"  # Exclude eldertree (node-0)
 ```
 
 ## Step 3: Add Worker Node to Cluster
@@ -120,11 +120,11 @@ cd ~/WORKSPACE/raolivei/pi-fleet
 ### Example
 
 ```bash
-# If new Pi got IP 192.168.2.84 via DHCP
-./scripts/setup/add-worker-node.sh 192.168.2.84 fleet-worker-01
+# If new Pi got IP via DHCP (check router or use hostname)
+./scripts/setup/add-worker-node.sh <new-pi-ip> <hostname>
 
-# Or assign static IP 192.168.2.84
-./scripts/setup/add-worker-node.sh 192.168.2.84 fleet-worker-01 192.168.2.84
+# Example: If new Pi got IP 192.168.2.87 via DHCP
+./scripts/setup/add-worker-node.sh 192.168.2.87 node-2
 ```
 
 ### What the Script Does

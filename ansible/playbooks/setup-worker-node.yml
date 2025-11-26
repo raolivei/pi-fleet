@@ -11,6 +11,9 @@
     node_ip: "{{ static_ip_var | default(node_ip | default('')) }}" # Empty for DHCP
     backup_device: "{{ backup_device_var | default('') }}"
 
+- name: Setup SSH Keys for Node-to-Node Communication
+  import_playbook: setup-ssh-keys.yml
+
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml
   vars:

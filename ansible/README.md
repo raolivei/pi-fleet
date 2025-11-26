@@ -46,7 +46,7 @@ ansible/
 Network and cluster configuration is centralized in `group_vars/all.yml`:
 
 - **Network Configuration**: Base network, gateway, netmask, DNS
-- **Node IPs**: Sequential IP assignments (eldertree: .83, node-1: .84, node-2: .85, etc.)
+- **Node IPs**: Sequential IP assignments (eldertree: .86, node-1: .85, node-2: .87, etc.)
 - **k3s Configuration**: Server URL and IP
 
 All playbooks reference these variables instead of hardcoding values.
@@ -55,9 +55,9 @@ All playbooks reference these variables instead of hardcoding values.
 
 The inventory file (`inventory/hosts.yml`) defines the Raspberry Pi hosts with sequential IPs:
 
-- **eldertree**: Main cluster node (192.168.2.83)
-- **eldertree-node-1**: First worker node (192.168.2.84)
-- **eldertree-node-2**: Second worker node (192.168.2.85) - when added
+- **node-0 (eldertree)**: Main cluster node (192.168.2.86)
+- **node-1**: First worker node (192.168.2.85)
+- **node-2**: Second worker node (192.168.2.87) - when added
 
 ### Updating Inventory
 

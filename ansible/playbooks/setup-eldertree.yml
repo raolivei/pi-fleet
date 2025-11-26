@@ -15,6 +15,9 @@
     node_hostname: eldertree
     backup_device: "/dev/sdb1"
 
+- name: Setup SSH Keys for Node-to-Node Communication
+  import_playbook: setup-ssh-keys.yml
+
 - name: Install k3s
   import_playbook: install-k3s.yml
   vars:

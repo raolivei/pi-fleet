@@ -12,8 +12,8 @@
     static_netmask: "{{ network_netmask | default('255.255.255.0') }}"
     static_gateway: "{{ network_gateway | default('192.168.2.1') }}"
     static_dns: "{{ network_dns | default(['192.168.2.1', '8.8.8.8']) }}"
-    backup_device: "{{ backup_device | default('') }}"
-    backup_mount: "{{ backup_mount | default(backup_mount_default | default('/mnt/backup')) }}"
+    backup_device_var: "{{ backup_device | default('') }}"
+    backup_mount_path: "{{ backup_mount | default(backup_mount_default | default('/mnt/backup')) }}"
     password_hash: "{{ target_password | password_hash('sha512') }}"
 
   tasks:
@@ -30,6 +30,7 @@
           - git
           - vim
           - htop
+          - btop
           - iptables
           - ufw
           - bluez
@@ -39,6 +40,7 @@
           - sudo
           - rsync
           - tmux
+          - sshpass
         state: present
 
     # =========================================================================
@@ -64,11 +66,14 @@
         state: present
       when: user_check.ansible_facts.getent_passwd[target_user] is not defined
 
-    - name: Update password for existing user {{ target_user }}
+    - name: Update password for existing user {{ target_user }} (only if password provided)
       user:
         name: "{{ target_user }}"
         password: "{{ password_hash }}"
-      when: user_check.ansible_facts.getent_passwd[target_user] is defined
+      when:
+        - user_check.ansible_facts.getent_passwd[target_user] is defined
+        - target_password != "CHANGE_ME"
+        - target_password is defined
 
     - name: Ensure user {{ target_user }} is in sudo group
       user:
@@ -166,31 +171,37 @@
     # =========================================================================
     - name: Create backup mount directory
       file:
-        path: "{{ backup_mount }}"
+        path: "{{ backup_mount_path }}"
         state: directory
         mode: "0755"
 
     - name: Check if backup device exists in fstab
-      shell: grep "{{ backup_device }}" /etc/fstab || echo "not_found"
+      shell: grep "{{ backup_device_var }}" /etc/fstab || echo "not_found"
       register: fstab_check
       changed_when: false
       failed_when: false
+      when: backup_device_var != ""
 
     - name: Add backup mount to fstab with nofail option (if not exists)
       lineinfile:
         path: /etc/fstab
-        line: "{{ backup_device }} {{ backup_mount }} ext4 defaults,nofail 0 2"
+        line: "{{ backup_device_var }} {{ backup_mount_path }} ext4 defaults,nofail 0 2"
         state: present
         backup: yes
-      when: "'not_found' in fstab_check.stdout"
+      when:
+        - backup_device_var != ""
+        - "'not_found' in fstab_check.stdout"
 
     - name: Update existing fstab entry to include nofail
       replace:
         path: /etc/fstab
-        regexp: '^({{ backup_device }}[^\s]+)\s+([^\s]+)\s+(ext4)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
+        regexp: '^({{ backup_device_var }}[^\s]+)\s+([^\s]+)\s+(ext4)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
         replace: '\1 \2 \3 \4,nofail\5\6'
         backup: yes
-      when: "'not_found' not in fstab_check.stdout and 'nofail' not in fstab_check.stdout"
+      when:
+        - backup_device_var != ""
+        - "'not_found' not in fstab_check.stdout"
+        - "'nofail' not in fstab_check.stdout"
 
     # =========================================================================
     # SSH Configuration
@@ -277,7 +288,7 @@
           - "Password: [REDACTED]"
           - "Static IP: {{ static_ip if static_ip else 'DHCP' }}"
           - "Bluetooth: Enabled"
-          - "Backup mount: {{ backup_mount }} (nofail configured)"
+          - "Backup mount: {{ backup_mount_path }} (nofail configured)"
           - ""
           - "Next steps:"
           - "1. Install k3s: ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass"
