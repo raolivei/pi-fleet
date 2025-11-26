@@ -1,7 +1,7 @@
 ---
 - name: Complete System Setup for Eldertree Raspberry Pi
   hosts: raspberry_pi
-  become: yes
+  become: true
   vars:
     target_user: raolivei
     # Password should be set via Ansible Vault or environment variable
@@ -45,7 +45,68 @@
           - rsync
           - tmux
           - sshpass
+          - fuse
+          - libfuse3-dev
+          - bzip2
+          - libbz2-dev
+          - cmake
+          - build-essential
+          - libattr1-dev
+          - zlib1g-dev
         state: present
+
+    # =========================================================================
+    # APFS-FUSE Installation (for reading Mac APFS drives - read-only)
+    # =========================================================================
+    - name: Check if apfs-fuse is already built
+      stat:
+        path: /opt/apfs-fuse/build/apfs-fuse
+      register: apfs_fuse_binary
+      changed_when: false
+
+    - name: Create apfs-fuse directory
+      file:
+        path: /opt/apfs-fuse
+        state: directory
+        mode: "0755"
+      when: not apfs_fuse_binary.stat.exists
+
+    - name: Clone apfs-fuse repository
+      git:
+        repo: https://github.com/sgan81/apfs-fuse.git
+        dest: /opt/apfs-fuse
+        version: master
+        update: yes
+      when: not apfs_fuse_binary.stat.exists
+
+    - name: Initialize and update git submodules
+      command:
+        cmd: git submodule update --init --recursive
+        chdir: /opt/apfs-fuse
+      when: not apfs_fuse_binary.stat.exists
+
+    - name: Create build directory
+      file:
+        path: /opt/apfs-fuse/build
+        state: directory
+        mode: "0755"
+      when: not apfs_fuse_binary.stat.exists
+
+    - name: Build apfs-fuse
+      shell: |
+        cd /opt/apfs-fuse/build
+        cmake ..
+        make
+      args:
+        creates: /opt/apfs-fuse/build/apfs-fuse
+      when: not apfs_fuse_binary.stat.exists
+
+    - name: Create symlink for apfs-fuse in PATH
+      file:
+        src: /opt/apfs-fuse/build/apfs-fuse
+        dest: /usr/local/bin/apfs-fuse
+        state: link
+        mode: "0755"
 
     # =========================================================================
     # User Configuration
