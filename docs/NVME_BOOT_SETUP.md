@@ -5,6 +5,7 @@ Complete guide for configuring Raspberry Pi 5 to boot from NVMe SSD instead of S
 ## Overview
 
 Raspberry Pi 5 natively supports booting from NVMe drives. This guide shows how to:
+
 1. Clone your current OS from SD card to NVMe
 2. Configure the Pi to boot from NVMe
 3. Keep SD card as backup boot option
@@ -26,29 +27,39 @@ lsblk
 ```
 
 You should see:
+
 - `/dev/mmcblk0` - SD card (current boot device)
 - `/dev/nvme0n1` - NVMe SSD
 
-## Quick Setup (Automated)
+## Quick Setup (Automated) - Using Ansible
 
-Use the automated script to clone OS and configure boot:
+Use the Ansible playbook to clone OS and configure boot:
 
 ```bash
-# SSH to eldertree
-ssh raolivei@eldertree.local
-
-# Run setup script
-cd ~/WORKSPACE/raolivei/pi-fleet
-./scripts/storage/setup-nvme-boot.sh
+# From your Mac
+cd ~/WORKSPACE/raolivei/pi-fleet/ansible
+ansible-playbook playbooks/setup-nvme-boot.yml \
+  -e setup_nvme_boot=true \
+  -e clone_from_sd=true \
+  --ask-become-pass
 ```
 
-The script will:
-1. ✅ Check prerequisites
+Or use the convenience script:
+
+```bash
+cd ~/WORKSPACE/raolivei/pi-fleet
+./scripts/setup/setup-nvme-boot.sh
+```
+
+The playbook will:
+
+1. ✅ Check prerequisites (Pi 5, NVMe detected)
 2. ✅ Stop K3s (if running)
 3. ✅ Create partitions on NVMe (boot + root)
 4. ✅ Clone OS from SD card to NVMe
-5. ✅ Update boot configuration
-6. ✅ Configure fstab for NVMe partitions
+5. ✅ Resize filesystem to match partition
+6. ✅ Update boot configuration (fstab, cmdline.txt)
+7. ✅ Idempotent (skips if already booting from NVMe)
 
 **⚠️ WARNING**: This will erase all data on the NVMe device!
 
@@ -158,17 +169,20 @@ mount | grep "/boot/firmware"
 ### Pi won't boot from NVMe
 
 1. **Check NVMe is detected**:
+
    ```bash
    # Boot from SD card, then check:
    lsblk | grep nvme
    ```
 
 2. **Verify partitions exist**:
+
    ```bash
    sudo fdisk -l /dev/nvme0n1
    ```
 
 3. **Check boot partition has files**:
+
    ```bash
    sudo mount /dev/nvme0n1p1 /mnt
    ls /mnt
@@ -226,4 +240,3 @@ The SD card remains fully functional and can boot independently.
 - [NVMe Storage Setup](NVME_STORAGE_SETUP.md) - Using NVMe for K3s data and storage
 - [OS Installation Guide](OS_INSTALLATION_STEPS.md) - Fresh OS installation
 - [Cluster Setup](../README.md) - Complete cluster setup guide
-

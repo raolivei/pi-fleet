@@ -2,39 +2,52 @@
 
 ## Current Status
 
-✅ Script is ready on eldertree: `~/setup-nvme-boot.sh`
+✅ Ansible playbook is ready: `ansible/playbooks/setup-nvme-boot.yml`
 
-## What the Script Does
+## What the Playbook Does
 
-1. **Stops K3s** (temporarily)
-2. **Unmounts** current NVMe mount (`/mnt/nvme`)
-3. **Repartitions NVMe** (boot + root partitions)
-4. **Clones OS** from SD card to NVMe
-5. **Configures boot** to use NVMe
-6. **Restarts K3s**
+1. **Checks prerequisites** (Pi 5, NVMe detected)
+2. **Stops K3s** (temporarily, if running)
+3. **Unmounts** current NVMe mounts
+4. **Creates partitions** on NVMe (boot + root)
+5. **Clones OS** from SD card to NVMe
+6. **Resizes filesystem** to match partition
+7. **Configures boot** (fstab, cmdline.txt)
+8. **Restarts K3s** (if it was running)
 
 ## ⚠️ Important Notes
 
-- **This will erase all data on NVMe** (currently mounted at `/mnt/nvme`)
-- **Backup any important data** from `/mnt/nvme` first if needed
+- **This will erase all data on NVMe**
+- **Backup any important data** from NVMe first if needed
 - **SD card remains as backup** - if NVMe boot fails, Pi will boot from SD card
 - **Process takes 10-30 minutes** (depending on SD card speed)
+- **Idempotent** - safe to run multiple times (skips if already booting from NVMe)
 
 ## Run the Setup
 
-```bash
-# SSH to eldertree
-sshpass -p 'Control01!' ssh raolivei@eldertree.local
+From your Mac:
 
-# Run the script
-~/setup-nvme-boot.sh
+```bash
+cd ~/WORKSPACE/raolivei/pi-fleet/ansible
+ansible-playbook playbooks/setup-nvme-boot.yml \
+  -e setup_nvme_boot=true \
+  -e clone_from_sd=true \
+  --ask-become-pass
 ```
 
-The script will:
-- Ask for confirmation before proceeding
+Or use the convenience script:
+
+```bash
+cd ~/WORKSPACE/raolivei/pi-fleet
+./scripts/setup/setup-nvme-boot.sh
+```
+
+The playbook will:
+
+- Check prerequisites automatically
 - Show progress during cloning
 - Configure everything automatically
-- Prompt you to reboot at the end
+- Display completion message
 
 ## After Reboot
 
@@ -55,7 +68,7 @@ mount | grep "/boot/firmware"
 1. **Remove NVMe** (or it will try to boot from it)
 2. **Boot from SD card** (automatic fallback)
 3. **Check logs**: `sudo journalctl -b -1` (previous boot)
-4. **Re-run script** if needed
+4. **Re-run playbook** if needed
 
 ## Benefits
 
@@ -63,4 +76,3 @@ mount | grep "/boot/firmware"
 - ✅ **Much faster I/O** for K3s and databases
 - ✅ **Reduced SD card wear**
 - ✅ **SD card as backup** boot option
-

@@ -7,13 +7,13 @@
     # Password should be set via Ansible Vault or environment variable
     # Use: ansible-playbook --ask-vault-pass or set env_target_password environment variable
     target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('CHANGE_ME')) }}"
-    hostname: eldertree
-    static_ip: "192.168.2.83" # Set to null if using DHCP
-    static_netmask: "255.255.255.0"
-    static_gateway: "192.168.2.1"
-    static_dns: ["192.168.2.1", "8.8.8.8"]
-    backup_device: "/dev/sdb1"
-    backup_mount: "/mnt/backup"
+    hostname: "{{ node_hostname | default(hostname | default('eldertree')) }}"
+    static_ip: "{{ node_ip | default(static_ip | default('')) }}" # Set to null if using DHCP
+    static_netmask: "{{ network_netmask | default('255.255.255.0') }}"
+    static_gateway: "{{ network_gateway | default('192.168.2.1') }}"
+    static_dns: "{{ network_dns | default(['192.168.2.1', '8.8.8.8']) }}"
+    backup_device: "{{ backup_device | default('') }}"
+    backup_mount: "{{ backup_mount | default(backup_mount_default | default('/mnt/backup')) }}"
     password_hash: "{{ target_password | password_hash('sha512') }}"
 
   tasks:
@@ -121,6 +121,7 @@
         - name: Configure static IP with Netplan
           copy:
             dest: /etc/netplan/01-netcfg.yaml
+            mode: "0600"
             content: |
               network:
                 version: 2

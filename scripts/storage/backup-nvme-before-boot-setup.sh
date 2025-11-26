@@ -40,7 +40,12 @@ else
     exit 1
 fi
 
-BACKUP_LOCATION="$BACKUP_BASE/nvme-backup-$(date +%Y%m%d-%H%M%S)"
+# Allow user to specify backup location, or use default
+if [ -n "$1" ] && [ -d "$(dirname "$1")" ]; then
+    BACKUP_LOCATION="$1"
+else
+    BACKUP_LOCATION="$BACKUP_BASE/nvme-backup-$(date +%Y%m%d-%H%M%S)"
+fi
 
 echo ""
 echo -e "${BLUE}Backup Configuration:${NC}"

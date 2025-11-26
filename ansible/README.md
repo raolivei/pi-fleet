@@ -25,6 +25,8 @@ This directory contains Ansible playbooks and inventory for managing Raspberry P
 ```
 ansible/
 ├── ansible.cfg              # Ansible configuration
+├── group_vars/
+│   └── all.yml              # Network and cluster variables
 ├── inventory/
 │   └── hosts.yml            # Inventory file with host definitions
 ├── playbooks/
@@ -39,11 +41,23 @@ ansible/
 └── README.md                # This file
 ```
 
+## Variables
+
+Network and cluster configuration is centralized in `group_vars/all.yml`:
+
+- **Network Configuration**: Base network, gateway, netmask, DNS
+- **Node IPs**: Sequential IP assignments (eldertree: .83, node-1: .84, node-2: .85, etc.)
+- **k3s Configuration**: Server URL and IP
+
+All playbooks reference these variables instead of hardcoding values.
+
 ## Inventory
 
-The inventory file (`inventory/hosts.yml`) defines the Raspberry Pi hosts:
+The inventory file (`inventory/hosts.yml`) defines the Raspberry Pi hosts with sequential IPs:
 
 - **eldertree**: Main cluster node (192.168.2.83)
+- **eldertree-node-1**: First worker node (192.168.2.84)
+- **eldertree-node-2**: Second worker node (192.168.2.85) - when added
 
 ### Updating Inventory
 
@@ -102,6 +116,106 @@ static_ip: "192.168.2.83" # Set to null/empty for DHCP
 backup_device: "/dev/sdb1"
 backup_mount: "/mnt/backup"
 ```
+
+### Setup NVMe Boot (`playbooks/setup-nvme-boot.yml`)
+
+Configure Raspberry Pi 5 to boot from NVMe instead of SD card. This playbook clones the OS from SD card to NVMe and updates boot configuration.
+
+**Features**:
+
+- Checks prerequisites (Pi 5, NVMe detected)
+- Creates partitions on NVMe (boot + root)
+- Clones OS from SD card to NVMe
+- Resizes filesystem to match partition
+- Updates boot configuration (fstab, cmdline.txt)
+- Idempotent (skips if already booting from NVMe)
+
+**Usage**:
+
+```bash
+cd ansible
+ansible-playbook playbooks/setup-nvme-boot.yml \
+  -e setup_nvme_boot=true \
+  -e clone_from_sd=true \
+  --ask-become-pass
+```
+
+**Variables** (can be overridden):
+
+```yaml
+nvme_device: "/dev/nvme0n1"
+sd_card: "/dev/mmcblk0"
+setup_nvme_boot: true # Enable NVMe boot setup
+clone_from_sd: true # Clone from SD card (vs fresh install)
+```
+
+**⚠️ WARNING**: This will erase all data on NVMe!
+
+**Note**: This is typically a one-time operation. After setup, the Pi will boot from NVMe automatically.
+
+### Setup Worker Node (`playbooks/setup-worker-node.yml`)
+
+Complete setup playbook for new Raspberry Pi worker nodes. This orchestrates system configuration, terminal monitoring, and k3s worker installation.
+
+**Features**:
+
+- System configuration (user, hostname, network, packages)
+- Terminal monitoring tools (btop, neofetch, tmux)
+- k3s worker installation and cluster join
+- All configuration in Ansible (no manual steps)
+
+**Usage**:
+
+```bash
+cd ansible
+
+# Get k3s token from control plane
+K3S_TOKEN=$(ssh eldertree "sudo cat /var/lib/rancher/k3s/server/node-token")
+
+# Run setup for new worker node
+ansible-playbook playbooks/setup-worker-node.yml \
+  -i inventory/hosts.yml \
+  --limit <hostname> \
+  -e hostname_var=<hostname> \
+  -e static_ip_var=<ip-address> \
+  -e static_gateway_var=192.168.2.1 \
+  -e static_dns_var="['192.168.2.1', '8.8.8.8']" \
+  -e k3s_token=$K3S_TOKEN \
+  --ask-become-pass
+```
+
+**Example for third node**:
+
+```bash
+# Add to inventory/hosts.yml first:
+#   new-node:
+#     ansible_host: 192.168.2.86
+#     ansible_user: raolivei
+#     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+#     ansible_ssh_pass: "Control01!"
+
+K3S_TOKEN=$(sshpass -p 'Control01!' ssh raolivei@192.168.2.83 "sudo cat /var/lib/rancher/k3s/server/node-token")
+
+ansible-playbook playbooks/setup-worker-node.yml \
+  -i inventory/hosts.yml \
+  --limit new-node \
+  -e hostname_var=new-node \
+  -e static_ip_var=192.168.2.86 \
+  -e k3s_token=$K3S_TOKEN \
+  --ask-become-pass
+```
+
+**Variables** (can be overridden):
+
+```yaml
+hostname_var: "eldertree-node-1" # Hostname for the node
+static_ip_var: "192.168.2.85" # Static IP (empty for DHCP)
+static_gateway_var: "192.168.2.1" # Gateway
+static_dns_var: ["192.168.2.1", "8.8.8.8"] # DNS servers
+k3s_token: "" # Required - node token from control plane
+```
+
+**Note**: This playbook handles all configuration automatically. No manual steps required.
 
 ### Install k3s (`playbooks/install-k3s.yml`)
 

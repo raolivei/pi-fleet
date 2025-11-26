@@ -1,9 +1,0 @@
----
-all:
-  children:
-    raspberry_pi:
-      hosts:
-        eldertree:
-          ansible_host: eldertree.local
-          ansible_user: raolivei
-          ansible_ssh_common_args: "-o StrictHostKeyChecking=no"

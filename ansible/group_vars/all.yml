@@ -1,0 +1,34 @@
+---
+# Network Configuration Variables for Eldertree Cluster
+# These variables are used across all playbooks to avoid hardcoding
+
+# Network Base Configuration
+network_base: "192.168.2"
+network_gateway: "192.168.2.1"
+network_netmask: "255.255.255.0"
+network_dns:
+  - "192.168.2.1"
+  - "8.8.8.8"
+
+# Node IP Assignments (Sequential)
+# Control Plane
+node_0_ip: "192.168.2.86"
+eldertree_ip: "{{ node_0_ip }}"  # Legacy alias
+
+# Worker Nodes (Sequential)
+node_1_ip: "192.168.2.85"
+node_2_ip: "192.168.2.86"
+node_3_ip: "192.168.2.87"
+node_4_ip: "192.168.2.88"
+node_5_ip: "192.168.2.89"
+
+# Legacy aliases for backward compatibility
+eldertree_node_1_ip: "{{ node_1_ip }}"
+eldertree_node_2_ip: "{{ node_2_ip }}"
+
+# k3s Configuration
+k3s_server_url: "https://node-0:6443"
+k3s_server_ip: "{{ node_0_ip }}"
+
+# Backup Configuration
+backup_mount_default: "/mnt/backup"

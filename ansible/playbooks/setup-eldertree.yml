@@ -11,12 +11,9 @@
   vars:
     target_user: raolivei
     hostname: eldertree
-    static_ip: "192.168.2.83"
-    static_netmask: "255.255.255.0"
-    static_gateway: "192.168.2.1"
-    static_dns: ["192.168.2.1", "8.8.8.8"]
+    node_ip: "{{ eldertree_ip | default('192.168.2.83') }}"
+    node_hostname: eldertree
     backup_device: "/dev/sdb1"
-    backup_mount: "/mnt/backup"
 
 - name: Install k3s
   import_playbook: install-k3s.yml
@@ -28,6 +25,13 @@
   import_playbook: setup-terminal-monitoring.yml
   vars:
     target_user: raolivei
+
+# Optional: Setup boot from NVMe (uncomment to enable)
+# - name: Setup Boot from NVMe
+#   import_playbook: setup-nvme-boot.yml
+#   vars:
+#     setup_nvme_boot: true
+#     clone_from_sd: true
 
 - name: Display k3s Installation Note
   hosts: localhost
@@ -59,7 +63,7 @@
       set_fact:
         bootstrap_flux: "{{ bootstrap_flux | default(bootstrap_flux_default) | bool }}"
         kubeconfig_path: "{{ kubeconfig_path | default(kubeconfig_path_default) }}"
-    
+
     - name: Check if kubeconfig exists
       stat:
         path: "{{ kubeconfig_path | expanduser }}"

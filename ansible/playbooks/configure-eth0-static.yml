@@ -1,0 +1,131 @@
+---
+- name: Configure eth0 for Gigabit Switch (DHCP Mode - SAFE)
+  hosts: raspberry_pi
+  become: true
+  vars:
+    eth0_ip: "{{ node_ip | default(eth0_ip_var | default('')) }}"
+    # WARNING: This playbook is DISABLED - use router DHCP reservations instead
+    # Setting dhcp4: no on eth0 breaks network connectivity
+    # See docs/GIGABIT_NETWORK_SETUP.md for safe approach
+
+  tasks:
+    - name: Check if Netplan exists
+      stat:
+        path: /etc/netplan
+      register: netplan_dir
+      changed_when: false
+
+    - name: Check existing eth0 configuration
+      command: cat /etc/netplan/*.yaml 2>/dev/null | grep -A 10 eth0 || echo "No eth0 config"
+      register: existing_eth0
+      changed_when: false
+      failed_when: false
+
+    - name: Display existing eth0 config
+      debug:
+        var: existing_eth0.stdout
+      when: netplan_dir.stat.exists
+
+    - name: Backup existing netplan files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ item }}.backup-{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      loop:
+        - /etc/netplan/01-netcfg.yaml
+        - /etc/netplan/02-eth0-static.yaml
+      when:
+        - netplan_dir.stat.exists
+        - item | stat is succeeded
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Remove eth0 config from 01-netcfg.yaml if it exists
+      blockinfile:
+        path: /etc/netplan/01-netcfg.yaml
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - eth0 config removed"
+        block: |
+          # eth0 configuration moved to 02-eth0-static.yaml
+        state: absent
+      when:
+        - netplan_dir.stat.exists
+        - "'eth0:' in (lookup('file', '/etc/netplan/01-netcfg.yaml') | default(''))"
+      failed_when: false
+
+    - name: WARNING - Static IP configuration disabled
+      debug:
+        msg:
+          - "⚠️  WARNING: Static IP on eth0 with dhcp4: no BREAKS NETWORK"
+          - "✅ Use router DHCP reservations instead (see docs/GIGABIT_NETWORK_SETUP.md)"
+          - "This playbook will only ensure eth0 uses DHCP"
+      when: eth0_ip != ""
+
+    - name: Ensure eth0 uses DHCP (remove any static config)
+      file:
+        path: /etc/netplan/02-eth0-static.yaml
+        state: absent
+      when: netplan_dir.stat.exists
+
+    - name: Verify no eth0 static config exists
+      command: cat /etc/netplan/*.yaml 2>/dev/null | grep -A 5 "eth0:" || echo "No eth0 config"
+      register: eth0_config_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display eth0 configuration status
+      debug:
+        msg: "eth0 configuration: {{ 'Uses DHCP (safe)' if 'dhcp4: yes' in eth0_config_check.stdout else 'Check manually' }}"
+
+    - name: Apply Netplan configuration
+      command: netplan apply
+      when: netplan_dir.stat.exists and eth0_ip != ""
+
+    - name: Wait for network to stabilize
+      pause:
+        seconds: 5
+      when: netplan_dir.stat.exists and eth0_ip != ""
+
+    - name: Verify eth0 IP configuration
+      command: ip addr show eth0 | grep "inet "
+      register: eth0_ip_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display eth0 IP
+      debug:
+        var: eth0_ip_check.stdout
+      when: eth0_ip_check.rc == 0
+
+    - name: Verify default route is preserved
+      command: ip route show default
+      register: default_route
+      changed_when: false
+      failed_when: false
+
+    - name: Display default route (should still exist)
+      debug:
+        msg: "Default route: {{ default_route.stdout }}"
+      when: default_route.rc == 0
+
+    - name: Verify internet connectivity is preserved
+      command: ping -c 2 google.com
+      register: internet_test
+      changed_when: false
+      failed_when: false
+
+    - name: Display internet connectivity test
+      debug:
+        msg: "Internet connectivity: {{ 'OK' if internet_test.rc == 0 else 'FAILED' }}"
+      when: internet_test.rc is defined
+
+    - name: Test eth0 IP assignment
+      command: ip addr show eth0 | grep "inet {{ eth0_ip }}"
+      register: eth0_ip_check
+      changed_when: false
+      failed_when: false
+      when: eth0_ip != ""
+
+    - name: Display eth0 IP status
+      debug:
+        msg: "eth0 IP: {{ 'ASSIGNED' if eth0_ip_check.rc == 0 else 'NOT ASSIGNED' }}"
+      when: eth0_ip_check.rc is defined
