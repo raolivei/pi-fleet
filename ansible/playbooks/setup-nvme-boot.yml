@@ -242,36 +242,64 @@
       poll: 10
       register: clone_boot
 
-    - name: Wait for boot partition clone
+    - name: Wait for boot partition clone (if still running)
       async_status:
         jid: "{{ clone_boot.ansible_job_id }}"
       register: boot_clone_result
       until: boot_clone_result.finished
       retries: 60
       delay: 5
-      when: need_clone | bool
+      when:
+        - need_clone | bool
+        - clone_boot.ansible_job_id is defined
+        - clone_boot.finished is not defined or not clone_boot.finished
+      failed_when: false
+      ignore_errors: true
 
     - name: Sync after boot clone
       command: sync
       when: need_clone | bool
 
-    - name: Clone root partition from SD card
-      command: >
-        dd if={{ sd_card }}p2 of={{ nvme_device }}p2
-        bs=4M status=progress conv=fsync
+    - name: Mount SD root partition for cloning
+      mount:
+        path: /mnt/sd-root
+        src: "{{ sd_card }}p2"
+        fstype: ext4
+        state: mounted
       when: need_clone | bool
+
+    - name: Mount NVMe root partition for cloning
+      mount:
+        path: /mnt/nvme-root
+        src: "{{ nvme_device }}p2"
+        fstype: ext4
+        state: mounted
+      when: need_clone | bool
+
+    - name: Copy root partition files with rsync
+      shell: >
+        sudo rsync -aAXHv --info=progress2 --exclude={'/dev/*','/proc/*','/sys/*','/tmp/*','/run/*','/mnt/*','/media/*','/lost+found','/boot/*','/var/cache/*','/var/tmp/*','/var/log/*'} /mnt/sd-root/ /mnt/nvme-root/
+      args:
+        chdir: /
+      when: need_clone | bool
+      changed_when: true
       async: 7200
       poll: 30
       register: clone_root
 
-    - name: Wait for root partition clone
+    - name: Wait for root partition clone (if still running)
       async_status:
         jid: "{{ clone_root.ansible_job_id }}"
       register: root_clone_result
       until: root_clone_result.finished
       retries: 300
       delay: 30
-      when: need_clone | bool
+      when:
+        - need_clone | bool
+        - clone_root.ansible_job_id is defined
+        - clone_root.finished is not defined or not clone_root.finished
+      failed_when: false
+      ignore_errors: true
 
     - name: Sync after root clone
       command: sync
@@ -359,15 +387,46 @@
       changed_when: false
       failed_when: false
 
-    - name: Update cmdline.txt to boot from NVMe
+    - name: Get NVMe root partition PARTUUID
+      command: blkid -s PARTUUID -o value "{{ nvme_device }}p2"
+      register: nvme_root_partuuid
+      changed_when: false
+      when: cmdline_exists.stat.exists | default(false)
+
+    - name: Read current cmdline.txt content
+      slurp:
+        src: /mnt/nvme-boot/cmdline.txt
+      register: cmdline_content
+      when: cmdline_exists.stat.exists | default(false)
+
+    - name: Check if cmdline.txt has complete boot parameters
+      set_fact:
+        cmdline_is_complete: "{{ cmdline_content.content | b64decode | regex_search('console=.*root=') is not none }}"
+      when:
+        - cmdline_exists.stat.exists | default(false)
+        - cmdline_content.content is defined
+
+    - name: Update cmdline.txt to boot from NVMe (replace root parameter)
       replace:
         path: /mnt/nvme-boot/cmdline.txt
         regexp: "{{ item.regexp }}"
         replace: "{{ item.replace }}"
       loop:
-        - {regexp: "root={{ sd_card }}p2", replace: "root={{ nvme_device }}p2"}
-        - {regexp: "root=PARTUUID=[^ ]*", replace: "root={{ nvme_device }}p2"}
-      when: cmdline_exists.stat.exists | default(false)
+        - {regexp: "root={{ sd_card }}p2", replace: "root=PARTUUID={{ nvme_root_partuuid.stdout }}"}
+        - {regexp: "root=PARTUUID=[^ ]*", replace: "root=PARTUUID={{ nvme_root_partuuid.stdout }}"}
+        - {regexp: "root=/dev/nvme[^ ]*", replace: "root=PARTUUID={{ nvme_root_partuuid.stdout }}"}
+      when:
+        - cmdline_exists.stat.exists | default(false)
+        - cmdline_is_complete | default(true)
+
+    - name: Create complete cmdline.txt if incomplete
+      copy:
+        content: "console=serial0,115200 console=tty1 root=PARTUUID={{ nvme_root_partuuid.stdout }} rootfstype=ext4 fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles cfg80211.ieee80211_regdom=CA systemd.unified_cgroup_hierarchy=0 cgroup_memory=1 cgroup_enable=memory"
+        dest: /mnt/nvme-boot/cmdline.txt
+        mode: "0755"
+      when:
+        - cmdline_exists.stat.exists | default(false)
+        - not (cmdline_is_complete | default(true))
 
     - name: Verify cmdline.txt update
       command: grep "root=" /mnt/nvme-boot/cmdline.txt
@@ -434,6 +493,45 @@
               - "  - PAM faillock disabled"
               - "  - fstab entries updated with nofail"
               - "  - Ready for safe NVMe boot"
+
+    # =========================================================================
+    # Fix Hostname in Cloned Filesystem (if using another node's SD card)
+    # =========================================================================
+    - name: Get current hostname from inventory
+      set_fact:
+        target_hostname: "{{ node_hostname | default(ansible_hostname) }}"
+      changed_when: false
+
+    - name: Fix hostname in cloned filesystem
+      block:
+        - name: Update hostname in cloned filesystem
+          replace:
+            path: /mnt/nvme-root/etc/hostname
+            regexp: ".*"
+            replace: "{{ target_hostname }}"
+          when: target_hostname is defined and target_hostname != ""
+
+        - name: Update /etc/hosts in cloned filesystem
+          lineinfile:
+            path: /mnt/nvme-root/etc/hosts
+            regexp: '^127\.0\.1\.1.*'
+            line: "127.0.1.1 {{ target_hostname }}"
+            state: present
+          when: target_hostname is defined and target_hostname != ""
+
+        - name: Display hostname fix status
+          debug:
+            msg:
+              - "✅ Hostname updated in cloned filesystem"
+              - "  - Old hostname: node-0 (from SD card)"
+              - "  - New hostname: {{ target_hostname }}"
+      when: target_hostname is defined and target_hostname != ""
+
+    - name: Unmount SD root partition (if mounted for cloning)
+      mount:
+        path: /mnt/sd-root
+        state: unmounted
+      failed_when: false
 
     - name: Unmount NVMe partitions
       mount:
