@@ -22,7 +22,7 @@
 - name: Install k3s Worker
   import_playbook: install-k3s-worker.yml
   vars:
-    k3s_server_url: "https://node-0:6443"  # Use node-0 hostname, not eldertree
+    k3s_server_url: "https://node-0:6443" # Use node-0 hostname, not eldertree
     k3s_token: "{{ k3s_token_input | default(lookup('env', 'K3S_TOKEN') | default('')) }}" # Must be provided via -e k3s_token_input=... or K3S_TOKEN env var
     k3s_node_name: "{{ node_hostname | default('node-1') }}"
 

@@ -13,7 +13,7 @@ network_dns:
 # Node IP Assignments (Sequential)
 # Control Plane
 node_0_ip: "192.168.2.86"
-eldertree_ip: "{{ node_0_ip }}"  # Legacy alias
+eldertree_ip: "{{ node_0_ip }}" # Legacy alias
 
 # Worker Nodes (Sequential)
 node_1_ip: "192.168.2.85"
