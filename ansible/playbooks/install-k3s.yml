@@ -427,13 +427,13 @@
     # =========================================================================
     # Configure Firewall for K3s
     # =========================================================================
-    - name: Allow K3s API port 6443 from cluster nodes
+    - name: Allow K3s API port 6443 from local network (for Lens and kubectl access)
       ufw:
         rule: allow
         port: "6443"
         proto: tcp
         from: "{{ network_base }}.0/24"
-        comment: "K3s API server"
+        comment: "K3s API from local network"
       when: ansible_facts.ufw.status == "active"
       failed_when: false
 

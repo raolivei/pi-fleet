@@ -262,6 +262,101 @@
         - not (configure_static_ip_var | default(false) | bool)
 
     # =========================================================================
+    # Gigabit Network Configuration (eth0 - Isolated Switch)
+    # =========================================================================
+    # Configure eth0 for direct node-to-node communication via isolated gigabit switch
+    # Uses separate subnet (10.0.0.0/24) to avoid conflicts with router network
+    # SAFE: No gateway or DNS on eth0 - preserves wlan0 default route for internet
+    - name: Configure eth0 for gigabit network (isolated switch)
+      block:
+        - name: Check if using Netplan (Ubuntu/Debian)
+          stat:
+            path: /etc/netplan
+          register: netplan_dir
+          changed_when: false
+
+        - name: Check if eth0 interface exists
+          command: ip link show eth0
+          register: eth0_check
+          changed_when: false
+          failed_when: false
+
+        - name: Get gigabit network IP for this node
+          set_fact:
+            eth0_gigabit_ip: "{{ node_0_eth0_ip | default('10.0.0.1') if inventory_hostname == 'node-0' else (node_1_eth0_ip | default('10.0.0.2') if inventory_hostname == 'node-1' else '') }}"
+            eth0_netmask: "{{ gigabit_network_netmask | default('24') }}"
+          changed_when: false
+
+        - name: Check if eth0 already has gigabit IP configured
+          shell: ip addr show eth0 | grep "inet {{ eth0_gigabit_ip }}/" || echo "not_configured"
+          register: eth0_ip_check
+          changed_when: false
+          failed_when: false
+          when: eth0_gigabit_ip != ""
+
+        - name: Configure eth0 with static IP on isolated subnet (if not already configured)
+          copy:
+            dest: /etc/netplan/02-eth0-gigabit.yaml
+            mode: "0600"
+            content: |
+              network:
+                version: 2
+                renderer: networkd
+                ethernets:
+                  eth0:
+                    dhcp4: no
+                    addresses:
+                      - {{ eth0_gigabit_ip }}/{{ eth0_netmask }}
+                    # No gateway4 - wlan0 keeps default route for internet
+                    # No nameservers - system uses wlan0 DNS
+            backup: yes
+          when:
+            - netplan_dir.stat.exists
+            - eth0_check.rc == 0
+            - eth0_gigabit_ip != ""
+            - eth0_ip_check.stdout == "not_configured"
+
+        - name: Apply Netplan configuration for eth0 (if changed)
+          command: netplan apply
+          when:
+            - netplan_dir.stat.exists
+            - eth0_check.rc == 0
+            - eth0_gigabit_ip != ""
+            - eth0_ip_check.stdout == "not_configured"
+
+        - name: Wait for eth0 network to stabilize
+          pause:
+            seconds: 3
+          when:
+            - netplan_dir.stat.exists
+            - eth0_check.rc == 0
+            - eth0_gigabit_ip != ""
+            - eth0_ip_check.stdout == "not_configured"
+
+        - name: Verify eth0 IP assignment
+          shell: ip addr show eth0 | grep "inet {{ eth0_gigabit_ip }}/" || echo "not_found"
+          register: eth0_final_check
+          changed_when: false
+          failed_when: false
+          when:
+            - eth0_check.rc == 0
+            - eth0_gigabit_ip != ""
+
+        - name: Verify default route is still via wlan0 (internet preserved)
+          shell: ip route show default | grep wlan0 || echo "check_manually"
+          register: default_route_check
+          changed_when: false
+          failed_when: false
+
+        - name: Display gigabit network configuration status
+          debug:
+            msg:
+              - "Gigabit network (eth0): {{ 'CONFIGURED' if eth0_final_check.rc == 0 else 'NOT CONFIGURED' }}"
+              - "eth0 IP: {{ eth0_gigabit_ip if eth0_gigabit_ip != '' else 'N/A' }}"
+              - "Default route: {{ default_route_check.stdout }}"
+          when: eth0_check.rc == 0
+
+    # =========================================================================
     # Bluetooth Configuration
     # =========================================================================
     - name: Enable Bluetooth service
