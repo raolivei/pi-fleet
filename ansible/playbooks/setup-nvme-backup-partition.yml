@@ -6,7 +6,7 @@
     nvme_device: "/dev/nvme0n1"
     backup_partition_size: "{{ backup_partition_size | default('200G') }}"
     backup_mount_point: "/mnt/backup-nvme"
-    
+
   tasks:
     - name: Check if NVMe device exists
       stat:
@@ -89,4 +89,3 @@
           - "✅ Backup partition created on {{ nvme_device }}p3"
           - "Mount point: {{ backup_mount_point }}"
           - "Size: {{ backup_partition_size }}"
-
