@@ -27,6 +27,13 @@ spec:
         - name: api
           image: ghcr.io/raolivei/swimto-api:latest # {"$imagepolicy": "swimto:swimto-api-policy"}
           imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              if [ -d "/app/alembic" ]; then
+                alembic upgrade head || true
+              fi
+              uvicorn app.main:app --host 0.0.0.0 --port 8000
           ports:
             - containerPort: 8000
               name: http
