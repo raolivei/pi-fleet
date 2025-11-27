@@ -1,0 +1,126 @@
+---
+- name: Configure WireGuard VPN Server
+  hosts: raspberry_pi
+  become: true
+  vars:
+    target_user: raolivei
+    wireguard_interface: wg0
+    wireguard_port: 51820
+    wireguard_network: "10.8.0.0/24"
+    vpn_allowed_network: "10.8.0.0/24"
+
+  tasks:
+    # =========================================================================
+    # Detect Network Interface
+    # =========================================================================
+    - name: Detect primary network interface
+      shell: |
+        ip route | grep default | awk '{print $5}' | head -1
+      register: primary_interface
+      changed_when: false
+      failed_when: false
+
+    - name: Set default interface if detection fails
+      set_fact:
+        network_interface: "{{ primary_interface.stdout | default('wlan0') }}"
+
+    - name: Display detected network interface
+      debug:
+        msg: "Detected network interface: {{ network_interface }}"
+
+    # =========================================================================
+    # Update WireGuard Configuration
+    # =========================================================================
+    - name: Check if WireGuard is installed
+      command: which wg
+      register: wireguard_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Check if WireGuard config exists
+      stat:
+        path: /etc/wireguard/{{ wireguard_interface }}.conf
+      register: wireguard_config
+
+    - name: Update WireGuard config to use correct network interface
+      blockinfile:
+        path: /etc/wireguard/{{ wireguard_interface }}.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Network Interface"
+        block: |
+          # Network interface updated by Ansible
+          # Original interface detection: {{ network_interface }}
+        insertafter: "^\\[Interface\\]"
+        backup: yes
+      when: wireguard_config.stat.exists
+
+    - name: Fix PostUp/PostDown rules to use correct interface
+      replace:
+        path: /etc/wireguard/{{ wireguard_interface }}.conf
+        regexp: "PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o (eth0|wlan0) -j MASQUERADE"
+        replace: "PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ network_interface }} -j MASQUERADE"
+      when: wireguard_config.stat.exists
+
+    - name: Fix PostDown rules to use correct interface
+      replace:
+        path: /etc/wireguard/{{ wireguard_interface }}.conf
+        regexp: "PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o (eth0|wlan0) -j MASQUERADE"
+        replace: "PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ network_interface }} -j MASQUERADE"
+      when: wireguard_config.stat.exists
+
+    - name: Restart WireGuard if config was changed
+      systemd:
+        name: wg-quick@{{ wireguard_interface }}
+        state: restarted
+        enabled: yes
+      when: wireguard_config.stat.exists
+      register: wireguard_restarted
+
+    # =========================================================================
+    # Configure UFW Firewall Rules
+    # =========================================================================
+    - name: Check if UFW is installed
+      command: which ufw
+      register: ufw_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure UFW allows WireGuard VPN network
+      ufw:
+        rule: allow
+        from: "{{ vpn_allowed_network }}"
+        to: any
+        comment: "Allow WireGuard VPN network"
+      when: ufw_installed.rc == 0
+      register: ufw_vpn_rule
+
+    - name: Ensure UFW allows WireGuard port
+      ufw:
+        rule: allow
+        port: "{{ wireguard_port }}"
+        proto: udp
+        comment: "Allow WireGuard VPN port"
+      when: ufw_installed.rc == 0
+      register: ufw_port_rule
+
+    # =========================================================================
+    # Verify Configuration
+    # =========================================================================
+    - name: Verify WireGuard is running
+      command: systemctl is-active wg-quick@{{ wireguard_interface }}
+      register: wireguard_status
+      changed_when: false
+      failed_when: false
+      when: wireguard_config.stat.exists
+
+    - name: Display WireGuard status
+      debug:
+        msg:
+          - "=== WireGuard Configuration Summary ==="
+          - "Network Interface: {{ network_interface }}"
+          - "WireGuard Status: {{ 'Running' if wireguard_status.rc == 0 else 'Not running' }}"
+          - "UFW VPN Rule: {{ 'Added' if ufw_vpn_rule.changed else 'Already exists' }}"
+          - "UFW Port Rule: {{ 'Added' if ufw_port_rule.changed else 'Already exists' }}"
+          - ""
+          - "Configuration updated in: /etc/wireguard/{{ wireguard_interface }}.conf"
+          - "Restart WireGuard manually if needed: sudo systemctl restart wg-quick@{{ wireguard_interface }}"
+

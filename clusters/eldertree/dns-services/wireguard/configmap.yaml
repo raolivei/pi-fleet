@@ -74,8 +74,18 @@ data:
     SERVER_IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -1)
     SERVER_PORT=51820
 
+    # Detect primary network interface (wlan0, eth0, etc.)
+    NETWORK_INTERFACE=$(ip route | grep default | awk '{print $5}' | head -1)
+    if [ -z "$NETWORK_INTERFACE" ]; then
+        # Fallback: try to find first non-loopback interface
+        NETWORK_INTERFACE=$(ip -4 link show | grep -v lo | grep -oP '(?<=^\d+: )\w+' | head -1)
+    fi
+    # Default to wlan0 if still not found (common on Raspberry Pi)
+    NETWORK_INTERFACE=${NETWORK_INTERFACE:-wlan0}
+
     echo "🌐 Server IP: $SERVER_IP"
     echo "🔌 Server Port: $SERVER_PORT"
+    echo "📡 Network Interface: $NETWORK_INTERFACE"
 
     # Create WireGuard config
     cat > /etc/wireguard/wg0.conf <<EOF
@@ -83,8 +93,8 @@ data:
     Address = 10.8.0.1/24
     ListenPort = $SERVER_PORT
     PrivateKey = $PRIVATE_KEY
-    PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-    PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+    PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o $NETWORK_INTERFACE -j MASQUERADE
+    PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o $NETWORK_INTERFACE -j MASQUERADE
 
     EOF
 

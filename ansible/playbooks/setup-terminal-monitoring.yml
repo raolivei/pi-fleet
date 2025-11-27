@@ -168,6 +168,23 @@
         group: "{{ target_user }}"
         mode: "0755"
 
+    - name: Detect primary network interface
+      shell: |
+        ip route | grep default | awk '{print $5}' | head -1
+      register: primary_interface
+      changed_when: false
+      failed_when: false
+
+    - name: Configure btop to use primary network interface
+      lineinfile:
+        path: /home/{{ target_user }}/.config/btop/btop.conf
+        regexp: '^net_iface\s*='
+        line: 'net_iface = "{{ primary_interface.stdout | default("wlan0") }}"'
+        create: yes
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+      when: primary_interface.stdout is defined and primary_interface.stdout != ""
+
     # =========================================================================
     # Fix SSH Terminal Environment for btop
     # =========================================================================

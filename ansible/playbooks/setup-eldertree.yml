@@ -29,6 +29,16 @@
   vars:
     target_user: raolivei
 
+- name: Configure SSH Keys
+  import_playbook: configure-ssh-keys.yml
+  vars:
+    target_user: raolivei
+
+- name: Configure WireGuard VPN
+  import_playbook: configure-wireguard.yml
+  vars:
+    target_user: raolivei
+
 - name: Display k3s Installation Note
   hosts: localhost
   connection: local
