@@ -169,6 +169,91 @@
         mode: "0755"
 
     # =========================================================================
+    # Fix SSH Terminal Environment for btop
+    # =========================================================================
+    - name: Create .local/bin directory
+      file:
+        path: /home/{{ target_user }}/.local/bin
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0755"
+
+    - name: Create btop wrapper script to handle SSH terminal issues
+      copy:
+        dest: /home/{{ target_user }}/.local/bin/btop
+        content: |
+          #!/bin/bash
+          # Wrapper script for btop to fix SSH terminal issues
+          # Ensures proper TERM and terminal size detection
+
+          # Set TERM if not set or if it's a basic type
+          if [ -z "$TERM" ] || [ "$TERM" = "dumb" ] || [ "$TERM" = "unknown" ]; then
+              # Try to detect best terminal type
+              if [ -n "$SSH_CONNECTION" ]; then
+                  # Over SSH, prefer xterm-256color or screen-256color
+                  if [ -n "$TMUX" ]; then
+                      export TERM="screen-256color"
+                  else
+                      export TERM="xterm-256color"
+                  fi
+              else
+                  export TERM="xterm-256color"
+              fi
+          fi
+
+          # Ensure we have a TTY
+          if [ ! -t 0 ]; then
+              echo "Error: btop requires an interactive terminal (TTY)"
+              echo "Make sure you're running this over SSH with a proper terminal"
+              exit 1
+          fi
+
+          # Check terminal size
+          if [ -z "$COLUMNS" ] || [ -z "$LINES" ]; then
+              # Try to get terminal size
+              if command -v stty >/dev/null 2>&1; then
+                  export COLUMNS=$(stty size 2>/dev/null | awk '{print $2}')
+                  export LINES=$(stty size 2>/dev/null | awk '{print $1}')
+              fi
+          fi
+
+          # Run btop with proper environment
+          /usr/bin/btop "$@"
+        mode: "0755"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Ensure .local/bin is in PATH
+      lineinfile:
+        path: /home/{{ target_user }}/.bashrc
+        regexp: '^export PATH=.*\.local/bin'
+        line: 'export PATH="$HOME/.local/bin:$PATH"'
+        state: present
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+      check_mode: false
+
+    - name: Add TERM configuration to bashrc for SSH sessions
+      blockinfile:
+        path: /home/{{ target_user }}/.bashrc
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Terminal Environment"
+        block: |
+          # Fix TERM for SSH sessions (required for btop and other terminal apps)
+          if [ -n "$SSH_CONNECTION" ]; then
+              # Over SSH, ensure we have a proper TERM
+              if [ -z "$TERM" ] || [ "$TERM" = "dumb" ] || [ "$TERM" = "unknown" ]; then
+                  if [ -n "$TMUX" ]; then
+                      export TERM="screen-256color"
+                  else
+                      export TERM="xterm-256color"
+                  fi
+              fi
+          fi
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    # =========================================================================
     # Summary
     # =========================================================================
     - name: Check if neofetch is installed
@@ -185,10 +270,17 @@
           - "Neofetch: {{ 'Installed' if neofetch_check.rc == 0 else 'Not available' }}"
           - "System info script: ~/.system-info.sh"
           - "Login banner + auto-start btop: Configured in ~/.bashrc"
+          - "SSH terminal fixes: TERM environment configured, btop wrapper script created"
           - ""
           - "Usage:"
           - "  - Real-time monitor (btop) will auto-start on login"
           - "  - Press 'q' in btop to quit and return to shell"
           - "  - Run 'btop' manually anytime for monitoring"
+          - "  - The btop wrapper (~/.local/bin/btop) fixes SSH terminal issues"
           - "  - Run 'neofetch' for system info with ASCII art (if installed)"
           - "  - Run 'htop' for classic process monitor (already installed)"
+          - ""
+          - "Troubleshooting:"
+          - "  - If btop still fails over SSH, ensure your SSH client sends TERM"
+          - "  - Try: export TERM=xterm-256color before running btop"
+          - "  - The wrapper script automatically fixes TERM if needed"

@@ -1,7 +1,7 @@
 ---
 - name: Complete System Setup for Eldertree Raspberry Pi
   hosts: raspberry_pi
-  become: yes
+  become: true
   vars:
     target_user: raolivei
     # Password should be set via Ansible Vault or environment variable
@@ -200,7 +200,7 @@
         enabled: yes
         state: started
 
-    - name: Configure SSH (optional hardening)
+    - name: Configure SSH (optional hardening and terminal support)
       lineinfile:
         path: /etc/ssh/sshd_config
         regexp: "{{ item.regexp }}"
@@ -210,6 +210,7 @@
         - {regexp: "^#?PermitRootLogin", line: "PermitRootLogin no"}
         - {regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication yes"}
         - {regexp: "^#?PubkeyAuthentication", line: "PubkeyAuthentication yes"}
+        - {regexp: "^#?SendEnv", line: "SendEnv TERM"}
       notify: restart ssh
 
     # =========================================================================
