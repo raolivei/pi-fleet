@@ -4,7 +4,8 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
-  # clustersecretstore.yaml - Applied manually after External Secrets Operator is ready
-  # This avoids chicken-and-egg: ClusterSecretStore CRD must exist first
+  # clustersecretstore.yaml - Will be synced by Flux after External Secrets Operator is ready
+  # Note: This may fail initially if CRD doesn't exist, but Flux will retry
+  - clustersecretstore.yaml
   - externalsecrets/
 
