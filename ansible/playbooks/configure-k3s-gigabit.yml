@@ -1,0 +1,168 @@
+---
+- name: Configure k3s to use gigabit network
+  hosts: raspberry_pi
+  become: true
+  vars:
+    # Gigabit network IPs - adjust if different
+    node_0_gigabit_ip: "10.0.0.1"
+    node_1_gigabit_ip: "10.0.0.2"
+    gigabit_interface: "eth0"
+
+  tasks:
+    # =========================================================================
+    # Determine gigabit IP for this node
+    # =========================================================================
+    - name: Get gigabit IP for this node
+      set_fact:
+        node_gigabit_ip: "{{ node_0_gigabit_ip if inventory_hostname == 'node-0' or inventory_hostname == 'eldertree' else node_1_gigabit_ip }}"
+      changed_when: false
+
+    # =========================================================================
+    # Verify eth0 has gigabit IP configured
+    # =========================================================================
+    - name: Check if eth0 has gigabit IP
+      command: ip addr show eth0 | grep "inet {{ node_gigabit_ip }}/" || echo "not_configured"
+      register: eth0_ip_check
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if eth0 gigabit IP is not configured
+      fail:
+        msg: "eth0 does not have gigabit IP {{ node_gigabit_ip }} configured. Please run setup-system.yml playbook first to configure the gigabit network."
+      when: "'not_configured' in eth0_ip_check.stdout"
+
+    # =========================================================================
+    # Check current k3s service configuration
+    # =========================================================================
+    - name: Check if k3s service exists (control plane)
+      stat:
+        path: /etc/systemd/system/k3s.service
+      register: k3s_service_file
+      changed_when: false
+      failed_when: false
+
+    - name: Check if k3s-agent service exists (worker)
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service_file
+      changed_when: false
+      failed_when: false
+
+    - name: Determine service type
+      set_fact:
+        is_control_plane: "{{ k3s_service_file.stat.exists | default(false) }}"
+        is_worker: "{{ k3s_agent_service_file.stat.exists | default(false) }}"
+      changed_when: false
+
+    - name: Fail if k3s is not installed
+      fail:
+        msg: "k3s is not installed. Please install k3s first."
+      when: not is_control_plane and not is_worker
+
+    # =========================================================================
+    # Backup current service file
+    # =========================================================================
+    - name: Backup k3s service file
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.src }}.backup-{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      loop:
+        - {src: /etc/systemd/system/k3s.service}
+        - {src: /etc/systemd/system/k3s-agent.service}
+      when: item.src is defined
+      failed_when: false
+
+    # =========================================================================
+    # Update k3s service file (control plane)
+    # =========================================================================
+    - name: Check if node-ip already configured in k3s service
+      command: grep -q "node-ip={{ node_gigabit_ip }}" /etc/systemd/system/k3s.service || echo "not_configured"
+      register: k3s_node_ip_check
+      changed_when: false
+      failed_when: false
+      when: is_control_plane
+
+    - name: Update k3s service with gigabit network settings
+      lineinfile:
+        path: /etc/systemd/system/k3s.service
+        regexp: "^ExecStart=(.*)$"
+        line: 'ExecStart=\1 --node-ip={{ node_gigabit_ip }} --flannel-iface={{ gigabit_interface }}'
+        backrefs: yes
+        mode: "0644"
+      when:
+        - is_control_plane
+        - "'not_configured' in k3s_node_ip_check.stdout"
+
+    # =========================================================================
+    # Update k3s-agent service file (worker)
+    # =========================================================================
+    - name: Check if node-ip already configured in k3s-agent service
+      command: grep -q "node-ip={{ node_gigabit_ip }}" /etc/systemd/system/k3s-agent.service || echo "not_configured"
+      register: k3s_agent_node_ip_check
+      changed_when: false
+      failed_when: false
+      when: is_worker
+
+    - name: Update k3s-agent service with gigabit network settings
+      lineinfile:
+        path: /etc/systemd/system/k3s-agent.service
+        regexp: "^ExecStart=(.*)$"
+        line: 'ExecStart=\1 --node-ip={{ node_gigabit_ip }} --flannel-iface={{ gigabit_interface }}'
+        backrefs: yes
+        mode: "0644"
+      when:
+        - is_worker
+        - "'not_configured' in k3s_agent_node_ip_check.stdout"
+
+    # =========================================================================
+    # Reload systemd and restart k3s
+    # =========================================================================
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Restart k3s service (control plane)
+      systemd:
+        name: k3s
+        state: restarted
+      when: is_control_plane
+
+    - name: Restart k3s-agent service (worker)
+      systemd:
+        name: k3s-agent
+        state: restarted
+      when: is_worker
+
+    - name: Wait for k3s to be ready
+      command: k3s kubectl get nodes
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 30
+      delay: 5
+      failed_when: false
+      when: is_control_plane
+
+    # =========================================================================
+    # Verify configuration
+    # =========================================================================
+    - name: Display k3s nodes with new IPs
+      command: k3s kubectl get nodes -o wide
+      register: k3s_nodes
+      changed_when: false
+      failed_when: false
+      when: is_control_plane
+
+    - name: Show k3s nodes
+      debug:
+        var: k3s_nodes.stdout_lines
+      when: is_control_plane and k3s_nodes.rc == 0
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ k3s configured to use gigabit network"
+          - "Node IP: {{ node_gigabit_ip }}"
+          - "Interface: {{ gigabit_interface }}"
+          - ""
+          - "Verify with: kubectl get nodes -o wide"

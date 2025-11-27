@@ -30,10 +30,12 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
-              if [ -d "/app/alembic" ]; then
-                alembic upgrade head || true
+              # Check if alembic directory exists before running migrations
+              if [ -d "/app/alembic" ] && [ -f "/app/alembic.ini" ]; then
+                cd /app && alembic upgrade head >/dev/null 2>&1 || true
               fi
-              uvicorn app.main:app --host 0.0.0.0 --port 8000
+              # Start uvicorn server
+              exec uvicorn app.main:app --host 0.0.0.0 --port 8000
           ports:
             - containerPort: 8000
               name: http
