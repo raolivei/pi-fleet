@@ -1,28 +1,27 @@
 ---
-# Master playbook for Eldertree cluster setup
-# This playbook orchestrates:
+# Master playbook for Eldertree cluster control plane setup
+# This playbook orchestrates setup for node-0 (the control plane):
 # 1. System configuration (user, hostname, network, packages)
-# 2. k3s installation
+# 2. k3s control plane installation
 # 3. Terminal monitoring tools (btop, neofetch, tmux)
 # 4. FluxCD bootstrap (optional)
+#
+# Note: Run this on node-0 only. For worker nodes, use setup-all-nodes.yml + install-k3s-worker.yml
 
 - name: System Configuration
   import_playbook: setup-system.yml
   vars:
     target_user: raolivei
-    hostname: eldertree
-    static_ip: "192.168.2.83"
-    static_netmask: "255.255.255.0"
-    static_gateway: "192.168.2.1"
-    static_dns: ["192.168.2.1", "8.8.8.8"]
-    backup_device: "/dev/sdb1"
-    backup_mount: "/mnt/backup"
+    # Hostname defaults to inventory_hostname (node-0 for control plane)
+    # Can override per-node in inventory or via --limit with -e hostname=...
+    # static_ip defaults to empty (DHCP) - override for nodes that need static IP
+    # Example for node-0: -e hostname=node-0 -e static_ip=192.168.2.86
 
 - name: Install k3s
   import_playbook: install-k3s.yml
   vars:
-    k3s_hostname: "eldertree"
-    kubeconfig_path: "~/.kube/config-eldertree"
+    # k3s_hostname defaults to inventory_hostname (node-0)
+    kubeconfig_path: "~/.kube/config-eldertree" # eldertree is the cluster name
 
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml
@@ -69,7 +68,7 @@
       set_fact:
         bootstrap_flux: "{{ bootstrap_flux | default(bootstrap_flux_default) | bool }}"
         kubeconfig_path: "{{ kubeconfig_path | default(kubeconfig_path_default) }}"
-    
+
     - name: Check if kubeconfig exists
       stat:
         path: "{{ kubeconfig_path | expanduser }}"

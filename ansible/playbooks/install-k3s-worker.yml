@@ -5,7 +5,7 @@
   vars:
     k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
     k3s_token: "" # Required - node token from control plane
-    k3s_server_url: "https://eldertree:6443" # Control plane URL
+    k3s_server_url: "https://node-0:6443" # Control plane URL (node-0 is the control plane)
     k3s_install_k9s: false # k9s not needed on worker nodes
 
   tasks:

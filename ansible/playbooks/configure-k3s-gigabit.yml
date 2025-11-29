@@ -14,7 +14,7 @@
     # =========================================================================
     - name: Get gigabit IP for this node
       set_fact:
-        node_gigabit_ip: "{{ node_0_gigabit_ip if inventory_hostname == 'node-0' or inventory_hostname == 'eldertree' else node_1_gigabit_ip }}"
+        node_gigabit_ip: "{{ node_0_gigabit_ip if inventory_hostname == 'node-0' else node_1_gigabit_ip }}"
       changed_when: false
 
     # =========================================================================

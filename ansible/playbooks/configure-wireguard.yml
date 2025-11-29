@@ -123,4 +123,3 @@
           - ""
           - "Configuration updated in: /etc/wireguard/{{ wireguard_interface }}.conf"
           - "Restart WireGuard manually if needed: sudo systemctl restart wg-quick@{{ wireguard_interface }}"
-
