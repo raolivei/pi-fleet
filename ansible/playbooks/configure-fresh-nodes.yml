@@ -6,7 +6,7 @@
 
 - name: Configure Fresh Node Installations
   hosts: raspberry_pi
-  become: yes
+  become: true
   vars:
     poe_fan_temp0: 50000
     poe_fan_temp1: 60000
@@ -75,4 +75,3 @@
       systemd:
         name: systemd-hostnamed
         state: restarted
-
