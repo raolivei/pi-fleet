@@ -1,4 +1,15 @@
 ---
+# =============================================================================
+# CRITICAL: CONNECTIVITY SAFETY
+# =============================================================================
+# This playbook is designed to NEVER break connectivity to nodes.
+# All network, hostname, and firewall changes include:
+# - Pre-flight checks (gateway reachability, current IP connectivity)
+# - Validation before application (dry-run, syntax checks)
+# - Post-change verification (connectivity tests, IP verification)
+# - Automatic rollback instructions if something goes wrong
+# - Never modifies existing static network configurations
+# =============================================================================
 - name: Complete System Setup for Eldertree Raspberry Pi
   hosts: raspberry_pi
   become: true
@@ -7,31 +18,51 @@
     # Password should be set via Ansible Vault or environment variable
     # Use: ansible-playbook --ask-vault-pass or set env_target_password environment variable
     target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('CHANGE_ME')) }}"
-    # Defaults - can be overridden via -e variable=value
-    # Note: We use set_fact in pre_tasks to avoid recursion issues with defaults
-    backup_device_default: "/dev/sdb1"
-    backup_mount_default: "/mnt/backup"
-    static_netmask_default: "255.255.255.0"
-    static_gateway_default: "192.168.2.1"
-    static_dns_default: ["192.168.2.1", "8.8.8.8"]
+    # CRITICAL: Hostname MUST be FQDN (node-X.eldertree.local) - NEVER use just "eldertree"
+    # Default to inventory_hostname + '.eldertree.local' pattern
+    # Can be overridden via -e hostname=node-X.eldertree.local
+    hostname: "{{ hostname_override | default(inventory_hostname + '.eldertree.local') }}"
+    # Static IP configuration
+    # Pattern: node-0 = 192.168.2.80, node-1 = 192.168.2.81, node-2 = 192.168.2.82, etc.
+    # Set to empty string "" to use DHCP
+    static_ip: "{{ static_ip_override | default('') }}"
+    static_netmask: "255.255.255.0"
+    static_gateway: "192.168.2.1"
+    static_dns: ["192.168.2.1", "8.8.8.8"]
+    backup_device: "/dev/sdb1"
+    backup_mount: "/mnt/backup"
     password_hash: "{{ target_password | password_hash('sha512') }}"
 
   pre_tasks:
-    # Set variables with proper defaults to avoid recursion
-    # Full hostname with domain (e.g., node-0.eldertree.local)
-    - name: Set hostname (defaults to FQDN: inventory_hostname + '.eldertree.local')
-      set_fact:
-        target_hostname: "{{ hostname | default(inventory_hostname + '.eldertree.local') }}"
-        hostname_short: "{{ inventory_hostname }}"
+    # Handle generic "node-x" hostname from Raspberry Pi Imager SD cards
+    # Convert to proper node-X.eldertree.local based on inventory_hostname
+    # Example: If connecting to "node-1" in inventory and actual hostname is "node-x", convert to "node-1.eldertree.local"
+    # Example: If connecting to "node-2" in inventory and actual hostname is "node-x", convert to "node-2.eldertree.local"
+    - name: Detect generic node-x hostname from SD card
+      shell: hostname
+      register: current_hostname_raw
+      changed_when: false
 
-    - name: Set network variables with defaults
+    - name: Extract node number from inventory_hostname (e.g., "node-1" -> "1", "node-2" -> "2")
       set_fact:
-        static_ip: "{{ static_ip | default('') }}"
-        static_netmask: "{{ static_netmask | default(static_netmask_default) }}"
-        static_gateway: "{{ static_gateway | default(static_gateway_default) }}"
-        static_dns: "{{ static_dns | default(static_dns_default) }}"
-        backup_device: "{{ backup_device | default(backup_device_default) }}"
-        backup_mount: "{{ backup_mount | default(backup_mount_default) }}"
+        node_number: "{{ inventory_hostname | regex_replace('^node-', '') }}"
+      changed_when: false
+
+    - name: Set proper hostname if current is generic "node-x" (convert to node-X.eldertree.local based on inventory)
+      set_fact:
+        hostname: "{{ 'node-' + node_number + '.eldertree.local' }}"
+      when: current_hostname_raw.stdout == "node-x"
+
+    # CRITICAL: Validate hostname is FQDN format (node-X.eldertree.local)
+    # This prevents accidentally setting hostname to just "eldertree"
+    - name: Validate hostname format
+      fail:
+        msg: |
+          CRITICAL ERROR: Hostname must be in FQDN format (node-X.eldertree.local), not just "eldertree"!
+          Current hostname value: {{ hostname }}
+          This is a safety check to prevent cluster naming conflicts.
+          Use: -e hostname=node-0.eldertree.local (or let it default from inventory_hostname)
+      when: hostname == "eldertree" or (hostname is defined and hostname != "" and ".eldertree.local" not in hostname)
 
   tasks:
     - name: Update apt cache
@@ -69,23 +100,14 @@
       failed_when: false
       changed_when: false
 
-    - name: Create user {{ target_user }}
-      user:
-        name: "{{ target_user }}"
-        password: "{{ password_hash }}"
-        shell: /bin/bash
-        groups: sudo
-        append: yes
-        create_home: yes
-        home: /home/{{ target_user }}
-        state: present
+    - name: Fail if user does not exist (should be created via Raspberry Pi Imager)
+      fail:
+        msg: |
+          User {{ target_user }} does not exist. Please create it via Raspberry Pi Imager:
+          1. Use Raspberry Pi Imager to create SD card
+          2. Enable SSH and set username to {{ target_user }}
+          3. Configure SSH key in Imager settings
       when: user_check.ansible_facts.getent_passwd[target_user] is not defined
-
-    - name: Update password for existing user {{ target_user }}
-      user:
-        name: "{{ target_user }}"
-        password: "{{ password_hash }}"
-      when: user_check.ansible_facts.getent_passwd[target_user] is defined
 
     - name: Ensure user {{ target_user }} is in sudo group
       user:
@@ -114,22 +136,45 @@
     # =========================================================================
     # Hostname Configuration
     # =========================================================================
-    - name: Set full hostname (FQDN)
-      hostname:
-        name: "{{ target_hostname }}"
+    # CRITICAL: Always use FQDN format (node-X.eldertree.local)
+    # Short hostname is derived from inventory_hostname (node-0, node-1, etc.)
+    - name: Get current hostname
+      command: hostname
+      register: current_hostname_check
+      changed_when: false
 
-    - name: Update /etc/hostname with full hostname
+    - name: Set full hostname (FQDN) - only if different
+      hostname:
+        name: "{{ hostname }}"
+      when: current_hostname_check.stdout != hostname
+
+    - name: Read current /etc/hostname
+      slurp:
+        src: /etc/hostname
+      register: current_hostname_file
+      failed_when: false
+      changed_when: false
+
+    - name: Update /etc/hostname with full hostname - only if different
       copy:
         content: "{{ hostname }}\n"
         dest: /etc/hostname
         mode: "0644"
+      when: current_hostname_file.content | default('') | b64decode | trim != hostname
 
-    - name: Update /etc/hosts with full hostname and short name
+    - name: Read current /etc/hosts entry
+      shell: grep '^127\.0\.1\.1' /etc/hosts || echo ""
+      register: current_hosts_entry
+      changed_when: false
+      failed_when: false
+
+    - name: Update /etc/hosts with full hostname and short name - only if different
       lineinfile:
         path: /etc/hosts
         regexp: '^127\.0\.1\.1.*'
-        line: "127.0.1.1 {{ target_hostname }} {{ hostname_short }}"
+        line: "127.0.1.1 {{ hostname }} {{ inventory_hostname }}"
         state: present
+      when: current_hosts_entry.stdout != ("127.0.1.1 " + hostname + " " + inventory_hostname)
 
     - name: Ensure localhost entries exist
       lineinfile:
@@ -143,6 +188,12 @@
 
     # =========================================================================
     # Network Configuration (Static IP - Optional)
+    #
+    # Design: Resilient, Safe, Idempotent
+    # - Only configures DHCP → Static (never changes existing static configs)
+    # - Requires gateway reachability before making changes
+    # - Validates configuration before applying
+    # - Preserves working network configurations
     # =========================================================================
     - name: Configure static IP (if specified)
       block:
@@ -151,26 +202,173 @@
             path: /etc/netplan
           register: netplan_dir
 
-        - name: Configure static IP with Netplan
-          copy:
-            dest: /etc/netplan/01-netcfg.yaml
-            content: |
-              network:
-                version: 2
-                renderer: networkd
-                ethernets:
-                  eth0:
-                    dhcp4: no
-                    addresses:
-                      - {{ static_ip }}/24
-                    gateway4: {{ static_gateway }}
-                    nameservers:
-                      addresses: {{ static_dns }}
+        - name: Gather network state
+          block:
+            - name: Get current eth0 IP
+              shell: ip -4 addr show eth0 | grep -oP 'inet \K[\d.]+' || echo ""
+              register: current_ip
+              changed_when: false
+              failed_when: false
+
+            - name: Test gateway connectivity
+              shell: ping -c 1 -W 2 {{ static_gateway }} >/dev/null 2>&1 && echo "ok" || echo "fail"
+              register: gateway_reachable
+              changed_when: false
+              failed_when: false
+
+            - name: Test current IP connectivity (safety check)
+              shell: ping -c 1 -W 2 {{ current_ip.stdout }} >/dev/null 2>&1 && echo "ok" || echo "fail"
+              register: current_ip_reachable
+              changed_when: false
+              failed_when: false
+              when: current_ip.stdout != ""
+
+            - name: Detect network mode
+              shell: |
+                for file in /etc/netplan/*.yaml; do
+                  [ -f "$file" ] && grep -q "dhcp4:.*yes" "$file" && echo "dhcp" && exit 0
+                done
+                echo "static"
+              register: network_mode
+              changed_when: false
+              failed_when: false
+
           when: netplan_dir.stat.exists
 
-        - name: Apply Netplan configuration
-          command: netplan apply
+        - name: Display network state
+          debug:
+            msg:
+              - "Network: IP={{ current_ip.stdout | default('none') }}, Mode={{ network_mode.stdout | default('unknown') }}, Gateway={{ 'reachable' if gateway_reachable.stdout == 'ok' else 'unreachable' }}"
           when: netplan_dir.stat.exists
+
+        - name: Skip - Gateway unreachable
+          debug:
+            msg: "⚠️  Skipping - gateway unreachable (preserving connectivity)"
+          when:
+            - netplan_dir.stat.exists
+            - gateway_reachable.stdout != "ok"
+
+        - name: Skip - Current IP unreachable (safety check)
+          debug:
+            msg: "⚠️  Skipping - current IP unreachable (preserving connectivity)"
+          when:
+            - netplan_dir.stat.exists
+            - current_ip.stdout != ""
+            - current_ip_reachable.stdout != "ok"
+
+        - name: Skip - Already configured
+          debug:
+            msg: "✓ Already configured - IP: {{ current_ip.stdout }}"
+          when:
+            - netplan_dir.stat.exists
+            - gateway_reachable.stdout == "ok"
+            - current_ip.stdout == static_ip
+
+        - name: Skip - Already static
+          debug:
+            msg: "⚠️  Skipping - already using static IP (preserving working config)"
+          when:
+            - netplan_dir.stat.exists
+            - gateway_reachable.stdout == "ok"
+            - current_ip.stdout != static_ip
+            - network_mode.stdout == "static"
+
+        - name: Configure static IP (DHCP → Static) - SAFE MODE
+          block:
+            - name: Backup current Netplan configuration
+              shell: |
+                BACKUP_DIR="/root/netplan-backups"
+                mkdir -p "$BACKUP_DIR"
+                BACKUP_FILE="$BACKUP_DIR/netplan-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+                tar -czf "$BACKUP_FILE" /etc/netplan/*.yaml 2>/dev/null || true
+                echo "$BACKUP_FILE"
+              register: netplan_backup
+              changed_when: false
+
+            - name: Create Netplan configuration
+              copy:
+                dest: /etc/netplan/01-eth0-static.yaml
+                content: |
+                  network:
+                    version: 2
+                    renderer: networkd
+                    ethernets:
+                      eth0:
+                        dhcp4: no
+                        addresses:
+                          - {{ static_ip }}/24
+                        routes:
+                          - to: default
+                            via: {{ static_gateway }}
+                        nameservers:
+                          addresses: {{ static_dns }}
+                backup: yes
+                mode: "0600"
+
+            - name: Validate configuration (dry-run)
+              command: netplan generate
+              register: netplan_validate
+              changed_when: false
+              failed_when: netplan_validate.rc != 0
+
+            - name: Fail if validation failed
+              fail:
+                msg: "Netplan configuration validation failed! Configuration NOT applied. Check syntax. Backup: {{ netplan_backup.stdout }}"
+              when: netplan_validate.rc != 0
+
+            - name: Apply configuration
+              command: netplan apply
+              register: netplan_apply
+              when: netplan_validate.rc == 0
+
+            - name: Wait for network stabilization
+              pause:
+                seconds: 5
+              when: netplan_apply.changed | default(false)
+
+            - name: Verify new IP is assigned
+              shell: ip -4 addr show eth0 | grep -oP 'inet \K[\d.]+' || echo ""
+              register: new_ip
+              changed_when: false
+              failed_when: false
+              when: netplan_apply.changed | default(false)
+
+            - name: Verify new IP matches target
+              fail:
+                msg: "Network configuration failed! New IP ({{ new_ip.stdout }}) does not match target ({{ static_ip }}). Restore from backup: {{ netplan_backup.stdout }}"
+              when:
+                - netplan_apply.changed | default(false)
+                - new_ip.stdout != static_ip
+
+            - name: Test connectivity after network change
+              shell: |
+                # Test gateway
+                ping -c 1 -W 2 {{ static_gateway }} >/dev/null 2>&1 && echo "gateway_ok" || echo "gateway_fail"
+                # Test DNS
+                ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 && echo "dns_ok" || echo "dns_fail"
+              register: connectivity_test
+              changed_when: false
+              failed_when: false
+              when: netplan_apply.changed | default(false)
+
+            - name: Fail if connectivity lost
+              fail:
+                msg: "CRITICAL: Connectivity lost after network change! Gateway: {{ connectivity_test.stdout | regex_search('gateway_\\w+') }}, DNS: {{ connectivity_test.stdout | regex_search('dns_\\w+') }}. Restore from backup: {{ netplan_backup.stdout }}"
+              when:
+                - netplan_apply.changed | default(false)
+                - ('gateway_fail' in connectivity_test.stdout) or ('dns_fail' in connectivity_test.stdout)
+
+            - name: Display success
+              debug:
+                msg: "✅ Network configured safely: {{ new_ip.stdout }} (DHCP → Static). Connectivity verified."
+              when: netplan_apply.changed | default(false)
+
+          when:
+            - netplan_dir.stat.exists
+            - gateway_reachable.stdout == "ok"
+            - current_ip.stdout != static_ip
+            - network_mode.stdout == "dhcp"
+            - current_ip_reachable.stdout == "ok" or current_ip.stdout == ""
 
       when: static_ip is defined and static_ip != ""
 
@@ -226,6 +424,8 @@
 
     # =========================================================================
     # SSH Configuration
+    # Note: SSH keys are configured via Raspberry Pi Imager
+    # We only ensure SSH service is running and apply basic hardening
     # =========================================================================
     - name: Check SSH service name
       command: systemctl list-units --type=service | grep -E 'ssh|sshd' | head -1 | awk '{print $1}' | sed 's/\.service$//'
@@ -303,22 +503,47 @@
 
     # =========================================================================
     # Firewall Configuration
+    # CRITICAL: SSH must ALWAYS be allowed. All firewall changes ensure SSH access.
     # =========================================================================
     - name: Ensure UFW is installed
       apt:
         name: ufw
         state: present
 
-    - name: Reset UFW to defaults
-      ufw:
-        state: reset
-      when: false # Disabled by default - enable if needed
+    - name: Check current UFW status
+      shell: ufw status | head -1 || echo "inactive"
+      register: ufw_status
+      changed_when: false
+      failed_when: false
 
-    - name: Allow SSH through firewall
+    - name: Check if SSH is already allowed
+      shell: ufw status | grep -q "OpenSSH.*ALLOW" && echo "yes" || echo "no"
+      register: ssh_allowed
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure SSH is allowed BEFORE any firewall changes
       ufw:
         rule: allow
         name: OpenSSH
         state: enabled
+      when: ssh_allowed.stdout == "no"
+
+    - name: Verify SSH rule is active
+      shell: ufw status | grep -q "OpenSSH.*ALLOW" && echo "ok" || echo "fail"
+      register: ssh_verify
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if SSH is not allowed
+      fail:
+        msg: "CRITICAL: SSH is not allowed in firewall! This would break connectivity. Manual intervention required."
+      when: ssh_verify.stdout == "fail"
+
+    - name: Reset UFW to defaults (DISABLED - only enable if absolutely necessary)
+      ufw:
+        state: reset
+      when: false # Disabled by default - enable if needed (WARNING: This can break connectivity!)
 
     - name: Enable UFW (optional - disabled by default)
       ufw:
@@ -362,13 +587,13 @@
           - "=== System Configuration Complete ==="
           - "Hostname: {{ target_hostname }}"
           - "User: {{ target_user }}"
-          - "Password: [REDACTED]"
           - "Static IP: {{ static_ip if static_ip else 'DHCP' }}"
           - "Bluetooth: Enabled"
           - "Backup mount: {{ backup_mount }} (nofail configured)"
+          - "Diagnostic files: Cleaned up"
           - ""
           - "Next steps:"
-          - "1. Install k3s: ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass"
+          - "1. Install k3s: ansible-playbook playbooks/install-k3s.yml"
           - "2. Bootstrap FluxCD GitOps: ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true"
           - "3. Deploy applications"
 

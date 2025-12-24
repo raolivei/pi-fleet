@@ -1,0 +1,116 @@
+---
+# Rebuild eldertree cluster from scratch
+# This playbook:
+# 1. Sets up system on both nodes (node-0 and node-1)
+# 2. Installs k3s control plane on node-0
+# 3. Installs k3s worker on node-1
+#
+# Usage:
+#   ansible-playbook playbooks/rebuild-cluster.yml
+
+- name: System Setup on All Nodes
+  import_playbook: setup-system.yml
+  vars:
+    target_user: raolivei
+    # Static IP configuration:
+    # Pattern: node-0 = 192.168.2.80, node-1 = 192.168.2.81, node-2 = 192.168.2.82, etc.
+    # Formula: 192.168.2.80 + node_number
+    # Set to "" to use DHCP
+    static_ip_override: "{{ ('192.168.2.' + (80 + (inventory_hostname | regex_replace('node-', '') | int) | string)) if inventory_hostname | regex_search('^node-\\d+$') else '' }}"
+    backup_device: "/dev/sdb1"
+    backup_mount: "/mnt/backup"
+
+- name: Terminal Monitoring on All Nodes
+  import_playbook: setup-terminal-monitoring.yml
+  vars:
+    target_user: raolivei
+
+- name: Install k3s Control Plane (node-0)
+  import_playbook: install-k3s.yml
+  vars:
+    k3s_hostname: "node-0.eldertree.local" # Full FQDN for TLS SAN
+    kubeconfig_path: "~/.kube/config-eldertree"
+  when: inventory_hostname == "node-0"
+
+- name: Get k3s token from control plane
+  hosts: node-0
+  tasks:
+    - name: Get k3s node token
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_content
+      changed_when: false
+      failed_when: false
+
+    - name: Set k3s token fact for all hosts
+      set_fact:
+        k3s_node_token: "{{ k3s_token_content.content | b64decode }}"
+      changed_when: false
+      delegate_to: localhost
+      connection: local
+      become: false
+      delegate_facts: true
+
+- name: Install k3s Worker (node-1)
+  import_playbook: install-k3s-worker.yml
+  vars:
+    k3s_token: "{{ hostvars['node-0']['k3s_node_token'] | default(hostvars['localhost']['k3s_node_token'] | default('')) }}"
+    k3s_server_url: "https://node-0.eldertree.local:6443" # Full FQDN
+  when: inventory_hostname == "node-1"
+
+- name: Cluster Rebuild Summary and Cleanup
+  hosts: localhost
+  connection: local
+  become: false
+  tasks:
+    - name: Check kubeconfig exists
+      stat:
+        path: "~/.kube/config-eldertree"
+      register: kubeconfig_check
+      changed_when: false
+
+    - name: Cleanup diagnostic log files on localhost
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/cluster-setup-*.log"
+        - "/tmp/system-setup-*.log"
+        - "/tmp/cluster-rebuild-*.log"
+        - "/tmp/k3s-install-*.log"
+      failed_when: false
+      changed_when: false
+
+    - name: Remove old diagnostic logs (older than 7 days)
+      shell: |
+        find /tmp -name "*-setup-*.log" -type f -mtime +7 -delete 2>/dev/null || true
+        find /tmp -name "*-rebuild-*.log" -type f -mtime +7 -delete 2>/dev/null || true
+        find /tmp -name "*-install-*.log" -type f -mtime +7 -delete 2>/dev/null || true
+      failed_when: false
+      changed_when: false
+
+    - name: Display completion summary
+      debug:
+        msg:
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          - "✅ Cluster Rebuild Complete!"
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          - ""
+          - "System Setup: ✅ Complete on all nodes"
+          - "Terminal Monitoring: ✅ Installed (btop, tmux, neofetch)"
+          - "k3s Control Plane: ✅ Installed on node-0.eldertree.local"
+          - "k3s Worker: ✅ Installed on node-1.eldertree.local"
+          - "Diagnostic Files: ✅ Cleaned up"
+          - ""
+          - "Next steps:"
+          - "  1. Verify cluster: kubectl get nodes --kubeconfig=~/.kube/config-eldertree"
+          - "  2. Check pods: kubectl get pods -A --kubeconfig=~/.kube/config-eldertree"
+          - "  3. Bootstrap FluxCD: ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true"
+          - ""
+          - "Access nodes:"
+          - "  ssh raolivei@node-0        # Short name"
+          - "  ssh raolivei@node-0.eldertree.local  # Full FQDN"
+          - "  ssh raolivei@node-1        # Short name"
+          - "  ssh raolivei@node-1.eldertree.local  # Full FQDN"
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+

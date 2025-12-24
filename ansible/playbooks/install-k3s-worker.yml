@@ -165,6 +165,25 @@
         timeout: 300
       when: reboot_needed | default(false)
 
+    - name: Verify connectivity after reboot
+      block:
+        - name: Test SSH connectivity
+          command: echo "connectivity_test"
+          register: connectivity_test
+          changed_when: false
+
+        - name: Test network connectivity
+          shell: ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 && echo "ok" || echo "fail"
+          register: network_test
+          changed_when: false
+          failed_when: false
+
+        - name: Fail if connectivity lost after reboot
+          fail:
+            msg: "CRITICAL: Connectivity lost after reboot! Network test: {{ network_test.stdout }}. Check network configuration and SSH access."
+          when: network_test.stdout == "fail"
+      when: reboot_needed | default(false)
+
     - name: Verify cgroup setting is active after reboot
       shell: cat /proc/cmdline | grep -q 'systemd.unified_cgroup_hierarchy=0' && echo 'yes' || echo 'no'
       register: cgroup_verify
@@ -261,6 +280,17 @@
       when: k3s_install.changed | default(false)
 
     # =========================================================================
+    # Cleanup Diagnostic Files
+    # =========================================================================
+    - name: Remove Ansible backup files older than 7 days
+      shell: |
+        find /boot -name "*.bak.ansible-*" -type f -mtime +7 -delete 2>/dev/null || true
+        find /boot/firmware -name "*.bak.ansible-*" -type f -mtime +7 -delete 2>/dev/null || true
+        find /etc -name "*.bak.ansible-*" -type f -mtime +7 -delete 2>/dev/null || true
+      failed_when: false
+      changed_when: false
+
+    # =========================================================================
     # Completion message
     # =========================================================================
     - name: Display completion message
@@ -269,6 +299,7 @@
           - "{{ '✅ k3s worker installation complete!' if not (k3s_already_installed | default(false)) else '✅ k3s worker is already installed and running' }}"
           - ""
           - "Worker node should now be registered with the cluster"
+          - "Diagnostic files: Cleaned up"
           - ""
           - "Verify on control plane:"
           - "  export KUBECONFIG=~/.kube/config-eldertree"
