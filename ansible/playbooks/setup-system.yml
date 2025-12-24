@@ -346,7 +346,7 @@
                 msg: "CRITICAL: Connectivity lost after network change! Gateway: {{ connectivity_test.stdout | regex_search('gateway_\\w+') }}, DNS: {{ connectivity_test.stdout | regex_search('dns_\\w+') }}. Restore from backup: {{ netplan_backup.stdout }}"
               when:
                 - netplan_apply.changed | default(false)
-                - "gateway_fail" in connectivity_test.stdout or "dns_fail" in connectivity_test.stdout
+                - ('gateway_fail' in connectivity_test.stdout) or ('dns_fail' in connectivity_test.stdout)
 
             - name: Display success
               debug:
