@@ -14,7 +14,6 @@
   hosts: localhost
   connection: local
   gather_facts: false
-  become: false
   vars:
     node_0_ip: "192.168.2.86"
     node_1_ip: "192.168.2.85"
@@ -29,19 +28,27 @@
     - name: Configure DNS if not resolved
       become: true
       shell: |
+        # Detect OS for sed compatibility
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          SED_INPLACE="sed -i ''"
+        else
+          SED_INPLACE="sed -i"
+        fi
+        
         # Add node-0 with both full FQDN and short name
         if ! grep -q "node-0.eldertree.local" /etc/hosts 2>/dev/null; then
           echo "{{ node_0_ip }}  node-0.eldertree.local node-0" | tee -a /etc/hosts
         elif ! grep -qE "{{ node_0_ip }}.*node-0[^.]" /etc/hosts 2>/dev/null; then
-          # Update existing entry to include short name (macOS compatible sed)
-          sed -i '' "s|{{ node_0_ip }}.*node-0.eldertree.local|{{ node_0_ip }}  node-0.eldertree.local node-0|" /etc/hosts
+          # Update existing entry to include short name
+          $SED_INPLACE "s|{{ node_0_ip }}.*node-0.eldertree.local|{{ node_0_ip }}  node-0.eldertree.local node-0|" /etc/hosts
         fi
+        
         # Add node-1 with both full FQDN and short name
         if ! grep -q "node-1.eldertree.local" /etc/hosts 2>/dev/null; then
           echo "{{ node_1_ip }}  node-1.eldertree.local node-1" | tee -a /etc/hosts
         elif ! grep -qE "{{ node_1_ip }}.*node-1[^.]" /etc/hosts 2>/dev/null; then
-          # Update existing entry to include short name (macOS compatible sed)
-          sed -i '' "s|{{ node_1_ip }}.*node-1.eldertree.local|{{ node_1_ip }}  node-1.eldertree.local node-1|" /etc/hosts
+          # Update existing entry to include short name
+          $SED_INPLACE "s|{{ node_1_ip }}.*node-1.eldertree.local|{{ node_1_ip }}  node-1.eldertree.local node-1|" /etc/hosts
         fi
       register: dns_setup
       changed_when: "'not_resolved' in dns_resolve_check.stdout"
