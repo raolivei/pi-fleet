@@ -7,17 +7,31 @@
     # Password should be set via Ansible Vault or environment variable
     # Use: ansible-playbook --ask-vault-pass or set env_target_password environment variable
     target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('CHANGE_ME')) }}"
-    # Full hostname with domain (e.g., node-0.eldertree.local)
-    hostname: "{{ hostname_override | default(inventory_hostname + '.eldertree.local') }}"
-    # Short hostname (e.g., node-0)
-    hostname_short: "{{ inventory_hostname }}"
-    static_ip: "192.168.2.83" # Set to null if using DHCP
-    static_netmask: "255.255.255.0"
-    static_gateway: "192.168.2.1"
-    static_dns: ["192.168.2.1", "8.8.8.8"]
-    backup_device: "/dev/sdb1"
-    backup_mount: "/mnt/backup"
+    # Defaults - can be overridden via -e variable=value
+    # Note: We use set_fact in pre_tasks to avoid recursion issues with defaults
+    backup_device_default: "/dev/sdb1"
+    backup_mount_default: "/mnt/backup"
+    static_netmask_default: "255.255.255.0"
+    static_gateway_default: "192.168.2.1"
+    static_dns_default: ["192.168.2.1", "8.8.8.8"]
     password_hash: "{{ target_password | password_hash('sha512') }}"
+
+  pre_tasks:
+    # Set variables with proper defaults to avoid recursion
+    # Full hostname with domain (e.g., node-0.eldertree.local)
+    - name: Set hostname (defaults to FQDN: inventory_hostname + '.eldertree.local')
+      set_fact:
+        target_hostname: "{{ hostname | default(inventory_hostname + '.eldertree.local') }}"
+        hostname_short: "{{ inventory_hostname }}"
+
+    - name: Set network variables with defaults
+      set_fact:
+        static_ip: "{{ static_ip | default('') }}"
+        static_netmask: "{{ static_netmask | default(static_netmask_default) }}"
+        static_gateway: "{{ static_gateway | default(static_gateway_default) }}"
+        static_dns: "{{ static_dns | default(static_dns_default) }}"
+        backup_device: "{{ backup_device | default(backup_device_default) }}"
+        backup_mount: "{{ backup_mount | default(backup_mount_default) }}"
 
   tasks:
     - name: Update apt cache
@@ -102,7 +116,7 @@
     # =========================================================================
     - name: Set full hostname (FQDN)
       hostname:
-        name: "{{ hostname }}"
+        name: "{{ target_hostname }}"
 
     - name: Update /etc/hostname with full hostname
       copy:
@@ -114,7 +128,7 @@
       lineinfile:
         path: /etc/hosts
         regexp: '^127\.0\.1\.1.*'
-        line: "127.0.1.1 {{ hostname }} {{ hostname_short }}"
+        line: "127.0.1.1 {{ target_hostname }} {{ hostname_short }}"
         state: present
 
     - name: Ensure localhost entries exist
@@ -213,13 +227,29 @@
     # =========================================================================
     # SSH Configuration
     # =========================================================================
-    - name: Ensure SSH service is enabled and started
-      systemd:
-        name: ssh
-        enabled: yes
-        state: started
+    - name: Check SSH service name
+      command: systemctl list-units --type=service | grep -E 'ssh|sshd' | head -1 | awk '{print $1}' | sed 's/\.service$//'
+      register: ssh_service_name
+      changed_when: false
+      failed_when: false
 
-    - name: Configure SSH (optional hardening)
+    - name: Set SSH service name fact
+      set_fact:
+        ssh_service: "{{ ssh_service_name.stdout | default('ssh') }}"
+
+    - name: Ensure SSH service is enabled (don't restart - we're connected via SSH)
+      systemd:
+        name: "{{ ssh_service }}"
+        enabled: yes
+      ignore_errors: true
+
+    - name: Test SSH config syntax before making changes
+      command: sshd -t
+      changed_when: false
+      failed_when: false
+      register: ssh_config_test_before
+
+    - name: Configure SSH (optional hardening and terminal support)
       lineinfile:
         path: /etc/ssh/sshd_config
         regexp: "{{ item.regexp }}"
@@ -229,7 +259,47 @@
         - {regexp: "^#?PermitRootLogin", line: "PermitRootLogin no"}
         - {regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication yes"}
         - {regexp: "^#?PubkeyAuthentication", line: "PubkeyAuthentication yes"}
-      notify: restart ssh
+        # Note: SendEnv is a CLIENT option, not server. Removed from server config.
+        # To enable TERM forwarding, clients should use: SendEnv TERM in ~/.ssh/config
+      when: ssh_config_test_before.rc == 0
+
+    - name: Test SSH config syntax after changes
+      command: sshd -t
+      changed_when: false
+      register: ssh_config_test_after
+      failed_when: false # Don't fail - we'll check and restore if needed
+      when: ssh_config_test_before.rc == 0
+
+    - name: Restore SSH config if test failed after changes
+      shell: |
+        BACKUP=$(ls -t /etc/ssh/sshd_config*backup* 2>/dev/null | head -1)
+        if [ -n "$BACKUP" ] && [ -f "$BACKUP" ]; then
+          cp "$BACKUP" /etc/ssh/sshd_config
+          echo "Restored from $BACKUP"
+        fi
+      when:
+        - ssh_config_test_after.rc != 0
+        - ssh_config_test_before.rc == 0
+      register: ssh_restore_result
+      changed_when: ssh_restore_result.stdout != ""
+
+    - name: Final SSH config test
+      command: sshd -t
+      changed_when: false
+      register: ssh_config_final_test
+      failed_when: false
+      when: ssh_config_test_before.rc == 0
+
+    - name: Restart SSH service only if config is valid (async to avoid disconnection)
+      systemd:
+        name: "{{ ssh_service }}"
+        state: restarted
+      when:
+        - ssh_config_final_test.rc == 0
+        - ansible_connection == 'ssh'
+      async: 5
+      poll: 0 # Don't wait - just trigger restart in background
+      ignore_errors: true # Don't fail if restart fails (we might lose connection)
 
     # =========================================================================
     # Firewall Configuration
@@ -290,7 +360,7 @@
       debug:
         msg:
           - "=== System Configuration Complete ==="
-          - "Hostname: {{ hostname }}"
+          - "Hostname: {{ target_hostname }}"
           - "User: {{ target_user }}"
           - "Password: [REDACTED]"
           - "Static IP: {{ static_ip if static_ip else 'DHCP' }}"
@@ -305,5 +375,6 @@
   handlers:
     - name: restart ssh
       systemd:
-        name: sshd
+        name: "{{ 'ssh' if ansible_service_mgr == 'systemd' else 'sshd' }}"
         state: restarted
+      ignore_errors: true

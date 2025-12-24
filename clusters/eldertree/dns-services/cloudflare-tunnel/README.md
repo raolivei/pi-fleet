@@ -13,10 +13,20 @@ Cloudflare Tunnel provides secure, outbound-only connections from your cluster t
 ## Architecture
 
 - **Tunnel Creation**: Terraform (creates tunnel via Cloudflare API)
-- **Tunnel Connector**: Helm chart (`cloudflare-tunnel`) deployed via FluxCD
-- **Tunnel Configuration**: Helm chart values (GitOps-managed)
+- **Tunnel Connector**: Kubernetes Deployment deployed via FluxCD GitOps
+- **Tunnel Configuration**: Terraform (ingress rules via Cloudflare API)
 - **DNS Records**: External-DNS (automatic via ingress annotations)
 - **Secrets**: Vault + External Secrets Operator
+
+## IP-Based Network Configuration
+
+**Important**: This cluster uses IP addresses instead of DNS names (gigabit network configuration). The tunnel configuration is optimized for this:
+
+1. **Terraform uses ClusterIP directly** - Ingress rules use `http://10.43.81.2:80` instead of DNS names like `traefik.kube-system.svc.cluster.local`
+2. **DNS upstream configured** - The tunnel pod has `TUNNEL_DNS_UPSTREAM` set to use cluster DNS first (`10.43.0.10`), then public DNS fallback
+3. **No DNS dependency** - The tunnel can reach services even if Kubernetes service DNS is unavailable
+
+If the Traefik ClusterIP changes, update `pi-fleet/terraform/cloudflare.tf` with the new IP.
 
 ## Why Cloudflare Tunnel?
 

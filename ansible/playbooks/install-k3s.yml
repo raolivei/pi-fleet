@@ -7,7 +7,7 @@
     k3s_token: "" # Auto-generated if empty
     # Default to full FQDN (node-0.eldertree.local), but allow override
     k3s_hostname: "{{ k3s_hostname_override | default(inventory_hostname + '.eldertree.local') }}" # Hostname for TLS SAN
-    kubeconfig_path: "~/.kube/config-{{ inventory_hostname }}" # Local path to save kubeconfig
+    kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig (eldertree is cluster name)
     k3s_install_k9s: true # Install k9s CLI tool
 
   tasks:

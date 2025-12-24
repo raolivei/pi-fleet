@@ -30,9 +30,11 @@ ansible/
 ├── playbooks/
 │   ├── configure-user.yml              # User configuration playbook (legacy)
 │   ├── setup-system.yml                # Complete system setup playbook
+│   ├── setup-all-nodes.yml             # Master playbook for all nodes (system + monitoring + SSH)
 │   ├── install-k3s.yml                 # k3s cluster installation playbook
+│   ├── install-k3s-worker.yml         # k3s worker node installation playbook
 │   ├── bootstrap-flux.yml              # FluxCD GitOps bootstrap playbook
-│   ├── setup-eldertree.yml             # Master playbook (orchestrates all steps)
+│   ├── setup-eldertree.yml             # Master playbook for control plane (orchestrates all steps)
 │   ├── setup-terminal-monitoring.yml   # Terminal monitoring tools setup
 │   ├── configure-dns.yml               # DNS configuration (/etc/hosts)
 │   └── manage-secrets.yml              # Secret management in Vault
@@ -85,7 +87,7 @@ ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/setup-system.yml --limit eldertree --ask-pass --ask-become-pass
+ansible-playbook playbooks/setup-system.yml --limit node-0 --ask-pass --ask-become-pass
 ```
 
 **Dry run (check mode)**:
@@ -215,6 +217,48 @@ All variables from `setup-system.yml` plus:
 
 **Recommended**: Use the `setup-eldertree.sh` script instead, which properly orchestrates all steps.
 
+### Setup All Nodes (`playbooks/setup-all-nodes.yml`) - **Recommended for All Nodes**
+
+Master playbook that configures all nodes in the `raspberry_pi` group (node-0, node-1, eldertree, etc.) with:
+
+- System packages (htop, vim, curl, git, etc.)
+- Terminal monitoring tools (btop, tmux, neofetch)
+- SSH key configuration
+- User setup
+
+**Features**:
+
+- Works on all nodes automatically (uses `inventory_hostname` for hostname)
+- DHCP by default (can override with `static_ip` for specific nodes)
+- Idempotent (safe to run multiple times)
+
+**Usage**:
+
+```bash
+# Run on all nodes
+cd ansible
+ansible-playbook playbooks/setup-all-nodes.yml
+
+# Run on specific node(s)
+ansible-playbook playbooks/setup-all-nodes.yml --limit node-0
+ansible-playbook playbooks/setup-all-nodes.yml --limit node-0,node-1
+
+# Override hostname or static IP for specific node
+ansible-playbook playbooks/setup-all-nodes.yml --limit node-0 -e static_ip=192.168.2.86
+```
+
+**After installation**:
+
+- System info will automatically display when you SSH/login
+- Run `btop` for interactive system monitoring
+- Run `neofetch` for system info with ASCII art
+- All essential packages installed
+
+**Note**: k3s installation is separate:
+
+- Control plane: Use `install-k3s.yml` or `setup-eldertree.yml`
+- Worker nodes: Use `install-k3s-worker.yml` with k3s_token
+
 ### Setup Terminal Monitoring (`playbooks/setup-terminal-monitoring.yml`)
 
 Installs and configures terminal-based monitoring tools that display system information on login.
@@ -244,7 +288,7 @@ ansible-playbook playbooks/setup-terminal-monitoring.yml --ask-pass --ask-become
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/setup-terminal-monitoring.yml --limit eldertree --ask-pass --ask-become-pass
+ansible-playbook playbooks/setup-terminal-monitoring.yml --limit node-0 --ask-pass --ask-become-pass
 ```
 
 **After installation**:
@@ -335,7 +379,7 @@ ansible-playbook playbooks/configure-user.yml
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/configure-user.yml --limit eldertree
+ansible-playbook playbooks/configure-user.yml --limit node-0
 ```
 
 **Dry run (check mode)**:
@@ -448,6 +492,30 @@ The script is idempotent and can be run multiple times safely.
 
 If you prefer manual control:
 
+**For all nodes (node-0, node-1)**:
+
+```bash
+# 1. Setup all nodes (system packages, btop, SSH keys)
+cd ansible
+ansible-playbook playbooks/setup-all-nodes.yml
+
+# 2. Install k3s control plane (on node-0 only)
+ansible-playbook playbooks/install-k3s.yml --limit node-0
+
+# 3. Install k3s worker nodes (on node-1)
+# First get the token from control plane:
+# ssh raolivei@node-0 "sudo cat /var/lib/rancher/k3s/server/node-token"
+ansible-playbook playbooks/install-k3s-worker.yml \
+  --limit node-1 \
+  -e k3s_token=YOUR_TOKEN_HERE \
+  -e k3s_server_url=https://node-0:6443
+
+# 4. Bootstrap FluxCD (optional, on control plane)
+ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true
+```
+
+**For control plane only (node-0)**:
+
 ```bash
 # 1. System configuration
 cd ansible
@@ -487,8 +555,8 @@ ansible-playbook playbooks/configure-user.yml --check
 # Verbose output
 ansible-playbook playbooks/configure-user.yml -vv
 
-# Run only on eldertree
-ansible-playbook playbooks/configure-user.yml --limit eldertree
+# Run only on node-0
+ansible-playbook playbooks/configure-user.yml --limit node-0
 
 # Run with custom password
 ansible-playbook playbooks/configure-user.yml \
