@@ -46,6 +46,11 @@
 
 ### Added
 
+- Standard repository configuration following workspace conventions:
+  - `VERSION` file for tracking project version (1.3.0)
+  - `github/branch-protection-config.json` with Terraform workflow status check
+  - `github/setup-branch-protection.sh` script for enabling branch protection
+  - `.github/workflows/README.md` documenting Terraform workflow and versioning strategy
 - External Secrets Operator for automatic Vault to Kubernetes secret syncing
 - Ansible Vault template (`ansible/group_vars/raspberry_pi/vault.yml.example`)
 - Security fix summary documentation (`SECURITY_FIX_SUMMARY.md`)
