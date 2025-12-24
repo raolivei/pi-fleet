@@ -5,8 +5,9 @@
   vars:
     k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
     k3s_token: "" # Auto-generated if empty
-    k3s_hostname: "eldertree" # Hostname for TLS SAN
-    kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig
+    # Hostname defaults to inventory_hostname (node-0 for control plane)
+    k3s_hostname: "{{ k3s_hostname | default(inventory_hostname) }}"
+    kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig (eldertree is cluster name)
     k3s_install_k9s: true # Install k9s CLI tool
 
   tasks:
