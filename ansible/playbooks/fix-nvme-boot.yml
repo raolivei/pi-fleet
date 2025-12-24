@@ -1,0 +1,121 @@
+---
+# Fix NVMe boot configuration on Raspberry Pi nodes
+# This fixes cmdline.txt on NVMe boot partition to boot from NVMe instead of SD card
+
+- name: Fix NVMe Boot Configuration
+  hosts: raspberry_pi
+  become: true
+  tasks:
+    - name: Remount root filesystem as read-write (if read-only)
+      shell: |
+        if mount | grep -q "on / type.*ro,"; then
+          mount -o remount,rw /
+          echo "Remounted root as read-write"
+        else
+          echo "Root already read-write"
+        fi
+      register: remount_result
+      changed_when: "'Remounted' in remount_result.stdout"
+
+    - name: Create mount point for NVMe boot partition
+      file:
+        path: /mnt/nvme-boot
+        state: directory
+        mode: "0755"
+
+    - name: Mount NVMe boot partition (using shell to avoid fstab write)
+      shell: |
+        if ! mountpoint -q /mnt/nvme-boot; then
+          mount /dev/nvme0n1p1 /mnt/nvme-boot
+          echo "mounted"
+        else
+          echo "already_mounted"
+        fi
+      register: nvme_mount
+      changed_when: "'mounted' in nvme_mount.stdout"
+
+    - name: Get current kernel cmdline (for reference)
+      shell: cat /proc/cmdline
+      register: kernel_cmdline
+      changed_when: false
+
+    - name: Backup current NVMe cmdline.txt
+      copy:
+        src: /mnt/nvme-boot/cmdline.txt
+        dest: /mnt/nvme-boot/cmdline.txt.bak.$(date +%Y%m%d-%H%M%S)
+        remote_src: yes
+        mode: '0644'
+      changed_when: false
+
+    - name: Read current NVMe cmdline.txt
+      slurp:
+        src: /mnt/nvme-boot/cmdline.txt
+      register: nvme_cmdline
+      changed_when: false
+
+    - name: Build correct cmdline.txt for NVMe boot
+      shell: |
+        # Get kernel cmdline (has all the hardware params)
+        KERNEL_CMDLINE=$(cat /proc/cmdline)
+        
+        # Remove root parameter (we'll add correct one)
+        CMDLINE=$(echo "$KERNEL_CMDLINE" | sed 's/root=[^ ]*//g')
+        
+        # Remove cgroup params (we'll add correct one)
+        CMDLINE=$(echo "$CMDLINE" | sed 's/cgroup_[^ ]*//g' | sed 's/systemd\.unified_cgroup_hierarchy=[^ ]*//g')
+        
+        # Clean up spaces
+        CMDLINE=$(echo "$CMDLINE" | sed 's/  */ /g' | sed 's/^ //' | sed 's/ $//')
+        
+        # Add correct root parameter for NVMe
+        CMDLINE="$CMDLINE root=/dev/nvme0n1p2 rootfstype=ext4 rootwait rootdelay=5"
+        
+        # Add cgroup parameters
+        CMDLINE="$CMDLINE cgroup_memory=1 cgroup_enable=memory systemd.unified_cgroup_hierarchy=0"
+        
+        # Clean up again
+        CMDLINE=$(echo "$CMDLINE" | sed 's/  */ /g' | sed 's/^ //' | sed 's/ $//')
+        
+        # Write to NVMe boot partition
+        echo "$CMDLINE" > /mnt/nvme-boot/cmdline.txt
+        
+        # Verify
+        if ! grep -q "root=/dev/nvme0n1p2" /mnt/nvme-boot/cmdline.txt; then
+          echo "ERROR: Failed to set root parameter!" >&2
+          exit 1
+        fi
+        
+        echo "SUCCESS: cmdline.txt updated"
+        cat /mnt/nvme-boot/cmdline.txt
+      register: fix_result
+
+    - name: Display fixed cmdline.txt
+      debug:
+        msg:
+          - "✅ NVMe boot configuration fixed"
+          - "cmdline.txt content:"
+          - "{{ fix_result.stdout_lines | select('match', '.*') | list | join('\n') }}"
+
+    - name: Unmount NVMe boot partition
+      shell: |
+        if mountpoint -q /mnt/nvme-boot; then
+          umount /mnt/nvme-boot
+          echo "unmounted"
+        else
+          echo "not_mounted"
+        fi
+      register: unmount_result
+      changed_when: "'unmounted' in unmount_result.stdout"
+      when: nvme_mount.changed | default(false)
+
+    - name: Display next steps
+      debug:
+        msg:
+          - "✅ NVMe boot configuration fixed!"
+          - ""
+          - "Next steps:"
+          - "  1. Remove SD card (or it will boot from SD in preference)"
+          - "  2. Reboot: sudo reboot"
+          - "  3. System should boot from NVMe (/dev/nvme0n1p2)"
+          - "  4. Verify: df -h / (should show /dev/nvme0n1p2)"
+

@@ -6,24 +6,32 @@
 
 - name: Configure Fresh Node Installations
   hosts: raspberry_pi
-  become: yes
+  become: true
   vars:
     poe_fan_temp0: 50000
     poe_fan_temp1: 60000
     poe_fan_temp2: 70000
     poe_fan_temp3: 80000
 
+  vars:
+    hostname: "{{ inventory_hostname }}.eldertree.local"
+    hostname_short: "{{ inventory_hostname }}"
   tasks:
-    - name: Set hostname
+    - name: Set full hostname (FQDN)
       hostname:
-        name: "{{ inventory_hostname_short }}"
-      notify: restart hostname
+        name: "{{ hostname }}"
 
-    - name: Update /etc/hosts
+    - name: Update /etc/hostname with full hostname
+      copy:
+        content: "{{ hostname }}\n"
+        dest: /etc/hostname
+        mode: "0644"
+
+    - name: Update /etc/hosts with full hostname and short name
       lineinfile:
         path: /etc/hosts
-        regexp: "^{{ ansible_default_ipv4.address }}.*"
-        line: "{{ ansible_default_ipv4.address }}\t{{ inventory_hostname_short }} {{ inventory_hostname }}"
+        regexp: '^127\.0\.1\.1.*'
+        line: "127.0.1.1 {{ hostname }} {{ hostname_short }}"
         state: present
 
     - name: Check if PoE+ HAT is present
@@ -75,4 +83,3 @@
       systemd:
         name: systemd-hostnamed
         state: restarted
-

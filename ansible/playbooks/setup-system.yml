@@ -18,9 +18,11 @@
 
   pre_tasks:
     # Set variables with proper defaults to avoid recursion
-    - name: Set hostname (defaults to inventory_hostname)
+    # Full hostname with domain (e.g., node-0.eldertree.local)
+    - name: Set hostname (defaults to FQDN: inventory_hostname + '.eldertree.local')
       set_fact:
-        target_hostname: "{{ hostname | default(inventory_hostname) }}"
+        target_hostname: "{{ hostname | default(inventory_hostname + '.eldertree.local') }}"
+        hostname_short: "{{ inventory_hostname }}"
 
     - name: Set network variables with defaults
       set_fact:
@@ -112,16 +114,32 @@
     # =========================================================================
     # Hostname Configuration
     # =========================================================================
-    - name: Set hostname
+    - name: Set full hostname (FQDN)
       hostname:
         name: "{{ target_hostname }}"
 
-    - name: Update /etc/hosts with hostname
+    - name: Update /etc/hostname with full hostname
+      copy:
+        content: "{{ hostname }}\n"
+        dest: /etc/hostname
+        mode: "0644"
+
+    - name: Update /etc/hosts with full hostname and short name
       lineinfile:
         path: /etc/hosts
         regexp: '^127\.0\.1\.1.*'
-        line: "127.0.1.1 {{ target_hostname }}"
+        line: "127.0.1.1 {{ target_hostname }} {{ hostname_short }}"
         state: present
+
+    - name: Ensure localhost entries exist
+      lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - {regexp: '^127\.0\.0\.1.*localhost', line: "127.0.0.1 localhost"}
+        - {regexp: "^::1.*localhost", line: "::1 localhost ip6-localhost ip6-loopback"}
 
     # =========================================================================
     # Network Configuration (Static IP - Optional)

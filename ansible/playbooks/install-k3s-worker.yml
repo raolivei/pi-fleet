@@ -5,7 +5,7 @@
   vars:
     k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
     k3s_token: "" # Required - node token from control plane
-    k3s_server_url: "https://node-0:6443" # Control plane URL (node-0 is the control plane)
+    k3s_server_url: "https://node-0.eldertree.local:6443" # Control plane URL (FQDN)
     k3s_install_k9s: false # k9s not needed on worker nodes
 
   tasks:
@@ -46,9 +46,45 @@
     # =========================================================================
     # System Prerequisites - Cgroup Configuration
     # =========================================================================
+    - name: Detect boot device (SD card or NVMe)
+      shell: |
+        ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
+        if echo "$ROOT_DEV" | grep -q "mmcblk"; then
+          echo "sd"
+        elif echo "$ROOT_DEV" | grep -q "nvme"; then
+          echo "nvme"
+        else
+          echo "unknown"
+        fi
+      register: boot_device
+      changed_when: false
+
+    - name: Find boot partition and cmdline.txt location
+      shell: |
+        ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
+        if echo "$ROOT_DEV" | grep -q "mmcblk0p2"; then
+          # SD card boot - standard location
+          echo "/boot/firmware/cmdline.txt"
+        elif echo "$ROOT_DEV" | grep -q "nvme0n1p2"; then
+          # NVMe boot - need to mount boot partition
+          mkdir -p /mnt/nvme-boot
+          mount /dev/nvme0n1p1 /mnt/nvme-boot 2>/dev/null || true
+          echo "/mnt/nvme-boot/cmdline.txt"
+        else
+          # Fallback to standard location
+          echo "/boot/firmware/cmdline.txt"
+        fi
+      register: cmdline_path
+      changed_when: false
+
+    - name: Set fact for cmdline.txt path
+      set_fact:
+        cmdline_file: "{{ cmdline_path.stdout }}"
+      changed_when: false
+
     - name: Read current cmdline.txt
       slurp:
-        src: /boot/firmware/cmdline.txt
+        src: "{{ cmdline_file }}"
       register: cmdline_content
       changed_when: false
       failed_when: false
@@ -64,16 +100,54 @@
       changed_when: false
       failed_when: false
 
-    - name: Ensure cgroups are enabled in cmdline.txt
-      lineinfile:
-        path: /boot/firmware/cmdline.txt
-        regexp: 'systemd\.unified_cgroup_hierarchy'
-        line: " systemd.unified_cgroup_hierarchy=0"
-        backrefs: false
-        state: present
+    - name: Backup and update cmdline.txt with cgroup setting (safely)
+      shell: |
+        set -e
+        CMDLINE_FILE="{{ cmdline_file }}"
+
+        # Backup current file (if it exists and has content)
+        if [ -f "$CMDLINE_FILE" ] && [ -s "$CMDLINE_FILE" ]; then
+          BACKUP_FILE="${CMDLINE_FILE}.bak.ansible-$(date +%s)"
+          cp "$CMDLINE_FILE" "$BACKUP_FILE"
+        fi
+
+        # Use current kernel cmdline as source of truth (it has all correct parameters)
+        KERNEL_CMDLINE=$(cat /proc/cmdline)
+
+        # Check if cgroup setting already exists in kernel
+        if echo "$KERNEL_CMDLINE" | grep -q "systemd.unified_cgroup_hierarchy=0"; then
+          # Already active, just ensure cmdline.txt matches
+          if [ -f "$CMDLINE_FILE" ]; then
+            echo "$KERNEL_CMDLINE" > "$CMDLINE_FILE"
+          fi
+          echo "Cgroup setting already active in kernel, cmdline.txt synced"
+          exit 0
+        fi
+
+        # Add cgroup setting to kernel cmdline (preserve all existing parameters)
+        NEW_CMDLINE="${KERNEL_CMDLINE} systemd.unified_cgroup_hierarchy=0"
+
+        # Clean up extra spaces
+        NEW_CMDLINE=$(echo "$NEW_CMDLINE" | sed 's/  */ /g' | sed 's/^ //' | sed 's/ $//')
+
+        # Write to cmdline.txt (kernel cmdline is source of truth, so this is safe)
+        echo "$NEW_CMDLINE" > "$CMDLINE_FILE"
+
+        echo "SUCCESS: cmdline.txt updated from kernel cmdline with cgroup setting"
       register: cmdline_updated
-      failed_when: false
+      changed_when: cmdline_updated.rc == 0 and 'SUCCESS' in cmdline_updated.stdout
+      failed_when: cmdline_updated.rc != 0
       when: not cgroup_setting_exists | default(false)
+
+    - name: Unmount NVMe boot partition if mounted
+      shell: |
+        if mountpoint -q /mnt/nvme-boot; then
+          umount /mnt/nvme-boot
+          rmdir /mnt/nvme-boot
+        fi
+      changed_when: false
+      failed_when: false
+      when: boot_device.stdout == "nvme"
 
     - name: Set fact for reboot needed
       set_fact:
@@ -106,7 +180,7 @@
 
     - name: Fail if cgroup setting is not active after reboot
       fail:
-        msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is not active in kernel after reboot. Check /boot/firmware/cmdline.txt and ensure the setting is present."
+        msg: "Cgroup setting systemd.unified_cgroup_hierarchy=0 is not active in kernel after reboot. Check {{ cmdline_file | default('/boot/firmware/cmdline.txt') }} and ensure the setting is present."
       when: reboot_needed | default(false) and cgroup_verify.stdout | default('no') == 'no'
 
     - name: Fail if cgroup setting is not active (general check)
