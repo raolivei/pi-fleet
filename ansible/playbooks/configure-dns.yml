@@ -3,9 +3,13 @@
   hosts: localhost
   connection: local
   vars:
-    eldertree_ip: "{{ eldertree_ip | default('192.168.2.83') }}"
-    configure_hosts_file: "{{ configure_hosts_file | default(false) }}"
+    node_0_ip: "{{ node_0_ip | default('192.168.2.86') }}"
+    node_1_ip: "{{ node_1_ip | default('192.168.2.85') }}"
+    eldertree_ip: "{{ eldertree_ip | default(node_0_ip) }}"
+    configure_hosts_file: "{{ configure_hosts_file | default(true) }}"
     services:
+      - "node-0.eldertree.local"
+      - "node-1.eldertree.local"
       - "eldertree"
       - "canopy.eldertree.local"
       - "grafana.eldertree.local"
@@ -43,10 +47,25 @@
             src: /etc/hosts
           register: hosts_content
           become: true
+          become_user: root
           changed_when: false
           failed_when: false
 
-        - name: Add DNS entries to /etc/hosts
+        - name: Add node DNS entries to /etc/hosts
+          lineinfile:
+            path: /etc/hosts
+            regexp: "^{{ item.ip }}\\s+{{ item.hostname }}"
+            line: "{{ item.ip }}  {{ item.hostname }}"
+            state: present
+            backup: true
+          become: true
+          become_user: root
+          loop:
+            - { hostname: "node-0.eldertree.local", ip: "{{ node_0_ip }}" }
+            - { hostname: "node-1.eldertree.local", ip: "{{ node_1_ip }}" }
+          register: node_hosts_updated
+
+        - name: Add service DNS entries to /etc/hosts
           lineinfile:
             path: /etc/hosts
             regexp: "^{{ eldertree_ip }}\\s+{{ item }}"
@@ -54,7 +73,8 @@
             state: present
             backup: true
           become: true
-          loop: "{{ services }}"
+          become_user: root
+          loop: "{{ services | reject('match', 'node-.*') | list }}"
           register: hosts_updated
 
         - name: Display updated entries

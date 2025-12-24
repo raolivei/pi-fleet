@@ -27,6 +27,11 @@ spec:
                 secretKeyRef:
                   name: cloudflared-credentials
                   key: token
+            # DNS configuration for IP-based cluster (no DNS resolution)
+            # Cluster DNS (10.43.0.10) first, then public DNS fallback
+            # This is critical for clusters using IP addresses instead of DNS names
+            - name: TUNNEL_DNS_UPSTREAM
+              value: "10.43.0.10,8.8.8.8,1.1.1.1"
           resources:
             requests:
               memory: "64Mi"

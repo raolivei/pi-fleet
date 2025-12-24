@@ -1,0 +1,85 @@
+---
+# Configure fresh Raspberry Pi installations
+# - Set hostnames
+# - Configure PoE+ HAT
+# - Prepare for NVMe boot migration
+
+- name: Configure Fresh Node Installations
+  hosts: raspberry_pi
+  become: true
+  vars:
+    poe_fan_temp0: 50000
+    poe_fan_temp1: 60000
+    poe_fan_temp2: 70000
+    poe_fan_temp3: 80000
+
+  vars:
+    hostname: "{{ inventory_hostname }}.eldertree.local"
+    hostname_short: "{{ inventory_hostname }}"
+  tasks:
+    - name: Set full hostname (FQDN)
+      hostname:
+        name: "{{ hostname }}"
+
+    - name: Update /etc/hostname with full hostname
+      copy:
+        content: "{{ hostname }}\n"
+        dest: /etc/hostname
+        mode: "0644"
+
+    - name: Update /etc/hosts with full hostname and short name
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1.*'
+        line: "127.0.1.1 {{ hostname }} {{ hostname_short }}"
+        state: present
+
+    - name: Check if PoE+ HAT is present
+      stat:
+        path: /proc/device-tree/hat/product
+      register: poe_hat_check
+
+    - name: Configure PoE+ HAT in config.txt
+      blockinfile:
+        path: "{{ item }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - PoE+ HAT Configuration"
+        block: |
+          # PoE+ HAT Configuration
+          dtparam=poe_fan_temp0={{ poe_fan_temp0 }}
+          dtparam=poe_fan_temp1={{ poe_fan_temp1 }}
+          dtparam=poe_fan_temp2={{ poe_fan_temp2 }}
+          dtparam=poe_fan_temp3={{ poe_fan_temp3 }}
+        create: yes
+      loop:
+        - /boot/firmware/config.txt
+        - /boot/config.txt
+      when: poe_hat_check.stat.exists or poe_hat_check.stat.exists == false
+      # Configure anyway - will work when HAT is connected
+
+    - name: Check NVMe device
+      command: test -b /dev/nvme0n1
+      register: nvme_check
+      changed_when: false
+      failed_when: false
+
+    - name: Get NVMe size
+      command: blockdev --getsize64 /dev/nvme0n1
+      register: nvme_size
+      when: nvme_check.rc == 0
+      changed_when: false
+
+    - name: Display NVMe status
+      debug:
+        msg: "NVMe detected: {{ (nvme_size.stdout | int) / 1024 / 1024 / 1024 }}GB"
+      when: nvme_check.rc == 0
+
+    - name: Warn if NVMe not detected
+      debug:
+        msg: "WARNING: NVMe not detected. Please verify HAT and NVMe are properly connected."
+      when: nvme_check.rc != 0
+
+  handlers:
+    - name: restart hostname
+      systemd:
+        name: systemd-hostnamed
+        state: restarted

@@ -1,0 +1,49 @@
+---
+# Fix hostnames on nodes (if they were incorrectly set to 'eldertree')
+# Run this when nodes are back online
+
+- name: Fix Hostnames on All Nodes
+  hosts: raspberry_pi
+  become: true
+  tasks:
+    - name: Get current hostname
+      command: hostname
+      register: current_hostname
+      changed_when: false
+      failed_when: false
+
+    - name: Display current hostname
+      debug:
+        msg: "Current hostname: {{ current_hostname.stdout }} (should be {{ inventory_hostname }})"
+
+    - name: Set correct hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+      when: current_hostname.stdout != inventory_hostname
+
+    - name: Update /etc/hostname
+      copy:
+        content: "{{ inventory_hostname }}\n"
+        dest: /etc/hostname
+        mode: '0644'
+      when: current_hostname.stdout != inventory_hostname
+
+    - name: Update /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1.*'
+        line: "127.0.1.1 {{ inventory_hostname }}"
+        state: present
+      when: current_hostname.stdout != inventory_hostname
+
+    - name: Verify hostname fix
+      command: hostname
+      register: new_hostname
+      changed_when: false
+
+    - name: Display result
+      debug:
+        msg:
+          - "✅ Hostname fixed: {{ new_hostname.stdout }}"
+          - "Reboot may be needed: sudo reboot"
+

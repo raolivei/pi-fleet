@@ -1,0 +1,78 @@
+---
+# Fix hostname from 'eldertree' to proper node-X.eldertree.local
+- name: Fix hostname on nodes
+  hosts: raspberry_pi
+  become: true
+  tasks:
+    - name: Remount root filesystem as read-write (if read-only)
+      shell: |
+        if mount | grep -q "on / type.*ro,"; then
+          mount -o remount,rw /
+          echo "Remounted root as read-write"
+        else
+          echo "Root already read-write"
+        fi
+      register: remount_result
+      changed_when: "'Remounted' in remount_result.stdout"
+
+    - name: Display current hostname
+      command: hostname
+      register: current_hostname
+      changed_when: false
+
+    - name: Show current configuration
+      debug:
+        msg:
+          - "Current hostname: {{ current_hostname.stdout }}"
+          - "Should be: {{ inventory_hostname }}.eldertree.local"
+
+    - name: Set full hostname based on inventory hostname
+      hostname:
+        name: "{{ inventory_hostname }}.eldertree.local"
+
+    - name: Update /etc/hostname with full hostname
+      copy:
+        content: "{{ inventory_hostname }}.eldertree.local\n"
+        dest: /etc/hostname
+        mode: "0644"
+
+    - name: Update /etc/hosts with full hostname and short name
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1.*'
+        line: "127.0.1.1 {{ inventory_hostname }}.eldertree.local {{ inventory_hostname }}"
+        state: present
+
+    - name: Remove old 'eldertree' entry from /etc/hosts if it exists
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1.*eldertree[^.]'
+        state: absent
+
+    - name: Verify new hostname
+      command: hostname
+      register: new_hostname
+      changed_when: false
+
+    - name: Verify /etc/hostname
+      slurp:
+        src: /etc/hostname
+      register: hostname_file
+      changed_when: false
+
+    - name: Verify /etc/hosts entry
+      shell: grep "^127\.0\.1\.1" /etc/hosts
+      register: hosts_entry
+      changed_when: false
+
+    - name: Display fix results
+      debug:
+        msg:
+          - "✅ Hostname fixed!"
+          - "New hostname: {{ new_hostname.stdout }}"
+          - "/etc/hostname: {{ hostname_file.content | b64decode | trim }}"
+          - "/etc/hosts entry: {{ hosts_entry.stdout }}"
+          - ""
+          - "⚠️  Reboot required for hostname to fully take effect"
+          - "Run: sudo reboot"
+

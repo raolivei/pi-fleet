@@ -113,17 +113,26 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
 
   config {
     # Web service route
+    # IMPORTANT: Using ClusterIP (10.43.81.2) instead of DNS name (traefik.kube-system.svc.cluster.local)
+    # because this cluster uses IP addresses instead of DNS names (gigabit network configuration).
+    # The tunnel container may have DNS resolution problems with Kubernetes service DNS,
+    # so using the direct ClusterIP bypasses this issue and works reliably with IP-based networking.
+    # 
+    # To find the current Traefik ClusterIP:
+    #   kubectl get svc traefik -n kube-system -o jsonpath='{.spec.clusterIP}'
+    # 
+    # If the ClusterIP changes, update this file and run: terraform apply
     ingress_rule {
       hostname = "swimto.eldertree.xyz"
       path     = "/"
-      service  = "http://traefik.kube-system.svc.cluster.local:80"
+      service  = "http://10.43.81.2:80"
     }
 
     # API service route (path-based)
     ingress_rule {
       hostname = "swimto.eldertree.xyz"
       path     = "/api/*"
-      service  = "http://traefik.kube-system.svc.cluster.local:80"
+      service  = "http://10.43.81.2:80"
     }
 
     # Catch-all rule (must be last)

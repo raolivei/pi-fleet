@@ -1,0 +1,61 @@
+---
+- name: Configure SSH Keys for Eldertree Cluster
+  hosts: raspberry_pi
+  become: false
+  vars:
+    target_user: raolivei
+    # SSH public key to add (defaults to local user's ~/.ssh/id_rsa.pub)
+    ssh_public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') | default('') }}"
+
+  tasks:
+    # =========================================================================
+    # Setup SSH Directory and Authorized Keys
+    # =========================================================================
+    - name: Create .ssh directory
+      file:
+        path: /home/{{ target_user }}/.ssh
+        state: directory
+        mode: "0700"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Get local SSH public key
+      slurp:
+        src: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
+      register: local_ssh_key
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      failed_when: false
+
+    - name: Set SSH public key content
+      set_fact:
+        ssh_key_content: "{{ local_ssh_key.content | b64decode | trim if local_ssh_key.content is defined else '' }}"
+
+    - name: Add SSH public key to authorized_keys
+      authorized_key:
+        user: "{{ target_user }}"
+        state: present
+        key: "{{ ssh_key_content }}"
+        comment: "Ansible managed - {{ ansible_hostname }}"
+      when: ssh_key_content != ""
+
+    - name: Ensure authorized_keys has correct permissions
+      file:
+        path: /home/{{ target_user }}/.ssh/authorized_keys
+        mode: "0600"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+      when: ssh_key_content != ""
+
+    - name: Display SSH key configuration summary
+      debug:
+        msg:
+          - "=== SSH Key Configuration ==="
+          - "SSH key added: {{ 'Yes' if ssh_key_content != '' else 'No (key not found)' }}"
+          - "User: {{ target_user }}"
+          - "SSH directory: /home/{{ target_user }}/.ssh"
+          - ""
+          - "You can now SSH without password:"
+          - "  ssh {{ target_user }}@{{ ansible_hostname }}"
+

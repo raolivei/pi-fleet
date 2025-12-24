@@ -176,6 +176,16 @@
         state: present
       when: current_hosts_entry.stdout != ("127.0.1.1 " + hostname + " " + inventory_hostname)
 
+    - name: Ensure localhost entries exist
+      lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - {regexp: '^127\.0\.0\.1.*localhost', line: "127.0.0.1 localhost"}
+        - {regexp: "^::1.*localhost", line: "::1 localhost ip6-localhost ip6-loopback"}
+
     # =========================================================================
     # Network Configuration (Static IP - Optional)
     #
@@ -417,13 +427,29 @@
     # Note: SSH keys are configured via Raspberry Pi Imager
     # We only ensure SSH service is running and apply basic hardening
     # =========================================================================
-    - name: Ensure SSH service is enabled and started
-      systemd:
-        name: ssh
-        enabled: yes
-        state: started
+    - name: Check SSH service name
+      command: systemctl list-units --type=service | grep -E 'ssh|sshd' | head -1 | awk '{print $1}' | sed 's/\.service$//'
+      register: ssh_service_name
+      changed_when: false
+      failed_when: false
 
-    - name: Configure SSH hardening (optional)
+    - name: Set SSH service name fact
+      set_fact:
+        ssh_service: "{{ ssh_service_name.stdout | default('ssh') }}"
+
+    - name: Ensure SSH service is enabled (don't restart - we're connected via SSH)
+      systemd:
+        name: "{{ ssh_service }}"
+        enabled: yes
+      ignore_errors: true
+
+    - name: Test SSH config syntax before making changes
+      command: sshd -t
+      changed_when: false
+      failed_when: false
+      register: ssh_config_test_before
+
+    - name: Configure SSH (optional hardening and terminal support)
       lineinfile:
         path: /etc/ssh/sshd_config
         regexp: "{{ item.regexp }}"
@@ -433,7 +459,47 @@
         - {regexp: "^#?PermitRootLogin", line: "PermitRootLogin no"}
         - {regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication yes"}
         - {regexp: "^#?PubkeyAuthentication", line: "PubkeyAuthentication yes"}
-      notify: restart ssh
+        # Note: SendEnv is a CLIENT option, not server. Removed from server config.
+        # To enable TERM forwarding, clients should use: SendEnv TERM in ~/.ssh/config
+      when: ssh_config_test_before.rc == 0
+
+    - name: Test SSH config syntax after changes
+      command: sshd -t
+      changed_when: false
+      register: ssh_config_test_after
+      failed_when: false # Don't fail - we'll check and restore if needed
+      when: ssh_config_test_before.rc == 0
+
+    - name: Restore SSH config if test failed after changes
+      shell: |
+        BACKUP=$(ls -t /etc/ssh/sshd_config*backup* 2>/dev/null | head -1)
+        if [ -n "$BACKUP" ] && [ -f "$BACKUP" ]; then
+          cp "$BACKUP" /etc/ssh/sshd_config
+          echo "Restored from $BACKUP"
+        fi
+      when:
+        - ssh_config_test_after.rc != 0
+        - ssh_config_test_before.rc == 0
+      register: ssh_restore_result
+      changed_when: ssh_restore_result.stdout != ""
+
+    - name: Final SSH config test
+      command: sshd -t
+      changed_when: false
+      register: ssh_config_final_test
+      failed_when: false
+      when: ssh_config_test_before.rc == 0
+
+    - name: Restart SSH service only if config is valid (async to avoid disconnection)
+      systemd:
+        name: "{{ ssh_service }}"
+        state: restarted
+      when:
+        - ssh_config_final_test.rc == 0
+        - ansible_connection == 'ssh'
+      async: 5
+      poll: 0 # Don't wait - just trigger restart in background
+      ignore_errors: true # Don't fail if restart fails (we might lose connection)
 
     # =========================================================================
     # Firewall Configuration
@@ -519,7 +585,7 @@
       debug:
         msg:
           - "=== System Configuration Complete ==="
-          - "Hostname: {{ hostname }}"
+          - "Hostname: {{ target_hostname }}"
           - "User: {{ target_user }}"
           - "Static IP: {{ static_ip if static_ip else 'DHCP' }}"
           - "Bluetooth: Enabled"
@@ -534,5 +600,6 @@
   handlers:
     - name: restart ssh
       systemd:
-        name: sshd
+        name: "{{ 'ssh' if ansible_service_mgr == 'systemd' else 'sshd' }}"
         state: restarted
+      ignore_errors: true
