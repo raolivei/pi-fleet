@@ -16,8 +16,8 @@
     # List of potential node hostnames to discover
     # For fresh SD cards, the hostname is "node-x"
     discovery_hostnames:
-      - "node-x.local"  # mDNS
-      - "node-x"        # Regular DNS
+      - "node-x.local" # mDNS
+      - "node-x" # Regular DNS
 
   tasks:
     - name: Try to discover node-x via mDNS/DNS
@@ -89,4 +89,3 @@
           debug:
             msg: "⚠️  No nodes discovered via hostname 'node-x.local' or 'node-x'. Make sure the node is booted and on the network."
           when: discovered_ip == "" or ssh_test is failed
-

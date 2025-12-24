@@ -43,21 +43,16 @@
     # =========================================================================
     # System Prerequisites - Cgroup Configuration
     # =========================================================================
-    - name: Detect boot device (SD or NVMe)
-      shell: |
-        if [ -b /dev/mmcblk0 ]; then
-          echo "sd"
-        elif [ -b /dev/nvme0n1 ]; then
-          echo "nvme"
-        else
-          echo "unknown"
-        fi
-      register: boot_device
+    - name: Read current cmdline.txt
+      slurp:
+        src: /boot/firmware/cmdline.txt
+      register: cmdline_content
       changed_when: false
+      failed_when: false
 
-    - name: Set cmdline.txt path based on boot device
+    - name: Check if cgroup setting exists in cmdline.txt
       set_fact:
-        cmdline_file: "{{ '/boot/firmware/cmdline.txt' if boot_device.stdout == 'sd' else '/boot/firmware/cmdline.txt' }}"
+        cgroup_setting_exists: "{{ cmdline_content.content | b64decode | default('') | regex_search('systemd\\.unified_cgroup_hierarchy=0') is not none }}"
       changed_when: false
 
     - name: Check if cgroup setting exists in running kernel
@@ -66,70 +61,16 @@
       changed_when: false
       failed_when: false
 
-    - name: Backup and update cmdline.txt with cgroup setting (safely)
-      shell: |
-        set -e
-        CMDLINE_FILE="{{ cmdline_file }}"
-        
-        # Ensure file exists
-        if [ ! -f "$CMDLINE_FILE" ]; then
-          echo "ERROR: $CMDLINE_FILE does not exist!"
-          exit 1
-        fi
-        
-        # Backup current file
-        BACKUP_FILE="${CMDLINE_FILE}.bak.ansible-$(date +%s)"
-        cp "$CMDLINE_FILE" "$BACKUP_FILE"
-        
-        # Read current kernel cmdline as source of truth
-        KERNEL_CMDLINE=$(cat /proc/cmdline)
-        
-        # Validate root= parameter exists in kernel cmdline
-        if ! echo "$KERNEL_CMDLINE" | grep -q "root="; then
-          echo "ERROR: root= parameter missing in kernel cmdline! Cannot proceed safely."
-          exit 1
-        fi
-        
-        # Check if cgroup setting already exists in kernel cmdline
-        if echo "$KERNEL_CMDLINE" | grep -q "systemd.unified_cgroup_hierarchy=0"; then
-          echo "Cgroup setting already present in kernel, no changes needed to file"
-          # Ensure the file matches the kernel if it's different
-          if ! cmp -s "$CMDLINE_FILE" <(echo "$KERNEL_CMDLINE"); then
-            echo "$KERNEL_CMDLINE" > "$CMDLINE_FILE"
-            echo "Updated cmdline.txt to match kernel cmdline"
-            exit 0 # Indicate change
-          fi
-          exit 0 # No change needed
-        fi
-        
-        # Add cgroup setting to kernel cmdline (preserve all existing parameters)
-        NEW_CMDLINE="${KERNEL_CMDLINE} systemd.unified_cgroup_hierarchy=0"
-        
-        # Clean up extra spaces
-        NEW_CMDLINE=$(echo "$NEW_CMDLINE" | sed 's/  */ /g' | sed 's/^ //' | sed 's/ $//')
-        
-        # Validate root= parameter still exists
-        if ! echo "$NEW_CMDLINE" | grep -q "root="; then
-          echo "ERROR: root= parameter would be lost! Restoring from backup..."
-          cp "$BACKUP_FILE" "$CMDLINE_FILE"
-          exit 1
-        fi
-        
-        # Write new cmdline to file
-        echo "$NEW_CMDLINE" > "$CMDLINE_FILE"
-        
-        # Final validation
-        if ! grep -q "root=" "$CMDLINE_FILE"; then
-          echo "ERROR: root= parameter missing after write! Restoring from backup..."
-          cp "$BACKUP_FILE" "$CMDLINE_FILE"
-          exit 1
-        fi
-        
-        echo "SUCCESS: cmdline.txt updated safely"
+    - name: Ensure cgroups are enabled in cmdline.txt
+      lineinfile:
+        path: /boot/firmware/cmdline.txt
+        regexp: 'systemd\.unified_cgroup_hierarchy'
+        line: " systemd.unified_cgroup_hierarchy=0"
+        backrefs: false
+        state: present
       register: cmdline_updated
-      changed_when: cmdline_updated.rc == 0 and 'SUCCESS' in cmdline_updated.stdout
-      failed_when: cmdline_updated.rc != 0
-      when: cgroup_running_check.stdout | default('no') == 'no'
+      failed_when: false
+      when: not cgroup_setting_exists | default(false)
 
     - name: Set fact for reboot needed
       set_fact:
@@ -145,25 +86,6 @@
     - name: Wait for system to come back online after reboot
       wait_for_connection:
         timeout: 300
-      when: reboot_needed | default(false)
-
-    - name: Verify connectivity after reboot
-      block:
-        - name: Test SSH connectivity
-          command: echo "connectivity_test"
-          register: connectivity_test
-          changed_when: false
-
-        - name: Test network connectivity
-          shell: ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 && echo "ok" || echo "fail"
-          register: network_test
-          changed_when: false
-          failed_when: false
-
-        - name: Fail if connectivity lost after reboot
-          fail:
-            msg: "CRITICAL: Connectivity lost after reboot! Network test: {{ network_test.stdout }}. Check network configuration and SSH access."
-          when: network_test.stdout == "fail"
       when: reboot_needed | default(false)
 
     - name: Verify cgroup setting is active after reboot

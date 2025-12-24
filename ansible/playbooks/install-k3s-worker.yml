@@ -73,26 +73,26 @@
       shell: |
         set -e
         CMDLINE_FILE="{{ cmdline_file }}"
-        
+
         # Ensure file exists
         if [ ! -f "$CMDLINE_FILE" ]; then
           echo "ERROR: $CMDLINE_FILE does not exist!"
           exit 1
         fi
-        
+
         # Backup current file
         BACKUP_FILE="${CMDLINE_FILE}.bak.ansible-$(date +%s)"
         cp "$CMDLINE_FILE" "$BACKUP_FILE"
-        
+
         # Read current kernel cmdline as source of truth
         KERNEL_CMDLINE=$(cat /proc/cmdline)
-        
+
         # Validate root= parameter exists in kernel cmdline
         if ! echo "$KERNEL_CMDLINE" | grep -q "root="; then
           echo "ERROR: root= parameter missing in kernel cmdline! Cannot proceed safely."
           exit 1
         fi
-        
+
         # Check if cgroup setting already exists in kernel cmdline
         if echo "$KERNEL_CMDLINE" | grep -q "systemd.unified_cgroup_hierarchy=0"; then
           echo "Cgroup setting already present in kernel, no changes needed to file"
@@ -104,30 +104,30 @@
           fi
           exit 0 # No change needed
         fi
-        
+
         # Add cgroup setting to kernel cmdline (preserve all existing parameters)
         NEW_CMDLINE="${KERNEL_CMDLINE} systemd.unified_cgroup_hierarchy=0"
-        
+
         # Clean up extra spaces
         NEW_CMDLINE=$(echo "$NEW_CMDLINE" | sed 's/  */ /g' | sed 's/^ //' | sed 's/ $//')
-        
+
         # Validate root= parameter still exists
         if ! echo "$NEW_CMDLINE" | grep -q "root="; then
           echo "ERROR: root= parameter would be lost! Restoring from backup..."
           cp "$BACKUP_FILE" "$CMDLINE_FILE"
           exit 1
         fi
-        
+
         # Write new cmdline to file
         echo "$NEW_CMDLINE" > "$CMDLINE_FILE"
-        
+
         # Final validation
         if ! grep -q "root=" "$CMDLINE_FILE"; then
           echo "ERROR: root= parameter missing after write! Restoring from backup..."
           cp "$BACKUP_FILE" "$CMDLINE_FILE"
           exit 1
         fi
-        
+
         echo "SUCCESS: cmdline.txt updated safely"
       register: cmdline_updated
       changed_when: cmdline_updated.rc == 0 and 'SUCCESS' in cmdline_updated.stdout
