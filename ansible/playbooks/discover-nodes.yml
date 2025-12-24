@@ -1,0 +1,92 @@
+---
+# Discover nodes via hostname (node-x.local) for fresh SD card boots
+# This playbook runs on localhost and tries to discover nodes via mDNS/DNS
+# It then adds discovered nodes to a dynamic inventory group
+#
+# Usage:
+#   ansible-playbook playbooks/discover-nodes.yml
+#   ansible-playbook playbooks/setup-system.yml --limit discovered_nodes
+
+- name: Discover nodes via hostname (node-x.local)
+  hosts: localhost
+  connection: local
+  become: false
+  gather_facts: false
+  vars:
+    # List of potential node hostnames to discover
+    # For fresh SD cards, the hostname is "node-x"
+    discovery_hostnames:
+      - "node-x.local"  # mDNS
+      - "node-x"        # Regular DNS
+
+  tasks:
+    - name: Try to discover node-x via mDNS/DNS
+      block:
+        - name: Try to resolve node-x.local via mDNS/DNS
+          shell: |
+            # Try mDNS first (.local), then regular DNS
+            for hostname in "node-x.local" "node-x"; do
+              if getent hosts "$hostname" >/dev/null 2>&1; then
+                IP=$(getent hosts "$hostname" | awk '{print $1}' | head -1)
+                echo "$IP|$hostname"
+                exit 0
+              fi
+            done
+            # Fallback: try ping to see if hostname resolves (some systems need this)
+            if ping -c 1 -W 2 node-x.local >/dev/null 2>&1; then
+              IP=$(getent hosts node-x.local | awk '{print $1}' | head -1)
+              echo "$IP|node-x.local"
+              exit 0
+            fi
+            echo ""
+          register: discovery_result
+          changed_when: false
+          failed_when: false
+
+        - name: Parse discovery result
+          set_fact:
+            discovered_ip: "{{ discovery_result.stdout.split('|')[0] if '|' in discovery_result.stdout else '' }}"
+            discovered_hostname: "{{ discovery_result.stdout.split('|')[1] if '|' in discovery_result.stdout else '' }}"
+          when: discovery_result.stdout != ""
+
+        - name: Display discovery result
+          debug:
+            msg: "🔍 Discovered node-x at IP {{ discovered_ip }} (via {{ discovered_hostname }})"
+          when: discovered_ip != ""
+
+        - name: Test SSH connectivity to discovered node
+          wait_for:
+            host: "{{ discovered_ip }}"
+            port: 22
+            timeout: 5
+          register: ssh_test
+          changed_when: false
+          failed_when: false
+          when: discovered_ip != ""
+
+        - name: Add discovered node to inventory (as node-x for now, will be renamed during setup)
+          add_host:
+            name: "node-x-discovered"
+            ansible_host: "{{ discovered_ip }}"
+            ansible_user: "raolivei"
+            ansible_ssh_private_key_file: "~/.ssh/id_ed25519_raolivei"
+            ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+            ansible_python_interpreter: "/usr/bin/python3"
+            groups: discovered_nodes
+            discovered_hostname: "{{ discovered_hostname }}"
+          when: discovered_ip != "" and ssh_test is not failed
+
+        - name: Summary
+          debug:
+            msg:
+              - "✅ Discovery complete!"
+              - "Discovered node: {{ discovered_ip }} ({{ discovered_hostname }})"
+              - "Run: ansible-playbook playbooks/setup-system.yml --limit node-x-discovered"
+              - "Or specify the target node: ansible-playbook playbooks/setup-system.yml --limit node-x-discovered -e 'inventory_hostname=node-2'"
+          when: discovered_ip != "" and ssh_test is not failed
+
+        - name: No nodes discovered
+          debug:
+            msg: "⚠️  No nodes discovered via hostname 'node-x.local' or 'node-x'. Make sure the node is booted and on the network."
+          when: discovered_ip == "" or ssh_test is failed
+
