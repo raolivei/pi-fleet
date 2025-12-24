@@ -3,6 +3,7 @@
 ## [1.3.0] - 2025-01-XX
 
 ### Added
+
 - WireGuard VPN infrastructure setup and documentation
 - External Secrets Operator configurations for multiple services:
   - NIMA secrets
@@ -18,6 +19,7 @@
 - Comprehensive Vault migration guide (`docs/VAULT_MIGRATION.md`)
 
 ### Changed
+
 - **BREAKING:** Vault migrated from dev mode to production mode with persistence
   - Requires manual unsealing after each restart (3 of 5 unseal keys)
   - Root token and unseal keys must be stored securely
@@ -31,6 +33,17 @@
 - Vault HelmRelease now uses file storage backend with 10Gi PVC
 
 ## [Unreleased]
+
+### Changed
+
+- **Ansible playbooks updated for Raspberry Pi Imager workflow**:
+  - User creation removed from playbooks (handled by Raspberry Pi Imager)
+  - SSH key configuration removed from playbooks (handled by Raspberry Pi Imager)
+  - Hostname auto-detection: Converts generic "node-x" hostname from SD cards to proper `node-X.eldertree.local`
+  - Automatic cleanup of diagnostic files after successful playbook runs
+  - Removed password management from playbooks (user created via Imager)
+- **Cleanup automation**: All playbooks now automatically remove diagnostic log files and old backup files (>7 days)
+- Updated documentation to reflect Raspberry Pi Imager workflow
 
 ### Security
 
