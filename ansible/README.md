@@ -43,7 +43,9 @@ ansible/
 
 The inventory file (`inventory/hosts.yml`) defines the Raspberry Pi hosts:
 
-- **eldertree**: Main cluster node (192.168.2.83)
+- **eldertree** (node-0): Control plane node (192.168.2.86 / 10.0.0.1)
+- **node-1**: Worker node (192.168.2.85 / 10.0.0.2)
+- **node-2**: Worker node (192.168.2.87 / 10.0.0.3) - when added
 
 ### Updating Inventory
 
@@ -53,12 +55,20 @@ To add new hosts, edit `inventory/hosts.yml`:
 raspberry_pi:
   hosts:
     eldertree:
-      ansible_host: 192.168.2.83
-      ansible_user: pi
-    new-host:
-      ansible_host: 192.168.2.84
-      ansible_user: pi
+      ansible_host: eldertree.local
+      ansible_user: raolivei
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    node-1:
+      ansible_host: 192.168.2.85
+      ansible_user: raolivei
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    node-2:
+      ansible_host: 192.168.2.87
+      ansible_user: raolivei
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
 ```
+
+See [ADD_NEW_NODE.md](../docs/ADD_NEW_NODE.md) for complete instructions on adding new nodes.
 
 ## Playbooks
 
@@ -530,6 +540,19 @@ If using password authentication, you can:
    ```bash
    ansible-playbook playbooks/configure-user.yml --ask-pass
    ```
+
+## Adding New Nodes
+
+For complete instructions on adding new nodes (e.g., node-2) to the cluster, see:
+- **[ADD_NEW_NODE.md](../docs/ADD_NEW_NODE.md)** - Complete guide for adding new nodes
+
+The process includes:
+1. NVMe boot setup
+2. System configuration (hostname, network)
+3. Gigabit network configuration
+4. SSH key setup via kubectl
+5. k3s worker installation
+6. Flannel gigabit network configuration
 
 ## Troubleshooting
 
