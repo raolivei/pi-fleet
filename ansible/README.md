@@ -63,22 +63,44 @@ ansible/
 └── README.md                # This file
 ```
 
+## Adding New Nodes to the Cluster
+
+**📖 Complete Guide**: See [ADD_NODE_COMPLETE.md](../docs/ADD_NODE_COMPLETE.md) for the complete step-by-step process.
+
+The process includes:
+1. NVMe boot configuration
+2. System setup (hostname, management IP)
+3. Network configuration (gigabit IP on eth0)
+4. k3s worker installation
+5. Gigabit network configuration
+
+**Quick Reference**: The pattern established with node-0 and node-1:
+- **Management IP**: On `wlan0` via NetworkManager/DHCP (e.g., `192.168.2.85`)
+- **Gigabit IP**: On `eth0` only via netplan (e.g., `10.0.0.2`)
+- **Boot**: From NVMe (SD card removed after setup)
+- **Hostname**: `node-X.eldertree.local`
+
 ## Inventory
 
 The inventory file (`inventory/hosts.yml`) defines the Raspberry Pi hosts:
 
-- **node-0**: Control plane node (192.168.2.80)
-- **node-1**: Worker node (192.168.2.81)
+- **node-0**: Control plane node (192.168.2.86)
+- **node-1**: Worker node (192.168.2.85)
 
 ### IP Assignment Pattern
 
 **CRITICAL**: All nodes use a consistent IP pattern:
-- node-0 = `192.168.2.80`
-- node-1 = `192.168.2.81`
-- node-2 = `192.168.2.82` (future)
-- node-N = `192.168.2.8N` (where N is the node number)
+- **Management IPs** (wlan0):
+  - node-0 = `192.168.2.86`
+  - node-1 = `192.168.2.85`
+  - node-2 = `192.168.2.84` (future)
+  - node-N = `192.168.2.8(6-N)` (where N is the node number)
 
-Formula: `192.168.2.80 + node_number`
+- **Gigabit IPs** (eth0):
+  - node-0 = `10.0.0.1`
+  - node-1 = `10.0.0.2`
+  - node-2 = `10.0.0.3` (future)
+  - node-N = `10.0.0.N` (where N is the node number)
 
 See [Node IP Assignment Documentation](../docs/NODE_IP_ASSIGNMENT.md) for details.
 
