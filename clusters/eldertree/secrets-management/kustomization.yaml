@@ -7,3 +7,15 @@ kind: Kustomization
 resources:
   - external-secrets # External Secrets Operator (installs CRDs first)
   - vault # HashiCorp Vault (production mode with persistent storage)
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+
+
+
+>>>>>>> flux-bootstrap

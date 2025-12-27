@@ -7,3 +7,15 @@ resources:
   - issuers # ClusterIssuer resources (self-signed certificates)
   - storage-class-nvme.yaml # NVMe/SATA storage class for main node (high-performance)
   - storage-class-sd.yaml # SD card storage class for worker nodes
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+
+
+
+>>>>>>> flux-bootstrap

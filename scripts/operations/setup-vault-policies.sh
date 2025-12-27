@@ -148,7 +148,11 @@ create_policy "journey-policy" "$POLICIES_DIR/journey-policy.hcl"
 create_policy "nima-policy" "$POLICIES_DIR/nima-policy.hcl"
 create_policy "us-law-severity-map-policy" "$POLICIES_DIR/us-law-severity-map-policy.hcl"
 create_policy "monitoring-policy" "$POLICIES_DIR/monitoring-policy.hcl"
+<<<<<<< HEAD
 create_policy "ollie-policy" "$POLICIES_DIR/ollie-policy.hcl"
+=======
+create_policy "aeron-policy" "$POLICIES_DIR/aeron-policy.hcl"
+>>>>>>> flux-bootstrap
 create_policy "infrastructure-policy" "$POLICIES_DIR/infrastructure-policy.hcl"
 create_policy "eso-readonly-policy" "$POLICIES_DIR/eso-readonly-policy.hcl"
 
@@ -166,7 +170,11 @@ create_service_token "journey-token" "journey-policy" "vault-token-journey"
 create_service_token "nima-token" "nima-policy" "vault-token-nima"
 create_service_token "us-law-severity-map-token" "us-law-severity-map-policy" "vault-token-us-law-severity-map"
 create_service_token "monitoring-token" "monitoring-policy" "vault-token-monitoring"
+<<<<<<< HEAD
 create_service_token "ollie-token" "ollie-policy" "vault-token-ollie"
+=======
+create_service_token "aeron-token" "aeron-policy" "vault-token-aeron"
+>>>>>>> flux-bootstrap
 create_service_token "infrastructure-token" "infrastructure-policy" "vault-token-infrastructure"
 
 echo ""
@@ -202,10 +210,17 @@ else
     echo -e "${YELLOW}Skipping canopy GHCR token (set CANOPY_GHCR_TOKEN env var to store)${NC}"
 fi
 
+<<<<<<< HEAD
 if [ -n "$OLLIE_GHCR_TOKEN" ]; then
     store_ghcr_token "ollie" "$OLLIE_GHCR_TOKEN"
 else
     echo -e "${YELLOW}Skipping ollie GHCR token (set OLLIE_GHCR_TOKEN env var to store)${NC}"
+=======
+if [ -n "$AERON_GHCR_TOKEN" ]; then
+    store_ghcr_token "aeron" "$AERON_GHCR_TOKEN"
+else
+    echo -e "${YELLOW}Skipping aeron GHCR token (set AERON_GHCR_TOKEN env var to store)${NC}"
+>>>>>>> flux-bootstrap
 fi
 
 echo ""
@@ -222,7 +237,11 @@ echo "  - journey-policy"
 echo "  - nima-policy"
 echo "  - us-law-severity-map-policy"
 echo "  - monitoring-policy"
+<<<<<<< HEAD
 echo "  - ollie-policy"
+=======
+echo "  - aeron-policy"
+>>>>>>> flux-bootstrap
 echo "  - infrastructure-policy"
 echo "  - eso-readonly-policy"
 echo ""
@@ -233,7 +252,11 @@ echo "  - vault-token-journey"
 echo "  - vault-token-nima"
 echo "  - vault-token-us-law-severity-map"
 echo "  - vault-token-monitoring"
+<<<<<<< HEAD
 echo "  - vault-token-ollie"
+=======
+echo "  - vault-token-aeron"
+>>>>>>> flux-bootstrap
 echo "  - vault-token-infrastructure"
 echo ""
 echo -e "${GREEN}Stored GitHub Tokens in Vault:${NC}"
@@ -241,7 +264,11 @@ echo "  - secret/swimto/ghcr-token"
 echo "  - secret/us-law-severity-map/ghcr-token"
 echo "  - secret/nima/ghcr-token"
 echo "  - secret/canopy/ghcr-token"
+<<<<<<< HEAD
 echo "  - secret/ollie/ghcr-token"
+=======
+echo "  - secret/aeron/ghcr-token"
+>>>>>>> flux-bootstrap
 echo ""
 echo -e "${YELLOW}Next Steps:${NC}"
 echo "  1. Update project scripts to use their respective tokens"

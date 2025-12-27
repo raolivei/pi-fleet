@@ -16,30 +16,9 @@ This directory contains Ansible playbooks and inventory for managing Raspberry P
    pip3 install ansible
    ```
 
-2. **SSH Access**: SSH keys are configured via Raspberry Pi Imager when creating the SD card:
-   - Use Raspberry Pi Imager to create bootable SD cards
-   - Enable SSH and configure username (`raolivei`)
-   - Add your SSH public key in Imager settings
-   - The SD card will have generic hostname "node-x" - Ansible will convert it to proper node-X.eldertree.local
-   - **Password fallback**: If SSH keys aren't working, you can use password authentication:
-     ```bash
-     # Set password via environment variable (never commit passwords to git)
-     export env_target_password='your-password-here'
-     ansible-playbook playbooks/setup-system.yml --ask-pass
-     ```
-     See [Password Management](#password-management) section for secure options.
-
-3. **Node Discovery** (for fresh SD card boots):
-   - When a new node boots with hostname "node-x" and gets an IP via DHCP, use the discovery playbook:
-     ```bash
-     # Discover node via mDNS/DNS (node-x.local)
-     ansible-playbook playbooks/discover-nodes.yml
-     
-     # Then setup the discovered node (specify which node number it should be)
-     ansible-playbook playbooks/setup-system.yml --limit node-x-discovered -e "inventory_hostname=node-2"
-     ```
-   - The discovery playbook will find the node's IP via mDNS (`.local` domain) or DNS
-   - After discovery, you can add it to the inventory with the correct IP and node number
+2. **SSH Access**: Ensure you can SSH into the Raspberry Pi nodes. You can use:
+   - SSH keys (recommended)
+   - Password authentication (configured in inventory)
 
 ## Directory Structure
 
@@ -49,60 +28,24 @@ ansible/
 ├── inventory/
 │   └── hosts.yml            # Inventory file with host definitions
 ├── playbooks/
-│   ├── discover-nodes.yml              # Discover nodes via hostname (node-x.local) for fresh SD boots
 │   ├── configure-user.yml              # User configuration playbook (legacy)
 │   ├── setup-system.yml                # Complete system setup playbook
-│   ├── setup-all-nodes.yml             # Master playbook for all nodes (system + monitoring + SSH)
 │   ├── install-k3s.yml                 # k3s cluster installation playbook
-│   ├── install-k3s-worker.yml         # k3s worker node installation playbook
 │   ├── bootstrap-flux.yml              # FluxCD GitOps bootstrap playbook
-│   ├── setup-eldertree.yml             # Master playbook for control plane (orchestrates all steps)
+│   ├── setup-eldertree.yml             # Master playbook (orchestrates all steps)
 │   ├── setup-terminal-monitoring.yml   # Terminal monitoring tools setup
 │   ├── configure-dns.yml               # DNS configuration (/etc/hosts)
 │   └── manage-secrets.yml              # Secret management in Vault
 └── README.md                # This file
 ```
 
-## Adding New Nodes to the Cluster
-
-**📖 Complete Guide**: See [ADD_NODE_COMPLETE.md](../docs/ADD_NODE_COMPLETE.md) for the complete step-by-step process.
-
-The process includes:
-1. NVMe boot configuration
-2. System setup (hostname, management IP)
-3. Network configuration (gigabit IP on eth0)
-4. k3s worker installation
-5. Gigabit network configuration
-
-**Quick Reference**: The pattern established with node-0 and node-1:
-- **Management IP**: On `wlan0` via NetworkManager/DHCP (e.g., `192.168.2.85`)
-- **Gigabit IP**: On `eth0` only via netplan (e.g., `10.0.0.2`)
-- **Boot**: From NVMe (SD card removed after setup)
-- **Hostname**: `node-X.eldertree.local`
-
 ## Inventory
 
 The inventory file (`inventory/hosts.yml`) defines the Raspberry Pi hosts:
 
-- **node-0**: Control plane node (192.168.2.86)
-- **node-1**: Worker node (192.168.2.85)
-
-### IP Assignment Pattern
-
-**CRITICAL**: All nodes use a consistent IP pattern:
-- **Management IPs** (wlan0):
-  - node-0 = `192.168.2.86`
-  - node-1 = `192.168.2.85`
-  - node-2 = `192.168.2.84` (future)
-  - node-N = `192.168.2.8(6-N)` (where N is the node number)
-
-- **Gigabit IPs** (eth0):
-  - node-0 = `10.0.0.1`
-  - node-1 = `10.0.0.2`
-  - node-2 = `10.0.0.3` (future)
-  - node-N = `10.0.0.N` (where N is the node number)
-
-See [Node IP Assignment Documentation](../docs/NODE_IP_ASSIGNMENT.md) for details.
+- **eldertree** (node-0): Control plane node (192.168.2.86 / 10.0.0.1)
+- **node-1**: Worker node (192.168.2.85 / 10.0.0.2)
+- **node-2**: Worker node (192.168.2.87 / 10.0.0.3) - when added
 
 ### Updating Inventory
 
@@ -111,99 +54,48 @@ To add new hosts, edit `inventory/hosts.yml`:
 ```yaml
 raspberry_pi:
   hosts:
-    node-0:
-      ansible_host: 192.168.2.80  # 192.168.2.80 + 0
+    eldertree:
+      ansible_host: eldertree.local
       ansible_user: raolivei
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     node-1:
-      ansible_host: 192.168.2.81  # 192.168.2.80 + 1
+      ansible_host: 192.168.2.85
       ansible_user: raolivei
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     node-2:
-      ansible_host: 192.168.2.82  # 192.168.2.80 + 2
+      ansible_host: 192.168.2.87
       ansible_user: raolivei
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
 ```
+
+See [ADD_NEW_NODE.md](../docs/ADD_NEW_NODE.md) for complete instructions on adding new nodes.
 
 ## Playbooks
-
-### Discover Nodes (`playbooks/discover-nodes.yml`) - **For Fresh SD Card Boots**
-
-Discovers nodes via hostname (`node-x.local` or `node-x`) using mDNS/DNS. Useful when:
-- A fresh SD card boots with generic hostname "node-x"
-- The node gets an IP via DHCP that you don't know yet
-- You want to automatically find the node's IP before adding it to inventory
-
-**Usage**:
-
-```bash
-cd ansible
-
-# Discover node-x via mDNS/DNS
-ansible-playbook playbooks/discover-nodes.yml
-
-# Output will show the discovered IP, then you can:
-# 1. Add it to inventory/hosts.yml with the correct node number
-# 2. Or run setup directly on the discovered node:
-ansible-playbook playbooks/setup-system.yml --limit node-x-discovered -e "inventory_hostname=node-2"
-```
-
-**How it works**:
-1. Tries to resolve `node-x.local` via mDNS (multicast DNS)
-2. Falls back to regular DNS lookup for `node-x`
-3. Tests SSH connectivity to discovered IP
-4. Adds discovered node to `discovered_nodes` group dynamically
-5. You can then target it with `--limit node-x-discovered`
-
-**Requirements**:
-- Node must be booted and on the network
-- mDNS/Bonjour must be working (usually automatic on macOS/Linux)
-- SSH must be accessible on the discovered IP
 
 ### Setup System (`playbooks/setup-system.yml`) - **Recommended for Fresh Install**
 
 Complete system setup playbook that configures:
 
-- **User Management**: Verifies `raolivei` user exists (created via Raspberry Pi Imager)
-- **Hostname**: Automatically converts generic "node-x" hostname from SD card to proper FQDN (`node-X.eldertree.local`) - **CRITICAL**: Never use just "eldertree"
-- **Network**: Configures static IP based on node number (node-0 = 192.168.2.80, node-1 = 192.168.2.81, etc.)
+- **User Management**: Creates `raolivei` user (password set via Ansible Vault)
+- **Hostname**: Sets hostname to `eldertree`
+- **Network**: Configures static IP (optional, defaults to DHCP)
 - **Bluetooth**: Enables and starts Bluetooth service
 - **Backup Mount**: Configures `/mnt/backup` with `nofail` option
-- **SSH**: Ensures SSH service is running (keys configured via Raspberry Pi Imager)
+- **SSH**: Configures SSH service
 - **System Packages**: Installs essential packages (curl, git, bluez, etc.)
 - **System Optimization**: Configures cgroups, timezone, NTP
-- **Cleanup**: Automatically removes diagnostic files after successful setup
 
 **Usage**:
 
 ```bash
 cd ansible
-
-# Option 1: Use helper script (recommended)
-./setup-node-0.sh  # For node-0
-# Or manually:
-ansible-playbook playbooks/setup-system.yml --limit node-0 --ask-pass --ask-become-pass -e "static_ip_override=192.168.2.80"
-
-# Option 2: Run on all nodes
-ansible-playbook playbooks/setup-system.yml
-```
-
-**Note**: 
-- User and SSH keys should be configured via Raspberry Pi Imager before running this playbook
-- The playbook now **safely detects existing configuration** and only makes changes when needed
-- Network configuration is preserved if already working correctly
-
-**Password Authentication** (fallback if SSH keys aren't working):
-```bash
-# Option 1: Set password via environment variable (recommended for one-time use)
-export env_target_password='your-password-here'
 ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
-
-# Option 2: Use Ansible Vault (recommended for repeated use)
-# See Password Management section below
 ```
 
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/setup-system.yml --limit node-0 --ask-pass --ask-become-pass
+ansible-playbook playbooks/setup-system.yml --limit eldertree --ask-pass --ask-become-pass
 ```
 
 **Dry run (check mode)**:
@@ -215,9 +107,8 @@ ansible-playbook playbooks/setup-system.yml --check
 **Variables** (can be overridden):
 
 ```yaml
-# CRITICAL: Hostname MUST be FQDN (node-X.eldertree.local), never just "eldertree"
-hostname_override: "node-0.eldertree.local"  # Defaults to inventory_hostname + '.eldertree.local'
-static_ip_override: "192.168.2.80"  # Auto-calculated: 192.168.2.80 + node_number, set to "" for DHCP
+hostname: eldertree
+static_ip: "192.168.2.83" # Set to null/empty for DHCP
 backup_device: "/dev/sdb1"
 backup_mount: "/mnt/backup"
 ```
@@ -247,7 +138,7 @@ ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass
 ```yaml
 k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
 k3s_token: "" # Auto-generated if empty
-k3s_hostname: "node-0.eldertree.local" # Hostname for TLS SAN (must be FQDN)
+k3s_hostname: "eldertree" # Hostname for TLS SAN
 kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig
 k3s_install_k9s: true # Install k9s CLI tool
 ```
@@ -334,48 +225,6 @@ All variables from `setup-system.yml` plus:
 
 **Recommended**: Use the `setup-eldertree.sh` script instead, which properly orchestrates all steps.
 
-### Setup All Nodes (`playbooks/setup-all-nodes.yml`) - **Recommended for All Nodes**
-
-Master playbook that configures all nodes in the `raspberry_pi` group (node-0, node-1, eldertree, etc.) with:
-
-- System packages (htop, vim, curl, git, etc.)
-- Terminal monitoring tools (btop, tmux, neofetch)
-- SSH key configuration
-- User setup
-
-**Features**:
-
-- Works on all nodes automatically (uses `inventory_hostname` for hostname)
-- DHCP by default (can override with `static_ip` for specific nodes)
-- Idempotent (safe to run multiple times)
-
-**Usage**:
-
-```bash
-# Run on all nodes
-cd ansible
-ansible-playbook playbooks/setup-all-nodes.yml
-
-# Run on specific node(s)
-ansible-playbook playbooks/setup-all-nodes.yml --limit node-0
-ansible-playbook playbooks/setup-all-nodes.yml --limit node-0,node-1
-
-# Override hostname or static IP for specific node
-ansible-playbook playbooks/setup-all-nodes.yml --limit node-0 -e static_ip=192.168.2.86
-```
-
-**After installation**:
-
-- System info will automatically display when you SSH/login
-- Run `btop` for interactive system monitoring
-- Run `neofetch` for system info with ASCII art
-- All essential packages installed
-
-**Note**: k3s installation is separate:
-
-- Control plane: Use `install-k3s.yml` or `setup-eldertree.yml`
-- Worker nodes: Use `install-k3s-worker.yml` with k3s_token
-
 ### Setup Terminal Monitoring (`playbooks/setup-terminal-monitoring.yml`)
 
 Installs and configures terminal-based monitoring tools that display system information on login.
@@ -405,7 +254,7 @@ ansible-playbook playbooks/setup-terminal-monitoring.yml --ask-pass --ask-become
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/setup-terminal-monitoring.yml --limit node-0 --ask-pass --ask-become-pass
+ansible-playbook playbooks/setup-terminal-monitoring.yml --limit eldertree --ask-pass --ask-become-pass
 ```
 
 **After installation**:
@@ -496,7 +345,7 @@ ansible-playbook playbooks/configure-user.yml
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/configure-user.yml --limit node-0
+ansible-playbook playbooks/configure-user.yml --limit eldertree
 ```
 
 **Dry run (check mode)**:
@@ -609,30 +458,6 @@ The script is idempotent and can be run multiple times safely.
 
 If you prefer manual control:
 
-**For all nodes (node-0, node-1)**:
-
-```bash
-# 1. Setup all nodes (system packages, btop, SSH keys)
-cd ansible
-ansible-playbook playbooks/setup-all-nodes.yml
-
-# 2. Install k3s control plane (on node-0 only)
-ansible-playbook playbooks/install-k3s.yml --limit node-0
-
-# 3. Install k3s worker nodes (on node-1)
-# First get the token from control plane:
-# ssh raolivei@node-0 "sudo cat /var/lib/rancher/k3s/server/node-token"
-ansible-playbook playbooks/install-k3s-worker.yml \
-  --limit node-1 \
-  -e k3s_token=YOUR_TOKEN_HERE \
-  -e k3s_server_url=https://node-0:6443
-
-# 4. Bootstrap FluxCD (optional, on control plane)
-ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true
-```
-
-**For control plane only (node-0)**:
-
 ```bash
 # 1. System configuration
 cd ansible
@@ -672,8 +497,8 @@ ansible-playbook playbooks/configure-user.yml --check
 # Verbose output
 ansible-playbook playbooks/configure-user.yml -vv
 
-# Run only on node-0
-ansible-playbook playbooks/configure-user.yml --limit node-0
+# Run only on eldertree
+ansible-playbook playbooks/configure-user.yml --limit eldertree
 
 # Run with custom password
 ansible-playbook playbooks/configure-user.yml \
@@ -715,6 +540,19 @@ If using password authentication, you can:
    ```bash
    ansible-playbook playbooks/configure-user.yml --ask-pass
    ```
+
+## Adding New Nodes
+
+For complete instructions on adding new nodes (e.g., node-2) to the cluster, see:
+- **[ADD_NEW_NODE.md](../docs/ADD_NEW_NODE.md)** - Complete guide for adding new nodes
+
+The process includes:
+1. NVMe boot setup
+2. System configuration (hostname, network)
+3. Gigabit network configuration
+4. SSH key setup via kubectl
+5. k3s worker installation
+6. Flannel gigabit network configuration
 
 ## Troubleshooting
 
@@ -761,69 +599,10 @@ ansible all -m ping -u pi
 - **Kubeconfig missing**: Re-run `install-k3s.yml` to regenerate kubeconfig
 - **Reboot required**: If cgroups are updated, the Pi will reboot automatically. The playbook waits for it to come back online.
 
-## Password Management
-
-The default password for `raolivei@node-x` is set via Raspberry Pi Imager. To use password authentication securely:
-
-### Option 1: Environment Variable (One-time Use, No File Written)
-
-```bash
-# Method A: Use helper script (sets password without writing to file)
-source ansible/set-password.sh
-ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
-
-# Method B: Set manually (temporary, not persisted)
-export env_target_password='your-password-here'
-ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
-```
-
-**Note**: The helper script (`set-password.sh`) contains the password but is gitignored. It sets the environment variable temporarily without writing to any persistent file.
-
-### Option 2: Ansible Vault (Recommended for Repeated Use)
-
-1. Create an encrypted vault file:
-   ```bash
-   ansible-vault create ansible/group_vars/raspberry_pi/vault.yml
-   ```
-
-2. Add the password:
-   ```yaml
-   vault_target_password: 'your-password-here'
-   ```
-
-3. Use the vault file:
-   ```bash
-   ansible-playbook playbooks/setup-system.yml --ask-vault-pass
-   ```
-
-### Option 3: Local Secrets File (Gitignored)
-
-1. Copy the example file:
-   ```bash
-   cp ansible/.env.secrets.example ansible/.env.secrets
-   ```
-
-2. Edit `ansible/.env.secrets` and add your password:
-   ```bash
-   env_target_password='your-password-here'
-   ```
-
-3. Source before running playbooks:
-   ```bash
-   source ansible/.env.secrets
-   ansible-playbook playbooks/setup-system.yml --ask-pass
-   ```
-
-**Security Best Practices:**
-- ✅ **Never commit passwords to git**
-- ✅ Prefer SSH keys over passwords (configured via Raspberry Pi Imager)
-- ✅ Use Ansible Vault for production environments
-- ✅ Rotate passwords after initial setup
-
 ## Security Considerations
 
-1. **Password Storage**: See [Password Management](#password-management) section above for secure options
-2. **SSH Keys**: Prefer SSH key authentication over passwords (configured via Raspberry Pi Imager)
+1. **Password Storage**: Consider using Ansible Vault for sensitive passwords
+2. **SSH Keys**: Prefer SSH key authentication over passwords
 3. **Host Key Checking**: Re-enable in production environments
 4. **Sudo Access**: The playbook configures passwordless sudo. Consider requiring passwords for production:
    ```yaml

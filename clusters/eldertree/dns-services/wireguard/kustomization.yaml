@@ -4,3 +4,12 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - install-job.yaml
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+>>>>>>> flux-bootstrap

@@ -4,8 +4,7 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
-  # clustersecretstore.yaml - Temporarily disabled until External Secrets Operator CRDs are installed
-  # Uncomment after External Secrets Operator HelmRelease is ready
-  # - clustersecretstore.yaml
-  # externalsecrets/ - Temporarily disabled until ClusterSecretStore is ready
-  # - externalsecrets/
+  # clustersecretstore.yaml - Applied manually after External Secrets Operator is ready
+  # This avoids chicken-and-egg: ClusterSecretStore CRD must exist first
+  - externalsecrets/
+
