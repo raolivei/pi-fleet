@@ -30,6 +30,14 @@ spec:
       {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) .Values.service.dnsNodePort }}
       nodePort: {{ .Values.service.dnsNodePort }}
       {{- end }}
+    - name: bind-udp
+      port: {{ .Values.service.bindUdpPort }}
+      protocol: UDP
+      targetPort: 5353
+    - name: bind-tcp
+      port: {{ .Values.service.bindTcpPort }}
+      protocol: TCP
+      targetPort: 5353
     - name: http
       port: {{ .Values.service.httpPort }}
       protocol: TCP

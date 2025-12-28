@@ -69,7 +69,7 @@ else
     echo ""
     echo "  ssh ${PI_USER}@${PI_IP}"
     echo "  cd /tmp"
-    echo "  curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/infrastructure/wireguard/install-wireguard.sh"
+    echo "  curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/dns-services/wireguard/install-wireguard.sh"
     echo "  chmod +x install-wireguard.sh"
     echo "  sudo ./install-wireguard.sh"
     echo ""

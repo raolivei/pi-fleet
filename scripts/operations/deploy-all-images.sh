@@ -172,10 +172,11 @@ build_and_push "canopy/frontend" "Dockerfile" "canopy-frontend" "latest"
 build_and_push "nima" "Dockerfile" "nima-api" "v0.3.1"
 
 # Build SwimTO API
-build_and_push "swimTO/apps/api" "Dockerfile" "swimto-api" "latest"
+SWIMTO_VERSION=$(cat swimTO/VERSION | tr -d '[:space:]')
+build_and_push "swimTO/apps/api" "Dockerfile" "swimto-api" "v${SWIMTO_VERSION}"
 
 # Build SwimTO Web
-build_and_push "swimTO/apps/web" "Dockerfile" "swimto-web" "latest"
+build_and_push "swimTO/apps/web" "Dockerfile" "swimto-web" "v${SWIMTO_VERSION}"
 
 # Build US Law Severity Map
 build_and_push "us-law-severity-map" "Dockerfile" "us-law-severity-map-web" "v1.0.0"

@@ -13,7 +13,7 @@ Then copy and paste this entire block:
 
 ```bash
 cd /tmp && \
-curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/infrastructure/wireguard/install-wireguard.sh && \
+curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/dns-services/wireguard/install-wireguard.sh && \
 chmod +x install-wireguard.sh && \
 sudo ./install-wireguard.sh
 ```
@@ -44,7 +44,7 @@ If behind NAT, forward UDP port `51820` to `192.168.2.83` in router settings.
 Back on your Mac:
 
 ```bash
-cd ~/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/infrastructure/wireguard
+cd ~/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/dns-services/wireguard
 
 # If SSH works, run:
 ./generate-client.sh mac

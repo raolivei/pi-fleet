@@ -12,7 +12,7 @@ spec:
         spec:
           containers:
             - name: data-refresh
-              image: ghcr.io/raolivei/swimto-api:latest
+              image: ghcr.io/raolivei/swimto-api:v0.5.2
               imagePullPolicy: IfNotPresent
               command:
                 - python
