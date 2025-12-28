@@ -6,6 +6,8 @@ metadata:
     {{- include "pi-hole.labels" . | nindent 4 }}
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "pi-hole.selectorLabels" . | nindent 6 }}
@@ -90,7 +92,7 @@ spec:
             {{- toYaml .Values.resources.pihole | nindent 12 }}
           livenessProbe:
             httpGet:
-              path: /admin/
+              path: /
               port: 80
             initialDelaySeconds: 60
             periodSeconds: 30
