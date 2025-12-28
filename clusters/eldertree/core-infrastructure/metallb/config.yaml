@@ -15,5 +15,3 @@ metadata:
 spec:
   ipAddressPools:
     - default
-  interfaces:
-    - wlan0
