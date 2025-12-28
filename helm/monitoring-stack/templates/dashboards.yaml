@@ -1,5 +1,5 @@
 {{- range $path, $bytes := .Files.Glob "dashboards/*.json" }}
-{{- $name := split "/" $path | last }}
+{{- $name := base $path }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
