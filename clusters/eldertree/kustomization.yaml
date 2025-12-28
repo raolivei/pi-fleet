@@ -12,9 +12,10 @@ resources:
   # - observability # Monitoring stack (Prometheus, Grafana, Alertmanager)
   - autoscaling # KEDA event-driven autoscaling
 
+
   # Applications
   # - canopy # Personal finance dashboard
-  - swimto # Toronto pool schedules
+  # - swimto # Toronto pool schedules (DISABLED)
   # - nima          # AI/ML learning project (DISABLED - not needed)
   # - journey       # AI-powered career pathfinder (DISABLED - not deployed yet)
   # - us-law-severity-map  # US law visualization (DISABLED - not deployed yet)
