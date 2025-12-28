@@ -27,18 +27,6 @@ spec:
         - name: api
           image: ghcr.io/raolivei/swimto-api:latest # {"$imagepolicy": "swimto:swimto-api-policy"}
           imagePullPolicy: IfNotPresent
-<<<<<<< HEAD
-          command: ["sh", "-c"]
-          args:
-            - |
-              # Check if alembic directory exists before running migrations
-              if [ -d "/app/alembic" ] && [ -f "/app/alembic.ini" ]; then
-                cd /app && alembic upgrade head >/dev/null 2>&1 || true
-              fi
-              # Start uvicorn server
-              exec uvicorn app.main:app --host 0.0.0.0 --port 8000
-=======
->>>>>>> flux-bootstrap
           ports:
             - containerPort: 8000
               name: http
