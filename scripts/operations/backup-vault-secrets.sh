@@ -31,8 +31,8 @@ echo "Exporting secrets..." >&2
 # Define all secret paths
 SECRET_PATHS=(
     "secret/monitoring/grafana"
-    "secret/pihole/webpassword"
-    "secret/flux/git"
+    "secret/pi-fleet/pihole/webpassword"
+    "secret/pi-fleet/flux/git"
     "secret/canopy/ghcr-token"
     "secret/canopy/postgres"
     "secret/canopy/app"
@@ -46,7 +46,7 @@ SECRET_PATHS=(
     "secret/us-law-severity-map/mapbox"
     "secret/journey/postgres"
     "secret/journey/database"
-    "secret/external-dns/tsig-secret"
+    "secret/pi-fleet/external-dns/tsig-secret"
     "secret/pi-fleet/terraform/cloudflare-api-token"
     "secret/pi-fleet/external-dns/cloudflare-api-token"
     "secret/pi-fleet/cloudflare-tunnel/token"

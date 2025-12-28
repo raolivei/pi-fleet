@@ -121,12 +121,13 @@ All infrastructure secrets are organized under `secret/pi-fleet/`:
 - `secret/pi-fleet/external-dns/cloudflare-api-token` - Cloudflare API token for External-DNS Cloudflare provider (`api-token`)
 - `secret/pi-fleet/cloudflare-tunnel/token` - Cloudflare Tunnel token for cloudflared connector (`token`)
 - `secret/pi-fleet/terraform/pi-user` - Pi SSH username (optional, defaults to "pi") (`pi-user`)
+- `secret/pi-fleet/pihole/webpassword` - Pi-hole web admin password
+- `secret/pi-fleet/flux/git` - Flux Git SSH private key (`sshKey`)
+- `secret/pi-fleet/external-dns/tsig-secret` - External DNS TSIG secret for RFC2136 DNS updates
 
-### Legacy Infrastructure (still supported for backward compatibility)
-- `secret/pihole/webpassword` - Pi-hole web admin password
-- `secret/flux/git` - Flux Git SSH private key (`sshKey`)
-- `secret/canopy/ghcr-token` - GitHub Container Registry token
-- `secret/external-dns/tsig-secret` - External DNS TSIG secret for RFC2136 DNS updates
+### Legacy Infrastructure (Deprecated)
+The following paths are being migrated to `secret/pi-fleet/`:
+- `secret/canopy/ghcr-token` - GitHub Container Registry token (still used by multiple projects)
 
 ### Canopy Application
 - `secret/canopy/postgres` - Canopy PostgreSQL password

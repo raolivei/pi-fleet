@@ -14,6 +14,6 @@ spec:
   data:
     - secretKey: identity
       remoteRef:
-        key: secret/flux/git
+        key: secret/pi-fleet/flux/git
         property: sshKey
 
