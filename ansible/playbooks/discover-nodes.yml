@@ -89,3 +89,4 @@
           debug:
             msg: "⚠️  No nodes discovered via hostname 'node-x.local' or 'node-x'. Make sure the node is booted and on the network."
           when: discovered_ip == "" or ssh_test is failed
+

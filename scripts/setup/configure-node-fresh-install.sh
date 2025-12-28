@@ -132,3 +132,4 @@ echo "  2. After reboot, run migration: sudo ./migrate-nvme-hat.sh $NODE_NAME"
 echo "  3. Connect PoE+ to switch (when ready)"
 echo ""
 
+
