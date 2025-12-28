@@ -1,0 +1,43 @@
+---
+# Master playbook for worker node setup
+# This orchestrates complete setup for a new Raspberry Pi worker node
+# Usage: ansible-playbook playbooks/setup-worker-node.yml --limit <hostname> -e hostname=<hostname> -e static_ip=<ip>
+
+- name: System Configuration
+  import_playbook: setup-system.yml
+  vars:
+    target_user: raolivei
+    node_hostname: "{{ hostname_var | default(node_hostname | default('eldertree-node-1')) }}"
+    node_ip: "{{ static_ip_var | default(node_ip | default('')) }}" # Empty for DHCP
+    backup_device: "{{ backup_device | default('') }}"
+
+- name: Setup SSH Keys for Node-to-Node Communication
+  import_playbook: setup-ssh-keys.yml
+
+- name: Setup Terminal Monitoring
+  import_playbook: setup-terminal-monitoring.yml
+  vars:
+    target_user: raolivei
+
+- name: Install k3s Worker
+  import_playbook: install-k3s-worker.yml
+  vars:
+    k3s_server_url: "https://node-0:6443" # Use node-0 hostname, not eldertree
+    k3s_token: "{{ k3s_token_input | default(lookup('env', 'K3S_TOKEN') | default('')) }}" # Must be provided via -e k3s_token_input=... or K3S_TOKEN env var
+    k3s_node_name: "{{ node_hostname | default('node-1') }}"
+
+- name: Setup Summary
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Display completion summary
+      debug:
+        msg:
+          - "=== Worker Node Setup Complete ==="
+          - ""
+          - "Hostname: {{ hostname | default('eldertree-node-1') }}"
+          - "System configuration: Complete"
+          - "k3s worker installation: Complete"
+          - ""
+          - "Verify node joined cluster:"
+          - "  kubectl get nodes --kubeconfig=~/.kube/config-eldertree"

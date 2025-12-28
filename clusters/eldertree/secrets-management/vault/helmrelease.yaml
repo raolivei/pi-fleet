@@ -5,6 +5,9 @@ metadata:
   namespace: vault
 spec:
   interval: 30m
+  dependsOn:
+    - name: cert-manager-issuers
+      namespace: flux-system
   chart:
     spec:
       chart: vault

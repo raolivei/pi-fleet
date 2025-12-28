@@ -5,6 +5,11 @@ metadata:
   namespace: external-dns
 spec:
   interval: 30m
+  dependsOn:
+    - name: external-secrets
+      namespace: external-secrets
+    - name: cert-manager-issuers
+      namespace: flux-system
   chart:
     spec:
       chart: external-dns

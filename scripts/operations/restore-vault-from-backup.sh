@@ -162,3 +162,4 @@ echo "   1. Verify secrets: kubectl exec -n vault vault-0 -- vault kv list secre
 echo "   2. Update External Secrets Operator token if needed"
 echo ""
 
+

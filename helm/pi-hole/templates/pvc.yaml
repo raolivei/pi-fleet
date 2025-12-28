@@ -12,3 +12,4 @@ spec:
       storage: {{ .Values.persistence.size }}
   storageClassName: {{ .Values.persistence.storageClass }}
 
+

@@ -34,3 +34,4 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app: pihole
 {{- end }}
 
+

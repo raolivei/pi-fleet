@@ -2,19 +2,190 @@
 
 ## Project Overview
 
-K3s cluster management on Raspberry Pi using Terraform for infrastructure and FluxCD for GitOps.
+K3s cluster management on Raspberry Pi using Ansible for system configuration, Terraform for infrastructure, and FluxCD for GitOps.
 
 ## Project Structure
 
 ```
 pi-fleet/
-├── terraform/             # Infrastructure as code (K3s setup)
-├── clusters/              # FluxCD GitOps manifests
-│   └── eldertree/         # Control plane cluster configs
-├── helm/                  # Custom Helm charts
-├── scripts/               # Utility scripts
-└── docs/                  # Documentation
+├── ansible/              # Ansible playbooks for system configuration
+│   ├── inventory/        # Host inventory (node-0, node-1, etc.)
+│   ├── playbooks/       # System setup, K3s install, NVMe boot, etc.
+│   └── group_vars/      # Centralized variables (network, IPs, etc.)
+├── terraform/            # Infrastructure as code (Cloudflare, etc.)
+├── clusters/             # FluxCD GitOps manifests
+│   └── eldertree/       # Control plane cluster configs
+├── helm/                 # Custom Helm charts
+├── scripts/              # Utility scripts
+└── docs/                 # Documentation
 ```
+
+## Critical Raspberry Pi Setup Procedures
+
+### Node Naming Convention
+
+- **Control Plane**: `node-0` (also known as `eldertree`)
+- **Worker Nodes**: `node-1`, `node-2`, `node-3`, etc. (sequential)
+- **IP Assignment**: Sequential IPs from `group_vars/all.yml`
+  - `node-0`: 192.168.2.86
+  - `node-1`: 192.168.2.85
+  - `node-2`: 192.168.2.87
+  - etc.
+
+### Network Configuration Safety
+
+**CRITICAL**: Network configuration can break SSH access. Always follow these rules:
+
+1. **DHCP by Default**: `setup-system.yml` uses DHCP by default (safer)
+2. **Static IP is Opt-In**: Only configure static IP if explicitly requested:
+   ```bash
+   -e "configure_static_ip=true" -e "static_ip=192.168.2.86"
+   ```
+3. **Preserve wlan0 DHCP**: When configuring static IP on eth0, always ensure wlan0 maintains DHCP for internet connectivity
+4. **Isolated Switch Setup**: For gigabit eth0 connections on isolated switches, use separate subnet (10.0.0.0/24) without gateway/DNS
+5. **Router DHCP Reservations**: Preferred over static IP configuration (avoids network breakage)
+
+### NVMe Boot Setup
+
+**CRITICAL Requirements for Raspberry Pi 5 NVMe Boot:**
+
+1. **ESP Flag Required**: Boot partition MUST have ESP (EFI System Partition) flag set:
+
+   ```bash
+   sudo parted /dev/nvme0n1 set 1 esp on
+   ```
+
+   The `setup-nvme-boot.yml` playbook handles this automatically.
+
+2. **Use rsync, NOT dd**: For cloning root partition, use `rsync` instead of `dd`:
+
+   - `dd` causes filesystem size mismatch issues (source 63GB → destination 30GB)
+   - `rsync` copies only actual files, not empty space
+   - Example: `rsync -aAXHv --exclude={/dev/*,/proc/*,/sys/*,...} /mnt/sd-root/ /mnt/nvme-root/`
+
+3. **fstab PARTUUIDs**: After cloning, MUST update fstab to use NVMe PARTUUIDs:
+
+   - Get PARTUUIDs: `sudo blkid /dev/nvme0n1p1 /dev/nvme0n1p2`
+   - Update fstab: Replace SD card PARTUUIDs with NVMe PARTUUIDs
+   - The playbook handles this automatically
+
+4. **cmdline.txt**: Must point to NVMe root: `root=/dev/nvme0n1p2`
+
+5. **Boot Order**: Raspberry Pi 5 tries NVMe first, then SD card (automatic fallback)
+
+### Root Account Lock Prevention
+
+**CRITICAL**: Root account locks when switching boot devices. Always apply prevention:
+
+1. **Before Boot Device Switch**:
+
+   - Unlock root: `sudo passwd -u root`
+   - Set root password: `sudo passwd root` (use same password as user)
+   - Disable PAM faillock for root: Comment out `pam_faillock.so` in `/etc/pam.d/common-auth`
+   - Reset faillock: `sudo faillock --user root --reset`
+
+2. **In Cloned Filesystem** (before unmounting):
+
+   - Apply all root lock prevention steps using `chroot`
+   - The `setup-nvme-boot.yml` playbook handles this automatically
+
+3. **fstab nofail**: Add `nofail` to optional mount entries to prevent emergency mode
+
+4. **Recovery Playbooks**: Use `fix-root-lock.yml` or `fix-emergency-mode.yml` if issues occur
+
+### Essential Packages
+
+Always install these packages via `setup-system.yml`:
+
+- `sshpass` - For password-based SSH automation
+- `btop` - Terminal monitoring (preferred over htop)
+- `curl`, `wget`, `git`, `vim`, `htop`, `tmux`
+- `rsync` - For file copying (not dd)
+- `iptables`, `ufw` - Firewall
+- `openssh-server` - SSH access
+
+### SSH Key Automation
+
+**ALWAYS** use `setup-ssh-keys.yml` playbook for node-to-node SSH:
+
+- Automatically installs `sshpass`
+- Generates SSH keys if missing
+- Distributes public keys to all nodes
+- Integrated into `setup-eldertree.yml` and `setup-worker-node.yml`
+
+### Fresh OS Installation Procedure
+
+1. **Flash OS** using Raspberry Pi Imager:
+
+   - OS: Debian Bookworm (64-bit) or Debian Trixie (64-bit)
+   - Enable SSH
+   - Username: `raolivei` (or `pi` for default)
+   - Password: Set during imaging
+
+2. **Find IP**: Check router DHCP leases or scan network
+
+3. **Update Inventory**: Add to `ansible/inventory/hosts.yml`:
+
+   ```yaml
+   node-X:
+     ansible_host: 192.168.2.XX
+     ansible_user: raolivei
+     ansible_ssh_pass: "password"
+     node_ip: "192.168.2.XX"
+     node_hostname: "node-X"
+   ```
+
+4. **Run System Setup**:
+
+   ```bash
+   cd ansible
+   ansible-playbook -i inventory/hosts.yml \
+     playbooks/setup-system.yml \
+     --limit node-X \
+     -e "node_hostname=node-X"
+   ```
+
+5. **For Control Plane**: Run `setup-eldertree.yml`
+6. **For Worker Node**: Run `setup-worker-node.yml`
+
+### Ansible Playbook Structure
+
+**Master Playbooks** (orchestrate multiple steps):
+
+- `setup-eldertree.yml` - Complete control plane setup
+- `setup-worker-node.yml` - Complete worker node setup
+
+**Component Playbooks** (used by master playbooks):
+
+- `setup-system.yml` - System configuration (user, hostname, network, packages)
+- `setup-ssh-keys.yml` - SSH key generation and distribution
+- `setup-nvme-boot.yml` - NVMe boot configuration
+- `install-k3s.yml` - K3s server installation
+- `install-k3s-worker.yml` - K3s worker installation
+- `setup-terminal-monitoring.yml` - Terminal tools (btop, etc.)
+
+**Recovery Playbooks**:
+
+- `fix-root-lock.yml` - Unlock root account
+- `fix-emergency-mode.yml` - Fix emergency mode and root lock
+
+### Variables Centralization
+
+**ALWAYS** use variables from `group_vars/all.yml`:
+
+- Network config: `network_base`, `network_gateway`, `network_dns`
+- Node IPs: `node_0_ip`, `node_1_ip`, etc.
+- k3s config: `k3s_server_url`, `k3s_server_ip`
+
+**NEVER** hardcode IPs, hostnames, or network settings in playbooks.
+
+### Reboot Minimization
+
+**ALWAYS** minimize reboots:
+
+- Use `netplan apply` instead of reboot for network changes
+- Only reboot if `cmdline.txt` is actually modified (for cgroup settings)
+- Use service restarts instead of reboots when possible
 
 ## Code Conventions
 
@@ -40,7 +211,15 @@ pi-fleet/
 - Document values.yaml
 - Version charts appropriately
 
-### Git Workflow
+### Ansible Playbooks
+
+- **Idempotent**: All playbooks must be safe to run multiple times
+- **Variable-driven**: Use `group_vars/all.yml` for centralized config
+- **Error handling**: Use `failed_when: false` for non-critical tasks
+- **Documentation**: Include clear task descriptions
+- **Modular**: Break complex tasks into reusable playbooks
+
+## Git Workflow
 
 **Branch Naming Convention:**
 
@@ -89,6 +268,46 @@ git push origin main
 
 ## Common Tasks
 
+### Adding New Worker Node
+
+1. **Flash OS** to SD card using Raspberry Pi Imager
+2. **Boot Pi** and find IP address
+3. **Update Inventory**: Add to `ansible/inventory/hosts.yml` with sequential IP
+4. **Run Setup**:
+   ```bash
+   cd ansible
+   ansible-playbook -i inventory/hosts.yml \
+     playbooks/setup-worker-node.yml \
+     --limit node-X
+   ```
+5. **Verify**: Node should join cluster automatically
+
+### Setting Up NVMe Boot
+
+1. **Verify NVMe detected**: `lsblk | grep nvme`
+2. **Run Setup**:
+   ```bash
+   cd ansible
+   ansible-playbook -i inventory/hosts.yml \
+     playbooks/setup-nvme-boot.yml \
+     --limit node-X \
+     -e "setup_nvme_boot=true" \
+     -e "target_password=password"
+   ```
+3. **Reboot**: `sudo reboot`
+4. **Verify**: `df -h /` should show `/dev/nvme0n1p2`
+
+### Recovering from Root Lock
+
+1. **If booted from SD card**: Run `fix-root-lock.yml`
+2. **If in emergency mode**: Run `fix-emergency-mode.yml`
+3. **Or manually**:
+   ```bash
+   sudo passwd -u root
+   sudo passwd root  # Set password
+   sudo faillock --user root --reset
+   ```
+
 ### Adding New Cluster
 
 1. Create directory: `clusters/<cluster-name>/`
@@ -120,15 +339,11 @@ git push origin main
 
 ## Development Setup
 
-### Terraform
+### Ansible
 
 ```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your credentials
-terraform init
-terraform plan
-terraform apply
+cd ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-0
 ```
 
 ### Kubernetes Access
@@ -146,22 +361,19 @@ kubectl get nodes
 
 ### SSH Access
 
-**ALWAYS use `sshpass` when SSH'ing into eldertree:**
+**ALWAYS use `sshpass` when SSH'ing into nodes:**
 
-- **NEVER** use plain `ssh` commands to eldertree
+- **NEVER** use plain `ssh` commands
 - **ALWAYS** use `sshpass -p 'PASSWORD' ssh` format
-- Password is stored in `terraform/terraform.tfvars` as `pi_password`
-- Example: `sshpass -p 'PASSWORD' ssh raolivei@eldertree "command"`
-- For `scp`: `sshpass -p 'PASSWORD' scp file raolivei@eldertree:/path`
-
-This ensures non-interactive SSH access in scripts and automation.
+- Password stored in inventory `ansible_ssh_pass`
+- Example: `sshpass -p 'password' ssh raolivei@192.168.2.86 "command"`
 
 ## Important Notes
 
 ### Cluster Naming
 
-- Control plane: `eldertree` (192.168.2.83)
-- Workers: `fleet-worker-01`, `fleet-worker-02`, etc.
+- Control plane: `node-0` (also `eldertree`)
+- Workers: `node-1`, `node-2`, `node-3`, etc.
 
 ### Secrets Management
 
@@ -179,22 +391,29 @@ This ensures non-interactive SSH access in scripts and automation.
 ### Hardware
 
 - Raspberry Pi 5 (8GB, ARM64)
-- Debian 12 Bookworm
-- K3s v1.33.5+k3s1
-- Helm v4.0.0
+- Debian 12 Bookworm or Debian Trixie
+- NVMe SSD for boot (256GB+ recommended)
+- SD card as backup boot option
 
 ## Documentation
 
 - `README.md` - Overview and quick start
+- `ansible/README.md` - Ansible playbook documentation
 - `NETWORK.md` - DNS and network setup
 - `VAULT.md` - Secrets management
 - `CONTRIBUTING.md` - Git workflow details
 - `docs/INGRESS.md` - Ingress and SSL setup
+- `docs/NVME_BOOT_SETUP.md` - NVMe boot guide
+- `docs/ADD_WORKER_NODE.md` - Adding worker nodes
+- `docs/RECOVER_LOCKED_ROOT.md` - Root lock recovery
 
 ## Key Principles
 
 - **GitOps** - Infrastructure and apps defined in Git
-- **Infrastructure as Code** - Terraform for provisioning
+- **Infrastructure as Code** - Ansible for system config, Terraform for provisioning
 - **Self-hosted** - Runs on Raspberry Pi hardware
 - **FluxCD** - Automatic sync from Git
 - **Secrets in Vault** - Never in Git
+- **Safety First** - DHCP by default, opt-in for risky changes
+- **Idempotency** - All playbooks safe to run multiple times
+- **Automation** - SSH keys, package installs, system config all automated

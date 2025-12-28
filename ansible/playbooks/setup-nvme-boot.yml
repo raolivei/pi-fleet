@@ -1,0 +1,589 @@
+---
+- name: Setup Boot from NVMe on Raspberry Pi 5
+  hosts: raspberry_pi
+  become: true
+  vars:
+    nvme_device: "/dev/nvme0n1"
+    sd_card: "/dev/mmcblk0"
+    setup_nvme_boot: "{{ setup_nvme_boot | default(false) | bool }}"
+    clone_from_sd: "{{ clone_from_sd | default(true) | bool }}"
+    target_password: "{{ vault_target_password | default(lookup('env', 'PI_PASSWORD')) }}"
+    password_hash: "{{ target_password | password_hash('sha512') }}"
+
+  tasks:
+    # =========================================================================
+    # Pre-flight Checks
+    # =========================================================================
+    - name: Check if running on Raspberry Pi 5
+      command: cat /proc/device-tree/model
+      register: pi_model
+      changed_when: false
+      failed_when: false
+
+    - name: Verify Raspberry Pi 5
+      fail:
+        msg: "This playbook requires Raspberry Pi 5. Detected: {{ pi_model.stdout | default('Unknown') }}"
+      when: "'Raspberry Pi 5' not in (pi_model.stdout | default(''))"
+
+    - name: Check if NVMe device exists
+      stat:
+        path: "{{ nvme_device }}"
+      register: nvme_device_check
+      failed_when: false
+
+    - name: Fail if NVMe device not found
+      fail:
+        msg: "NVMe device {{ nvme_device }} not found. Please ensure NVMe drive is connected."
+      when: not nvme_device_check.stat.exists
+
+    - name: Check if SD card exists
+      stat:
+        path: "{{ sd_card }}"
+      register: sd_card_check
+      failed_when: false
+
+    - name: Check current boot device
+      command: df / | tail -1 | awk '{print $1}'
+      register: current_root
+      changed_when: false
+      failed_when: false
+
+    - name: Display current status
+      debug:
+        msg:
+          - "Current boot device: {{ current_root.stdout | default('Unknown') }}"
+          - "NVMe device: {{ nvme_device }}"
+          - "SD card: {{ sd_card }}"
+          - ""
+          - "⚠️  WARNING: This will erase all data on NVMe!"
+          - "⚠️  Make sure you have backups before proceeding!"
+
+    - name: Skip if already booting from NVMe
+      meta: end_play
+      when: nvme_device in (current_root.stdout | default(''))
+
+    # =========================================================================
+    # Check if NVMe already has partitions
+    # =========================================================================
+    - name: Check NVMe partition status
+      command: lsblk -n -o NAME "{{ nvme_device }}"
+      register: nvme_partitions
+      changed_when: false
+      failed_when: false
+
+    - name: Count NVMe partitions
+      set_fact:
+        nvme_partition_count: "{{ (nvme_partitions.stdout_lines | default([]) | length) - 1 }}"
+      changed_when: false
+
+    - name: Warn if NVMe has partitions
+      debug:
+        msg: "⚠️  NVMe already has partitions. This will erase all data!"
+      when: nvme_partition_count | int > 0
+
+    # =========================================================================
+    # Stop services that might use storage
+    # =========================================================================
+    - name: Check if k3s is running
+      systemd:
+        name: k3s
+      register: k3s_status
+      changed_when: false
+      failed_when: false
+
+    - name: Stop k3s if running
+      systemd:
+        name: k3s
+        state: stopped
+      when: k3s_status.status.ActiveState == 'active'
+
+    - name: Stop containerd if running
+      systemd:
+        name: containerd
+        state: stopped
+      failed_when: false
+      changed_when: false
+
+    # =========================================================================
+    # Unmount NVMe if mounted
+    # =========================================================================
+    - name: Get NVMe mount points
+      command: mount | grep "{{ nvme_device }}" | awk '{print $3}'
+      register: nvme_mounts
+      changed_when: false
+      failed_when: false
+
+    - name: Unmount NVMe partitions
+      mount:
+        path: "{{ item }}"
+        state: unmounted
+      loop: "{{ nvme_mounts.stdout_lines | default([]) }}"
+      failed_when: false
+      when: nvme_mounts.stdout_lines | length > 0
+
+    # =========================================================================
+    # Create partitions on NVMe
+    # =========================================================================
+    - name: Create GPT partition table on NVMe (will erase existing partitions)
+      command: "parted {{ nvme_device }} --script mklabel gpt"
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+
+    - name: Create boot partition on NVMe (1024MiB for safety)
+      parted:
+        device: "{{ nvme_device }}"
+        number: 1
+        part_type: primary
+        fs_type: fat32
+        state: present
+        part_start: 1MiB
+        part_end: 1024MiB
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+
+    - name: Set boot partition as ESP
+      parted:
+        device: "{{ nvme_device }}"
+        number: 1
+        flags: [esp]
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+
+    - name: Create root partition on NVMe
+      parted:
+        device: "{{ nvme_device }}"
+        number: 2
+        part_type: primary
+        fs_type: ext4
+        state: present
+        part_start: "{{ boot_partition_size | default('1024MiB') }}"
+        part_end: "{{ root_partition_size | default('30GiB') }}"
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+
+    - name: Create storage partition on NVMe (optional, for K3s data)
+      parted:
+        device: "{{ nvme_device }}"
+        number: 3
+        part_type: primary
+        fs_type: ext4
+        state: present
+        part_start: "{{ root_partition_size | default('30GiB') }}"
+        part_end: 100%
+      when:
+        - nvme_partition_count | int == 0
+        - create_storage_partition | default(false) | bool
+
+    - name: Wait for partitions to be available
+      wait_for:
+        path: "{{ nvme_device }}p1"
+        timeout: 10
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+
+    - name: Format boot partition
+      filesystem:
+        fstype: vfat
+        device: "{{ nvme_device }}p1"
+        force: yes
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+
+    - name: Set boot partition label
+      command: fatlabel "{{ nvme_device }}p1" BOOT
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+      failed_when: false
+
+    - name: Format root partition
+      filesystem:
+        fstype: ext4
+        device: "{{ nvme_device }}p2"
+        force: yes
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+
+    - name: Set root partition label
+      command: e2label "{{ nvme_device }}p2" rootfs
+      when:
+        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - setup_nvme_boot | bool
+      failed_when: false
+
+    # =========================================================================
+    # Clone OS from SD card (if enabled)
+    # =========================================================================
+    - name: Check if root partition has filesystem content
+      stat:
+        path: /mnt/nvme-root
+      register: nvme_root_mount_check
+      changed_when: false
+      failed_when: false
+
+    - name: Check if clone is needed (clone if enabled and root partition is empty)
+      set_fact:
+        need_clone: "{{ clone_from_sd | bool and (not nvme_already_has_boot | default(false)) }}"
+      changed_when: false
+
+    - name: Clone boot partition from SD card
+      command: >
+        dd if={{ sd_card }}p1 of={{ nvme_device }}p1
+        bs=4M status=progress conv=fsync
+      when: need_clone | bool
+      async: 3600
+      poll: 10
+      register: clone_boot
+
+    - name: Wait for boot partition clone (if still running)
+      async_status:
+        jid: "{{ clone_boot.ansible_job_id }}"
+      register: boot_clone_result
+      until: boot_clone_result.finished
+      retries: 60
+      delay: 5
+      when:
+        - need_clone | bool
+        - clone_boot.ansible_job_id is defined
+        - clone_boot.finished is not defined or not clone_boot.finished
+      failed_when: false
+      ignore_errors: true
+
+    - name: Sync after boot clone
+      command: sync
+      when: need_clone | bool
+
+    - name: Mount SD root partition for cloning
+      mount:
+        path: /mnt/sd-root
+        src: "{{ sd_card }}p2"
+        fstype: ext4
+        state: mounted
+      when: need_clone | bool
+
+    - name: Mount NVMe root partition for cloning
+      mount:
+        path: /mnt/nvme-root
+        src: "{{ nvme_device }}p2"
+        fstype: ext4
+        state: mounted
+      when: need_clone | bool
+
+    - name: Copy root partition files with rsync
+      shell: >
+        sudo rsync -aAXHv --info=progress2 --exclude={'/dev/*','/proc/*','/sys/*','/tmp/*','/run/*','/mnt/*','/media/*','/lost+found','/boot/*','/var/cache/*','/var/tmp/*','/var/log/*'} /mnt/sd-root/ /mnt/nvme-root/
+      args:
+        chdir: /
+      when: need_clone | bool
+      changed_when: true
+      async: 7200
+      poll: 30
+      register: clone_root
+
+    - name: Wait for root partition clone (if still running)
+      async_status:
+        jid: "{{ clone_root.ansible_job_id }}"
+      register: root_clone_result
+      until: root_clone_result.finished
+      retries: 300
+      delay: 30
+      when:
+        - need_clone | bool
+        - clone_root.ansible_job_id is defined
+        - clone_root.finished is not defined or not clone_root.finished
+      failed_when: false
+      ignore_errors: true
+
+    - name: Sync after root clone
+      command: sync
+      when: need_clone | bool
+
+    # =========================================================================
+    # Resize filesystem if needed
+    # =========================================================================
+    - name: Check filesystem size
+      command: resize2fs -P "{{ nvme_device }}p2"
+      register: resize_check
+      changed_when: false
+      failed_when: false
+      when: need_clone | bool
+
+    - name: Resize filesystem to match partition
+      command: resize2fs -f "{{ nvme_device }}p2"
+      when: need_clone | bool
+      failed_when: false
+
+    # =========================================================================
+    # Update boot configuration
+    # =========================================================================
+    - name: Create mount points
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /mnt/nvme-root
+        - /mnt/nvme-boot
+
+    - name: Mount NVMe root partition
+      mount:
+        path: /mnt/nvme-root
+        src: "{{ nvme_device }}p2"
+        fstype: ext4
+        state: mounted
+
+    - name: Mount NVMe boot partition
+      mount:
+        path: /mnt/nvme-boot
+        src: "{{ nvme_device }}p1"
+        fstype: vfat
+        state: mounted
+
+    - name: Check if fstab exists in cloned filesystem
+      stat:
+        path: /mnt/nvme-root/etc/fstab
+      register: fstab_exists
+      changed_when: false
+      failed_when: false
+
+    - name: Backup fstab
+      copy:
+        src: /mnt/nvme-root/etc/fstab
+        dest: /mnt/nvme-root/etc/fstab.bak
+        remote_src: yes
+      when: fstab_exists.stat.exists | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Update fstab to use NVMe partitions
+      replace:
+        path: /mnt/nvme-root/etc/fstab
+        regexp: "{{ item.old }}"
+        replace: "{{ item.new }}"
+      loop:
+        - {old: "{{ sd_card }}p1", new: "{{ nvme_device }}p1"}
+        - {old: "{{ sd_card }}p2", new: "{{ nvme_device }}p2"}
+      when: fstab_exists.stat.exists | default(false)
+
+    - name: Check if cmdline.txt exists
+      stat:
+        path: /mnt/nvme-boot/cmdline.txt
+      register: cmdline_exists
+      changed_when: false
+
+    - name: Backup cmdline.txt
+      copy:
+        src: /mnt/nvme-boot/cmdline.txt
+        dest: /mnt/nvme-boot/cmdline.txt.bak
+        remote_src: yes
+      when: cmdline_exists.stat.exists | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Get NVMe root partition PARTUUID
+      command: blkid -s PARTUUID -o value "{{ nvme_device }}p2"
+      register: nvme_root_partuuid
+      changed_when: false
+      when: cmdline_exists.stat.exists | default(false)
+
+    - name: Read current cmdline.txt content
+      slurp:
+        src: /mnt/nvme-boot/cmdline.txt
+      register: cmdline_content
+      when: cmdline_exists.stat.exists | default(false)
+
+    - name: Check if cmdline.txt has complete boot parameters
+      set_fact:
+        cmdline_is_complete: "{{ cmdline_content.content | b64decode | regex_search('console=.*root=') is not none }}"
+      when:
+        - cmdline_exists.stat.exists | default(false)
+        - cmdline_content.content is defined
+
+    - name: Update cmdline.txt to boot from NVMe (replace root parameter)
+      replace:
+        path: /mnt/nvme-boot/cmdline.txt
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.replace }}"
+      loop:
+        - {regexp: "root={{ sd_card }}p2", replace: "root=PARTUUID={{ nvme_root_partuuid.stdout }}"}
+        - {regexp: "root=PARTUUID=[^ ]*", replace: "root=PARTUUID={{ nvme_root_partuuid.stdout }}"}
+        - {regexp: "root=/dev/nvme[^ ]*", replace: "root=PARTUUID={{ nvme_root_partuuid.stdout }}"}
+      when:
+        - cmdline_exists.stat.exists | default(false)
+        - cmdline_is_complete | default(true)
+
+    - name: Create complete cmdline.txt if incomplete
+      copy:
+        content: "console=serial0,115200 console=tty1 root=PARTUUID={{ nvme_root_partuuid.stdout }} rootfstype=ext4 fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles cfg80211.ieee80211_regdom=CA systemd.unified_cgroup_hierarchy=0 cgroup_memory=1 cgroup_enable=memory"
+        dest: /mnt/nvme-boot/cmdline.txt
+        mode: "0755"
+      when:
+        - cmdline_exists.stat.exists | default(false)
+        - not (cmdline_is_complete | default(true))
+
+    - name: Verify cmdline.txt update
+      command: grep "root=" /mnt/nvme-boot/cmdline.txt
+      register: cmdline_check
+      changed_when: false
+
+    - name: Display updated cmdline.txt
+      debug:
+        var: cmdline_check.stdout
+
+    # =========================================================================
+    # Apply Root Lock Prevention to Cloned Filesystem (CRITICAL)
+    # =========================================================================
+    # This prevents root lock when booting from NVMe for the first time
+    - name: Apply root lock prevention to cloned filesystem
+      block:
+        - name: Unlock root in cloned filesystem
+          command: chroot /mnt/nvme-root passwd -u root
+          changed_when: false
+          failed_when: false
+
+        - name: Set root password in cloned filesystem
+          shell: |
+            chroot /mnt/nvme-root bash -c "echo 'root:{{ target_password }}' | chpasswd"
+          when: target_password is defined and target_password != "CHANGE_ME"
+          failed_when: false
+          changed_when: true
+
+        - name: Disable PAM faillock in cloned filesystem
+          lineinfile:
+            path: /mnt/nvme-root/etc/pam.d/common-auth
+            regexp: '^auth\s+required\s+pam_faillock\.so'
+            line: "# auth required pam_faillock.so deny=5 unlock_time=900  # Disabled to prevent root lock on boot device switch"
+            backup: yes
+          failed_when: false
+
+        - name: Reset faillock in cloned filesystem
+          command: chroot /mnt/nvme-root faillock --user root --reset
+          changed_when: false
+          failed_when: false
+
+        - name: Check if nofail already exists in fstab
+          shell: grep -q "nofail" /mnt/nvme-root/etc/fstab || echo "not_found"
+          register: fstab_nofail_check
+          changed_when: false
+          failed_when: false
+
+        - name: Add nofail to fstab entries in cloned filesystem (prevent emergency mode)
+          replace:
+            path: /mnt/nvme-root/etc/fstab
+            regexp: '^([^\s]+)\s+([^\s]+)\s+(ext4|vfat)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
+            replace: '\1 \2 \3 \4,nofail\5\6'
+            backup: yes
+          failed_when: false
+          # Only add nofail if it's not already there
+          when: "'not_found' in fstab_nofail_check.stdout"
+
+        - name: Display root lock prevention status
+          debug:
+            msg:
+              - "✅ Root lock prevention applied to cloned filesystem"
+              - "  - Root unlocked"
+              - "  - Root password set"
+              - "  - PAM faillock disabled"
+              - "  - fstab entries updated with nofail"
+              - "  - Ready for safe NVMe boot"
+
+    # =========================================================================
+    # Fix Hostname in Cloned Filesystem (if using another node's SD card)
+    # =========================================================================
+    - name: Get current hostname from inventory
+      set_fact:
+        target_hostname: "{{ node_hostname | default(ansible_hostname) }}"
+      changed_when: false
+
+    - name: Fix hostname in cloned filesystem
+      block:
+        - name: Update hostname in cloned filesystem
+          replace:
+            path: /mnt/nvme-root/etc/hostname
+            regexp: ".*"
+            replace: "{{ target_hostname }}"
+          when: target_hostname is defined and target_hostname != ""
+
+        - name: Update /etc/hosts in cloned filesystem
+          lineinfile:
+            path: /mnt/nvme-root/etc/hosts
+            regexp: '^127\.0\.1\.1.*'
+            line: "127.0.1.1 {{ target_hostname }}"
+            state: present
+          when: target_hostname is defined and target_hostname != ""
+
+        - name: Display hostname fix status
+          debug:
+            msg:
+              - "✅ Hostname updated in cloned filesystem"
+              - "  - Old hostname: node-0 (from SD card)"
+              - "  - New hostname: {{ target_hostname }}"
+      when: target_hostname is defined and target_hostname != ""
+
+    - name: Unmount SD root partition (if mounted for cloning)
+      mount:
+        path: /mnt/sd-root
+        state: unmounted
+      failed_when: false
+
+    - name: Unmount NVMe partitions
+      mount:
+        path: "{{ item }}"
+        state: unmounted
+      loop:
+        - /mnt/nvme-root
+        - /mnt/nvme-boot
+
+    # =========================================================================
+    # Fix Root Account Lock on Current System (SD card boot)
+    # =========================================================================
+    - name: Unlock root account to prevent lock on boot device switch
+      command: passwd -u root
+      changed_when: false
+      failed_when: false
+
+    - name: Reset root account lockout
+      command: faillock --user root --reset
+      changed_when: false
+      failed_when: false
+
+    # =========================================================================
+    # Restart services
+    # =========================================================================
+    - name: Check if k3s was running before setup
+      systemd:
+        name: k3s
+      register: k3s_status_check
+      changed_when: false
+      failed_when: false
+
+    - name: Start k3s if it was running
+      systemd:
+        name: k3s
+        state: started
+      when: k3s_status_check.status.ActiveState | default('') == 'active'
+
+    # =========================================================================
+    # Completion
+    # =========================================================================
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ NVMe boot setup complete!"
+          - ""
+          - "Next steps:"
+          - "  1. Reboot: sudo reboot"
+          - "  2. Pi 5 will automatically boot from NVMe"
+          - "  3. If root account is locked after reboot (common when switching boot devices), run:"
+          - "     ansible-playbook -i inventory/hosts.yml playbooks/fix-root-lock.yml --limit {{ inventory_hostname }}"
+          - "  4. Verify: df -h / (should show {{ nvme_device }}p2)"
+          - ""
+          - "Note: SD card remains as backup boot option"
+          - "Note: Root account may lock when switching boot devices - run fix-root-lock.yml if needed"

@@ -1,0 +1,64 @@
+---
+- name: Setup SSH Keys for Node-to-Node Communication
+  hosts: raspberry_pi
+  become: true
+  vars:
+    target_user: "{{ ansible_user | default('raolivei') }}"
+
+  tasks:
+    - name: Install sshpass for password authentication
+      package:
+        name: sshpass
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure .ssh directory exists
+      file:
+        path: "/home/{{ target_user }}/.ssh"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0700"
+
+    - name: Generate SSH key if it doesn't exist
+      openssh_keypair:
+        path: "/home/{{ target_user }}/.ssh/id_rsa"
+        type: rsa
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0600"
+        comment: "{{ target_user }}@{{ inventory_hostname }}"
+      register: ssh_key_result
+      changed_when: ssh_key_result.changed
+
+    - name: Display SSH key fingerprint
+      debug:
+        msg: "SSH key generated/verified for {{ target_user }}@{{ inventory_hostname }}"
+
+    - name: Get public key content
+      slurp:
+        src: "/home/{{ target_user }}/.ssh/id_rsa.pub"
+      register: public_key
+      when: ssh_key_result.changed or not ssh_key_result.failed
+
+    - name: Add public key to all other nodes
+      authorized_key:
+        user: "{{ target_user }}"
+        state: present
+        key: "{{ public_key.content | b64decode | trim }}"
+        comment: "{{ inventory_hostname }}"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['raspberry_pi'] }}"
+      when:
+        - item != inventory_hostname
+        - public_key.content is defined
+        - groups['raspberry_pi'] | length > 1
+      ignore_errors: yes
+      # Password authentication will be used from inventory for initial setup
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ SSH keys configured for {{ inventory_hostname }}"
+          - "Public key has been added to all other nodes in the cluster"
+          - "Node-to-node SSH should now work without passwords"

@@ -1,0 +1,34 @@
+---
+- name: Fix Root Account Lock Issue
+  hosts: raspberry_pi
+  become: true
+  vars:
+    target_password: "{{ vault_target_password | default(lookup('env', 'PI_PASSWORD')) }}"
+    password_hash: "{{ target_password | password_hash('sha512') }}"
+
+  tasks:
+    - name: Unlock root account
+      command: passwd -u root
+      changed_when: false
+      failed_when: false
+
+    - name: Set root password
+      user:
+        name: root
+        password: "{{ password_hash }}"
+        update_password: always
+      failed_when: false
+
+    - name: Reset root account lockout
+      command: faillock --user root --reset
+      changed_when: false
+      failed_when: false
+
+    - name: Verify root account status
+      command: passwd -S root
+      register: root_status
+      changed_when: false
+
+    - name: Display root account status
+      debug:
+        msg: "Root account status: {{ root_status.stdout }}"
