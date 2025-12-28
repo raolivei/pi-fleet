@@ -56,10 +56,10 @@ declare -A SECRET_PATHS=(
     ["13"]="secret/journey/postgres:user,password"
     ["14"]="secret/journey/database:url"
     ["15"]="secret/monitoring/grafana:adminUser,adminPassword"
-    ["16"]="secret/pihole/webpassword:password"
+    ["16"]="secret/pi-fleet/pihole/webpassword:password"
     ["17"]="secret/us-law-severity-map/mapbox:api-key"
-    ["18"]="secret/flux/git:sshKey"
-    ["19"]="secret/external-dns/tsig-secret:secret"
+    ["18"]="secret/pi-fleet/flux/git:sshKey"
+    ["19"]="secret/pi-fleet/external-dns/tsig-secret:secret"
 )
 
 echo "Available secrets to configure:"
