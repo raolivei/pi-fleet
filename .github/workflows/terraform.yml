@@ -56,6 +56,10 @@ jobs:
           echo "🔧 Initializing Terraform with remote backend..."
           echo "Backend config: organization=eldertree, workspace=pi-fleet-terraform"
           echo ""
+          # Set empty defaults for Cloudflare vars if not provided (for provider initialization)
+          export TF_VAR_cloudflare_api_token="${TF_VAR_cloudflare_api_token:-}"
+          export TF_VAR_cloudflare_zone_id="${TF_VAR_cloudflare_zone_id:-}"
+          export TF_VAR_cloudflare_account_id="${TF_VAR_cloudflare_account_id:-}"
           terraform init -input=false 2>&1 | tee init-output.txt
           echo ""
           echo "═══════════════════════════════════════════════════════════"
@@ -66,6 +70,10 @@ jobs:
           echo "Backend initialization complete"
         env:
           TF_INPUT: false
+          # Provide empty defaults for optional Cloudflare secrets
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
 
       # Verify state is being read from Terraform Cloud
       - name: Verify Remote State
@@ -134,23 +142,30 @@ jobs:
         env:
           TF_VAR_skip_k3s_resources: "true"
 
-      # Validate required secrets are set
+      # Validate secrets (Cloudflare resources are optional)
+      # If Cloudflare secrets are not set, Terraform will skip Cloudflare resources
       - name: Validate Secrets
         run: |
-          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
-            echo "❌ Error: CLOUDFLARE_API_TOKEN secret is not set"
-            echo "   Please configure it in: Settings → Secrets and variables → Actions"
-            exit 1
+          echo "🔍 Checking Cloudflare configuration..."
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] || [ "${{ secrets.CLOUDFLARE_API_TOKEN }}" == "" ]; then
+            echo "⚠️  CLOUDFLARE_API_TOKEN is not set - Cloudflare resources will be skipped"
+            echo "   This is OK - Cloudflare resources are optional"
+            echo "   To enable Cloudflare resources, set the secret in: Settings → Secrets and variables → Actions"
+          else
+            echo "✅ CLOUDFLARE_API_TOKEN is set"
           fi
-          if [ -z "${{ secrets.CLOUDFLARE_ZONE_ID }}" ]; then
-            echo "❌ Error: CLOUDFLARE_ZONE_ID secret is not set"
-            exit 1
+          if [ -z "${{ secrets.CLOUDFLARE_ZONE_ID }}" ] || [ "${{ secrets.CLOUDFLARE_ZONE_ID }}" == "" ]; then
+            echo "⚠️  CLOUDFLARE_ZONE_ID is not set - Cloudflare DNS resources will be skipped"
+          else
+            echo "✅ CLOUDFLARE_ZONE_ID is set"
           fi
-          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
-            echo "❌ Error: CLOUDFLARE_ACCOUNT_ID secret is not set"
-            exit 1
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ] || [ "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" == "" ]; then
+            echo "⚠️  CLOUDFLARE_ACCOUNT_ID is not set - Cloudflare Tunnel resources will be skipped"
+          else
+            echo "✅ CLOUDFLARE_ACCOUNT_ID is set"
           fi
-          echo "✅ All required secrets are configured"
+          echo ""
+          echo "✅ Secret validation complete (Cloudflare resources are optional)"
 
       # Generates an execution plan for Terraform
       # Use -detailed-exitcode: exit code 0 = no changes, 1 = error, 2 = changes detected
@@ -218,13 +233,14 @@ jobs:
             exit 1
           fi
         env:
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
+          # Use empty string if secrets are not set (Cloudflare resources will be skipped)
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
+          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP || '' }}
           TF_VAR_skip_k3s_resources: "true"
           TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
-          TF_VAR_pi_user: ${{ secrets.PI_USER }}
+          TF_VAR_pi_user: ${{ secrets.PI_USER || '' }}
 
       # Show plan output (if plan failed)
       - name: Show Plan Output
@@ -241,10 +257,11 @@ jobs:
         run: terraform apply -auto-approve -input=false
         env:
           TF_INPUT: false
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
+          # Use empty string if secrets are not set (Cloudflare resources will be skipped)
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
+          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP || '' }}
           TF_VAR_skip_k3s_resources: "true"
           TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
-          TF_VAR_pi_user: ${{ secrets.PI_USER }}
+          TF_VAR_pi_user: ${{ secrets.PI_USER || '' }}

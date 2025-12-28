@@ -34,6 +34,11 @@ locals {
 # Note: Provider requires authentication. Cloudflare resources check local.cloudflare_enabled
 # before creating (via count conditions). If token is not provided, Cloudflare resources
 # will be skipped. Use run-terraform.sh to load token from Vault automatically.
+# 
+# IMPORTANT: The Cloudflare provider requires a non-empty api_token for initialization.
+# When Cloudflare is not configured (token is empty), Terraform will still initialize
+# the provider but all Cloudflare resources will be skipped via count conditions.
+# The provider may show warnings but will not fail if resources are not created.
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
