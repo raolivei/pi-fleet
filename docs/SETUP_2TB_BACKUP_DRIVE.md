@@ -6,12 +6,17 @@ Guide for setting up the 2TB SanDisk Extreme drive as a backup location before s
 
 The 2TB drive needs to be detected by the system. Here's how to set it up:
 
+## Prerequisites
+
+- ✅ `PI_PASSWORD` environment variable set: `export PI_PASSWORD='your_password'`
+
 ## Step 1: Verify Drive is Detected
 
 SSH to eldertree and check if the drive appears:
 
 ```bash
-sshpass -p 'Control01!' ssh raolivei@192.168.2.83
+# SSH to eldertree using PI_PASSWORD
+sshpass -p "$PI_PASSWORD" ssh raolivei@192.168.2.83
 
 # Check all block devices
 lsblk

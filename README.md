@@ -155,9 +155,10 @@ kubectl get certificates -A
 
 See [docs/INGRESS.md](docs/INGRESS.md) for complete documentation on creating ingress resources with automatic SSL certificates and DNS.
 
-## Secrets
+## Secrets and Password Management
 
-Secrets stored in Vault. See [VAULT.md](VAULT.md).
+- Secrets are stored in Vault. See [VAULT.md](VAULT.md).
+- To manage passwords for scripts and Ansible, see [PASSWORD_MANAGEMENT.md](docs/PASSWORD_MANAGEMENT.md).
 
 ```bash
 ./scripts/operations/sync-vault-to-k8s.sh

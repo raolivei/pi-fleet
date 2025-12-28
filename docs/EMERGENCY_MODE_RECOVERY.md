@@ -36,7 +36,8 @@ Since you can't access the console (root locked), you need to access the system 
 4. **Unlock root account**:
    ```bash
    passwd -u root
-   echo 'root:Control01!' | chpasswd
+   # Use a secure password (refer to your PI_PASSWORD environment variable)
+   echo "root:your_secure_password" | chpasswd
    ```
 5. **Fix fstab** - Remove or comment out problematic mount entries:
    ```bash
@@ -71,7 +72,8 @@ Once you can access the system (via initramfs or recovery):
 ```bash
 # Unlock root
 passwd -u root
-echo 'root:Control01!' | chpasswd
+# Use your secure password
+echo "root:$PI_PASSWORD" | chpasswd
 
 # Check fstab for problematic mounts
 cat /etc/fstab
@@ -111,7 +113,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-
 
 ### 3. Unlock Root After Setup
 
-Run the root unlock playbook after any system changes:
+Run the root unlock playbook after any system changes (requires `PI_PASSWORD` environment variable):
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/fix-root-lock.yml --limit node-0
@@ -172,4 +174,3 @@ After recovering:
 2. ✅ Unlock root account
 3. ✅ Run `setup-system.yml` to prevent future issues
 4. ✅ Verify system boots normally
-

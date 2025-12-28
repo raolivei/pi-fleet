@@ -11,6 +11,7 @@ This checklist covers what needs to be reconfigured when a node is reinstalled w
 - Fresh OS installed on SD card
 - Node is booting up
 - SSH access with default credentials (or password from inventory)
+- ✅ `PI_PASSWORD` environment variable set: `export PI_PASSWORD='your_password'`
 
 ### Step 1: Verify Basic Connectivity
 
@@ -19,8 +20,8 @@ This checklist covers what needs to be reconfigured when a node is reinstalled w
 ssh-keygen -R node-1.local
 ssh-keygen -R 192.168.2.85
 
-# Test connectivity
-sshpass -p 'ac0df36b52' ssh -o StrictHostKeyChecking=no raolivei@node-1.local "hostname"
+# Test connectivity using PI_PASSWORD
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@node-1.local "hostname"
 ```
 
 ### Step 2: Run System Setup

@@ -2,6 +2,7 @@
 # Direct backup from eldertree to eldertree-node-1 NVMe
 # Uses direct gigabit connection between Pis for fastest transfer
 
+# Exit on error
 set -e
 
 # Network configuration
@@ -15,6 +16,13 @@ ELDERTREE_WLAN="${ELDERTREE_WLAN_IP:-192.168.2.86}"
 NODE1_WLAN="${NODE1_WLAN_IP:-192.168.2.85}"
 ELDERTREE_ETH0="${ELDERTREE_ETH0_IP:-10.0.0.1}"
 NODE1_ETH0="${NODE1_ETH0_IP:-10.0.0.2}"
+
+# Check for password
+if [ -z "$PI_PASSWORD" ]; then
+    echo "Error: PI_PASSWORD environment variable not set."
+    echo "Please set it: export PI_PASSWORD='your_password'"
+    exit 1
+fi
 
 # Use eth0 IPs for direct gigabit connection
 ELDERTREE="$ELDERTREE_ETH0"
@@ -31,26 +39,26 @@ echo ""
 
 # Check eldertree data (using wlan0 for SSH access)
 echo "Checking eldertree data..."
-DATA_SIZE=$(sshpass -p 'Control01!' ssh -o StrictHostKeyChecking=no raolivei@$ELDERTREE_WLAN \
+DATA_SIZE=$(sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$ELDERTREE_WLAN \
     "sudo du -sh /mnt/nvme 2>/dev/null | awk '{print \$1}'" 2>&1)
 echo "Data to backup: $DATA_SIZE"
 echo ""
 
 # Check node1 space (using wlan0 for SSH access)
 echo "Checking node-1 backup partition space..."
-NODE1_SPACE=$(sshpass -p 'ac0df36b52' ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN \
+NODE1_SPACE=$(sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN \
     "df -h /mnt/backup-nvme | tail -1 | awk '{print \$4}'" 2>&1)
 echo "Available space on node-1 backup partition: $NODE1_SPACE"
 echo ""
 
 # Create backup directory on node1 (using wlan0 for SSH access)
 echo "Creating backup directory on node-1..."
-sshpass -p 'ac0df36b52' ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN \
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN \
     "mkdir -p $BACKUP_DIR && chown raolivei:raolivei $BACKUP_DIR" 2>&1
 
 # Show what will be backed up (using wlan0 for SSH access)
 echo "Data breakdown on eldertree:"
-sshpass -p 'Control01!' ssh -o StrictHostKeyChecking=no raolivei@$ELDERTREE_WLAN \
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$ELDERTREE_WLAN \
     "sudo du -sh /mnt/nvme/* 2>/dev/null | sort -h" 2>&1
 echo ""
 
@@ -62,12 +70,6 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-# Setup SSH keys for direct Pi-to-Pi transfer (if not already done)
-echo ""
-echo "Setting up direct Pi-to-Pi connection..."
-echo "This will use the gigabit switch for fastest transfer"
-echo ""
-
 # Start backup using direct connection
 echo "Starting direct backup (this will take 20-40 minutes for 95GB)..."
 echo "Using gigabit connection: eldertree → eldertree-node-1"
@@ -77,14 +79,14 @@ echo ""
 # The Pis are on the same isolated gigabit switch (10.0.0.0/24), so this should be very fast
 # rsync will use eth0 IPs for the data transfer
 echo "Starting rsync via eth0 (10.0.0.1 → 10.0.0.2)..."
-sshpass -p 'Control01!' ssh -o StrictHostKeyChecking=no raolivei@$ELDERTREE_WLAN \
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$ELDERTREE_WLAN \
     "sudo rsync -avh --progress --compress -e 'ssh -o StrictHostKeyChecking=no' /mnt/nvme/ raolivei@$NODE1:$BACKUP_DIR/ 2>&1" | \
     tee /tmp/eldertree-to-node1-backup.log
 
 # Verify backup (using wlan0 for SSH access)
 echo ""
 echo "Verifying backup..."
-BACKUP_SIZE=$(sshpass -p 'ac0df36b52' ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN \
+BACKUP_SIZE=$(sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN \
     "du -sh $BACKUP_DIR 2>/dev/null | awk '{print \$1}'" 2>&1)
 echo "Backup size: $BACKUP_SIZE"
 echo "Original size: $DATA_SIZE"
@@ -92,7 +94,7 @@ echo "Original size: $DATA_SIZE"
 # Create manifest (using wlan0 for SSH access)
 echo ""
 echo "Creating backup manifest..."
-sshpass -p 'ac0df36b52' ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN "cat > $BACKUP_DIR/BACKUP_MANIFEST.txt <<EOF
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN "cat > $BACKUP_DIR/BACKUP_MANIFEST.txt <<EOF
 eldertree NVMe Data Backup
 ==========================
 Date: $(date)
@@ -116,4 +118,3 @@ echo "Next steps:"
 echo "  1. Proceed with eldertree NVMe boot setup"
 echo "  2. After boot setup, restore data if needed:"
 echo "     rsync -avh $NODE1:$BACKUP_DIR/ /mnt/nvme/"
-

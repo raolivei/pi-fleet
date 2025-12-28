@@ -7,7 +7,7 @@
     sd_card: "/dev/mmcblk0"
     setup_nvme_boot: "{{ setup_nvme_boot | default(false) | bool }}"
     clone_from_sd: "{{ clone_from_sd | default(true) | bool }}"
-    target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('Control01!')) }}"
+    target_password: "{{ vault_target_password | default(lookup('env', 'PI_PASSWORD')) }}"
     password_hash: "{{ target_password | password_hash('sha512') }}"
 
   tasks:

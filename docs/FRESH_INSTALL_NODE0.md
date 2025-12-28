@@ -14,6 +14,7 @@ This guide covers setting up node-0 (eldertree) from a fresh OS installation. Th
 - ✅ SD card inserted in node-0
 - ✅ Node-0 powered on and booted
 - ✅ SSH access available (default password or configured)
+- ✅ `PI_PASSWORD` environment variable set: `export PI_PASSWORD='your_password'`
 
 ## Step 1: Flash OS to SD Card
 
@@ -25,7 +26,7 @@ Use Raspberry Pi Imager:
 4. **Configure** (gear icon):
    - ✅ Enable SSH
    - Username: `raolivei` (or `pi` if using default)
-   - Password: `Control01!`
+   - Password: **Set to a secure password** (remember to export it as `PI_PASSWORD`)
    - Configure WiFi (optional, or use Ethernet)
 5. **Write** to SD card
 6. **Insert SD card** into node-0
@@ -47,10 +48,8 @@ Or check router DHCP leases for the new device.
 ssh-keygen -R node-0.local
 ssh-keygen -R 192.168.2.86
 
-# SSH to node-0
-sshpass -p 'Control01!' ssh -o StrictHostKeyChecking=no raolivei@192.168.2.86
-# Or if using default user:
-sshpass -p 'raspberry' ssh -o StrictHostKeyChecking=no pi@192.168.2.86
+# SSH to node-0 using PI_PASSWORD
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@192.168.2.86
 ```
 
 ## Step 4: Run Complete System Setup
@@ -67,9 +66,6 @@ ansible-playbook -i inventory/hosts.yml \
   -e "node_hostname=node-0" \
   -e "backup_device=" \
   --ask-pass
-
-# Note: This keeps DHCP enabled (safer). To configure static IP, add:
-# -e "configure_static_ip=true" -e "static_ip=192.168.2.86"
 ```
 
 **Note**: Leave `backup_device` empty for now (we'll configure it later if needed).
@@ -215,8 +211,8 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-terminal-monitoring.yml 
 ssh-keygen -R node-0.local
 ssh-keygen -R 192.168.2.86
 
-# Try with password
-sshpass -p 'Control01!' ssh -o StrictHostKeyChecking=no raolivei@192.168.2.86
+# Try with PI_PASSWORD
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@192.168.2.86
 ```
 
 ### Root Account Locked
@@ -254,4 +250,3 @@ After fresh install:
 - [ADD_WORKER_NODE.md](./ADD_WORKER_NODE.md) - Adding worker nodes
 - [NODE_REINSTALLATION_CHECKLIST.md](./NODE_REINSTALLATION_CHECKLIST.md) - Reinstallation checklist
 - [EMERGENCY_MODE_RECOVERY.md](./EMERGENCY_MODE_RECOVERY.md) - Emergency mode recovery (if issues occur)
-

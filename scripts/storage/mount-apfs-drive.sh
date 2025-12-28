@@ -2,13 +2,22 @@
 # Easy script to mount APFS drive for GoPro data recovery
 # Usage: ./mount-apfs-drive.sh [node-ip]
 
+# Exit on error
+set -e
+
 NODE_IP="${1:-192.168.2.86}"
-PASSWORD="ac0df36b52"
+
+# Check for password
+if [ -z "$PI_PASSWORD" ]; then
+    echo "Error: PI_PASSWORD environment variable not set."
+    echo "Please set it: export PI_PASSWORD='your_password'"
+    exit 1
+fi
 
 echo "=== Mounting APFS Drive on node ==="
 echo ""
 
-sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$NODE_IP "
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$NODE_IP "
     echo 'Step 1: Detecting APFS drive...'
     DRIVE=\$(sudo lsblk -n -o NAME | grep -E '^sd[a-z]' | head -1)
     

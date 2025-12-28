@@ -7,6 +7,10 @@ After reboot, node-0 shows:
 cannot open access to console, the root account is locked, see sulogin(8) man page for more details
 ```
 
+## Prerequisites
+
+- ✅ `PI_PASSWORD` environment variable set: `export PI_PASSWORD='your_password'`
+
 ## Solution: Boot from SD Card
 
 The easiest recovery method is to boot from the SD card (which should still have the working OS).
@@ -23,14 +27,14 @@ The easiest recovery method is to boot from the SD card (which should still have
 Once node-0 boots from SD card:
 
 ```bash
-# SSH to node-0
-sshpass -p 'Control01!' ssh raolivei@192.168.2.86
+# SSH to node-0 using PI_PASSWORD
+sshpass -p "$PI_PASSWORD" ssh raolivei@192.168.2.86
 
 # Unlock root account
 sudo passwd -u root
 
-# Set root password
-echo 'root:Control01!' | sudo chpasswd
+# Set root password using PI_PASSWORD
+echo "root:$PI_PASSWORD" | sudo chpasswd
 
 # Verify root is unlocked
 sudo passwd -S root
@@ -53,7 +57,7 @@ If you have physical access (keyboard/monitor):
 3. **Unlock root account**:
    ```bash
    passwd -u root
-   passwd root  # Set password to Control01!
+   passwd root  # Set password to your secure password
    ```
 4. **Reboot normally**
 
@@ -72,7 +76,7 @@ This is a known issue when switching between SD card and NVMe boot on Raspberry 
 
 ### Automated Fix (Recommended)
 
-After switching boot devices, run the Ansible playbook:
+After switching boot devices, run the Ansible playbook (requires `PI_PASSWORD` environment variable):
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet/ansible
@@ -117,4 +121,3 @@ After recovering:
 1. ✅ Verify SSH access works
 2. ✅ Continue with NVMe boot setup
 3. ✅ Complete node-0 configuration
-

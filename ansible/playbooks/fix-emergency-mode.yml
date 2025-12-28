@@ -3,7 +3,7 @@
   hosts: raspberry_pi
   become: true
   vars:
-    target_password: "{{ vault_target_password | default(lookup('env', 'env_target_password') | default('Control01!')) }}"
+    target_password: "{{ vault_target_password | default(lookup('env', 'PI_PASSWORD')) }}"
     password_hash: "{{ target_password | password_hash('sha512') }}"
 
   tasks:
