@@ -150,4 +150,3 @@ spec:
         - name: bind-tsig-secret
           secret:
             secretName: pihole-bind-tsig-secret
-
