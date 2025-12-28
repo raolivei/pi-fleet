@@ -1,0 +1,91 @@
+---
+- name: Setup NVMe Backup Partition on Node
+  hosts: raspberry_pi
+  become: true
+  vars:
+    nvme_device: "/dev/nvme0n1"
+    backup_partition_size: "{{ backup_partition_size | default('200G') }}"
+    backup_mount_point: "/mnt/backup-nvme"
+
+  tasks:
+    - name: Check if NVMe device exists
+      stat:
+        path: "{{ nvme_device }}"
+      register: nvme_check
+      failed_when: false
+
+    - name: Fail if NVMe not found
+      fail:
+        msg: "NVMe device {{ nvme_device }} not found"
+      when: not nvme_check.stat.exists
+
+    - name: Check current partition table
+      command: sudo parted -l {{ nvme_device }} 2>/dev/null || echo "No partition table"
+      register: partition_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display current status
+      debug:
+        msg:
+          - "NVMe device: {{ nvme_device }}"
+          - "Current partitions: {{ partition_check.stdout }}"
+          - "Will create backup partition: {{ backup_partition_size }}"
+
+    - name: Check if backup partition already exists
+      command: lsblk -n -o NAME {{ nvme_device }} | grep -E 'nvme0n1p[0-9]+' | wc -l
+      register: existing_partitions
+      changed_when: false
+      failed_when: false
+
+    - name: Create backup partition (if space available)
+      parted:
+        device: "{{ nvme_device }}"
+        number: 3
+        part_type: primary
+        fs_type: ext4
+        state: present
+        part_start: "{{ backup_partition_start | default('240G') }}"
+        part_end: "100%"
+      when: existing_partitions.stdout | int < 3
+
+    - name: Wait for partition to be available
+      wait_for:
+        path: "{{ nvme_device }}p3"
+        timeout: 10
+      when: existing_partitions.stdout | int < 3
+
+    - name: Format backup partition
+      filesystem:
+        fstype: ext4
+        device: "{{ nvme_device }}p3"
+        label: backup-nvme
+        force: yes
+      when: existing_partitions.stdout | int < 3
+
+    - name: Create mount point
+      file:
+        path: "{{ backup_mount_point }}"
+        state: directory
+        mode: "0755"
+
+    - name: Mount backup partition
+      mount:
+        path: "{{ backup_mount_point }}"
+        src: "{{ nvme_device }}p3"
+        fstype: ext4
+        state: mounted
+
+    - name: Set permissions
+      file:
+        path: "{{ backup_mount_point }}"
+        owner: "{{ ansible_user | default('raolivei') }}"
+        group: "{{ ansible_user | default('raolivei') }}"
+        mode: "0755"
+
+    - name: Display completion
+      debug:
+        msg:
+          - "✅ Backup partition created on {{ nvme_device }}p3"
+          - "Mount point: {{ backup_mount_point }}"
+          - "Size: {{ backup_partition_size }}"
