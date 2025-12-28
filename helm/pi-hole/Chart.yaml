@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pi-hole
+description: A custom Helm chart for Pi-hole with BIND backend
+type: application
+version: 0.1.0
+appVersion: "latest"

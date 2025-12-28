@@ -36,6 +36,11 @@
 
 ### Changed
 
+- **Optimized resource limits for Raspberry Pi nodes**:
+  - Reduced FluxCD components limits from 1000m/1Gi to 500m/512Mi
+  - Reduced KEDA components limits from 1000m/1000Mi to 500m/512Mi
+  - Reduced Journey API limits from 1000m/1Gi to 500m/512Mi
+  - Fixes "Specified limits are higher than node capacity!" error on smaller nodes
 - **Ansible playbooks updated for Raspberry Pi Imager workflow**:
   - User creation removed from playbooks (handled by Raspberry Pi Imager)
   - SSH key configuration removed from playbooks (handled by Raspberry Pi Imager)

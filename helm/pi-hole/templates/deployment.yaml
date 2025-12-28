@@ -1,26 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pihole
-  namespace: pihole
+  name: {{ include "pi-hole.fullname" . }}
   labels:
-    app: pihole
+    {{- include "pi-hole.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pihole
+      {{- include "pi-hole.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: pihole
+        {{- include "pi-hole.selectorLabels" . | nindent 8 }}
     spec:
-      hostNetwork: false
+      hostNetwork: true
       dnsPolicy: None
       dnsConfig:
         nameservers:
-          - "8.8.8.8"
-          - "1.1.1.1"
+          - {{ .Values.config.dns1 }}
+          - {{ .Values.config.dns2 }}
           - "8.8.4.4"
         searches:
           - "pihole.svc.cluster.local"
@@ -28,7 +27,7 @@ spec:
           - "cluster.local"
       initContainers:
         - name: bind-init
-          image: busybox:latest
+          image: "{{ .Values.image.busybox.repository }}:{{ .Values.image.busybox.tag }}"
           command: ["sh", "-c"]
           args:
             - |
@@ -49,31 +48,21 @@ spec:
               readOnly: true
       containers:
         - name: pihole
-          image: pihole/pihole:latest
-          ports:
-            - name: dns-udp
-              containerPort: 53
-              protocol: UDP
-            - name: dns-tcp
-              containerPort: 53
-              protocol: TCP
-            - name: http
-              containerPort: 80
-              protocol: TCP
-            - name: https
-              containerPort: 443
-              protocol: TCP
+          image: "{{ .Values.image.pihole.repository }}:{{ .Values.image.pihole.tag }}"
+          imagePullPolicy: {{ .Values.image.pihole.pullPolicy }}
           env:
             - name: TZ
-              value: "UTC"
+              value: "{{ .Values.config.timezone }}"
             - name: FTLCONF_dns_listeningMode
               value: "all"
             - name: VIRTUAL_HOST
-              value: "pihole.eldertree.local"
+              value: "{{ .Values.config.virtualHost }}"
             - name: PIHOLE_DNS_1
-              value: "8.8.8.8"
+              value: "{{ .Values.config.dns1 }}"
             - name: PIHOLE_DNS_2
-              value: "1.1.1.1"
+              value: "{{ .Values.config.dns2 }}"
+            - name: FTLCONF_misc_etc_dnsmasq_d
+              value: "true"
             - name: WEBPASSWORD
               valueFrom:
                 secretKeyRef:
@@ -98,12 +87,7 @@ spec:
               subPath: 99-upstream-dns.conf
               readOnly: true
           resources:
-            requests:
-              memory: "256Mi"
-              cpu: "100m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
+            {{- toYaml .Values.resources.pihole | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /admin/
@@ -124,7 +108,8 @@ spec:
               add:
                 - NET_ADMIN
         - name: bind
-          image: ubuntu/bind9:latest
+          image: "{{ .Values.image.bind.repository }}:{{ .Values.image.bind.tag }}"
+          imagePullPolicy: {{ .Values.image.bind.pullPolicy }}
           ports:
             - name: bind-udp
               containerPort: 5353
@@ -143,30 +128,26 @@ spec:
             - name: bind-data
               mountPath: /var/named
           resources:
-            requests:
-              memory: "64Mi"
-              cpu: "50m"
-            limits:
-              memory: "128Mi"
-              cpu: "100m"
+            {{- toYaml .Values.resources.bind | nindent 12 }}
           securityContext:
             runAsUser: 0
             runAsGroup: 0
       volumes:
         - name: pihole-data
           persistentVolumeClaim:
-            claimName: pihole-data
+            claimName: {{ include "pi-hole.fullname" . }}-data
         - name: dnsmasq-config
           configMap:
-            name: pihole-dnsmasq
+            name: {{ include "pi-hole.fullname" . }}-dnsmasq
         - name: bind-config
           configMap:
-            name: bind-config
+            name: {{ include "pi-hole.fullname" . }}-bind
         - name: bind-data
           emptyDir: {}
         - name: upstream-dns
           configMap:
-            name: pihole-upstream-dns
+            name: {{ include "pi-hole.fullname" . }}-upstream
         - name: bind-tsig-secret
           secret:
             secretName: pihole-bind-tsig-secret
+

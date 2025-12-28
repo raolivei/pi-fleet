@@ -1,8 +1,26 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: bind-config
-  namespace: pihole
+  name: {{ include "pi-hole.fullname" . }}-dnsmasq
+  labels:
+    {{- include "pi-hole.labels" . | nindent 4 }}
+data:
+  05-custom-dns.conf: |
+    # Custom DNS rewrites for eldertree.local domains
+    address=/canopy.eldertree.local/{{ .Values.config.clusterIP }}
+    address=/swimto.eldertree.local/{{ .Values.config.clusterIP }}
+    address=/grafana.eldertree.local/{{ .Values.config.clusterIP }}
+    address=/prometheus.eldertree.local/{{ .Values.config.clusterIP }}
+    address=/vault.eldertree.local/{{ .Values.config.clusterIP }}
+    # Wildcard support - all *.eldertree.local resolve to eldertree IP
+    address=/eldertree.local/{{ .Values.config.clusterIP }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "pi-hole.fullname" . }}-bind
+  labels:
+    {{- include "pi-hole.labels" . | nindent 4 }}
 data:
   named.conf: |
     // BIND configuration for RFC2136 dynamic DNS updates
@@ -44,10 +62,25 @@ data:
                             300         ; minimum
                             )
             IN      NS      ns1.eldertree.local.
-    ns1     IN      A       192.168.2.83
-    *       IN      A       192.168.2.83
+    ns1     IN      A       {{ .Values.config.clusterIP }}
+    *       IN      A       {{ .Values.config.clusterIP }}
 
   # dnsmasq configuration to forward eldertree.local queries to BIND
   06-bind-backend.conf: |
     # Forward eldertree.local queries to BIND for RFC2136-managed records
     server=/eldertree.local/127.0.0.1#5353
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "pi-hole.fullname" . }}-upstream
+  labels:
+    {{- include "pi-hole.labels" . | nindent 4 }}
+data:
+  99-upstream-dns.conf: |
+    # Upstream DNS servers configured via ConfigMap
+    # Use Google DNS directly (port 53 is reachable)
+    server={{ .Values.config.dns1 }}
+    server=8.8.4.4
+    server={{ .Values.config.dns2 }}
+

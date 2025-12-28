@@ -1,0 +1,56 @@
+image:
+  pihole:
+    repository: pihole/pihole
+    tag: latest
+    pullPolicy: Always
+  bind:
+    repository: ubuntu/bind9
+    tag: latest
+    pullPolicy: Always
+  busybox:
+    repository: busybox
+    tag: latest
+    pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  # Using the node IP for now as we don't have a separate LB IP pool
+  # In a multi-node cluster with MetalLB, you'd specify a virtual IP here.
+  # loadBalancerIP: 192.168.2.86
+  dnsUdpPort: 53
+  dnsTcpPort: 53
+  httpPort: 80
+  httpsPort: 443
+  # NodePort for external access if LoadBalancer doesn't get an IP
+  dnsNodePort: 30053
+  httpNodePort: 30080
+  httpsNodePort: 30443
+
+persistence:
+  enabled: true
+  size: 2Gi
+  storageClass: local-path
+
+config:
+  timezone: UTC
+  virtualHost: pihole.eldertree.local
+  dns1: 8.8.8.8
+  dns2: 1.1.1.1
+  # The IP address for eldertree.local records
+  clusterIP: 192.168.2.201
+
+resources:
+  pihole:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  bind:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

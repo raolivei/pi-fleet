@@ -21,6 +21,19 @@ Access Grafana at `https://grafana.eldertree.local` (default credentials: admin/
 - **Cluster Monitoring** (6417): Overall cluster health
 - **API Server** (12006): kube-apiserver performance
 - **Node Exporter** (1860): Node-level metrics (CPU, disk, network)
+- **Traefik** (11462): Ingress controller requests, latency, and errors
+- **Cert-Manager** (11001): Certificate status, renewal monitoring
+- **External Secrets** (15159): Secret sync status and errors
+- **KEDA** (13627): Autoscaling metrics and scaler status
+- **Flux Cluster** (15991): GitOps reconciliation status
+
+### Applications
+
+- **SwimTO Application**: Monitoring for swimTO API, Web, Postgres, and Redis
+- **Journey Application**: Monitoring for Journey API, Frontend, and Postgres
+- **Nima Application**: Monitoring for NIMA AI/ML API
+- **US Law Severity Map**: Monitoring for the law visualization web app
+- **Pi-hole** (10176): DNS query stats and blocking metrics (Pi-hole dashboard)
 
 ## Useful PromQL Queries
 

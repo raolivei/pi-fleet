@@ -22,9 +22,9 @@ KEDA enables event-driven autoscaling for Kubernetes workloads based on external
 
 **Resources:**
 
-- Operator: 100m CPU / 100Mi RAM (request), 1000m CPU / 1000Mi RAM (limit)
-- Metrics Server: 100m CPU / 100Mi RAM (request), 1000m CPU / 1000Mi RAM (limit)
-- Webhooks: 100m CPU / 100Mi RAM (request), 1000m CPU / 1000Mi RAM (limit)
+- Operator: 100m CPU / 100Mi RAM (request), 500m CPU / 512Mi RAM (limit)
+- Metrics Server: 100m CPU / 100Mi RAM (request), 500m CPU / 512Mi RAM (limit)
+- Webhooks: 100m CPU / 100Mi RAM (request), 500m CPU / 512Mi RAM (limit)
 
 ### Verification Commands
 
