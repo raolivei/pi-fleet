@@ -2,7 +2,7 @@
 
 ## Current Status
 
-✅ Script is ready on eldertree: `~/setup-nvme-boot.sh`
+✅ Script is ready on node-0: `~/setup-nvme-boot.sh`
 
 ## What the Script Does
 
@@ -23,8 +23,14 @@
 ## Run the Setup
 
 ```bash
-# SSH to eldertree
-sshpass -p 'Control01!' ssh raolivei@eldertree.local
+# SSH to node-0 (control plane)
+# Use SSH key authentication (recommended):
+ssh raolivei@192.168.2.86
+# Or use hostname if DNS is configured:
+# ssh raolivei@node-0.eldertree.local
+
+# If password authentication is required:
+# sshpass -p 'YOUR_PASSWORD' ssh raolivei@192.168.2.86
 
 # Run the script
 ~/setup-nvme-boot.sh

@@ -17,11 +17,16 @@ echo "  4. Unmount safely"
 echo ""
 
 # Check if sshpass is available
-if command -v sshpass &> /dev/null; then
+# Password should be set via environment variable: PI_PASSWORD
+if command -v sshpass &> /dev/null && [ -n "$PI_PASSWORD" ]; then
     echo "Using sshpass for password authentication"
-    SSHPASS_CMD="sshpass -p 'ac0df36b52'"
+    SSHPASS_CMD="sshpass -p '$PI_PASSWORD'"
 else
-    echo "sshpass not found - you'll need to enter password manually"
+    if [ -z "$PI_PASSWORD" ]; then
+        echo "⚠️  PI_PASSWORD environment variable not set"
+        echo "   Set it with: export PI_PASSWORD='your-password'"
+    fi
+    echo "sshpass not found or password not set - you'll need to enter password manually"
     SSHPASS_CMD=""
 fi
 

@@ -1,10 +1,17 @@
 #!/usr/bin/expect -f
 # Automated fix using expect to handle SSH password
+# Password should be set via environment variable: PI_PASSWORD
+# Usage: PI_PASSWORD='your-password' ./fix-sd-card-auto.sh
 
 set timeout 30
 set node0_ip "192.168.2.86"
 set node0_user "raolivei"
-set password "ac0df36b52"
+set password [exec sh -c {echo $env(PI_PASSWORD)}]
+if {[string length $password] == 0} {
+    puts "ERROR: PI_PASSWORD environment variable not set"
+    puts "Usage: PI_PASSWORD='your-password' ./fix-sd-card-auto.sh"
+    exit 1
+}
 
 spawn ssh -o StrictHostKeyChecking=no ${node0_user}@${node0_ip}
 

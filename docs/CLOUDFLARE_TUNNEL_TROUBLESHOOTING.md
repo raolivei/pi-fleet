@@ -46,7 +46,7 @@ The tunnel token in Vault doesn't match the token configured in Cloudflare.
    export KUBECONFIG=~/.kube/config-eldertree
 
    # Using root token (you'll need your Vault root token)
-   kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN='YOUR_ROOT_TOKEN' vault kv put secret/cloudflare-tunnel/token token='YOUR_TOKEN_HERE'"
+   kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN='YOUR_ROOT_TOKEN' vault kv put secret/pi-fleet/cloudflare-tunnel/token token='YOUR_TOKEN_HERE'"
    ```
 
 3. **Force ExternalSecret to refresh:**
@@ -255,7 +255,7 @@ curl -s https://swimto.eldertree.xyz | head -20
 - **Terraform Config:** `pi-fleet/terraform/cloudflare.tf`
 - **Kubernetes Deployment:** `pi-fleet/clusters/eldertree/dns-services/cloudflare-tunnel/deployment.yaml`
 - **ExternalSecret:** Managed by External Secrets Operator, syncs from Vault
-- **Vault Secret Path:** `secret/cloudflare-tunnel/token`
+- **Vault Secret Path:** `secret/pi-fleet/cloudflare-tunnel/token`
 - **Helper Script:** `pi-fleet/terraform/scripts/get-tunnel-token.sh`
 
 ## Additional Resources

@@ -229,7 +229,9 @@ cat ~/WORKSPACE/raolivei/pi-fleet/ansible/k3s-node-token
 ssh pi@<worker-ip>
 
 # 3. Install k3s worker
-curl -sfL https://get.k3s.io | K3S_URL=https://eldertree:6443 K3S_TOKEN=<token> sh -
+curl -sfL https://get.k3s.io | K3S_URL=https://node-0.eldertree.local:6443 K3S_TOKEN=<token> sh -
+# Or use IP if DNS not configured:
+# curl -sfL https://get.k3s.io | K3S_URL=https://192.168.2.86:6443 K3S_TOKEN=<token> sh -
 ```
 
 But the automated script handles system configuration, hostname, user setup, etc., so it's recommended.

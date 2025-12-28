@@ -39,7 +39,7 @@ else
         exit 1
     fi
     
-    API_TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/terraform/cloudflare-api-token 2>/dev/null || echo "")
+    API_TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/pi-fleet/terraform/cloudflare-api-token 2>/dev/null || echo "")
     
     if [ -z "$API_TOKEN" ]; then
         echo "⚠️  API token not found in Vault, will need manual entry"
@@ -125,7 +125,7 @@ if [ "$VAULT_STATUS" = "true" ]; then
     exit 1
 fi
 
-kubectl exec -n vault $VAULT_POD -- vault kv put secret/cloudflare-tunnel/token token="$TUNNEL_TOKEN"
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/cloudflare-tunnel/token token="$TUNNEL_TOKEN"
 
 echo ""
 echo "✅ Tunnel token stored successfully in Vault!"

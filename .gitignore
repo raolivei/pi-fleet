@@ -47,11 +47,9 @@ clusters/eldertree/wireguard/clients/*.png
 # Ansible Vault files (contain encrypted passwords)
 ansible/group_vars/**/vault.yml
 ansible/vault_passwords.txt
-*.vault
-backups/vault-*
-
-# Ansible secrets and environment files
 ansible/.env.secrets
-ansible/.env.local
-ansible/**/.secrets
 ansible/set-password.sh
+*.vault
+
+# Backup directories
+backups/

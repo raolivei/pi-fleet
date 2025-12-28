@@ -37,7 +37,7 @@ echo ""
 # Method 1: Try with root token from environment or prompt
 if [ -n "$VAULT_ROOT_TOKEN" ]; then
     echo "🔑 Using root token from VAULT_ROOT_TOKEN environment variable..."
-    kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN='$VAULT_ROOT_TOKEN' && vault kv put secret/cloudflare-tunnel/token token='$TUNNEL_TOKEN'"
+    kubectl exec -n vault $VAULT_POD -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN='$VAULT_ROOT_TOKEN' && vault kv put secret/pi-fleet/cloudflare-tunnel/token token='$TUNNEL_TOKEN'"
     echo "✅ Token stored successfully!"
     exit 0
 fi
@@ -55,12 +55,12 @@ echo "   # Step 1: Login to Vault"
 echo "   kubectl exec -it -n vault $VAULT_POD -- vault login"
 echo ""
 echo "   # Step 2: Store the token (after login, the token will be cached)"
-echo "   kubectl exec -n vault $VAULT_POD -- vault kv put secret/cloudflare-tunnel/token token='$TUNNEL_TOKEN'"
+echo "   kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/cloudflare-tunnel/token token='$TUNNEL_TOKEN'"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "Quick command to run after logging in:"
 echo ""
-echo "kubectl exec -n vault $VAULT_POD -- vault kv put secret/cloudflare-tunnel/token token='$TUNNEL_TOKEN'"
+echo "kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/cloudflare-tunnel/token token='$TUNNEL_TOKEN'"
 echo ""
 

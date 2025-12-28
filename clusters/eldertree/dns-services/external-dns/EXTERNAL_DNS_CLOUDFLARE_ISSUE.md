@@ -92,7 +92,7 @@ To verify the API token works:
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
-API_TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/external-dns/cloudflare-api-token)
+API_TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/pi-fleet/external-dns/cloudflare-api-token)
 
 curl -X GET "https://api.cloudflare.com/client/v4/zones?name=eldertree.xyz" \
   -H "Authorization: Bearer $API_TOKEN" \

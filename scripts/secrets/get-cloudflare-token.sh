@@ -29,7 +29,7 @@ if [ "$VAULT_STATUS" = "true" ]; then
 fi
 
 # Get token from Vault
-TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/terraform/cloudflare-api-token 2>/dev/null)
+TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/pi-fleet/terraform/cloudflare-api-token 2>/dev/null)
 
 if [ -z "$TOKEN" ]; then
     echo "Error: Could not retrieve Cloudflare API token from Vault" >&2

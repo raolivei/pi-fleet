@@ -37,7 +37,7 @@ if [ "$VAULT_STATUS" = "true" ]; then
 fi
 
 # Get token from Vault (optional - Cloudflare resources are optional)
-export TF_VAR_cloudflare_api_token=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/terraform/cloudflare-api-token 2>/dev/null || echo "")
+export TF_VAR_cloudflare_api_token=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/pi-fleet/terraform/cloudflare-api-token 2>/dev/null || echo "")
 
 if [ -z "$TF_VAR_cloudflare_api_token" ]; then
     echo "⚠️  Cloudflare API token not found in Vault"
@@ -56,7 +56,7 @@ if [ -z "$TF_VAR_cloudflare_api_token" ]; then
     fi
     
     echo "   To enable Cloudflare:"
-    echo "     1. Store token: kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token='YOUR_TOKEN'"
+    echo "     1. Store token: kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token='YOUR_TOKEN'"
     echo "     2. Re-run: $0 $@"
     echo ""
     export TF_VAR_cloudflare_api_token=""
@@ -65,7 +65,7 @@ else
 fi
 
 # Get pi_user from Vault (optional, falls back to default "pi")
-export TF_VAR_pi_user=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=pi-user secret/terraform/pi-user 2>/dev/null || echo "")
+export TF_VAR_pi_user=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=pi-user secret/pi-fleet/terraform/pi-user 2>/dev/null || echo "")
 if [ -n "$TF_VAR_pi_user" ]; then
     echo "✅ Pi username loaded from Vault"
 else

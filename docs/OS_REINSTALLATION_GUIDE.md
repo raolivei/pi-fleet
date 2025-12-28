@@ -156,7 +156,7 @@ nmap -sn 192.168.2.0/24 | grep -B 2 "Raspberry Pi"
 ping raspberrypi.local
 ```
 
-Default hostname will be `raspberrypi`. We'll change it to `eldertree` during setup.
+Default hostname will be `raspberrypi`. We'll change it to `node-0.eldertree.local` during setup.
 
 ## Step 3: Post-Installation Setup
 
@@ -206,7 +206,7 @@ ansible-playbook playbooks/setup-system.yml \
   --ask-become-pass
 
 # This will:
-# - Set hostname to 'eldertree'
+# - Set hostname to 'node-0.eldertree.local'
 # - Create raolivei user (password set via Ansible Vault)
 # - Configure SSH keys
 # - Set up static IP (if configured)
@@ -224,7 +224,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet/terraform
 cp terraform.tfvars.example terraform.tfvars
 
 # Edit terraform.tfvars:
-# - pi_host: "eldertree" (or IP address)
+# - pi_host: "192.168.2.86" (or node-0.eldertree.local if DNS configured)
 # - pi_user: "raolivei"
 # - pi_password: "your-password-here" (DO NOT commit this file to git)
 

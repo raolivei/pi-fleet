@@ -78,7 +78,7 @@ else
         echo "   💡 Unseal Vault first: cd $PI_FLEET_DIR && ./scripts/operations/unseal-vault.sh"
     else
         echo "   ✅ Vault is unsealed"
-        if kubectl exec -n vault $VAULT_POD -- vault kv get secret/cloudflare-tunnel/token &>/dev/null; then
+        if kubectl exec -n vault $VAULT_POD -- vault kv get secret/pi-fleet/cloudflare-tunnel/token &>/dev/null; then
             echo "   ✅ Tunnel token exists in Vault"
         else
             echo "   ❌ Tunnel token missing from Vault"

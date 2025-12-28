@@ -256,7 +256,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 echo "💾 Storing tunnel token..."
-kubectl exec -n vault vault-0 -- vault kv put secret/cloudflare-tunnel/token token="$TUNNEL_TOKEN"
+kubectl exec -n vault vault-0 -- vault kv put secret/pi-fleet/cloudflare-tunnel/token token="$TUNNEL_TOKEN"
 echo "✅ Tunnel token stored"
 echo ""
 
@@ -285,7 +285,7 @@ echo ""
 echo "📋 Summary:"
 echo "   - Backup directory: $BACKUP_DIR"
 echo "   - Root token: $ROOT_TOKEN"
-echo "   - Tunnel token: Stored in secret/cloudflare-tunnel/token"
+echo "   - Tunnel token: Stored in secret/pi-fleet/cloudflare-tunnel/token"
 echo ""
 echo "🔐 IMPORTANT: Save these credentials securely:"
 echo "   - Root token: $ROOT_TOKEN"

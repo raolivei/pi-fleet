@@ -76,7 +76,7 @@ Vault uses policies to enforce least-privilege access. Each project has its own 
 - **nima-policy** - Access to `secret/nima/*`
 - **us-law-severity-map-policy** - Access to `secret/us-law-severity-map/*`
 - **monitoring-policy** - Access to `secret/monitoring/*`
-- **infrastructure-policy** - Access to `secret/pihole/*`, `secret/flux/*`, `secret/external-dns/*`, `secret/terraform/*`, `secret/cloudflare-tunnel/*`
+- **infrastructure-policy** - Access to `secret/pi-fleet/*` (terraform, external-dns, cloudflare-tunnel) and legacy paths (`secret/pihole/*`, `secret/flux/*`, `secret/external-dns/*`, `secret/terraform/*`, `secret/cloudflare-tunnel/*`)
 - **eso-readonly-policy** - Read-only access to all secrets (for External Secrets Operator)
 
 ### Service Tokens
@@ -115,13 +115,18 @@ kubectl exec -n vault vault-0 -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 
 ### Monitoring
 - `secret/monitoring/grafana` - Grafana admin username and password (`adminUser`, `adminPassword`)
 
-### Infrastructure
+### Infrastructure (pi-fleet)
+All infrastructure secrets are organized under `secret/pi-fleet/`:
+- `secret/pi-fleet/terraform/cloudflare-api-token` - Cloudflare API token for Terraform DNS management (`api-token`)
+- `secret/pi-fleet/external-dns/cloudflare-api-token` - Cloudflare API token for External-DNS Cloudflare provider (`api-token`)
+- `secret/pi-fleet/cloudflare-tunnel/token` - Cloudflare Tunnel token for cloudflared connector (`token`)
+- `secret/pi-fleet/terraform/pi-user` - Pi SSH username (optional, defaults to "pi") (`pi-user`)
+
+### Legacy Infrastructure (still supported for backward compatibility)
 - `secret/pihole/webpassword` - Pi-hole web admin password
 - `secret/flux/git` - Flux Git SSH private key (`sshKey`)
 - `secret/canopy/ghcr-token` - GitHub Container Registry token
 - `secret/external-dns/tsig-secret` - External DNS TSIG secret for RFC2136 DNS updates
-- `secret/terraform/cloudflare-api-token` - Cloudflare API token for Terraform DNS management (`api-token`)
-- `secret/external-dns/cloudflare-api-token` - Cloudflare API token for External-DNS Cloudflare provider (`api-token`)
 
 ### Canopy Application
 - `secret/canopy/postgres` - Canopy PostgreSQL password
@@ -255,9 +260,9 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/swimto/oauth google-clie
 # US Law Severity Map secrets
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/us-law-severity-map/mapbox token=your-mapbox-token
 
-# Cloudflare secrets
-kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token=your-cloudflare-api-token
-kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-api-token api-token=your-cloudflare-api-token
+# Cloudflare secrets (pi-fleet infrastructure)
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token=your-cloudflare-api-token
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/external-dns/cloudflare-api-token api-token=your-cloudflare-api-token
 ```
 
 **Note:** All secrets are automatically synced to Kubernetes by External Secrets Operator within 24 hours, or immediately on ExternalSecret resource creation/update.

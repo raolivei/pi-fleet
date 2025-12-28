@@ -11,7 +11,7 @@
 # Cloudflare DNS Configuration
 # =============================================================================
 # Cloudflare API token for DNS management
-# Should be stored in Vault at secret/terraform/cloudflare-api-token
+# Should be stored in Vault at secret/pi-fleet/terraform/cloudflare-api-token
 # Can be read from Vault or set directly here (not recommended for production)
 # cloudflare_api_token = "your-cloudflare-api-token-here"
 

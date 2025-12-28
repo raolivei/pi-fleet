@@ -69,7 +69,7 @@ If you want Terraform to create certificates automatically:
 2. **Update Token in Vault**:
    ```bash
    VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
-   kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token=NEW_TOKEN_HERE
+   kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token=NEW_TOKEN_HERE
    ```
 
 3. **Uncomment Terraform Resource**:

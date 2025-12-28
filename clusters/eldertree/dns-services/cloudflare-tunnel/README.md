@@ -64,7 +64,7 @@ Tunnel creation is managed via Terraform. See `pi-fleet/terraform/README.md` for
    ```bash
    export KUBECONFIG=~/.kube/config-eldertree
    VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
-   kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token="YOUR_API_TOKEN"
+   kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token="YOUR_API_TOKEN"
    ```
 
 3. **Apply Terraform**:
@@ -101,7 +101,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet/terraform
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
 
 # Store tunnel token
-kubectl exec -n vault $VAULT_POD -- vault kv put secret/cloudflare-tunnel/token token="YOUR_TUNNEL_TOKEN_HERE"
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/cloudflare-tunnel/token token="YOUR_TUNNEL_TOKEN_HERE"
 ```
 
 ### 4. Deploy Tunnel Connector (FluxCD)

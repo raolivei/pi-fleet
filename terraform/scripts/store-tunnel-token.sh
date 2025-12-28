@@ -57,7 +57,7 @@ fi
 
 # Store token in Vault
 echo "💾 Storing tunnel token in Vault..."
-kubectl exec -n vault $VAULT_POD -- vault kv put secret/cloudflare-tunnel/token token="$TUNNEL_TOKEN"
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/cloudflare-tunnel/token token="$TUNNEL_TOKEN"
 
 echo ""
 echo "✅ Tunnel token stored successfully in Vault!"

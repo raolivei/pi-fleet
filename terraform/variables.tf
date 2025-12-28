@@ -3,7 +3,7 @@
 # For k3s installation, use Ansible playbooks instead.
 
 variable "cloudflare_api_token" {
-  description = "Cloudflare API token for DNS management. Should be stored in Vault at secret/terraform/cloudflare-api-token. Leave empty to skip Cloudflare resources (can be added later)."
+  description = "Cloudflare API token for DNS management. Should be stored in Vault at secret/pi-fleet/terraform/cloudflare-api-token. Leave empty to skip Cloudflare resources (can be added later)."
   type        = string
   sensitive   = true
   default     = ""

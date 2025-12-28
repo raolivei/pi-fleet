@@ -247,7 +247,7 @@ if [ "${BOOTSTRAP_FLUX}" = "y" ] || [ "${BOOTSTRAP_FLUX}" = "Y" ]; then
         echo -e "${BLUE}       ./scripts/operations/unseal-vault.sh${NC}"
         echo -e "${BLUE}    2. Store Cloudflare API token in Vault:${NC}"
         echo -e "${BLUE}       VAULT_POD=\$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')${NC}"
-        echo -e "${BLUE}       kubectl exec -n vault \$VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token='YOUR_TOKEN'${NC}"
+        echo -e "${BLUE}       kubectl exec -n vault \$VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token='YOUR_TOKEN'${NC}"
         echo -e "${BLUE}    3. Re-run Terraform to create Cloudflare resources:${NC}"
         echo -e "${BLUE}       cd terraform && ./run-terraform.sh apply${NC}"
     else

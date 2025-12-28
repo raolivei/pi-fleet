@@ -8,7 +8,7 @@
 #
 # NOTE: This script is a convenience wrapper. For better automation, use:
 #   ansible-playbook ansible/playbooks/manage-secrets.yml \
-#     -e 'secrets=[{path: "secret/terraform/cloudflare-api-token", data: {api-token: "YOUR_TOKEN"}}]'
+#     -e 'secrets=[{path: "secret/pi-fleet/terraform/cloudflare-api-token", data: {api-token: "YOUR_TOKEN"}}]'
 
 set -e
 
@@ -32,8 +32,8 @@ fi
 cd "${PROJECT_ROOT}/ansible"
 ansible-playbook playbooks/manage-secrets.yml \
   -e "secrets=[
-    {path: 'secret/terraform/cloudflare-api-token', data: {api-token: '${CLOUDFLARE_API_TOKEN}'}},
-    {path: 'secret/external-dns/cloudflare-api-token', data: {api-token: '${CLOUDFLARE_API_TOKEN}'}}
+    {path: 'secret/pi-fleet/terraform/cloudflare-api-token', data: {api-token: '${CLOUDFLARE_API_TOKEN}'}},
+    {path: 'secret/pi-fleet/external-dns/cloudflare-api-token', data: {api-token: '${CLOUDFLARE_API_TOKEN}'}}
   ]" \
   || {
     echo ""
@@ -58,8 +58,8 @@ ansible-playbook playbooks/manage-secrets.yml \
         exit 1
     fi
     
-    kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token="$CLOUDFLARE_API_TOKEN"
-    kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-api-token api-token="$CLOUDFLARE_API_TOKEN"
+    kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token="$CLOUDFLARE_API_TOKEN"
+    kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/external-dns/cloudflare-api-token api-token="$CLOUDFLARE_API_TOKEN"
     
     echo ""
     echo "✅ Cloudflare API token stored successfully in Vault!"
@@ -67,8 +67,8 @@ ansible-playbook playbooks/manage-secrets.yml \
 
 echo ""
 echo "Vault paths:"
-echo "  - secret/terraform/cloudflare-api-token"
-echo "  - secret/external-dns/cloudflare-api-token"
+echo "  - secret/pi-fleet/terraform/cloudflare-api-token"
+echo "  - secret/pi-fleet/external-dns/cloudflare-api-token"
 echo ""
 echo "External Secrets Operator will sync these to Kubernetes automatically."
 
