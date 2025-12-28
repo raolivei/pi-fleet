@@ -1,9 +1,16 @@
 #!/usr/bin/expect -f
 # Configure NVMe boot on node-1
 # Check if NVMe is already set up for boot, if not, set it up
+# Password should be set via environment variable: PI_PASSWORD
+# Usage: PI_PASSWORD='your-password' ./configure-nvme-boot-node1.sh
 
 set timeout 300
-set password "ac0df36b52"
+set password [exec sh -c {echo $env(PI_PASSWORD)}]
+if {[string length $password] == 0} {
+    puts "ERROR: PI_PASSWORD environment variable not set"
+    puts "Usage: PI_PASSWORD='your-password' ./configure-nvme-boot-node1.sh"
+    exit 1
+}
 set node1_ip "192.168.2.85"
 set user "raolivei"
 

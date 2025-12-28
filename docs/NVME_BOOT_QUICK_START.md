@@ -24,9 +24,13 @@
 
 ```bash
 # SSH to node-0 (control plane)
-sshpass -p 'Control01!' ssh raolivei@192.168.2.86
+# Use SSH key authentication (recommended):
+ssh raolivei@192.168.2.86
 # Or use hostname if DNS is configured:
 # ssh raolivei@node-0.eldertree.local
+
+# If password authentication is required:
+# sshpass -p 'YOUR_PASSWORD' ssh raolivei@192.168.2.86
 
 # Run the script
 ~/setup-nvme-boot.sh
