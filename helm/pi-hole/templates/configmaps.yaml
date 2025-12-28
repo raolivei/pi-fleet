@@ -6,14 +6,8 @@ metadata:
     {{- include "pi-hole.labels" . | nindent 4 }}
 data:
   05-custom-dns.conf: |
-    # Custom DNS rewrites for eldertree.local domains
-    address=/canopy.eldertree.local/{{ .Values.config.clusterIP }}
-    address=/swimto.eldertree.local/{{ .Values.config.clusterIP }}
-    address=/grafana.eldertree.local/{{ .Values.config.clusterIP }}
-    address=/prometheus.eldertree.local/{{ .Values.config.clusterIP }}
-    address=/vault.eldertree.local/{{ .Values.config.clusterIP }}
-    # Wildcard support - all *.eldertree.local resolve to eldertree IP
-    address=/eldertree.local/{{ .Values.config.clusterIP }}
+    # Custom DNS rewrites moved to BIND backend for RFC2136 support
+    # Only put non-dynamic records here if needed
 ---
 apiVersion: v1
 kind: ConfigMap

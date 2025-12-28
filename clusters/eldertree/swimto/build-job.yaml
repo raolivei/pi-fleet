@@ -2,11 +2,10 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: build-swimto-images
-  namespace: default
+  namespace: swimto
 spec:
   template:
     spec:
-      hostNetwork: true
       containers:
         - name: build
           image: docker:dind
@@ -17,17 +16,31 @@ spec:
             - -c
             - |
               # Install required packages
-              apk add --no-cache docker-cli git
+              apk add --no-cache git jq
 
-              # Wait for docker daemon
-              sleep 5
+              # Start docker daemon in background
+              dockerd-entrypoint.sh &
+              
+              # Wait for docker daemon to be ready
+              echo "Waiting for Docker daemon..."
+              until docker info >/dev/null 2>&1; do
+                sleep 1
+              done
+              echo "Docker daemon ready."
+
+              # Login to GHCR
+              echo "Logging in to GHCR..."
+              DOCKER_CONFIG_JSON=$(cat /config/.dockerconfigjson)
+              USERNAME=$(echo $DOCKER_CONFIG_JSON | jq -r '.auths["ghcr.io"].username')
+              PASSWORD=$(echo $DOCKER_CONFIG_JSON | jq -r '.auths["ghcr.io"].password')
+              echo "$PASSWORD" | docker login ghcr.io -u "$USERNAME" --password-stdin || exit 1
 
               # Clone the repository
               echo "Cloning swimTO repository..."
               git clone https://github.com/raolivei/swimTO.git /workspace || exit 1
               cd /workspace
 
-              # Checkout main branch (or use specific branch/tag if needed)
+              # Checkout main branch
               git checkout main || git checkout master || true
 
               REGISTRY="ghcr.io"
@@ -35,39 +48,37 @@ spec:
               VERSION=$(cat VERSION | tr -d '[:space:]')
               echo "Building version: v${VERSION}"
 
-              # Build API image
-              docker build -t ${IMAGE_PREFIX}/swimto-api:v${VERSION} /workspace/apps/api || exit 1
+              # Build API image (context is repo root)
+              echo "Building API image (context: /workspace)..."
+              docker build -t ${IMAGE_PREFIX}/swimto-api:v${VERSION} -f apps/api/Dockerfile . || exit 1
 
-              # Build Web image  
-              docker build -t ${IMAGE_PREFIX}/swimto-web:v${VERSION} /workspace/apps/web || exit 1
+              # Build Web image (context is apps/web)
+              echo "Building Web image (context: /workspace/apps/web)..."
+              docker build -t ${IMAGE_PREFIX}/swimto-web:v${VERSION} -f apps/web/Dockerfile apps/web || exit 1
 
               # Push to GitHub Container Registry
+              echo "Pushing images to GHCR..."
               docker push ${IMAGE_PREFIX}/swimto-api:v${VERSION} || exit 1
               docker push ${IMAGE_PREFIX}/swimto-web:v${VERSION} || exit 1
 
-              # Pull into k3s
-              k3s ctr images pull ${IMAGE_PREFIX}/swimto-api:v${VERSION} || exit 1
-              k3s ctr images pull ${IMAGE_PREFIX}/swimto-web:v${VERSION} || exit 1
-
               # Verify
-              k3s ctr images ls | grep ${IMAGE_PREFIX}
+              docker images | grep ${IMAGE_PREFIX}
+              
+              echo "Build and push complete for v${VERSION}"
           volumeMounts:
             - name: workspace
               mountPath: /workspace
-            - name: docker-sock
-              mountPath: /var/run/docker.sock
-            - name: k3s-bin
-              mountPath: /usr/local/bin/k3s
+            - name: config
+              mountPath: /config
+              readOnly: true
       volumes:
         - name: workspace
           emptyDir: {}
-        - name: docker-sock
-          hostPath:
-            path: /var/run/docker.sock
-            type: Socket
-        - name: k3s-bin
-          hostPath:
-            path: /usr/local/bin/k3s
-            type: File
+        - name: config
+          secret:
+            secretName: ghcr-secret
+            items:
+              - key: .dockerconfigjson
+                path: .dockerconfigjson
       restartPolicy: Never
-  backoffLimit: 2
+  backoffLimit: 0
