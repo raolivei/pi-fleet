@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pi-hole.fullname" . }}
+  labels:
+    {{- include "pi-hole.labels" . | nindent 4 }}
+  annotations:
+    # Disable K3s built-in ServiceLB (Klipper) since we use MetalLB
+    svc.k3s.cattle.io/loadbalancer-proxy: "false"
+    # MetalLB annotation if needed
+    # metallb.universe.tf/address-pool: default
+spec:
+  type: {{ .Values.service.type }}
+  {{- if and (eq .Values.service.type "LoadBalancer") .Values.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
+  {{- end }}
+  externalTrafficPolicy: Cluster
+  ports:
+    - name: dns-udp
+      port: {{ .Values.service.dnsUdpPort }}
+      protocol: UDP
+      targetPort: 53
+      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) .Values.service.dnsNodePort }}
+      nodePort: {{ .Values.service.dnsNodePort }}
+      {{- end }}
+    - name: dns-tcp
+      port: {{ .Values.service.dnsTcpPort }}
+      protocol: TCP
+      targetPort: 53
+      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) .Values.service.dnsNodePort }}
+      nodePort: {{ .Values.service.dnsNodePort }}
+      {{- end }}
+    - name: http
+      port: {{ .Values.service.httpPort }}
+      protocol: TCP
+      targetPort: 80
+      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) .Values.service.httpNodePort }}
+      nodePort: {{ .Values.service.httpNodePort }}
+      {{- end }}
+    - name: https
+      port: {{ .Values.service.httpsPort }}
+      protocol: TCP
+      targetPort: 443
+      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) .Values.service.httpsNodePort }}
+      nodePort: {{ .Values.service.httpsNodePort }}
+      {{- end }}
+  selector:
+    {{- include "pi-hole.selectorLabels" . | nindent 4 }}
+
