@@ -70,8 +70,8 @@ if command -v cloudflared &> /dev/null; then
                     exit 1
                 fi
                 
-                kubectl exec -n vault $VAULT_POD -- vault kv put secret/cloudflare-tunnel/token token="$TOKEN"
-                echo "✅ Token stored in Vault at secret/cloudflare-tunnel/token"
+                kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/cloudflare-tunnel/token token="$TOKEN"
+                echo "✅ Token stored in Vault at secret/pi-fleet/cloudflare-tunnel/token"
             fi
         fi
     else
@@ -90,6 +90,6 @@ else
     echo ""
     echo "Then store it in Vault:"
     echo "  VAULT_POD=\$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')"
-    echo "  kubectl exec -n vault \$VAULT_POD -- vault kv put secret/cloudflare-tunnel/token token=\"YOUR_TOKEN_HERE\""
+    echo "  kubectl exec -n vault \$VAULT_POD -- vault kv put secret/pi-fleet/cloudflare-tunnel/token token=\"YOUR_TOKEN_HERE\""
 fi
 

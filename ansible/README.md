@@ -462,8 +462,8 @@ Manage secrets in Vault. This playbook provides a declarative way to store secre
 cd ansible
 ansible-playbook playbooks/manage-secrets.yml \
   -e 'secrets=[
-    {path: "secret/terraform/cloudflare-api-token", data: {api-token: "YOUR_TOKEN"}},
-    {path: "secret/external-dns/cloudflare-api-token", data: {api-token: "YOUR_TOKEN"}}
+    {path: "secret/pi-fleet/terraform/cloudflare-api-token", data: {api-token: "YOUR_TOKEN"}},
+    {path: "secret/pi-fleet/external-dns/cloudflare-api-token", data: {api-token: "YOUR_TOKEN"}}
   ]'
 ```
 

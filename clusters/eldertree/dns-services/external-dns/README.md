@@ -119,7 +119,7 @@ External-DNS also supports Cloudflare DNS for public domain `eldertree.xyz`. Two
    VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
    
    # Store token for External-DNS
-   kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-api-token api-token=YOUR_API_TOKEN_HERE
+   kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/external-dns/cloudflare-api-token api-token=YOUR_API_TOKEN_HERE
    ```
 
 3. **Verify External-DNS Cloudflare Instance**:
@@ -164,7 +164,7 @@ Each provider only manages records for its configured domain filter, ensuring no
 
 **DNS records not created:**
 - Check external-dns-cloudflare logs: `kubectl logs -n external-dns deployment/external-dns-cloudflare`
-- Verify Cloudflare API token is stored in Vault at `secret/external-dns/cloudflare-api-token`
+- Verify Cloudflare API token is stored in Vault at `secret/pi-fleet/external-dns/cloudflare-api-token`
 - Check ExternalSecret sync status: `kubectl describe externalsecret external-dns-cloudflare-secret -n external-dns`
 - Verify domain is added to Cloudflare and nameservers are changed at Porkbun
 

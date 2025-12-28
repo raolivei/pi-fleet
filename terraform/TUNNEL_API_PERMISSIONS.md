@@ -67,10 +67,10 @@ export KUBECONFIG=~/.kube/config-eldertree
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
 
 # Store new token for Terraform
-kubectl exec -n vault $VAULT_POD -- vault kv put secret/terraform/cloudflare-api-token api-token="YOUR_NEW_TOKEN_HERE"
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token="YOUR_NEW_TOKEN_HERE"
 
 # Also update for External-DNS (same token works)
-kubectl exec -n vault $VAULT_POD -- vault kv put secret/external-dns/cloudflare-api-token api-token="YOUR_NEW_TOKEN_HERE"
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/external-dns/cloudflare-api-token api-token="YOUR_NEW_TOKEN_HERE"
 ```
 
 ### Step 3: Retry Terraform Apply
@@ -110,7 +110,7 @@ After updating the token, verify it works:
 # Test API token has tunnel permissions
 export KUBECONFIG=~/.kube/config-eldertree
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
-API_TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/terraform/cloudflare-api-token)
+API_TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/pi-fleet/terraform/cloudflare-api-token)
 
 # List tunnels (should work if token has permissions)
 curl -X GET "https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/cfd_tunnel" \

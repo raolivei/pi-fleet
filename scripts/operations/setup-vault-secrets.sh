@@ -41,9 +41,9 @@ echo ""
 
 # Secret categories
 declare -A SECRET_PATHS=(
-    ["1"]="secret/cloudflare-tunnel/token:token"
-    ["2"]="secret/terraform/cloudflare-api-token:api-token"
-    ["3"]="secret/external-dns/cloudflare-api-token:api-token"
+    ["1"]="secret/pi-fleet/cloudflare-tunnel/token:token"
+    ["2"]="secret/pi-fleet/terraform/cloudflare-api-token:api-token"
+    ["3"]="secret/pi-fleet/external-dns/cloudflare-api-token:api-token"
     ["4"]="secret/swimto/database:url"
     ["5"]="secret/swimto/postgres:password"
     ["6"]="secret/swimto/redis:url"

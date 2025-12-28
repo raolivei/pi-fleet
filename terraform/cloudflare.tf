@@ -7,9 +7,9 @@
 # 1. Install k3s (without Cloudflare resources)
 # 2. Bootstrap FluxCD
 # 3. Wait for Vault to be deployed and unsealed
-# 4. Store Cloudflare API token in Vault: secret/terraform/cloudflare-api-token
+# 4. Store Cloudflare API token in Vault: secret/pi-fleet/terraform/cloudflare-api-token
 # 5. Re-run Terraform: cd terraform && ./run-terraform.sh apply (creates tunnel only)
-# 6. Get tunnel token and store in Vault: secret/cloudflare-tunnel/token
+# 6. Get tunnel token and store in Vault: secret/pi-fleet/cloudflare-tunnel/token
 # 7. FluxCD deploys cloudflared via Helm chart (clusters/eldertree/dns-services/cloudflare-tunnel)
 #
 # IMPORTANT: Tunnel configuration (ingress rules) is managed via Terraform (Cloudflare API)
@@ -21,7 +21,7 @@
 # Prerequisites (when adding Cloudflare resources):
 # 1. Domain eldertree.xyz must be added to Cloudflare account (Add Site)
 # 2. Nameservers must be changed at Porkbun to Cloudflare nameservers
-# 3. Cloudflare API token must be stored in Vault at secret/terraform/cloudflare-api-token
+# 3. Cloudflare API token must be stored in Vault at secret/pi-fleet/terraform/cloudflare-api-token
 # 4. Cloudflare zone ID must be obtained after adding domain to Cloudflare
 # 5. Cloudflare Account ID (for tunnels) - found in Cloudflare Dashboard
 

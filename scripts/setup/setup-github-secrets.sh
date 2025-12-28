@@ -87,7 +87,7 @@ if [ -z "$CLOUDFLARE_API_TOKEN" ] && command -v kubectl &> /dev/null; then
         VAULT_STATUS=$(kubectl exec -n vault $VAULT_POD -- vault status 2>&1 | grep "Sealed" | awk '{print $2}' || echo "true")
         
         if [ "$VAULT_STATUS" != "true" ]; then
-            CLOUDFLARE_API_TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/terraform/cloudflare-api-token 2>/dev/null || echo "")
+            CLOUDFLARE_API_TOKEN=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/pi-fleet/terraform/cloudflare-api-token 2>/dev/null || echo "")
             
             if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
                 echo -e "${GREEN}✓ Retrieved Cloudflare API token from Vault${NC}"
