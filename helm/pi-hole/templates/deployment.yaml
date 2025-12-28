@@ -50,19 +50,6 @@ spec:
         - name: pihole
           image: "{{ .Values.image.pihole.repository }}:{{ .Values.image.pihole.tag }}"
           imagePullPolicy: {{ .Values.image.pihole.pullPolicy }}
-          ports:
-            - name: dns-udp
-              containerPort: 53
-              protocol: UDP
-            - name: dns-tcp
-              containerPort: 53
-              protocol: TCP
-            - name: http
-              containerPort: 80
-              protocol: TCP
-            - name: https
-              containerPort: 443
-              protocol: TCP
           env:
             - name: TZ
               value: "{{ .Values.config.timezone }}"
