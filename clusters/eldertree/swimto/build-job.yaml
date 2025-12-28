@@ -32,20 +32,22 @@ spec:
 
               REGISTRY="ghcr.io"
               IMAGE_PREFIX="${REGISTRY}/raolivei"
+              VERSION=$(cat VERSION | tr -d '[:space:]')
+              echo "Building version: v${VERSION}"
 
               # Build API image
-              docker build -t ${IMAGE_PREFIX}/swimto-api:latest /workspace/apps/api || exit 1
+              docker build -t ${IMAGE_PREFIX}/swimto-api:v${VERSION} /workspace/apps/api || exit 1
 
               # Build Web image  
-              docker build -t ${IMAGE_PREFIX}/swimto-web:latest /workspace/apps/web || exit 1
+              docker build -t ${IMAGE_PREFIX}/swimto-web:v${VERSION} /workspace/apps/web || exit 1
 
               # Push to GitHub Container Registry
-              docker push ${IMAGE_PREFIX}/swimto-api:latest || exit 1
-              docker push ${IMAGE_PREFIX}/swimto-web:latest || exit 1
+              docker push ${IMAGE_PREFIX}/swimto-api:v${VERSION} || exit 1
+              docker push ${IMAGE_PREFIX}/swimto-web:v${VERSION} || exit 1
 
               # Pull into k3s
-              k3s ctr images pull ${IMAGE_PREFIX}/swimto-api:latest || exit 1
-              k3s ctr images pull ${IMAGE_PREFIX}/swimto-web:latest || exit 1
+              k3s ctr images pull ${IMAGE_PREFIX}/swimto-api:v${VERSION} || exit 1
+              k3s ctr images pull ${IMAGE_PREFIX}/swimto-web:v${VERSION} || exit 1
 
               # Verify
               k3s ctr images ls | grep ${IMAGE_PREFIX}

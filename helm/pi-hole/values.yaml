@@ -19,6 +19,8 @@ service:
   # loadBalancerIP: 192.168.2.86
   dnsUdpPort: 53
   dnsTcpPort: 53
+  bindUdpPort: 5353
+  bindTcpPort: 5353
   httpPort: 80
   httpsPort: 443
   # NodePort for external access if LoadBalancer doesn't get an IP

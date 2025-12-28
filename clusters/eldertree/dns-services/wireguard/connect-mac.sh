@@ -1,7 +1,7 @@
 #!/bin/bash
 # Quick script to connect Mac to WireGuard VPN
 
-CONFIG_SOURCE="$HOME/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/infrastructure/wireguard/client-mac.conf"
+CONFIG_SOURCE="$HOME/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/dns-services/wireguard/client-mac.conf"
 CONFIG_DEST="/opt/homebrew/etc/wireguard/wg0.conf"
 
 echo "🔐 WireGuard Mac Client Setup"

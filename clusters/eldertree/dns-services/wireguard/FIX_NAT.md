@@ -19,7 +19,7 @@ Or download and run directly on the Pi:
 ```bash
 ssh raolivei@eldertree
 cd /tmp
-curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/infrastructure/wireguard/fix-interface.sh
+curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/dns-services/wireguard/fix-interface.sh
 chmod +x fix-interface.sh
 sudo ./fix-interface.sh
 ```

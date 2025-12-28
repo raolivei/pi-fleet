@@ -16,7 +16,7 @@ sudo bash install-wireguard.sh
 # Option B: Download directly on Pi
 ssh raolivei@192.168.2.83
 cd /tmp
-curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/infrastructure/wireguard/install-wireguard.sh
+curl -O https://raw.githubusercontent.com/raolivei/raolivei/main/pi-fleet/clusters/eldertree/dns-services/wireguard/install-wireguard.sh
 chmod +x install-wireguard.sh
 sudo ./install-wireguard.sh
 ```
@@ -60,7 +60,7 @@ Note this IP address - you'll need it for client configs.
 Back on your Mac, run:
 
 ```bash
-cd ~/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/infrastructure/wireguard
+cd ~/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/dns-services/wireguard
 
 # Update PUBLIC_IP in generate-client.sh if needed, then:
 ./generate-client.sh mac
