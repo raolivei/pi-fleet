@@ -28,6 +28,12 @@ kubeconfig*
 .DS_Store
 Thumbs.db
 
+# Backup files
+*.backup*
+*~
+*.bak
+*.tmp
+
 # Logs
 *.log
 
