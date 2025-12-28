@@ -2,7 +2,7 @@
 # Global settings
 global:
   prometheus:
-    serverAddress: "http://prometheus-stack.observability.svc.cluster.local:80"
+    serverAddress: "http://observability-monitoring-stack-prometheus-server.observability.svc.cluster.local:80"
   pollingInterval: 30
   cooldownPeriod: 300 # 5 min cooldown period
   # Keep CPU/Memory for stateful services
