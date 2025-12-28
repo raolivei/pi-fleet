@@ -14,7 +14,7 @@ spec:
       labels:
         {{- include "pi-hole.selectorLabels" . | nindent 8 }}
     spec:
-      hostNetwork: false
+      hostNetwork: true
       dnsPolicy: None
       dnsConfig:
         nameservers:
