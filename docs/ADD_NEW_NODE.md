@@ -148,18 +148,27 @@ all:
   children:
     raspberry_pi:
       hosts:
-        eldertree:
-          ansible_host: eldertree.local
+        node-0:
+          ansible_host: 192.168.2.86
           ansible_user: raolivei
+          ansible_ssh_private_key_file: ~/.ssh/id_ed25519_raolivei
           ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+          ansible_python_interpreter: /usr/bin/python3
+          poe_hat_enabled: true
         node-1:
           ansible_host: 192.168.2.85
           ansible_user: raolivei
+          ansible_ssh_private_key_file: ~/.ssh/id_ed25519_raolivei
           ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+          ansible_python_interpreter: /usr/bin/python3
+          poe_hat_enabled: true
         node-2:
           ansible_host: 192.168.2.87
           ansible_user: raolivei
+          ansible_ssh_private_key_file: ~/.ssh/id_ed25519_raolivei
           ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+          ansible_python_interpreter: /usr/bin/python3
+          poe_hat_enabled: true
 ```
 
 ### 4.2 Add SSH Key Using kubectl
@@ -217,7 +226,7 @@ ansible node-2 -i ansible/inventory/hosts.yml -m ping
 
 ```bash
 # On node-0 (control plane)
-ansible eldertree -i ansible/inventory/hosts.yml \
+ansible node-0 -i ansible/inventory/hosts.yml \
   -m shell -a "sudo cat /var/lib/rancher/k3s/server/node-token" \
   --become
 ```

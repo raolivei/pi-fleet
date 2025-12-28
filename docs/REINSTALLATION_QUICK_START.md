@@ -125,7 +125,7 @@ ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
 cd ~/WORKSPACE/raolivei/pi-fleet/terraform
 
 # Edit terraform.tfvars:
-# - pi_host: "eldertree" (or IP)
+# - pi_host: "192.168.2.86" (or node-0.eldertree.local if DNS configured)
 # - pi_user: "raolivei"
 # - pi_password: "your-password-here" (DO NOT commit this file to git)
 
