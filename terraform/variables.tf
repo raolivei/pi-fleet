@@ -2,6 +2,12 @@
 # These variables are no longer needed in Terraform.
 # For k3s installation, use Ansible playbooks instead.
 
+variable "skip_k3s_resources" {
+  description = "Skip k3s installation resources (useful for CI where SSH is not available)"
+  type        = bool
+  default     = false
+}
+
 variable "cloudflare_api_token" {
   description = "Cloudflare API token for DNS management. Should be stored in Vault at secret/pi-fleet/terraform/cloudflare-api-token. Leave empty to skip Cloudflare resources (can be added later)."
   type        = string
