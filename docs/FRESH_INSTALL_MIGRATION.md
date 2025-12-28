@@ -165,3 +165,4 @@ curl -sfL https://get.k3s.io | K3S_URL=https://node-0.eldertree.local:6443 K3S_T
 4. ✅ Configure cluster
 5. ✅ Deploy workloads
 
+
