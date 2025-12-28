@@ -65,9 +65,20 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://prometheus-stack.observability.svc.cluster.local
+          url: http://observability-monitoring-stack-prometheus-server.observability.svc.cluster.local
           access: proxy
           isDefault: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      labelValue: "1"
+      searchNamespace: ALL
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
@@ -114,6 +125,36 @@ grafana:
       node-exporter-full:
         gnetId: 1860
         revision: 37
+        datasource: Prometheus
+      # Traefik monitoring
+      traefik:
+        gnetId: 11462
+        revision: 1
+        datasource: Prometheus
+      # Flux monitoring
+      flux-cluster:
+        gnetId: 15991
+        revision: 1
+        datasource: Prometheus
+      # Pi-hole monitoring
+      pihole:
+        gnetId: 10176
+        revision: 1
+        datasource: Prometheus
+      # Cert-manager monitoring
+      cert-manager:
+        gnetId: 11001
+        revision: 1
+        datasource: Prometheus
+      # External Secrets monitoring
+      external-secrets:
+        gnetId: 15159
+        revision: 1
+        datasource: Prometheus
+      # KEDA monitoring
+      keda:
+        gnetId: 13627
+        revision: 1
         datasource: Prometheus
       # Resource usage by namespace
       k8s-compute-resources-namespace:

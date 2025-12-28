@@ -50,22 +50,22 @@ spec:
     resources:
       operator:
         limits:
-          cpu: 1000m
-          memory: 1000Mi
+          cpu: 500m
+          memory: 512Mi
         requests:
           cpu: 100m
           memory: 100Mi
       metricsServer:
         limits:
-          cpu: 1000m
-          memory: 1000Mi
+          cpu: 500m
+          memory: 512Mi
         requests:
           cpu: 100m
           memory: 100Mi
       webhooks:
         limits:
-          cpu: 1000m
-          memory: 1000Mi
+          cpu: 500m
+          memory: 512Mi
         requests:
           cpu: 100m
           memory: 100Mi
