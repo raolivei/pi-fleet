@@ -85,11 +85,11 @@ Access your cluster from anywhere (including mobile LTE) using WireGuard VPN.
 **Quick Setup:**
 
 ```bash
-cd clusters/eldertree/infrastructure/wireguard
+cd clusters/eldertree/dns-services/wireguard
 ./setup-vpn.sh
 ```
 
-See `clusters/eldertree/infrastructure/wireguard/README.md` for detailed documentation.
+See `clusters/eldertree/dns-services/wireguard/README.md` for detailed documentation.
 
 ## Troubleshooting DNS
 

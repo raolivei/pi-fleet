@@ -27,7 +27,7 @@ spec:
     provider: rfc2136
     env:
       - name: EXTERNAL_DNS_RFC2136_HOST
-        value: "bind.pihole.svc.cluster.local"
+        value: "pi-hole.pihole.svc.cluster.local"
       - name: EXTERNAL_DNS_RFC2136_PORT
         value: "5353"
       - name: EXTERNAL_DNS_RFC2136_ZONE

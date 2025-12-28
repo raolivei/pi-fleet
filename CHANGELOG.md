@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1] - 2025-12-28
+
+### Added
+
+- **Comprehensive Grafana Dashboards for Pi Cluster Management**:
+  - `Pi Fleet Overview`: Unified view of cluster health, resource utilization, and hardware status.
+  - `Hardware Health`: Specialized dashboard for Raspberry Pi hardware metrics (temperature, frequency, throttling).
+- Updated `DASHBOARDS.md` with new dashboard information.
+
 ## [1.3.0] - 2025-01-XX
 
 ### Added

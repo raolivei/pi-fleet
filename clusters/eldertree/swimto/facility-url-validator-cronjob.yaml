@@ -21,8 +21,8 @@ spec:
           restartPolicy: Never
           containers:
             - name: validator
-              image: ghcr.io/raolivei/swimto-api:latest
-              imagePullPolicy: Always
+              image: ghcr.io/raolivei/swimto-api:v0.5.2
+              imagePullPolicy: IfNotPresent
               command:
                 - python3
                 - /data-pipeline/jobs/validate_facility_urls.py
