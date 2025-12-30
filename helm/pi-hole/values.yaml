@@ -11,6 +11,10 @@ image:
     repository: busybox
     tag: latest
     pullPolicy: Always
+  exporter:
+    repository: ekofr/pihole-exporter
+    tag: latest
+    pullPolicy: IfNotPresent
 
 service:
   type: LoadBalancer
@@ -23,7 +27,12 @@ service:
   bindTcpPort: 5353
   httpPort: 80
   httpsPort: 443
+  metricsPort: 9617
   # NodePort for external access if LoadBalancer doesn't get an IP
+  # NOTE: These are only used when service.type is NodePort
+  # When using LoadBalancer, MetalLB handles external access and NodePorts are not needed
+  # However, k3s may still allocate them - the svc.k3s.cattle.io/loadbalancer-proxy: "false"
+  # annotation prevents k3s ServiceLB from creating conflicting DaemonSet pods
   dnsNodePort: 30053
   httpNodePort: 30080
   httpsNodePort: 30443
@@ -50,6 +59,13 @@ resources:
       cpu: 500m
       memory: 512Mi
   bind:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  exporter:
     requests:
       cpu: 50m
       memory: 64Mi

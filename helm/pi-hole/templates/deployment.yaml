@@ -16,8 +16,10 @@ spec:
       labels:
         {{- include "pi-hole.selectorLabels" . | nindent 8 }}
     spec:
-      # hostNetwork removed to allow MetalLB LoadBalancer to work properly
+      # Explicitly disable hostNetwork to prevent port conflicts
+      # hostNetwork must be false to allow MetalLB LoadBalancer to work properly
       # Pod will use pod network namespace, and MetalLB will route traffic via LoadBalancer service
+      hostNetwork: false
       dnsPolicy: ClusterFirst
       # Pi-hole will use CoreDNS for cluster DNS resolution, and forward external queries to upstream DNS
       initContainers:
@@ -142,6 +144,44 @@ spec:
           securityContext:
             runAsUser: 0
             runAsGroup: 0
+        - name: exporter
+          image: "{{ .Values.image.exporter.repository }}:{{ .Values.image.exporter.tag }}"
+          imagePullPolicy: {{ .Values.image.exporter.pullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.service.metricsPort }}
+              protocol: TCP
+          env:
+            - name: PIHOLE_HOSTNAME
+              value: "127.0.0.1"
+            - name: PIHOLE_PORT
+              value: "80"
+            - name: PIHOLE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pihole-secrets
+                  key: webpassword
+                  optional: true
+            - name: PORT
+              value: "{{ .Values.service.metricsPort }}"
+          resources:
+            {{- toYaml .Values.resources.exporter | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: {{ .Values.service.metricsPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: {{ .Values.service.metricsPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
       volumes:
         - name: pihole-data
           persistentVolumeClaim:
