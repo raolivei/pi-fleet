@@ -57,10 +57,6 @@ data:
                             )
             IN      NS      ns1.eldertree.local.
     ns1     IN      A       {{ .Values.config.clusterIP }}
-    # Wildcard removed - external-dns manages specific records via RFC2136
-    # Specific A records are created automatically by external-dns for each Ingress
-    # Manual fallback records (until external-dns RFC2136 is fixed):
-    vault   IN      A       192.168.2.200
 
   # dnsmasq configuration to forward eldertree.local queries to BIND
   06-bind-backend.conf: |

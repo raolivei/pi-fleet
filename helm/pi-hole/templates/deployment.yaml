@@ -5,9 +5,14 @@ metadata:
   labels:
     {{- include "pi-hole.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicas | default 1 }}
   strategy:
-    type: Recreate
+    type: {{ .Values.strategy | default "Recreate" }}
+    {{- if eq (.Values.strategy | default "Recreate") "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    {{- end }}
   selector:
     matchLabels:
       {{- include "pi-hole.selectorLabels" . | nindent 6 }}
