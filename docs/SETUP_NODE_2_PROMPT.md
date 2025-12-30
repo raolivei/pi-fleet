@@ -24,7 +24,7 @@ This is a complete prompt for setting up a new Raspberry Pi node (node-2) in the
 - Hostname is "node-x" (generic from Raspberry Pi Imager)
 - OS: Debian Bookworm or Trixie (64-bit)
 - User: `raolivei` (configured via Raspberry Pi Imager)
-- Password: `ac0df36b52` (user and sudo password for initial setup and Ansible authentication)
+- Password: $PI_PASSWORD (user and sudo password for initial setup and Ansible authentication)
 - SSH: Enabled (keys configured via Raspberry Pi Imager)
 
 ## Prerequisites Check
@@ -327,6 +327,53 @@ ansible-playbook playbooks/setup-terminal-monitoring.yml \
 - Installs btop, neofetch, tmux
 - Configures login banner with system info
 
+### Step 9.5: Setup Longhorn Prerequisites
+
+Configure Longhorn storage prerequisites on node-2:
+
+```bash
+cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet/ansible
+
+# Setup Longhorn prerequisites (open-iscsi, /mnt/longhorn mount point)
+ansible-playbook playbooks/setup-longhorn-node.yml --limit node-2
+```
+
+**What this does**:
+
+- Installs `open-iscsi` package (required for Longhorn)
+- Loads iscsi kernel module
+- Creates `/mnt/longhorn` directory
+- If using dedicated partition, formats and mounts it (optional)
+
+**Optional: Use dedicated partition for Longhorn**:
+
+If you want to use a dedicated partition on the NVMe drive for Longhorn:
+
+```bash
+# First, identify available partition (e.g., /dev/nvme0n1p3)
+ansible node-2 -i ansible/inventory/hosts.yml \
+  -m shell -a "lsblk" --become
+
+# Then run playbook with device specified
+ansible-playbook playbooks/setup-longhorn-node.yml \
+  --limit node-2 \
+  -e "longhorn_device=/dev/nvme0n1p3"
+```
+
+**Verification**:
+
+```bash
+# Check iscsi module
+ansible node-2 -i ansible/inventory/hosts.yml \
+  -m shell -a "lsmod | grep iscsi" --become
+
+# Check mount point
+ansible node-2 -i ansible/inventory/hosts.yml \
+  -m shell -a "ls -la /mnt/longhorn && df -h /mnt/longhorn" --become
+```
+
+**Note**: After node-2 joins the cluster, Longhorn will automatically discover it. Verify in Longhorn UI that node-2 appears with disk registered at `/mnt/longhorn`.
+
 ### Step 10: Remove SD Card and Reboot
 
 **⚠️ CRITICAL**: After all configuration is complete:
@@ -441,6 +488,7 @@ ansible-playbook playbooks/setup-system.yml --limit node-2
 - k3s gigabit config: `ansible/playbooks/configure-k3s-gigabit.yml`
 - SSH keys: `ansible/playbooks/setup-ssh-keys.yml`
 - Terminal monitoring: `ansible/playbooks/setup-terminal-monitoring.yml`
+- Longhorn prerequisites: `ansible/playbooks/setup-longhorn-node.yml`
 - Master worker setup: `ansible/playbooks/setup-worker-node.yml` (alternative to running individual playbooks)
 
 ### Getting k3s Token
@@ -642,6 +690,7 @@ When setting up node-2:
 - [ ] Step 7: Install k3s worker
 - [ ] Step 8: Configure k3s for gigabit network
 - [ ] Step 9: Setup SSH keys and terminal monitoring
+- [ ] Step 9.5: Setup Longhorn prerequisites
 - [ ] Step 10: Remove SD card and reboot
 - [ ] Step 11: Final cluster verification
 

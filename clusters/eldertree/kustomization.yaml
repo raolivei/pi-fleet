@@ -7,6 +7,7 @@ resources:
   - core-infrastructure # TLS certificates (cert-manager, issuers)
   - secrets-management # Secrets storage and syncing (vault, external-secrets)
   - dns-services # DNS and networking (pihole, external-dns)
+  - storage # Storage (longhorn)
 
   # Observability & Autoscaling
   - observability # Monitoring stack (Prometheus, Grafana, Alertmanager)
