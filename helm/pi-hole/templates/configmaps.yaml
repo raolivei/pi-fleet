@@ -72,9 +72,8 @@ metadata:
 data:
   99-upstream-dns.conf: |
     # Upstream DNS servers configured via ConfigMap
-    # Use Google DNS directly (port 53 is reachable)
+    # Use Cloudflare DNS (1.1.1.1 and 1.0.0.1) for privacy and performance
     server={{ .Values.config.dns1 }}
-    server=8.8.4.4
     server={{ .Values.config.dns2 }}
 
 

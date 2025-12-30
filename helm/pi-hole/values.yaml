@@ -57,8 +57,8 @@ strategy: Recreate  # Set to RollingUpdate for HA (requires shared storage)
 config:
   timezone: UTC
   virtualHost: pihole.eldertree.local
-  dns1: 8.8.8.8
-  dns2: 1.1.1.1
+  dns1: 1.1.1.1
+  dns2: 1.0.0.1
   # The IP address for eldertree.local records
   clusterIP: 192.168.2.201
 
