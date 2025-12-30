@@ -6,6 +6,7 @@
     # Gigabit network IPs - adjust if different
     node_0_gigabit_ip: "10.0.0.1"
     node_1_gigabit_ip: "10.0.0.2"
+    node_2_gigabit_ip: "10.0.0.3"
     gigabit_interface: "eth0"
 
   tasks:
@@ -14,7 +15,16 @@
     # =========================================================================
     - name: Get gigabit IP for this node
       set_fact:
-        node_gigabit_ip: "{{ node_0_gigabit_ip if inventory_hostname == 'node-0' else node_1_gigabit_ip }}"
+        node_gigabit_ip: >-
+          {%- if inventory_hostname == 'node-0' -%}
+            {{ node_0_gigabit_ip }}
+          {%- elif inventory_hostname == 'node-1' -%}
+            {{ node_1_gigabit_ip }}
+          {%- elif inventory_hostname == 'node-2' -%}
+            {{ node_2_gigabit_ip }}
+          {%- else -%}
+            {{ node_1_gigabit_ip }}
+          {%- endif -%}
       changed_when: false
 
     # =========================================================================
