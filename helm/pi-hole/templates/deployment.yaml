@@ -16,17 +16,10 @@ spec:
       labels:
         {{- include "pi-hole.selectorLabels" . | nindent 8 }}
     spec:
-      hostNetwork: true
-      dnsPolicy: None
-      dnsConfig:
-        nameservers:
-          - {{ .Values.config.dns1 }}
-          - {{ .Values.config.dns2 }}
-          - "8.8.4.4"
-        searches:
-          - "pihole.svc.cluster.local"
-          - "svc.cluster.local"
-          - "cluster.local"
+      # hostNetwork removed to allow MetalLB LoadBalancer to work properly
+      # Pod will use pod network namespace, and MetalLB will route traffic via LoadBalancer service
+      dnsPolicy: ClusterFirst
+      # Pi-hole will use CoreDNS for cluster DNS resolution, and forward external queries to upstream DNS
       initContainers:
         - name: bind-init
           image: "{{ .Values.image.busybox.repository }}:{{ .Values.image.busybox.tag }}"
@@ -52,6 +45,19 @@ spec:
         - name: pihole
           image: "{{ .Values.image.pihole.repository }}:{{ .Values.image.pihole.tag }}"
           imagePullPolicy: {{ .Values.image.pihole.pullPolicy }}
+          ports:
+            - name: dns-udp
+              containerPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: https
+              containerPort: 443
+              protocol: TCP
           env:
             - name: TZ
               value: "{{ .Values.config.timezone }}"
@@ -64,6 +70,8 @@ spec:
             - name: PIHOLE_DNS_2
               value: "{{ .Values.config.dns2 }}"
             - name: FTLCONF_misc_etc_dnsmasq_d
+              value: "true"
+            - name: FTLCONF_blocking_enabled
               value: "true"
             - name: WEBPASSWORD
               valueFrom:

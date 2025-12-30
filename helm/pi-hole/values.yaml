@@ -14,9 +14,9 @@ image:
 
 service:
   type: LoadBalancer
-  # Using the node IP for now as we don't have a separate LB IP pool
-  # In a multi-node cluster with MetalLB, you'd specify a virtual IP here.
-  # loadBalancerIP: 192.168.2.86
+  # MetalLB will assign this IP from the pool (192.168.2.200-192.168.2.210)
+  # This IP should be configured as the DNS server on your router
+  loadBalancerIP: 192.168.2.201
   dnsUdpPort: 53
   dnsTcpPort: 53
   bindUdpPort: 5353

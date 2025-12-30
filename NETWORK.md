@@ -20,29 +20,45 @@ To ensure cluster stability, configure static IP via router DHCP reservation:
 
 ## DNS Setup
 
-### Option 1: Pi-hole with MetalLB (Recommended - Fully Automated)
+### Pi-hole as Network DNS Server (Recommended)
 
-Pi-hole is exposed via a LoadBalancer service (MetalLB) on port 53.
+Pi-hole is configured as a LoadBalancer service (MetalLB) on port 53, making it available as your network-wide DNS server.
 
 **How it works:**
 
 - MetalLB assigns a virtual IP (`192.168.2.201`) to the Pi-hole service.
 - Pi-hole is configured to resolve `*.eldertree.local` to this virtual IP.
 - All cluster services are accessible via their `*.eldertree.local` hostnames.
+- **Router DNS Configuration**: Set your router's DNS server to `192.168.2.201` so all devices on your network automatically use Pi-hole.
 
-**Configure macOS:**
+**Configure Router DNS (Network-Wide):**
+
+1. Access your router's admin panel (usually `192.168.2.1` or `192.168.1.1`)
+2. Navigate to **Network Settings** → **DHCP Settings** or **DNS Settings**
+3. Set **Primary DNS Server** to: `192.168.2.201`
+4. Set **Secondary DNS Server** to: `8.8.8.8` (Google DNS) or `1.1.1.1` (Cloudflare DNS) as fallback
+5. Save and apply changes
+6. **Restart devices** or renew DHCP leases to pick up the new DNS settings
+
+**Configure macOS (Device-Level - Optional):**
+
+If you prefer device-level DNS configuration instead of router-level:
 
 1. Open **System Settings** → **Network** → **Wi-Fi/Ethernet** → **Details...** → **DNS**.
-2. Add `192.168.2.201` as the only DNS server.
-3. Click **OK** and **Apply**.
+2. Add `192.168.2.201` as the primary DNS server.
+3. Add `8.8.8.8` or `1.1.1.1` as secondary DNS server.
+4. Click **OK** and **Apply**.
 
-**Verify:**
+**Verify DNS Resolution:**
 
 ```bash
 # Test DNS resolution
 nslookup vault.eldertree.local 192.168.2.201
-# Or just
+# Or just (if router DNS is configured)
 nslookup vault.eldertree.local
+
+# Test from any device on the network
+dig canopy.eldertree.local
 ```
 
 ### Option 2: /etc/hosts (Manual)
@@ -76,20 +92,13 @@ Access services via HTTPS (accept self-signed certificate warnings):
 - `https://pihole.eldertree.local`
 - `https://vault.eldertree.local`
 
-## Remote Access via VPN
+## Remote Access
 
-### WireGuard VPN
+### Cloudflare Tunnel
 
-Access your cluster from anywhere (including mobile LTE) using WireGuard VPN.
+For secure remote access to your cluster services, use Cloudflare Tunnel. See `clusters/eldertree/dns-services/cloudflare-tunnel/README.md` for setup instructions.
 
-**Quick Setup:**
-
-```bash
-cd clusters/eldertree/dns-services/wireguard
-./setup-vpn.sh
-```
-
-See `clusters/eldertree/dns-services/wireguard/README.md` for detailed documentation.
+**Note:** WireGuard VPN is disabled. Use Cloudflare Tunnel for remote access instead.
 
 ## Troubleshooting DNS
 
