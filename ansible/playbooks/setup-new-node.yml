@@ -157,6 +157,8 @@
 
 - name: Setup SSH Keys for Node-to-Node Communication
   import_playbook: setup-ssh-keys.yml
+  vars:
+    add_local_key: true  # Add local machine's SSH key for Ansible access
 
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml
@@ -165,6 +167,11 @@
 
 - name: Setup Longhorn Prerequisites
   import_playbook: setup-longhorn-node.yml
+
+- name: Disable K3s ServiceLB (if using MetalLB)
+  import_playbook: disable-k3s-servicelb.yml
+  # Note: This is optional but recommended if using MetalLB for LoadBalancer services
+  # ServiceLB can conflict with MetalLB, so it's disabled by default
 
 - name: Setup Summary
   hosts: localhost
@@ -186,9 +193,10 @@
           - "  ✅ Gigabit network configuration"
           - "  ✅ k3s worker installation"
           - "  ✅ k3s gigabit network configuration"
-          - "  ✅ SSH keys setup"
+          - "  ✅ SSH keys setup (including local key)"
           - "  ✅ Terminal monitoring tools"
           - "  ✅ Longhorn prerequisites"
+          - "  ✅ K3s ServiceLB disabled (for MetalLB compatibility)"
           - ""
           - "Next steps:"
           - "  1. If NVMe was configured, remove SD card and reboot"

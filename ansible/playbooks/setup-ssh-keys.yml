@@ -82,9 +82,17 @@
     # =========================================================================
     # Optionally add local machine's SSH key (for Ansible access)
     # =========================================================================
+    - name: Get local SSH public key path from inventory
+      set_fact:
+        local_ssh_key_path: "{{ (ansible_ssh_private_key_file | default('~/.ssh/id_ed25519_raolivei')) | replace('~', ansible_env.HOME) }}.pub"
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      when: add_local_key | bool
+
     - name: Get local SSH public key
       slurp:
-        src: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
+        src: "{{ local_ssh_key_path }}"
       register: local_ssh_key
       delegate_to: localhost
       become: false
