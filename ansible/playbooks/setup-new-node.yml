@@ -173,11 +173,23 @@
         - inventory_hostname != 'node-0'
         - not (eth0_connection_check.failed | default(true))
 
-    - name: Activate eth0 connection
+    - name: Check current eth0 IP before activation
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - network
+      register: current_eth0_check
+      when: inventory_hostname != 'node-0'
+      changed_when: false
+
+    - name: Activate eth0 connection (only if IP needs to change)
       community.general.nmcli:
         state: up
         conn_name: eth0
-      when: inventory_hostname != 'node-0'
+      when:
+        - inventory_hostname != 'node-0'
+        - current_eth0_check.ansible_facts.ansible_eth0.ipv4[0].address | default('') != eth0_ip
+      ignore_errors: true
 
     - name: Wait for eth0 to get any IP address (with retries)
       ansible.builtin.setup:
@@ -278,7 +290,7 @@
   connection: local
   gather_facts: false
   vars:
-    k3s_token_final: "{{ k3s_token_override | default(k3s_token_retrieved | default('')) }}"
+    k3s_token_final: "{{ k3s_token_override | default(hostvars['node-0']['k3s_token_retrieved'] | default('')) }}"
   tasks:
     - name: Fail if k3s token not available
       ansible.builtin.fail:
@@ -286,7 +298,7 @@
           k3s_token is required. Either:
           1. Provide via -e k3s_token_override=<token>
           2. Ensure node-0 is accessible and token can be retrieved automatically
-      when: k3s_token_final == ""
+      when: k3s_token_final == "" or k3s_token_final is not defined
 
 - name: Install k3s Worker
   import_playbook: install-k3s-worker.yml
