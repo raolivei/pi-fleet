@@ -86,11 +86,28 @@
           - ""
           - "To override, use: -e wlan0_ip=<ip> -e eth0_ip=<ip>"
 
+- name: Set eth0 IP for target node
+  hosts: raspberry_pi
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Calculate eth0 IP for this node
+      ansible.builtin.set_fact:
+        calculated_eth0_for_node: "{{ '10.0.0.' + ((inventory_hostname | regex_replace('node-', '') | int) + 1)|string }}"
+      when: inventory_hostname != 'node-0'
+
+    - name: Set calculated eth0 IP on localhost
+      ansible.builtin.set_fact:
+        calculated_eth0_ip: "{{ calculated_eth0_for_node }}"
+      delegate_to: localhost
+      run_once: true
+      when: inventory_hostname != 'node-0'
+
 - name: System Configuration
   import_playbook: setup-system.yml
   vars:
     hostname: "{{ inventory_hostname }}.eldertree.local"
-    static_ip: "{{ wlan0_ip | default(hostvars['localhost']['calculated_wlan0_ip']) }}"
+    static_ip: "{{ wlan0_ip_override | default(hostvars['localhost']['calculated_wlan0_ip']) }}"
 
 - name: Setup NVMe Boot (if NVMe detected)
   import_playbook: setup-nvme-boot.yml
