@@ -6,14 +6,8 @@ metadata:
     {{- include "pi-hole.labels" . | nindent 4 }}
 data:
   05-custom-dns.conf: |
-    # Custom DNS rewrites for eldertree.local domains
-    address=/canopy.eldertree.local/{{ .Values.config.clusterIP }}
-    address=/swimto.eldertree.local/{{ .Values.config.clusterIP }}
-    address=/grafana.eldertree.local/{{ .Values.config.clusterIP }}
-    address=/prometheus.eldertree.local/{{ .Values.config.clusterIP }}
-    address=/vault.eldertree.local/{{ .Values.config.clusterIP }}
-    # Wildcard support - all *.eldertree.local resolve to eldertree IP
-    address=/eldertree.local/{{ .Values.config.clusterIP }}
+    # Custom DNS rewrites moved to BIND backend for RFC2136 support
+    # Only put non-dynamic records here if needed
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -63,7 +57,6 @@ data:
                             )
             IN      NS      ns1.eldertree.local.
     ns1     IN      A       {{ .Values.config.clusterIP }}
-    *       IN      A       {{ .Values.config.clusterIP }}
 
   # dnsmasq configuration to forward eldertree.local queries to BIND
   06-bind-backend.conf: |
@@ -79,9 +72,8 @@ metadata:
 data:
   99-upstream-dns.conf: |
     # Upstream DNS servers configured via ConfigMap
-    # Use Google DNS directly (port 53 is reachable)
+    # Use Cloudflare DNS (1.1.1.1 and 1.0.0.1) for privacy and performance
     server={{ .Values.config.dns1 }}
-    server=8.8.4.4
     server={{ .Values.config.dns2 }}
 
 

@@ -1,0 +1,161 @@
+---
+- name: Setup Longhorn Prerequisites on Node
+  hosts: raspberry_pi
+  become: true
+  vars:
+    longhorn_mount_point: "/mnt/longhorn"
+    longhorn_device: ""  # Optional: e.g., "/dev/nvme0n1p3" - if empty, uses existing mount or creates directory
+    longhorn_fs_type: "ext4"
+    longhorn_label: "longhorn"
+
+  tasks:
+    # =========================================================================
+    # Install open-iscsi (required for Longhorn)
+    # =========================================================================
+    - name: Check if open-iscsi is installed
+      command: dpkg -l open-iscsi
+      register: iscsi_check
+      changed_when: false
+      failed_when: false
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: iscsi_check.rc != 0
+
+    - name: Install open-iscsi
+      apt:
+        name: open-iscsi
+        state: present
+      when: iscsi_check.rc != 0
+
+    - name: Load iscsi kernel module
+      modprobe:
+        name: iscsi_tcp
+        state: present
+
+    - name: Verify iscsi module is loaded
+      shell: lsmod | grep -q iscsi && echo "loaded" || echo "not_loaded"
+      register: iscsi_module_status
+      changed_when: false
+
+    - name: Fail if iscsi module not loaded
+      fail:
+        msg: "iscsi kernel module failed to load. Check dmesg for errors."
+      when: iscsi_module_status.stdout != "loaded"
+
+    # =========================================================================
+    # Setup Longhorn mount point
+    # =========================================================================
+    - name: Check if mount point exists
+      stat:
+        path: "{{ longhorn_mount_point }}"
+      register: mount_point_stat
+
+    - name: Create mount point directory
+      file:
+        path: "{{ longhorn_mount_point }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+      when: not mount_point_stat.stat.exists
+
+    # =========================================================================
+    # Handle device mounting (if device specified)
+    # =========================================================================
+    - name: Check if device is specified
+      set_fact:
+        device_specified: "{{ longhorn_device != '' and longhorn_device != None }}"
+      changed_when: false
+
+    - name: Check if device exists
+      stat:
+        path: "{{ longhorn_device }}"
+      register: device_stat
+      when: device_specified
+
+    - name: Fail if specified device doesn't exist
+      fail:
+        msg: "Specified device {{ longhorn_device }} does not exist. Check with 'lsblk'."
+      when: device_specified and not device_stat.stat.exists
+
+    - name: Check if device is already mounted
+      shell: findmnt -n -o TARGET "{{ longhorn_device }}" 2>/dev/null || echo ""
+      register: device_mount
+      changed_when: false
+      when: device_specified
+
+    - name: Check if device is formatted
+      shell: blkid -o value -s TYPE "{{ longhorn_device }}" 2>/dev/null || echo "none"
+      register: device_fs_type
+      changed_when: false
+      when: device_specified
+
+    - name: Format device if not formatted
+      filesystem:
+        fstype: "{{ longhorn_fs_type }}"
+        dev: "{{ longhorn_device }}"
+        label: "{{ longhorn_label }}"
+        force: false
+      when: device_specified and device_fs_type.stdout == "none"
+
+    - name: Get device UUID
+      shell: blkid -o value -s UUID "{{ longhorn_device }}"
+      register: device_uuid
+      changed_when: false
+      when: device_specified
+
+    - name: Mount device to mount point
+      mount:
+        path: "{{ longhorn_mount_point }}"
+        src: "UUID={{ device_uuid.stdout }}"
+        fstype: "{{ longhorn_fs_type }}"
+        state: mounted
+      when: device_specified and device_mount.stdout == ""
+
+    - name: Add device to fstab
+      mount:
+        path: "{{ longhorn_mount_point }}"
+        src: "UUID={{ device_uuid.stdout }}"
+        fstype: "{{ longhorn_fs_type }}"
+        opts: defaults
+        passno: 2
+        state: present
+      when: device_specified
+
+    # =========================================================================
+    # Verify setup
+    # =========================================================================
+    - name: Verify mount point exists
+      stat:
+        path: "{{ longhorn_mount_point }}"
+      register: final_mount_stat
+
+    - name: Check mount point permissions
+      file:
+        path: "{{ longhorn_mount_point }}"
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Get available space at mount point
+      shell: df -h "{{ longhorn_mount_point }}" | tail -1 | awk '{print $4}'
+      register: available_space
+      changed_when: false
+
+    - name: Display setup summary
+      debug:
+        msg:
+          - "Longhorn prerequisites setup complete:"
+          - "  - open-iscsi: installed and loaded"
+          - "  - Mount point: {{ longhorn_mount_point }}"
+          - "  - Available space: {{ available_space.stdout }}"
+          - "  - Device: {{ longhorn_device if device_specified else 'Using existing mount or directory' }}"
+          - ""
+          - "Next steps:"
+          - "  1. Verify node appears in Longhorn UI after joining cluster"
+          - "  2. Check disk registration in Longhorn UI: Node → Disk"
+          - "  3. Ensure scheduling is enabled for this node"
+

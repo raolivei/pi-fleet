@@ -33,10 +33,11 @@
   vars:
     target_user: raolivei
 
-- name: Configure WireGuard VPN
-  import_playbook: configure-wireguard.yml
-  vars:
-    target_user: raolivei
+# WireGuard VPN is disabled - use Cloudflare Tunnel for remote access instead
+# - name: Configure WireGuard VPN
+#   import_playbook: configure-wireguard.yml
+#   vars:
+#     target_user: raolivei
 
 - name: Display k3s Installation Note
   hosts: localhost

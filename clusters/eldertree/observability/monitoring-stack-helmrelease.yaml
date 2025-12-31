@@ -38,6 +38,10 @@ spec:
                 - prometheus.eldertree.local
           annotations:
             cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+        # Additional scrape configs for Pi-hole and other services
+        additionalScrapeConfigs:
+          - key: pihole-scrape.yaml
+            name: pihole-scrape-config
     grafana:
       enabled: true
       adminPassword: admin

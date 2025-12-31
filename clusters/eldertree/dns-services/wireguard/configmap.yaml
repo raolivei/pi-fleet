@@ -1,107 +1,106 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: wireguard-install-script
-    namespace: wireguard-vpn
+  name: wireguard-install-script
 data:
-    install-wireguard.sh: |
-        #!/bin/bash
-        set -e
+  install-wireguard.sh: |
+    #!/bin/bash
+    set -e
 
-        # WireGuard VPN Server Installation Script for Raspberry Pi
-        # This script installs and configures WireGuard on the Raspberry Pi host
+    # WireGuard VPN Server Installation Script for Raspberry Pi
+    # This script installs and configures WireGuard on the Raspberry Pi host
 
-        echo "🔐 WireGuard VPN Server Installation"
-        echo "===================================="
+    echo "🔐 WireGuard VPN Server Installation"
+    echo "===================================="
 
-        # Check if running as root
-        if [ "$EUID" -ne 0 ]; then 
-          echo "❌ Please run as root (use sudo)"
-          exit 1
-        fi
+    # Check if running as root
+    if [ "$EUID" -ne 0 ]; then 
+      echo "❌ Please run as root (use sudo)"
+      exit 1
+    fi
 
-        # Detect OS
-        if [ -f /etc/os-release ]; then
-            . /etc/os-release
-            OS=$ID
-        else
-            echo "❌ Cannot detect OS"
-            exit 1
-        fi
+    # Detect OS
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS=$ID
+    else
+        echo "❌ Cannot detect OS"
+        exit 1
+    fi
 
-        echo "📦 Installing WireGuard..."
+    echo "📦 Installing WireGuard..."
 
-        # Install WireGuard based on OS
-        if [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ] || [ "$OS" = "raspbian" ]; then
-            apt-get update
-            apt-get install -y wireguard wireguard-tools iptables qrencode
-            
-            # Enable IP forwarding
-            echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-            echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.conf
-            sysctl -p
-            
-        elif [ "$OS" = "fedora" ] || [ "$OS" = "rhel" ] || [ "$OS" = "centos" ]; then
-            dnf install -y wireguard-tools iptables qrencode
-            echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-            sysctl -p
-        else
-            echo "❌ Unsupported OS: $OS"
-            exit 1
-        fi
+    # Install WireGuard based on OS
+    if [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ] || [ "$OS" = "raspbian" ]; then
+        apt-get update
+        apt-get install -y wireguard wireguard-tools iptables qrencode
+        
+        # Enable IP forwarding
+        echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+        echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.conf
+        sysctl -p
+        
+    elif [ "$OS" = "fedora" ] || [ "$OS" = "rhel" ] || [ "$OS" = "centos" ]; then
+        dnf install -y wireguard-tools iptables qrencode
+        echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+        sysctl -p
+    else
+        echo "❌ Unsupported OS: $OS"
+        exit 1
+    fi
 
-        echo "✅ WireGuard installed"
+    echo "✅ WireGuard installed"
 
-        # Create WireGuard directory
-        mkdir -p /etc/wireguard
-        cd /etc/wireguard
+    # Create WireGuard directory
+    mkdir -p /etc/wireguard
+    cd /etc/wireguard
 
-        # Generate keys if they don't exist
-        if [ ! -f /etc/wireguard/private.key ]; then
-            echo "🔑 Generating WireGuard keys..."
-            wg genkey | tee private.key | wg pubkey > public.key
-            chmod 600 private.key
-            chmod 644 public.key
-        fi
+    # Generate keys if they don't exist
+    if [ ! -f /etc/wireguard/private.key ]; then
+        echo "🔑 Generating WireGuard keys..."
+        wg genkey | tee private.key | wg pubkey > public.key
+        chmod 600 private.key
+        chmod 644 public.key
+    fi
 
-        # Read keys
-        PRIVATE_KEY=$(cat /etc/wireguard/private.key)
-        PUBLIC_KEY=$(cat /etc/wireguard/public.key)
+    # Read keys
+    PRIVATE_KEY=$(cat /etc/wireguard/private.key)
+    PUBLIC_KEY=$(cat /etc/wireguard/public.key)
 
-        echo "📝 Public Key: $PUBLIC_KEY"
+    echo "📝 Public Key: $PUBLIC_KEY"
 
-        # Get server IP (first non-loopback IP)
-        SERVER_IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -1)
-        SERVER_PORT=51820
+    # Get server IP (first non-loopback IP)
+    SERVER_IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -1)
+    SERVER_PORT=51820
 
-        # Detect primary network interface (wlan0, eth0, etc.)
-        NETWORK_INTERFACE=$(ip route | grep default | awk '{print $5}' | head -1)
-        if [ -z "$NETWORK_INTERFACE" ]; then
-            # Fallback: try to find first non-loopback interface
-            NETWORK_INTERFACE=$(ip -4 link show | grep -v lo | grep -oP '(?<=^\d+: )\w+' | head -1)
-        fi
-        # Default to wlan0 if still not found (common on Raspberry Pi)
-        NETWORK_INTERFACE=${NETWORK_INTERFACE:-wlan0}
+    # Detect primary network interface (wlan0, eth0, etc.)
+    NETWORK_INTERFACE=$(ip route | grep default | awk '{print $5}' | head -1)
+    if [ -z "$NETWORK_INTERFACE" ]; then
+        # Fallback: try to find first non-loopback interface
+        NETWORK_INTERFACE=$(ip -4 link show | grep -v lo | grep -oP '(?<=^\d+: )\w+' | head -1)
+    fi
+    # Default to wlan0 if still not found (common on Raspberry Pi)
+    NETWORK_INTERFACE=${NETWORK_INTERFACE:-wlan0}
 
-        echo "🌐 Server IP: $SERVER_IP"
-        echo "🔌 Server Port: $SERVER_PORT"
-        echo "📡 Network Interface: $NETWORK_INTERFACE"
+    echo "🌐 Server IP: $SERVER_IP"
+    echo "🔌 Server Port: $SERVER_PORT"
+    echo "📡 Network Interface: $NETWORK_INTERFACE"
 
-        # Create WireGuard config
-        cat > /etc/wireguard/wg0.conf <<EOF
-        [Interface]
-        Address = 10.8.0.1/24
-        ListenPort = $SERVER_PORT
-        PrivateKey = $PRIVATE_KEY
-        PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o $NETWORK_INTERFACE -j MASQUERADE
-        PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o $NETWORK_INTERFACE -j MASQUERADE
+    # Create WireGuard config
+    cat > /etc/wireguard/wg0.conf <<EOF
+    [Interface]
+    Address = 10.8.0.1/24
+    ListenPort = $SERVER_PORT
+    PrivateKey = $PRIVATE_KEY
+    PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o $NETWORK_INTERFACE -j MASQUERADE
+    PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o $NETWORK_INTERFACE -j MASQUERADE
 
-        EOF
+EOF
 
-        # Enable and start WireGuard
-        systemctl enable wg-quick@wg0
-        systemctl start wg-quick@wg0
+    # Enable and start WireGuard
+    systemctl enable wg-quick@wg0
+    systemctl start wg-quick@wg0
 
-        echo "✅ WireGuard configured and started"
-        echo "📋 Server Public Key: $PUBLIC_KEY"
-        echo "💡 Use this key to configure clients"
+    echo "✅ WireGuard configured and started"
+    echo "📋 Server Public Key: $PUBLIC_KEY"
+    echo "💡 Use this key to configure clients"

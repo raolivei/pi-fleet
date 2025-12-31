@@ -12,7 +12,7 @@ spec:
         spec:
           containers:
             - name: data-refresh
-              image: ghcr.io/raolivei/swimto-api:v0.5.2
+              image: ghcr.io/raolivei/swimto-api:v0.5.1
               imagePullPolicy: IfNotPresent
               command:
                 - python
@@ -34,5 +34,5 @@ spec:
                   memory: "512Mi"
                   cpu: "500m"
           imagePullSecrets:
-          - name: ghcr-secret
+            - name: ghcr-secret
           restartPolicy: OnFailure

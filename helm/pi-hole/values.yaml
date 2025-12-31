@@ -11,19 +11,28 @@ image:
     repository: busybox
     tag: latest
     pullPolicy: Always
+  exporter:
+    repository: ekofr/pihole-exporter
+    tag: latest
+    pullPolicy: IfNotPresent
 
 service:
   type: LoadBalancer
-  # Using the node IP for now as we don't have a separate LB IP pool
-  # In a multi-node cluster with MetalLB, you'd specify a virtual IP here.
-  # loadBalancerIP: 192.168.2.86
+  # MetalLB will assign this IP from the pool (192.168.2.200-192.168.2.210)
+  # This IP should be configured as the DNS server on your router
+  loadBalancerIP: 192.168.2.201
   dnsUdpPort: 53
   dnsTcpPort: 53
   bindUdpPort: 5353
   bindTcpPort: 5353
   httpPort: 80
   httpsPort: 443
+  metricsPort: 9617
   # NodePort for external access if LoadBalancer doesn't get an IP
+  # NOTE: These are only used when service.type is NodePort
+  # When using LoadBalancer, MetalLB handles external access and NodePorts are not needed
+  # However, k3s may still allocate them - the svc.k3s.cattle.io/loadbalancer-proxy: "false"
+  # annotation prevents k3s ServiceLB from creating conflicting DaemonSet pods
   dnsNodePort: 30053
   httpNodePort: 30080
   httpsNodePort: 30443
@@ -32,12 +41,24 @@ persistence:
   enabled: true
   size: 2Gi
   storageClass: local-path
+  # For HA, each replica needs its own PVC
+  # Consider using ReadWriteMany storage class for shared storage
+  # Or disable persistence for stateless operation (not recommended)
+
+# High Availability Configuration
+# NOTE: Pi-hole with persistence (ReadWriteOnce) cannot be shared between replicas
+# For true HA, you need either:
+# 1. Disable persistence (lose config on restart) - set persistence.enabled: false
+# 2. Use shared storage (NFS, etc.) with ReadWriteMany access mode
+# 3. Keep single replica but ensure pod disruption budget and health checks
+replicas: 1  # Set to 2+ for HA (requires shared storage)
+strategy: Recreate  # Set to RollingUpdate for HA (requires shared storage)
 
 config:
   timezone: UTC
   virtualHost: pihole.eldertree.local
-  dns1: 8.8.8.8
-  dns2: 1.1.1.1
+  dns1: 1.1.1.1
+  dns2: 1.0.0.1
   # The IP address for eldertree.local records
   clusterIP: 192.168.2.201
 
@@ -50,6 +71,13 @@ resources:
       cpu: 500m
       memory: 512Mi
   bind:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  exporter:
     requests:
       cpu: 50m
       memory: 64Mi

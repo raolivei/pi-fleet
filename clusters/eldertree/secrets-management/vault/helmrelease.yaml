@@ -64,6 +64,6 @@ spec:
             hosts:
               - vault.eldertree.local
         annotations:
-          cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+          cert-manager.io/cluster-issuer: ca-cluster-issuer
     injector:
       enabled: true

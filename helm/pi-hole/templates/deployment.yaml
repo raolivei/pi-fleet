@@ -5,9 +5,14 @@ metadata:
   labels:
     {{- include "pi-hole.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicas | default 1 }}
   strategy:
-    type: Recreate
+    type: {{ .Values.strategy | default "Recreate" }}
+    {{- if eq (.Values.strategy | default "Recreate") "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    {{- end }}
   selector:
     matchLabels:
       {{- include "pi-hole.selectorLabels" . | nindent 6 }}
@@ -16,17 +21,12 @@ spec:
       labels:
         {{- include "pi-hole.selectorLabels" . | nindent 8 }}
     spec:
-      hostNetwork: true
-      dnsPolicy: None
-      dnsConfig:
-        nameservers:
-          - {{ .Values.config.dns1 }}
-          - {{ .Values.config.dns2 }}
-          - "8.8.4.4"
-        searches:
-          - "pihole.svc.cluster.local"
-          - "svc.cluster.local"
-          - "cluster.local"
+      # Explicitly disable hostNetwork to prevent port conflicts
+      # hostNetwork must be false to allow MetalLB LoadBalancer to work properly
+      # Pod will use pod network namespace, and MetalLB will route traffic via LoadBalancer service
+      hostNetwork: false
+      dnsPolicy: ClusterFirst
+      # Pi-hole will use CoreDNS for cluster DNS resolution, and forward external queries to upstream DNS
       initContainers:
         - name: bind-init
           image: "{{ .Values.image.busybox.repository }}:{{ .Values.image.busybox.tag }}"
@@ -52,6 +52,19 @@ spec:
         - name: pihole
           image: "{{ .Values.image.pihole.repository }}:{{ .Values.image.pihole.tag }}"
           imagePullPolicy: {{ .Values.image.pihole.pullPolicy }}
+          ports:
+            - name: dns-udp
+              containerPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: https
+              containerPort: 443
+              protocol: TCP
           env:
             - name: TZ
               value: "{{ .Values.config.timezone }}"
@@ -64,6 +77,8 @@ spec:
             - name: PIHOLE_DNS_2
               value: "{{ .Values.config.dns2 }}"
             - name: FTLCONF_misc_etc_dnsmasq_d
+              value: "true"
+            - name: FTLCONF_blocking_enabled
               value: "true"
             - name: WEBPASSWORD
               valueFrom:
@@ -134,6 +149,44 @@ spec:
           securityContext:
             runAsUser: 0
             runAsGroup: 0
+        - name: exporter
+          image: "{{ .Values.image.exporter.repository }}:{{ .Values.image.exporter.tag }}"
+          imagePullPolicy: {{ .Values.image.exporter.pullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.service.metricsPort }}
+              protocol: TCP
+          env:
+            - name: PIHOLE_HOSTNAME
+              value: "127.0.0.1"
+            - name: PIHOLE_PORT
+              value: "80"
+            - name: PIHOLE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pihole-secrets
+                  key: webpassword
+                  optional: true
+            - name: PORT
+              value: "{{ .Values.service.metricsPort }}"
+          resources:
+            {{- toYaml .Values.resources.exporter | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: {{ .Values.service.metricsPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: {{ .Values.service.metricsPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
       volumes:
         - name: pihole-data
           persistentVolumeClaim:

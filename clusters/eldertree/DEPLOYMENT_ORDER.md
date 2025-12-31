@@ -9,6 +9,11 @@ This document describes the deployment order and dependencies for HelmReleases i
    - No dependencies
    - Installs CRDs for Certificate, ClusterIssuer, etc.
 
+2. **longhorn** - Distributed block storage
+   - No dependencies
+   - Provides persistent volumes for applications
+   - Requires nodes to have `/mnt/longhorn` prepared
+
 ### Phase 2: Certificate Issuers (Depends on cert-manager)
 2. **cert-manager-issuers** - ClusterIssuer resources
    - Depends on: `cert-manager` (cert-manager namespace)
