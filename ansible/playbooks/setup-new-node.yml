@@ -97,7 +97,7 @@
         state: up
         conn_name: eth0
 
-    - name: Wait for eth0 to get IP address (with retries)
+    - name: Wait for eth0 to get any IP address (with retries)
       ansible.builtin.setup:
         gather_subset:
           - "!all"
@@ -106,16 +106,65 @@
       until: >
         network_facts.ansible_facts.ansible_eth0 is defined and
         network_facts.ansible_facts.ansible_eth0.ipv4 is defined and
-        network_facts.ansible_facts.ansible_eth0.ipv4 | length > 0 and
-        eth0_ip in (network_facts.ansible_facts.ansible_eth0.ipv4 | map(attribute='address') | list)
+        network_facts.ansible_facts.ansible_eth0.ipv4 | length > 0
       retries: 10
       delay: 2
       failed_when: false
 
-    - name: Get eth0 IP addresses
+    - name: Extract eth0 IP addresses safely
       ansible.builtin.set_fact:
-        eth0_ips: "{{ network_facts.ansible_facts.ansible_eth0.ipv4 | default([]) | map(attribute='address') | list | default([]) }}"
+        eth0_ips: >-
+          {%- set ip_list = [] -%}
+          {%- if network_facts.ansible_facts.ansible_eth0.ipv4 is defined -%}
+            {%- for ip in network_facts.ansible_facts.ansible_eth0.ipv4 -%}
+              {%- if ip is mapping and ip.address is defined -%}
+                {%- set _ = ip_list.append(ip.address) -%}
+              {%- elif ip is string -%}
+                {%- set _ = ip_list.append(ip) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {{ ip_list }}
       when: network_facts.ansible_facts.ansible_eth0 is defined
+
+    - name: Wait for correct IP if not already assigned (additional retries)
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - network
+      register: network_facts_check
+      until: >
+        network_facts_check.ansible_facts.ansible_eth0 is defined and
+        network_facts_check.ansible_facts.ansible_eth0.ipv4 is defined and
+        network_facts_check.ansible_facts.ansible_eth0.ipv4 | length > 0
+      retries: 5
+      delay: 1
+      failed_when: false
+      when: eth0_ip not in (eth0_ips | default([]))
+
+    - name: Update eth0 IPs if we did additional retries
+      ansible.builtin.set_fact:
+        eth0_ips: >-
+          {%- set ip_list = [] -%}
+          {%- if network_facts_check.ansible_facts.ansible_eth0.ipv4 is defined -%}
+            {%- for ip in network_facts_check.ansible_facts.ansible_eth0.ipv4 -%}
+              {%- if ip is mapping and ip.address is defined -%}
+                {%- set _ = ip_list.append(ip.address) -%}
+              {%- elif ip is string -%}
+                {%- set _ = ip_list.append(ip) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- elif network_facts.ansible_facts.ansible_eth0.ipv4 is defined -%}
+            {%- for ip in network_facts.ansible_facts.ansible_eth0.ipv4 -%}
+              {%- if ip is mapping and ip.address is defined -%}
+                {%- set _ = ip_list.append(ip.address) -%}
+              {%- elif ip is string -%}
+                {%- set _ = ip_list.append(ip) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {{ ip_list }}
+      when: network_facts_check.ansible_facts.ansible_eth0 is defined or network_facts.ansible_facts.ansible_eth0 is defined
 
     - name: Check if eth0 has correct IP
       ansible.builtin.assert:
