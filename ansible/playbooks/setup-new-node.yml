@@ -128,17 +128,10 @@
     gigabit_interface: eth0
 
   tasks:
-    - name: Skip if this is the control plane
-      ansible.builtin.debug:
-        msg: "Skipping eth0 configuration on control plane (node-0)"
-      when: inventory_hostname == 'node-0'
-      changed_when: false
     - name: Fail if eth0 IP not provided
       fail:
         msg: "eth0_ip is required. Provide it via -e eth0_ip_override=10.0.0.X or ensure IP calculation succeeded"
-      when:
-        - inventory_hostname != 'node-0'
-        - (eth0_ip == "" or eth0_ip is not defined)
+      when: eth0_ip == "" or eth0_ip is not defined
 
     - name: Check if eth0 connection exists
       community.general.nmcli:
@@ -160,9 +153,7 @@
         gw4: ""
         method4: manual
         autoconnect: yes
-      when:
-        - inventory_hostname != 'node-0'
-        - eth0_connection_check.failed | default(true)
+      when: eth0_connection_check.failed | default(true)
 
     - name: Update existing eth0 connection
       community.general.nmcli:
@@ -171,9 +162,7 @@
         ip4: "{{ eth0_ip }}/24"
         gw4: ""
         method4: manual
-      when:
-        - inventory_hostname != 'node-0'
-        - not (eth0_connection_check.failed | default(true))
+      when: not (eth0_connection_check.failed | default(true))
 
     - name: Check current eth0 IP before activation
       ansible.builtin.setup:
@@ -181,7 +170,6 @@
           - "!all"
           - network
       register: current_eth0_check
-      when: inventory_hostname != 'node-0'
       changed_when: false
 
     - name: Extract current eth0 IP for comparison
@@ -195,17 +183,13 @@
           {%- else -%}
             {{ '' }}
           {%- endif -%}
-      when:
-        - inventory_hostname != 'node-0'
-        - current_eth0_check.ansible_facts.ansible_eth0 is defined
+      when: current_eth0_check.ansible_facts.ansible_eth0 is defined
 
     - name: Activate eth0 connection (only if IP needs to change)
       community.general.nmcli:
         state: up
         conn_name: eth0
-      when:
-        - inventory_hostname != 'node-0'
-        - current_eth0_ip | default('') != eth0_ip
+      when: current_eth0_ip | default('') != eth0_ip
       ignore_errors: true
 
     - name: Wait for eth0 to get any IP address (with retries)
@@ -222,7 +206,6 @@
       delay: 3
       timeout: 20
       failed_when: false
-      when: inventory_hostname != 'node-0'
 
     - name: Extract eth0 IP addresses safely
       ansible.builtin.set_fact:
@@ -235,9 +218,7 @@
           {%- else -%}
             {{ [] }}
           {%- endif -%}
-      when:
-        - inventory_hostname != 'node-0'
-        - network_facts.ansible_facts.ansible_eth0 is defined
+      when: network_facts.ansible_facts.ansible_eth0 is defined
 
     - name: Wait for correct IP if not already assigned (additional retries)
       ansible.builtin.setup:
@@ -253,9 +234,7 @@
       delay: 2
       timeout: 15
       failed_when: false
-      when:
-        - inventory_hostname != 'node-0'
-        - eth0_ip not in (eth0_ips | default([]))
+      when: eth0_ip not in (eth0_ips | default([]))
 
     - name: Update eth0 IPs if we did additional retries
       ansible.builtin.set_fact:
@@ -268,9 +247,7 @@
           {%- else -%}
             {{ [] }}
           {%- endif -%}
-      when:
-        - inventory_hostname != 'node-0'
-        - (network_facts_check.ansible_facts.ansible_eth0 is defined or network_facts.ansible_facts.ansible_eth0 is defined)
+      when: network_facts_check.ansible_facts.ansible_eth0 is defined or network_facts.ansible_facts.ansible_eth0 is defined
 
     - name: Check if eth0 has correct IP
       ansible.builtin.assert:
@@ -279,7 +256,6 @@
         fail_msg: "⚠️  WARNING: eth0 does not have IP {{ eth0_ip }}. Current IPs: {{ eth0_ips }}. Connection may need more time to activate or there may be a NetworkManager issue. The playbook will continue, but you may need to configure eth0 manually later. Try running the playbook again or check NetworkManager status manually: nmcli connection show eth0"
         success_msg: "✅ eth0 correctly configured with IP {{ eth0_ip }}"
       when:
-        - inventory_hostname != 'node-0'
         - eth0_ips is defined
         - eth0_ip is defined
         - eth0_ip != ""
