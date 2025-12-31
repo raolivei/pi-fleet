@@ -1,0 +1,192 @@
+---
+# Master playbook for setting up a new Raspberry Pi node in the eldertree cluster
+# This orchestrates the complete setup process for a new worker node
+#
+# Usage:
+#   # For a new node booted from SD card (will migrate to NVMe):
+#   ansible-playbook playbooks/setup-new-node.yml \
+#     --limit node-X \
+#     -e "wlan0_ip=192.168.2.XX" \
+#     -e "eth0_ip=10.0.0.X" \
+#     -e "k3s_token=<token-from-control-plane>" \
+#     --ask-pass --ask-become-pass
+#
+# Prerequisites:
+#   1. Node is booted from SD card with generic hostname "node-x"
+#   2. Node is accessible via SSH (user: raolivei)
+#   3. Node has been added to ansible/inventory/hosts.yml
+#   4. NVMe drive is installed (optional, but recommended)
+#
+# What this playbook does:
+#   1. System configuration (hostname, network, packages, SSH, firewall)
+#   2. NVMe boot setup (if NVMe detected) - includes emergency mode prevention
+#   3. Gigabit network configuration (eth0)
+#   4. k3s worker installation
+#   5. k3s gigabit network configuration
+#   6. SSH keys setup for node-to-node communication
+#   7. Terminal monitoring tools (btop, tmux, neofetch)
+#   8. Longhorn prerequisites (open-iscsi)
+#
+# After completion:
+#   - Remove SD card and reboot to boot from NVMe
+#   - Node should join cluster automatically
+#   - Verify with: kubectl get nodes
+
+- name: System Configuration
+  import_playbook: setup-system.yml
+  vars:
+    hostname: "{{ inventory_hostname }}.eldertree.local"
+    static_ip: "{{ wlan0_ip | default('') }}"
+
+- name: Setup NVMe Boot (if NVMe detected)
+  import_playbook: setup-nvme-boot.yml
+  vars:
+    setup_nvme_boot: true
+    clone_from_sd: true
+  when: nvme_detected | default(true) # Default to true, playbook will check
+
+- name: Configure Gigabit Network (eth0)
+  hosts: raspberry_pi
+  become: true
+  vars:
+    eth0_ip: "{{ eth0_ip | default('') }}"
+    gigabit_interface: eth0
+
+  tasks:
+    - name: Fail if eth0 IP not provided
+      fail:
+        msg: "eth0_ip is required. Provide it via -e eth0_ip=10.0.0.X"
+      when: eth0_ip == ""
+
+    - name: Check if eth0 connection exists
+      community.general.nmcli:
+        state: query
+        conn_name: eth0
+      register: eth0_connection_check
+      changed_when: false
+      failed_when: false
+      ignore_errors: yes
+
+    - name: Create eth0 NetworkManager connection
+      community.general.nmcli:
+        state: present
+        conn_name: eth0
+        ifname: eth0
+        type: ethernet
+        ip4: "{{ eth0_ip }}/24"
+        gw4: ""
+        method4: manual
+        autoconnect: yes
+      when: eth0_connection_check.failed | default(true)
+
+    - name: Update existing eth0 connection
+      community.general.nmcli:
+        state: present
+        conn_name: eth0
+        ip4: "{{ eth0_ip }}/24"
+        gw4: ""
+        method4: manual
+      when: not (eth0_connection_check.failed | default(true))
+
+    - name: Activate eth0 connection
+      community.general.nmcli:
+        state: up
+        conn_name: eth0
+
+    - name: Verify eth0 IP configuration
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - network
+      register: network_facts
+
+    - name: Get eth0 IP addresses
+      ansible.builtin.set_fact:
+        eth0_ips: "{{ network_facts.ansible_facts.ansible_eth0.ipv4 | default([]) | map(attribute='address') | list | default([]) }}"
+
+    - name: Check if eth0 has correct IP
+      ansible.builtin.assert:
+        that:
+          - eth0_ip in eth0_ips
+        fail_msg: "eth0 does not have IP {{ eth0_ip }}. Current IPs: {{ eth0_ips }}"
+        success_msg: "eth0 correctly configured with IP {{ eth0_ip }}"
+
+- name: Get k3s Token from Control Plane (if not provided)
+  hosts: node-0
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Read k3s token from control plane
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_file
+      when: k3s_token is not defined or k3s_token == ""
+
+    - name: Set k3s token from file
+      ansible.builtin.set_fact:
+        k3s_token: "{{ k3s_token_file.content | b64decode | trim }}"
+      when:
+        - k3s_token is not defined or k3s_token == ""
+        - k3s_token_file.content is defined
+
+- name: Validate k3s Token
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Fail if k3s token not available
+      ansible.builtin.fail:
+        msg: |
+          k3s_token is required. Either:
+          1. Provide via -e k3s_token=<token>
+          2. Ensure node-0 is accessible and token can be retrieved automatically
+      when: k3s_token is not defined or k3s_token == ""
+
+- name: Install k3s Worker
+  import_playbook: install-k3s-worker.yml
+  vars:
+    k3s_token: "{{ k3s_token }}"
+    k3s_server_url: "https://node-0.eldertree.local:6443"
+
+- name: Configure k3s for Gigabit Network
+  import_playbook: configure-k3s-gigabit.yml
+
+- name: Setup SSH Keys for Node-to-Node Communication
+  import_playbook: setup-ssh-keys.yml
+
+- name: Setup Terminal Monitoring
+  import_playbook: setup-terminal-monitoring.yml
+  vars:
+    target_user: raolivei
+
+- name: Setup Longhorn Prerequisites
+  import_playbook: setup-longhorn-node.yml
+
+- name: Setup Summary
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Display completion summary
+      debug:
+        msg:
+          - "=== New Node Setup Complete ==="
+          - ""
+          - "Node: {{ inventory_hostname }}.eldertree.local"
+          - "Management IP (wlan0): {{ wlan0_ip | default('DHCP') }}"
+          - "Gigabit IP (eth0): {{ eth0_ip }}"
+          - ""
+          - "Completed:"
+          - "  ✅ System configuration"
+          - "  ✅ NVMe boot setup (if NVMe detected)"
+          - "  ✅ Gigabit network configuration"
+          - "  ✅ k3s worker installation"
+          - "  ✅ k3s gigabit network configuration"
+          - "  ✅ SSH keys setup"
+          - "  ✅ Terminal monitoring tools"
+          - "  ✅ Longhorn prerequisites"
+          - ""
+          - "Next steps:"
+          - "  1. If NVMe was configured, remove SD card and reboot"
+          - "  2. Verify node joined cluster: kubectl get nodes"
+          - "  3. Check node status: kubectl describe node {{ inventory_hostname }}.eldertree.local"

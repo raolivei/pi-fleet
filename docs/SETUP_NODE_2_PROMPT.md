@@ -37,7 +37,7 @@ Before starting, verify:
    # Try to discover the node first
    ping -c 1 node-x.local
    ssh raolivei@node-x.local
-   # Password: ac0df36b52
+   # Password: <PI_PASSWORD> (use environment variable or --ask-pass)
    ```
 
 2. **NVMe Detection**: Is NVMe installed and detected?
@@ -113,8 +113,8 @@ ansible-playbook playbooks/setup-system.yml \
   -e "static_ip=192.168.2.84" \
   --ask-pass --ask-become-pass
 # When prompted:
-#   SSH password: ac0df36b52 (Raspberry Pi user password)
-#   BECOME password (sudo): ac0df36b52 (Raspberry Pi sudo password, NOT your Mac's)
+#   SSH password: <PI_PASSWORD> (Raspberry Pi user password)
+#   BECOME password (sudo): <PI_PASSWORD> (Raspberry Pi sudo password, NOT your Mac's)
 
 # Or if node-2 is already in inventory:
 ansible-playbook playbooks/setup-system.yml \
@@ -123,8 +123,8 @@ ansible-playbook playbooks/setup-system.yml \
   -e "static_ip=192.168.2.84" \
   --ask-pass --ask-become-pass
 # When prompted:
-#   SSH password: ac0df36b52 (Raspberry Pi user password)
-#   BECOME password (sudo): ac0df36b52 (Raspberry Pi sudo password, NOT your Mac's)
+#   SSH password: <PI_PASSWORD> (Raspberry Pi user password)
+#   BECOME password (sudo): <PI_PASSWORD> (Raspberry Pi sudo password, NOT your Mac's)
 
 # Note: After this playbook runs, passwordless sudo will be configured,
 # so subsequent playbooks won't need --ask-become-pass
@@ -447,8 +447,8 @@ kubectl get pods -A -o wide | grep node-2
 ### Authentication
 
 **User**: `raolivei`  
-**User Password**: `ac0df36b52`  
-**Sudo Password (on Raspberry Pi)**: `ac0df36b52` (typically same as user password on fresh installations)
+**User Password**: Set via `PI_PASSWORD` environment variable or `--ask-pass`  
+**Sudo Password (on Raspberry Pi)**: Same as user password on fresh installations
 
 **Important Notes**:
 
@@ -459,7 +459,7 @@ kubectl get pods -A -o wide | grep node-2
 **Alternative to --ask-pass**: You can use environment variable instead:
 
 ```bash
-export env_target_password='ac0df36b52'
+export env_target_password='<your-password>'
 ansible-playbook playbooks/setup-system.yml --limit node-2
 ```
 
