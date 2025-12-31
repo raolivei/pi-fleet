@@ -235,13 +235,13 @@
     k3s_token: "{{ k3s_token }}"
     k3s_server_url: "https://node-0.eldertree.local:6443"
 
-        - name: Configure k3s for Gigabit Network
-          import_playbook: configure-k3s-gigabit.yml
+- name: Configure k3s for Gigabit Network
+  import_playbook: configure-k3s-gigabit.yml
 
-        - name: Setup SSH Keys for Node-to-Node Communication
-          import_playbook: setup-ssh-keys.yml
-          vars:
-            add_local_key: "{{ add_local_key | default(true) | bool }}"  # Add local machine's SSH key for Ansible access
+- name: Setup SSH Keys for Node-to-Node Communication
+  import_playbook: setup-ssh-keys.yml
+  vars:
+    add_local_key: "{{ add_local_key | default(true) | bool }}"  # Add local machine's SSH key for Ansible access
 
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml
