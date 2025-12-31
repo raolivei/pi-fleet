@@ -114,25 +114,14 @@
     - name: Extract eth0 IP addresses safely
       ansible.builtin.set_fact:
         eth0_ips: >-
-          {%- set ip_list = [] -%}
-          {%- if network_facts.ansible_facts.ansible_eth0.ipv4 is defined -%}
-            {%- if network_facts.ansible_facts.ansible_eth0.ipv4 is mapping -%}
-              {# ipv4 is a dict with keys like address, netmask, etc. #}
-              {%- if network_facts.ansible_facts.ansible_eth0.ipv4.address is defined -%}
-                {%- set _ = ip_list.append(network_facts.ansible_facts.ansible_eth0.ipv4.address) -%}
-              {%- endif -%}
-            {%- elif network_facts.ansible_facts.ansible_eth0.ipv4 is iterable and network_facts.ansible_facts.ansible_eth0.ipv4 is not string -%}
-              {# ipv4 is a list of dicts #}
-              {%- for ip in network_facts.ansible_facts.ansible_eth0.ipv4 -%}
-                {%- if ip is mapping and ip.address is defined -%}
-                  {%- set _ = ip_list.append(ip.address) -%}
-                {%- elif ip is string -%}
-                  {%- set _ = ip_list.append(ip) -%}
-                {%- endif -%}
-              {%- endfor -%}
-            {%- endif -%}
+          {%- set ipv4 = network_facts.ansible_facts.ansible_eth0.ipv4 | default({}) -%}
+          {%- if ipv4 is mapping and ipv4.address is defined -%}
+            {{ [ipv4.address] }}
+          {%- elif ipv4 is iterable and ipv4 is not string -%}
+            {{ ipv4 | selectattr('address', 'defined') | map(attribute='address') | list | default(ipv4 | select('string') | list) }}
+          {%- else -%}
+            {{ [] }}
           {%- endif -%}
-          {{ ip_list }}
       when: network_facts.ansible_facts.ansible_eth0 is defined
 
     - name: Wait for correct IP if not already assigned (additional retries)
@@ -153,41 +142,14 @@
     - name: Update eth0 IPs if we did additional retries
       ansible.builtin.set_fact:
         eth0_ips: >-
-          {%- set ip_list = [] -%}
-          {%- if network_facts_check.ansible_facts.ansible_eth0.ipv4 is defined -%}
-            {%- if network_facts_check.ansible_facts.ansible_eth0.ipv4 is mapping -%}
-              {# ipv4 is a dict with keys like address, netmask, etc. #}
-              {%- if network_facts_check.ansible_facts.ansible_eth0.ipv4.address is defined -%}
-                {%- set _ = ip_list.append(network_facts_check.ansible_facts.ansible_eth0.ipv4.address) -%}
-              {%- endif -%}
-            {%- elif network_facts_check.ansible_facts.ansible_eth0.ipv4 is iterable and network_facts_check.ansible_facts.ansible_eth0.ipv4 is not string -%}
-              {# ipv4 is a list of dicts #}
-              {%- for ip in network_facts_check.ansible_facts.ansible_eth0.ipv4 -%}
-                {%- if ip is mapping and ip.address is defined -%}
-                  {%- set _ = ip_list.append(ip.address) -%}
-                {%- elif ip is string -%}
-                  {%- set _ = ip_list.append(ip) -%}
-                {%- endif -%}
-              {%- endfor -%}
-            {%- endif -%}
-          {%- elif network_facts.ansible_facts.ansible_eth0.ipv4 is defined -%}
-            {%- if network_facts.ansible_facts.ansible_eth0.ipv4 is mapping -%}
-              {# ipv4 is a dict with keys like address, netmask, etc. #}
-              {%- if network_facts.ansible_facts.ansible_eth0.ipv4.address is defined -%}
-                {%- set _ = ip_list.append(network_facts.ansible_facts.ansible_eth0.ipv4.address) -%}
-              {%- endif -%}
-            {%- elif network_facts.ansible_facts.ansible_eth0.ipv4 is iterable and network_facts.ansible_facts.ansible_eth0.ipv4 is not string -%}
-              {# ipv4 is a list of dicts #}
-              {%- for ip in network_facts.ansible_facts.ansible_eth0.ipv4 -%}
-                {%- if ip is mapping and ip.address is defined -%}
-                  {%- set _ = ip_list.append(ip.address) -%}
-                {%- elif ip is string -%}
-                  {%- set _ = ip_list.append(ip) -%}
-                {%- endif -%}
-              {%- endfor -%}
-            {%- endif -%}
+          {%- set ipv4 = (network_facts_check.ansible_facts.ansible_eth0.ipv4 | default(network_facts.ansible_facts.ansible_eth0.ipv4)) | default({}) -%}
+          {%- if ipv4 is mapping and ipv4.address is defined -%}
+            {{ [ipv4.address] }}
+          {%- elif ipv4 is iterable and ipv4 is not string -%}
+            {{ ipv4 | selectattr('address', 'defined') | map(attribute='address') | list | default(ipv4 | select('string') | list) }}
+          {%- else -%}
+            {{ [] }}
           {%- endif -%}
-          {{ ip_list }}
       when: network_facts_check.ansible_facts.ansible_eth0 is defined or network_facts.ansible_facts.ansible_eth0 is defined
 
     - name: Check if eth0 has correct IP
