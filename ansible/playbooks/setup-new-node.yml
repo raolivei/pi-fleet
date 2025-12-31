@@ -100,7 +100,7 @@
       ansible.builtin.set_fact:
         calculated_eth0_ip: "{{ calculated_eth0_for_node }}"
       delegate_to: localhost
-      run_once: true
+      run_once: false
       when: inventory_hostname != 'node-0'
 
 - name: System Configuration
