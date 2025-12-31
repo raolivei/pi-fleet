@@ -324,6 +324,9 @@
 
 - name: Configure k3s for Gigabit Network
   import_playbook: configure-k3s-gigabit.yml
+  # Note: configure-k3s-gigabit.yml handles both control plane and workers
+  # For new node setup, we only want to configure workers, so we'll limit to non-control-plane nodes
+  # However, the playbook is designed to work on all nodes, so we'll let it run but it should skip node-0
 
 - name: Setup SSH Keys for Node-to-Node Communication
   import_playbook: setup-ssh-keys.yml
