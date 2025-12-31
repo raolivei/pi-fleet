@@ -211,7 +211,7 @@
         - setup_nvme_boot | bool
         - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
         - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
-        - not (nvme_boot_part_exists.stat.exists | default(false) and not (force_repartition | default(false) | bool))
+        - not (nvme_boot_part_exists.stat.exists | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Set boot partition as ESP
       ansible.builtin.parted:
@@ -222,7 +222,7 @@
         - setup_nvme_boot | bool
         - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
         - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
-        - not (nvme_boot_part_exists.stat.exists | default(false) and not (force_repartition | default(false) | bool))
+        - not (nvme_boot_part_exists.stat.exists | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Create root partition on NVMe
       ansible.builtin.parted:
@@ -237,7 +237,7 @@
         - setup_nvme_boot | bool
         - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
         - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
-        - not (nvme_root_part_exists.stat.exists | default(false) and not (force_repartition | default(false) | bool))
+        - not (nvme_root_part_exists.stat.exists | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Create storage partition on NVMe (optional, for K3s data)
       parted:
