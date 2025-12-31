@@ -27,7 +27,13 @@ spec:
     provider: rfc2136
     env:
       - name: EXTERNAL_DNS_RFC2136_HOST
-        value: "pi-hole.pihole.svc.cluster.local"
+        # WORKAROUND: Use ClusterIP directly to avoid circular DNS dependency
+        # ExternalDNS can't resolve pi-hole.pihole.svc.cluster.local because
+        # it depends on DNS working, which creates a circular dependency.
+        # TODO: Once DNS is stable, consider using service name or creating
+        # a separate BIND service with its own ClusterIP for better stability.
+        # Current ClusterIP: 10.43.30.194 (pi-hole service in pihole namespace)
+        value: "10.43.30.194"
       - name: EXTERNAL_DNS_RFC2136_PORT
         value: "5353"
       - name: EXTERNAL_DNS_RFC2136_ZONE
