@@ -192,6 +192,7 @@
       retries: 10
       delay: 2
       failed_when: false
+      when: inventory_hostname != 'node-0'
 
     - name: Extract eth0 IP addresses safely
       ansible.builtin.set_fact:
@@ -204,7 +205,9 @@
           {%- else -%}
             {{ [] }}
           {%- endif -%}
-      when: network_facts.ansible_facts.ansible_eth0 is defined
+      when:
+        - inventory_hostname != 'node-0'
+        - network_facts.ansible_facts.ansible_eth0 is defined
 
     - name: Wait for correct IP if not already assigned (additional retries)
       ansible.builtin.setup:
@@ -219,7 +222,9 @@
       retries: 5
       delay: 1
       failed_when: false
-      when: eth0_ip not in (eth0_ips | default([]))
+      when:
+        - inventory_hostname != 'node-0'
+        - eth0_ip not in (eth0_ips | default([]))
 
     - name: Update eth0 IPs if we did additional retries
       ansible.builtin.set_fact:
@@ -232,7 +237,9 @@
           {%- else -%}
             {{ [] }}
           {%- endif -%}
-      when: network_facts_check.ansible_facts.ansible_eth0 is defined or network_facts.ansible_facts.ansible_eth0 is defined
+      when:
+        - inventory_hostname != 'node-0'
+        - (network_facts_check.ansible_facts.ansible_eth0 is defined or network_facts.ansible_facts.ansible_eth0 is defined)
 
     - name: Check if eth0 has correct IP
       ansible.builtin.assert:
@@ -240,7 +247,11 @@
           - eth0_ip in eth0_ips
         fail_msg: "eth0 does not have IP {{ eth0_ip }}. Current IPs: {{ eth0_ips }}. Connection may need more time to activate or there may be a NetworkManager issue. Try running the playbook again or check NetworkManager status manually: nmcli connection show eth0"
         success_msg: "eth0 correctly configured with IP {{ eth0_ip }}"
-      when: eth0_ips is defined
+      when:
+        - inventory_hostname != 'node-0'
+        - eth0_ips is defined
+        - eth0_ip is defined
+        - eth0_ip != ""
 
 - name: Get k3s Token from Control Plane (if not provided)
   hosts: node-0
