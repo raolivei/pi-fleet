@@ -222,7 +222,8 @@
         curl -sfL https://get.k3s.io | sh -s - server \
           --cluster-init \
           --write-kubeconfig-mode=644 \
-          --tls-san={{ k3s_hostname }}
+          --tls-san={{ k3s_hostname }} \
+          --disable servicelb
       args:
         creates: /usr/local/bin/k3s
       register: k3s_install
