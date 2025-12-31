@@ -7,7 +7,7 @@
     sd_card: "/dev/mmcblk0"
     setup_nvme_boot: "{{ setup_nvme_boot | default(false) | bool }}"
     clone_from_sd: "{{ clone_from_sd | default(true) | bool }}"
-    force_repartition: "{{ force_repartition | default(false) | bool }}"
+    # force_repartition should be passed via -e, not defined here to avoid recursion
     target_password: "{{ vault_target_password | default(lookup('env', 'PI_PASSWORD')) }}"
     password_hash: "{{ target_password | password_hash('sha512') }}"
 
@@ -150,7 +150,7 @@
       when:
         - nvme_partition_count | int > 0
         - nvme_partitions_in_use | default(false)
-        - force_repartition | default(false) | bool
+        - force_repartition is defined and force_repartition | bool
 
     - name: Unmount NVMe partitions (only if force_repartition is set)
       ansible.builtin.mount:
@@ -160,7 +160,7 @@
       failed_when: false
       when:
         - nvme_mounts.stdout_lines | length > 0
-        - force_repartition | default(false) | bool
+        - force_repartition is defined and force_repartition | bool
 
     # =========================================================================
     # Create partitions on NVMe (only if they don't exist or force_repartition)
@@ -175,14 +175,14 @@
       when:
         - nvme_partition_count | int > 0
         - nvme_partitions_in_use | default(false)
-        - not (force_repartition | default(false) | bool)
+        - not (force_repartition is defined and force_repartition | bool)
 
     - name: Create GPT partition table on NVMe (will erase existing partitions)
       ansible.builtin.command: "parted {{ nvme_device }} --script mklabel gpt"
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool))
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool))
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Check if boot partition already exists
       ansible.builtin.stat:
@@ -209,8 +209,8 @@
         part_end: 1024MiB
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool))
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool))
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
         - not (nvme_boot_part_exists.stat.exists | default(false) and not (force_repartition | default(false) | bool))
 
     - name: Set boot partition as ESP
@@ -220,8 +220,8 @@
         flags: [esp]
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool))
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool))
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
         - not (nvme_boot_part_exists.stat.exists | default(false) and not (force_repartition | default(false) | bool))
 
     - name: Create root partition on NVMe
@@ -235,8 +235,8 @@
         part_end: "{{ root_partition_size | default('30GiB') }}"
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool))
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool))
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
         - not (nvme_root_part_exists.stat.exists | default(false) and not (force_repartition | default(false) | bool))
 
     - name: Create storage partition on NVMe (optional, for K3s data)
@@ -258,8 +258,8 @@
         timeout: 10
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool))
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool))
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Check if boot partition is already formatted
       ansible.builtin.command: blkid -s TYPE -o value "{{ nvme_device }}p1"
@@ -272,18 +272,18 @@
       ansible.builtin.filesystem:
         fstype: vfat
         device: "{{ nvme_device }}p1"
-        force: "{{ force_repartition | default(false) | bool }}"
+        force: "{{ force_repartition is defined and force_repartition | bool }}"
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool) or boot_part_fs.stdout | default('') == '')
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool)
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool) or boot_part_fs.stdout | default('') == '')
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Set boot partition label (only if newly formatted)
       ansible.builtin.command: fatlabel "{{ nvme_device }}p1" BOOT
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool))
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool))
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
       failed_when: false
       changed_when: false
 
@@ -298,18 +298,18 @@
       ansible.builtin.filesystem:
         fstype: ext4
         device: "{{ nvme_device }}p2"
-        force: "{{ force_repartition | default(false) | bool }}"
+        force: "{{ force_repartition is defined and force_repartition | bool }}"
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool) or root_part_fs.stdout | default('') == '')
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool))
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool) or root_part_fs.stdout | default('') == '')
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Set root partition label (only if newly formatted)
       ansible.builtin.command: e2label "{{ nvme_device }}p2" rootfs
       when:
         - setup_nvme_boot | bool
-        - (nvme_partition_count | int == 0 or (force_repartition | default(false) | bool))
-        - not (nvme_partitions_in_use | default(false) and not (force_repartition | default(false) | bool))
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
       failed_when: false
       changed_when: false
 
