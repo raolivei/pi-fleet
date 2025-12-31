@@ -1,0 +1,127 @@
+---
+- name: Disable K3s ServiceLB (Klipper) to prevent conflicts with MetalLB
+  hosts: all
+  become: yes
+  vars:
+    k3s_service_file: /etc/systemd/system/k3s.service
+    k3s_agent_service_file: /etc/systemd/system/k3s-agent.service
+
+  tasks:
+    - name: Check if k3s service exists (control plane)
+      stat:
+        path: "{{ k3s_service_file }}"
+      register: k3s_service_file
+
+    - name: Check if k3s-agent service exists (worker)
+      stat:
+        path: "{{ k3s_agent_service_file }}"
+      register: k3s_agent_service_file
+
+    - name: Set fact for service type
+      set_fact:
+        is_control_plane: "{{ k3s_service_file.stat.exists | default(false) }}"
+        is_worker: "{{ k3s_agent_service_file.stat.exists | default(false) }}"
+
+    - name: Fail if k3s is not installed
+      fail:
+        msg: "k3s is not installed. Please install k3s first."
+      when: not is_control_plane and not is_worker
+
+    - name: Backup k3s service file
+      copy:
+        src: "{{ item }}"
+        dest: "{{ item }}.backup-{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      loop:
+        - "{{ k3s_service_file }}"
+        - "{{ k3s_agent_service_file }}"
+      when: item is defined and item.stat.exists | default(false)
+
+    # =========================================================================
+    # Update k3s service file (control plane)
+    # =========================================================================
+    - name: Check if servicelb is already disabled in k3s service
+      command: grep -q "disable servicelb" "{{ k3s_service_file }}" || echo "not_disabled"
+      register: k3s_servicelb_check
+      changed_when: false
+      failed_when: false
+      when: is_control_plane
+
+    - name: Update k3s service to disable ServiceLB
+      lineinfile:
+        path: "{{ k3s_service_file }}"
+        regexp: "^ExecStart=(.*)$"
+        line: 'ExecStart=\1 --disable servicelb'
+        backrefs: yes
+        mode: "0644"
+      when:
+        - is_control_plane
+        - "'not_disabled' in k3s_servicelb_check.stdout"
+
+    # =========================================================================
+    # Update k3s-agent service file (worker)
+    # =========================================================================
+    - name: Check if servicelb is already disabled in k3s-agent service
+      command: grep -q "disable servicelb" "{{ k3s_agent_service_file }}" || echo "not_disabled"
+      register: k3s_agent_servicelb_check
+      changed_when: false
+      failed_when: false
+      when: is_worker
+
+    - name: Update k3s-agent service to disable ServiceLB
+      lineinfile:
+        path: "{{ k3s_agent_service_file }}"
+        regexp: "^ExecStart=(.*)$"
+        line: 'ExecStart=\1 --disable servicelb'
+        backrefs: yes
+        mode: "0644"
+      when:
+        - is_worker
+        - "'not_disabled' in k3s_agent_servicelb_check.stdout"
+
+    # =========================================================================
+    # Reload systemd and restart k3s
+    # =========================================================================
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Restart k3s service (control plane)
+      systemd:
+        name: k3s
+        state: restarted
+      when: is_control_plane
+
+    - name: Restart k3s-agent service (worker)
+      systemd:
+        name: k3s-agent
+        state: restarted
+      when: is_worker
+
+    - name: Wait for k3s to be ready
+      command: k3s kubectl get nodes
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 30
+      delay: 10
+      when: is_control_plane
+      ignore_errors: yes
+
+    - name: Display k3s nodes
+      command: k3s kubectl get nodes -o wide
+      register: k3s_nodes
+      when: is_control_plane
+      changed_when: false
+
+    - name: Show k3s nodes
+      debug:
+        var: k3s_nodes.stdout_lines
+      when: is_control_plane and k3s_nodes.rc == 0
+
+    - name: Display success message
+      debug:
+        msg:
+          - "✅ K3s ServiceLB disabled successfully"
+          - "ServiceLB DaemonSets should no longer be created for LoadBalancer services"
+          - "MetalLB will handle all LoadBalancer services"
+

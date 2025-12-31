@@ -228,7 +228,7 @@
         export INSTALL_K3S_VERSION="{{ k3s_version }}"
         export K3S_TOKEN="{{ k3s_token }}"
         export K3S_URL="{{ k3s_server_url }}"
-        curl -sfL https://get.k3s.io | sh -
+        curl -sfL https://get.k3s.io | sh -s - agent --disable servicelb
       args:
         creates: /usr/local/bin/k3s
       register: k3s_install

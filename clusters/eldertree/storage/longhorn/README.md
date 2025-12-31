@@ -106,6 +106,7 @@ ansible-playbook playbooks/setup-longhorn-node.yml --limit node-2
 ```
 
 This playbook:
+
 - Installs `open-iscsi` package
 - Loads iscsi kernel module
 - Creates `/mnt/longhorn` directory
@@ -120,6 +121,7 @@ ansible-playbook playbooks/setup-longhorn-node.yml \
 ```
 
 After the node joins the cluster, Longhorn will automatically:
+
 - Discover the new node
 - Register the disk at `/mnt/longhorn`
 - Make it available for replica placement
@@ -137,6 +139,7 @@ cd clusters/eldertree/storage/longhorn
 ```
 
 This script verifies:
+
 - Kernel modules are loaded
 - Mount points are configured
 - Disk space is sufficient
@@ -151,6 +154,7 @@ Longhorn is deployed via **Flux GitOps** using the official Helm chart. This is 
 #### Deployment Steps
 
 1. **Commit manifests to git repository**:
+
    ```bash
    git add clusters/eldertree/storage/longhorn/
    git commit -m "feat: add Longhorn storage for ElderTree cluster"
@@ -158,6 +162,7 @@ Longhorn is deployed via **Flux GitOps** using the official Helm chart. This is 
    ```
 
 2. **Flux will automatically deploy**:
+
    - Monitor deployment: `kubectl get pods -n longhorn-system -w`
    - Check HelmRelease status: `kubectl get helmrelease -n longhorn-system`
 
@@ -205,6 +210,7 @@ kubectl get nodes -o yaml | grep -A 5 longhorn
 ```
 
 In Longhorn UI:
+
 1. Go to **Node** section
 2. Verify all 3 nodes are listed
 3. Confirm disk registration at `/mnt/longhorn`
@@ -244,6 +250,7 @@ sudo ./backup-setup.sh
 ```
 
 The script will:
+
 1. Detect and identify the SD drive
 2. Format the drive (if needed) as ext4
 3. Mount to `/mnt/longhorn-backup`
@@ -254,40 +261,45 @@ The script will:
 #### Manual Setup
 
 1. **Identify SD Drive**:
+
    ```bash
    lsblk
    # Typically appears as /dev/sda or /dev/sdb
    ```
 
 2. **Format SD Drive** (if needed):
+
    ```bash
    sudo mkfs.ext4 -L longhorn-backup /dev/sdX
    ```
 
 3. **Mount SD Drive**:
+
    ```bash
    sudo mkdir -p /mnt/longhorn-backup
    sudo mount /dev/sdX /mnt/longhorn-backup
-   
+
    # Add to /etc/fstab
    UUID=$(blkid -o value -s UUID /dev/sdX)
    echo "UUID=$UUID /mnt/longhorn-backup ext4 defaults 0 2" | sudo tee -a /etc/fstab
    ```
 
 4. **Install NFS Server**:
+
    ```bash
    sudo apt-get update
    sudo apt-get install -y nfs-kernel-server
    ```
 
 5. **Configure NFS Export**:
+
    ```bash
    # Add to /etc/exports
    echo "/mnt/longhorn-backup *(rw,sync,no_subtree_check,no_root_squash)" | sudo tee -a /etc/exports
-   
+
    # Apply exports
    sudo exportfs -ra
-   
+
    # Start NFS server
    sudo systemctl enable --now nfs-kernel-server
    ```
@@ -295,17 +307,20 @@ The script will:
 6. **Configure Longhorn Backup Target**:
 
    Get eldertree node IP:
+
    ```bash
    hostname -I | awk '{print $1}'
    ```
 
    **Option 1: Via Longhorn UI**
+
    - Port-forward: `kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80`
    - Open http://localhost:8080
    - Go to **Settings → General → Backup Target**
    - Set to: `nfs://<eldertree-ip>:/mnt/longhorn-backup`
 
    **Option 2: Via kubectl**
+
    ```bash
    kubectl -n longhorn-system create -f - <<EOF
    apiVersion: longhorn.io/v1beta2
@@ -333,6 +348,7 @@ The script will:
 ### Alternative Backup Targets
 
 Longhorn also supports:
+
 - **S3-compatible storage**: `s3://bucket@region/prefix?accessKey=...&secretKey=...`
 - **MinIO**: Deploy MinIO in cluster and use S3 endpoint
 - **Azure Blob Storage**: `azblob://container@account/prefix?accountKey=...`
@@ -348,6 +364,7 @@ Run the verification script:
 ```
 
 This script verifies:
+
 - Longhorn components are running
 - StorageClass exists
 - Node disk registration
@@ -369,27 +386,32 @@ This script verifies:
 Test Longhorn's resilience by simulating a node failure:
 
 1. **Create a test pod with PVC**:
+
    ```bash
    kubectl run test-pod --image=busybox --rm -it --restart=Never \
      --overrides='{"spec":{"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"longhorn-test-pvc"}}],"containers":[{"name":"test-pod","image":"busybox","volumeMounts":[{"mountPath":"/data","name":"data"}]}]}}'
    ```
 
 2. **Identify the node running the pod**:
+
    ```bash
    kubectl get pod test-pod -o wide
    ```
 
 3. **Cordon the node** (prevent new pods):
+
    ```bash
    kubectl cordon <node-name>
    ```
 
 4. **Drain the node** (simulate failure):
+
    ```bash
    kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
    ```
 
 5. **Verify volume rebuild**:
+
    - Check Longhorn UI for volume status
    - Verify replicas are rebuilt on remaining nodes
    - Check pod reschedules to another node
@@ -498,9 +520,10 @@ Longhorn is deployed in **Phase 1: Core Infrastructure** (no dependencies). Upda
 
 ```markdown
 ### Phase 1: Core Infrastructure (No Dependencies)
+
 1. **cert-manager** - TLS certificate management
 2. **longhorn** - Distributed block storage
-...
+   ...
 ```
 
 ## Files
@@ -524,8 +547,8 @@ Longhorn is deployed in **Phase 1: Core Infrastructure** (no dependencies). Upda
 ## Support
 
 For issues or questions:
+
 1. Check Longhorn UI for volume and node status
 2. Review pod logs: `kubectl logs -n longhorn-system -l app=longhorn-manager`
 3. Check Longhorn documentation
 4. Review cluster events: `kubectl get events -n longhorn-system --sort-by='.lastTimestamp'`
-
