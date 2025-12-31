@@ -106,8 +106,10 @@ spec:
           resources:
             {{- toYaml .Values.resources.pihole | nindent 12 }}
           livenessProbe:
+            # Use /admin/ endpoint which returns 302 (redirect) instead of 403
+            # The root / path returns 403 Forbidden, causing liveness probe failures
             httpGet:
-              path: /
+              path: /admin/
               port: 80
             initialDelaySeconds: 60
             periodSeconds: 30
