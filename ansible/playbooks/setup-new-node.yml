@@ -5,13 +5,14 @@
 # Usage:
 #   # For a new node booted from SD card (will migrate to NVMe):
 #   # Example: Setting up node-3 (IPs are calculated automatically from inventory)
-#   ansible-playbook playbooks/setup-new-node.yml --limit node-3
+#   # Note: Must include localhost (for IP calculation) and node-0 (for k3s token)
+#   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-0,node-3
 #
 #   # To override automatic IP calculation:
 #   ansible-playbook playbooks/setup-new-node.yml \
-#     --limit node-3 \
-#     -e "wlan0_ip=192.168.2.83" \
-#     -e "eth0_ip=10.0.0.4"
+#     --limit localhost,node-0,node-3 \
+#     -e "wlan0_ip_override=192.168.2.83" \
+#     -e "eth0_ip_override=10.0.0.4"
 #
 #   # Note: k3s_token_override is optional - playbook will retrieve it from node-0 if omitted
 #   # If node-0 is not accessible, provide token manually:
@@ -66,7 +67,7 @@
     - name: Calculate eth0 IP based on target node number
       ansible.builtin.set_fact:
         calculated_eth0_ip: >-
-          {%- set target_nodes = play_hosts | select('match', '^node-\\d+$') | list -%}
+          {%- set target_nodes = ansible_play_batch | select('match', '^node-\\d+$') | reject('equalto', 'node-0') | list -%}
           {%- if target_nodes | length > 0 -%}
             {%- set target_node = target_nodes[0] -%}
             {%- set node_num = target_node | regex_replace('node-', '') | int -%}
