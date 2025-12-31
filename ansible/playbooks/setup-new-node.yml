@@ -207,32 +207,36 @@
       ansible.builtin.slurp:
         src: /var/lib/rancher/k3s/server/node-token
       register: k3s_token_file
-      when: k3s_token is not defined or k3s_token == ""
+      when: k3s_token_override is not defined or k3s_token_override == ""
 
     - name: Set k3s token from file
       ansible.builtin.set_fact:
-        k3s_token: "{{ k3s_token_file.content | b64decode | trim }}"
+        k3s_token_retrieved: "{{ k3s_token_file.content | b64decode | trim }}"
       when:
-        - k3s_token is not defined or k3s_token == ""
+        - k3s_token_override is not defined or k3s_token_override == ""
         - k3s_token_file.content is defined
 
-- name: Validate k3s Token
+- name: Set k3s token fact for worker installation
   hosts: localhost
   connection: local
   gather_facts: false
   tasks:
+    - name: Determine k3s token to use
+      ansible.builtin.set_fact:
+        k3s_token_final: "{{ k3s_token_override | default(hostvars['node-0']['k3s_token_retrieved'] | default('')) }}"
+
     - name: Fail if k3s token not available
       ansible.builtin.fail:
         msg: |
           k3s_token is required. Either:
-          1. Provide via -e k3s_token=<token>
+          1. Provide via -e k3s_token_override=<token>
           2. Ensure node-0 is accessible and token can be retrieved automatically
-      when: k3s_token is not defined or k3s_token == ""
+      when: k3s_token_final is not defined or k3s_token_final == ""
 
 - name: Install k3s Worker
   import_playbook: install-k3s-worker.yml
   vars:
-    k3s_token: "{{ k3s_token }}"
+    k3s_token: "{{ k3s_token_final }}"
     k3s_server_url: "https://node-0.eldertree.local:6443"
 
 - name: Configure k3s for Gigabit Network
@@ -241,7 +245,7 @@
 - name: Setup SSH Keys for Node-to-Node Communication
   import_playbook: setup-ssh-keys.yml
   vars:
-    add_local_key: "{{ add_local_key | default(true) | bool }}"  # Add local machine's SSH key for Ansible access
+    add_local_key: "{{ add_local_key | default(true) | bool }}" # Add local machine's SSH key for Ansible access
 
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml
