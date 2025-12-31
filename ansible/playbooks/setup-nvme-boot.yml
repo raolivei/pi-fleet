@@ -316,17 +316,58 @@
     # =========================================================================
     # Clone OS from SD card (if enabled)
     # =========================================================================
-    - name: Check if root partition has filesystem content
-      stat:
-        path: /mnt/nvme-root
-      register: nvme_root_mount_check
+    # Check if SD card is available for cloning
+    - name: Check if SD card boot partition exists
+      ansible.builtin.stat:
+        path: "{{ sd_card }}p1"
+      register: sd_boot_part_exists
       changed_when: false
       failed_when: false
 
-    - name: Check if clone is needed (clone if enabled and root partition is empty)
-      set_fact:
-        need_clone: "{{ clone_from_sd | bool and (not nvme_already_has_boot | default(false)) }}"
+    - name: Check if SD card root partition exists
+      ansible.builtin.stat:
+        path: "{{ sd_card }}p2"
+      register: sd_root_part_exists
       changed_when: false
+      failed_when: false
+
+    - name: Check if clone is needed
+      ansible.builtin.set_fact:
+        need_clone: >-
+          {{
+            clone_from_sd | bool and
+            nvme_partition_count | int > 0 and
+            not (already_booting_from_nvme | default(false)) and
+            sd_boot_part_exists.stat.exists | default(false) and
+            sd_root_part_exists.stat.exists | default(false)
+          }}
+      changed_when: false
+
+    - name: Check if NVMe root already has content (skip clone if already set up)
+      ansible.builtin.command: test -d /mnt/nvme-root/etc && echo "has_content" || echo "empty"
+      register: nvme_root_content_check
+      changed_when: false
+      failed_when: false
+      when:
+        - need_clone | bool
+        - nvme_partition_count | int > 0
+
+    - name: Update need_clone based on content check
+      ansible.builtin.set_fact:
+        need_clone: >-
+          {{
+            need_clone | bool and
+            (nvme_root_content_check.stdout | default('empty') == 'empty')
+          }}
+      changed_when: false
+      when: nvme_root_content_check is defined
+
+    - name: Skip clone if SD card not available or already booting from NVMe
+      ansible.builtin.debug:
+        msg:
+          - "⚠️  Skipping OS clone from SD card"
+          - "Reason: {{ 'Already booting from NVMe' if (already_booting_from_nvme | default(false)) else ('SD card not found' if not (sd_boot_part_exists.stat.exists | default(false)) else 'NVMe root already has content') }}"
+      when: not (need_clone | bool)
 
     - name: Clone boot partition from SD card
       command: >
