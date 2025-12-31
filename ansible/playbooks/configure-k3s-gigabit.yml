@@ -150,6 +150,7 @@
     - name: Wait for k3s to be ready
       command: k3s kubectl get nodes
       register: k3s_ready
+      timeout: 30
       until: k3s_ready.rc == 0
       retries: 30
       delay: 5

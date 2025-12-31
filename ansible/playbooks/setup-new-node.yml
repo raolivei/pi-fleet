@@ -218,8 +218,9 @@
         network_facts.ansible_facts.ansible_eth0 is defined and
         network_facts.ansible_facts.ansible_eth0.ipv4 is defined and
         network_facts.ansible_facts.ansible_eth0.ipv4 | length > 0
-      retries: 10
-      delay: 2
+      retries: 5
+      delay: 3
+      timeout: 20
       failed_when: false
       when: inventory_hostname != 'node-0'
 
@@ -248,8 +249,9 @@
         network_facts_check.ansible_facts.ansible_eth0 is defined and
         network_facts_check.ansible_facts.ansible_eth0.ipv4 is defined and
         network_facts_check.ansible_facts.ansible_eth0.ipv4 | length > 0
-      retries: 5
-      delay: 1
+      retries: 3
+      delay: 2
+      timeout: 15
       failed_when: false
       when:
         - inventory_hostname != 'node-0'
