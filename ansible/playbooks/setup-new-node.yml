@@ -4,12 +4,14 @@
 #
 # Usage:
 #   # For a new node booted from SD card (will migrate to NVMe):
-#   # Example: Setting up node-3
+#   # Example: Setting up node-3 (IPs are calculated automatically from inventory)
+#   ansible-playbook playbooks/setup-new-node.yml --limit node-3
+#
+#   # To override automatic IP calculation:
 #   ansible-playbook playbooks/setup-new-node.yml \
 #     --limit node-3 \
 #     -e "wlan0_ip=192.168.2.83" \
-#     -e "eth0_ip=10.0.0.4" \
-#     --ask-pass --ask-become-pass
+#     -e "eth0_ip=10.0.0.4"
 #
 #   # Note: k3s_token_override is optional - playbook will retrieve it from node-0 if omitted
 #   # If node-0 is not accessible, provide token manually:
