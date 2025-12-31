@@ -11,9 +11,9 @@
 #     -e "eth0_ip=10.0.0.4" \
 #     --ask-pass --ask-become-pass
 #
-#   # Note: k3s_token is optional - playbook will retrieve it from node-0 if omitted
+#   # Note: k3s_token_override is optional - playbook will retrieve it from node-0 if omitted
 #   # If node-0 is not accessible, provide token manually:
-#   #   -e "k3s_token=<token-from-control-plane>"
+#   #   -e "k3s_token_override=<token-from-control-plane>"
 #
 # Prerequisites:
 #   1. Node is booted from SD card with generic hostname "node-x"
