@@ -96,7 +96,9 @@
   vars:
     setup_nvme_boot: true
     clone_from_sd: true
-  when: nvme_detected | default(true) # Default to true, playbook will check
+  when: 
+    - nvme_detected | default(true) # Default to true, playbook will check
+    - inventory_hostname != 'node-0' # Skip on control plane
 
 - name: Configure Gigabit Network (eth0)
   hosts: raspberry_pi
@@ -247,6 +249,7 @@
   vars:
     k3s_token: "{{ hostvars['localhost']['k3s_token_final'] | default('') }}"
     k3s_server_url: "https://node-0.eldertree.local:6443"
+  when: inventory_hostname != 'node-0' # Only install worker on non-control-plane nodes
 
 - name: Configure k3s for Gigabit Network
   import_playbook: configure-k3s-gigabit.yml
@@ -274,12 +277,16 @@
   connection: local
   gather_facts: false
   tasks:
+    - name: Get target node name
+      ansible.builtin.set_fact:
+        target_node_name: "{{ ansible_play_batch | select('match', '^node-\\d+$') | reject('equalto', 'node-0') | first | default('unknown') }}"
+
     - name: Display completion summary
       debug:
         msg:
           - "=== New Node Setup Complete ==="
           - ""
-          - "Node: {{ play_hosts | select('match', '^node-\\d+$') | first | default('unknown') }}.eldertree.local"
+          - "Node: {{ target_node_name }}.eldertree.local"
           - "Management IP (wlan0): {{ hostvars['localhost']['calculated_wlan0_ip'] | default(wlan0_ip_override | default('DHCP')) }}"
           - "Gigabit IP (eth0): {{ hostvars['localhost']['calculated_eth0_ip'] | default(eth0_ip_override | default('Not configured')) }}"
           - ""
