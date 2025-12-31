@@ -45,7 +45,7 @@
     # Update k3s service file (control plane)
     # =========================================================================
     - name: Check if servicelb is already disabled in k3s service
-      command: grep -q "disable servicelb" "{{ k3s_service_path }}" || echo "not_disabled"
+      shell: grep -E "(disable.*servicelb|--disable servicelb)" "{{ k3s_service_path }}" || echo "not_disabled"
       register: k3s_servicelb_check
       changed_when: false
       failed_when: false
@@ -54,8 +54,8 @@
     - name: Update k3s service to disable ServiceLB
       lineinfile:
         path: "{{ k3s_service_path }}"
-        regexp: "^ExecStart=(.*)$"
-        line: 'ExecStart=\1 --disable servicelb'
+        regexp: "^ExecStart=/usr/local/bin/k3s(.*)$"
+        line: 'ExecStart=/usr/local/bin/k3s\1 --disable servicelb'
         backrefs: yes
         mode: "0644"
       when:
@@ -66,7 +66,7 @@
     # Update k3s-agent service file (worker)
     # =========================================================================
     - name: Check if servicelb is already disabled in k3s-agent service
-      command: grep -q "disable servicelb" "{{ k3s_agent_service_path }}" || echo "not_disabled"
+      shell: grep -E "(disable.*servicelb|--disable servicelb)" "{{ k3s_agent_service_path }}" || echo "not_disabled"
       register: k3s_agent_servicelb_check
       changed_when: false
       failed_when: false
@@ -75,8 +75,8 @@
     - name: Update k3s-agent service to disable ServiceLB
       lineinfile:
         path: "{{ k3s_agent_service_path }}"
-        regexp: "^ExecStart=(.*)$"
-        line: 'ExecStart=\1 --disable servicelb'
+        regexp: "^ExecStart=/usr/local/bin/k3s(.*)$"
+        line: 'ExecStart=/usr/local/bin/k3s\1 --disable servicelb'
         backrefs: yes
         mode: "0644"
       when:
