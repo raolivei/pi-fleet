@@ -585,7 +585,7 @@
       debug:
         msg:
           - "=== System Configuration Complete ==="
-          - "Hostname: {{ target_hostname }}"
+          - "Hostname: {{ hostname }}"
           - "User: {{ target_user }}"
           - "Static IP: {{ static_ip if static_ip else 'DHCP' }}"
           - "Bluetooth: Enabled"
