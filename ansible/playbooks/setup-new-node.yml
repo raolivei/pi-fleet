@@ -336,7 +336,7 @@
 - name: Setup SSH Keys for Node-to-Node Communication
   import_playbook: setup-ssh-keys.yml
   vars:
-    add_local_key: "{{ add_local_key | default(true) | bool }}" # Add local machine's SSH key for Ansible access
+    add_local_key: true  # Add local machine's SSH key for Ansible access
 
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml
