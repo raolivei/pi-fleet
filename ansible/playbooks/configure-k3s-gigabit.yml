@@ -136,7 +136,10 @@
       systemd:
         name: k3s
         state: restarted
-      when: is_control_plane
+      when:
+        - is_control_plane
+        - inventory_hostname != 'node-0'  # Skip on control plane during new node setup
+      ignore_errors: true
 
     - name: Restart k3s-agent service (worker)
       systemd:
