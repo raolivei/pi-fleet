@@ -25,10 +25,10 @@ spec:
     # Key settings optimized for Raspberry Pi ARM64
     defaultSettings:
       defaultReplicaCount: "2"
-      replicaSoftAntiAffinity: "false"  # Hard anti-affinity
+      replicaSoftAntiAffinity: "false" # Hard anti-affinity
       defaultDataPath: "/mnt/longhorn"
       defaultFsType: "ext4"
-      defaultClass: "false"  # Manual storage class selection
+      defaultClass: "false" # Manual storage class selection
       storageOverProvisioningPercentage: "200"
       storageMinimalAvailablePercentage: "25"
       allowRecurringJobWhileVolumeDetached: "true"
@@ -100,4 +100,3 @@ spec:
         limits:
           cpu: "200m"
           memory: "128Mi"
-
