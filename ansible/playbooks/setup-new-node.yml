@@ -220,27 +220,25 @@
         - k3s_token_override is not defined or k3s_token_override == ""
         - k3s_token_file.content is defined
 
-- name: Set k3s token fact for worker installation
+- name: Set k3s token for worker installation
   hosts: localhost
   connection: local
   gather_facts: false
+  vars:
+    k3s_token_final: "{{ k3s_token_override | default(hostvars['node-0']['k3s_token_retrieved'] | default('')) }}"
   tasks:
-    - name: Determine k3s token to use
-      ansible.builtin.set_fact:
-        k3s_token_final: "{{ k3s_token_override | default(hostvars['node-0']['k3s_token_retrieved'] | default('')) }}"
-
     - name: Fail if k3s token not available
       ansible.builtin.fail:
         msg: |
           k3s_token is required. Either:
           1. Provide via -e k3s_token_override=<token>
           2. Ensure node-0 is accessible and token can be retrieved automatically
-      when: k3s_token_final is not defined or k3s_token_final == ""
+      when: k3s_token_final == ""
 
 - name: Install k3s Worker
   import_playbook: install-k3s-worker.yml
   vars:
-    k3s_token: "{{ k3s_token_final }}"
+    k3s_token: "{{ hostvars['localhost']['k3s_token_final'] | default('') }}"
     k3s_server_url: "https://node-0.eldertree.local:6443"
 
 - name: Configure k3s for Gigabit Network
