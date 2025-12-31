@@ -2,6 +2,8 @@
 
 This guide covers the complete process for adding a new Raspberry Pi node to the eldertree cluster, including NVMe boot configuration, network setup, and k3s integration.
 
+> **💡 Quick Setup Option**: For a streamlined setup, you can use the master playbook `setup-new-node.yml` which automates all steps below. See [Ansible Playbook Analysis](../ansible/PLAYBOOK_ANALYSIS.md) for usage examples.
+
 ## Overview
 
 When adding a new node to the eldertree cluster, follow this pattern (established with node-0 and node-1):
