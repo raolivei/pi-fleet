@@ -114,7 +114,7 @@
   vars:
     setup_nvme_boot: true
     clone_from_sd: true
-  when: 
+  when:
     - nvme_detected | default(true) # Default to true, playbook will check
     - inventory_hostname != 'node-0' # Skip on control plane
 
@@ -243,17 +243,16 @@
       when: eth0_ips is defined
 
 - name: Get k3s Token from Control Plane (if not provided)
-  hosts: localhost
-  connection: local
+  hosts: node-0
+  become: true
   gather_facts: false
   tasks:
     - name: Read k3s token from control plane
       ansible.builtin.slurp:
         src: /var/lib/rancher/k3s/server/node-token
       register: k3s_token_file
-      delegate_to: node-0
-      become: true
       when: k3s_token_override is not defined or k3s_token_override == ""
+      changed_when: false
 
     - name: Set k3s token from file
       ansible.builtin.set_fact:
@@ -261,6 +260,7 @@
       when:
         - k3s_token_override is not defined or k3s_token_override == ""
         - k3s_token_file.content is defined
+      changed_when: false
 
 - name: Set k3s token for worker installation
   hosts: localhost
