@@ -36,11 +36,51 @@
 #   - Node should join cluster automatically
 #   - Verify with: kubectl get nodes
 
+- name: Calculate next available IP addresses
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Get all existing node IPs from inventory
+      ansible.builtin.set_fact:
+        existing_wlan0_ips: >-
+          {{ groups['raspberry_pi'] | map('extract', hostvars, 'ansible_host') | select('defined') | list }}
+        existing_eth0_ips: >-
+          {%- set eth0_ips = [] -%}
+          {%- for node in groups['raspberry_pi'] -%}
+            {%- set node_num = node | regex_replace('node-', '') | int -%}
+            {%- set _ = eth0_ips.append('10.0.0.' + (node_num + 1)|string) -%}
+          {%- endfor -%}
+          {{ eth0_ips }}
+
+    - name: Calculate next wlan0 IP (descending from 192.168.2.86)
+      ansible.builtin.set_fact:
+        calculated_wlan0_ip: >-
+          {%- set base_ip = 86 -%}
+          {%- set used_ips = existing_wlan0_ips | map('regex_replace', '192\\.168\\.2\\.', '') | map('int') | list -%}
+          {%- set next_num = base_ip - (used_ips | length) -%}
+          {{ '192.168.2.' + next_num|string }}
+
+    - name: Calculate next eth0 IP (ascending from 10.0.0.1)
+      ansible.builtin.set_fact:
+        calculated_eth0_ip: >-
+          {%- set max_eth0 = (existing_eth0_ips | map('regex_replace', '10\\.0\\.0\\.', '') | map('int') | max) | default(0) -%}
+          {{ '10.0.0.' + (max_eth0 + 1)|string }}
+
+    - name: Display calculated IPs
+      ansible.builtin.debug:
+        msg:
+          - "Calculated IPs for {{ inventory_hostname }}:"
+          - "  wlan0 (management): {{ calculated_wlan0_ip }}"
+          - "  eth0 (gigabit): {{ calculated_eth0_ip }}"
+          - ""
+          - "To override, use: -e wlan0_ip=<ip> -e eth0_ip=<ip>"
+
 - name: System Configuration
   import_playbook: setup-system.yml
   vars:
     hostname: "{{ inventory_hostname }}.eldertree.local"
-    static_ip: "{{ wlan0_ip | default('') }}"
+    static_ip: "{{ wlan0_ip | default(hostvars['localhost']['calculated_wlan0_ip']) }}"
 
 - name: Setup NVMe Boot (if NVMe detected)
   import_playbook: setup-nvme-boot.yml
@@ -53,14 +93,14 @@
   hosts: raspberry_pi
   become: true
   vars:
-    eth0_ip: "{{ eth0_ip | default('') }}"
+    eth0_ip: "{{ eth0_ip | default(hostvars['localhost']['calculated_eth0_ip']) }}"
     gigabit_interface: eth0
 
   tasks:
     - name: Fail if eth0 IP not provided
       fail:
-        msg: "eth0_ip is required. Provide it via -e eth0_ip=10.0.0.X"
-      when: eth0_ip == ""
+        msg: "eth0_ip is required. Provide it via -e eth0_ip=10.0.0.X or ensure IP calculation succeeded"
+      when: eth0_ip == "" or eth0_ip is not defined
 
     - name: Check if eth0 connection exists
       community.general.nmcli:
