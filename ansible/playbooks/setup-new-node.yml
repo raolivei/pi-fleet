@@ -108,10 +108,17 @@
     gigabit_interface: eth0
 
   tasks:
+    - name: Skip if this is the control plane
+      ansible.builtin.debug:
+        msg: "Skipping eth0 configuration on control plane (node-0)"
+      when: inventory_hostname == 'node-0'
+      changed_when: false
     - name: Fail if eth0 IP not provided
       fail:
         msg: "eth0_ip is required. Provide it via -e eth0_ip_override=10.0.0.X or ensure IP calculation succeeded"
-      when: eth0_ip == "" or eth0_ip is not defined
+      when:
+        - inventory_hostname != 'node-0'
+        - (eth0_ip == "" or eth0_ip is not defined)
 
     - name: Check if eth0 connection exists
       community.general.nmcli:
@@ -121,6 +128,7 @@
       changed_when: false
       failed_when: false
       ignore_errors: true
+      when: inventory_hostname != 'node-0'
 
     - name: Create eth0 NetworkManager connection
       community.general.nmcli:
@@ -132,7 +140,9 @@
         gw4: ""
         method4: manual
         autoconnect: yes
-      when: eth0_connection_check.failed | default(true)
+      when:
+        - inventory_hostname != 'node-0'
+        - eth0_connection_check.failed | default(true)
 
     - name: Update existing eth0 connection
       community.general.nmcli:
@@ -141,12 +151,15 @@
         ip4: "{{ eth0_ip }}/24"
         gw4: ""
         method4: manual
-      when: not (eth0_connection_check.failed | default(true))
+      when:
+        - inventory_hostname != 'node-0'
+        - not (eth0_connection_check.failed | default(true))
 
     - name: Activate eth0 connection
       community.general.nmcli:
         state: up
         conn_name: eth0
+      when: inventory_hostname != 'node-0'
 
     - name: Wait for eth0 to get any IP address (with retries)
       ansible.builtin.setup:
@@ -212,14 +225,16 @@
       when: eth0_ips is defined
 
 - name: Get k3s Token from Control Plane (if not provided)
-  hosts: node-0
-  become: true
+  hosts: localhost
+  connection: local
   gather_facts: false
   tasks:
     - name: Read k3s token from control plane
       ansible.builtin.slurp:
         src: /var/lib/rancher/k3s/server/node-token
       register: k3s_token_file
+      delegate_to: node-0
+      become: true
       when: k3s_token_override is not defined or k3s_token_override == ""
 
     - name: Set k3s token from file
@@ -234,7 +249,7 @@
   connection: local
   gather_facts: false
   vars:
-    k3s_token_final: "{{ k3s_token_override | default(hostvars['node-0']['k3s_token_retrieved'] | default('')) }}"
+    k3s_token_final: "{{ k3s_token_override | default(k3s_token_retrieved | default('')) }}"
   tasks:
     - name: Fail if k3s token not available
       ansible.builtin.fail:
