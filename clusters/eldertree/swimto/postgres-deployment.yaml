@@ -31,6 +31,8 @@ spec:
             secretKeyRef:
               name: swimto-secrets
               key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
@@ -44,7 +46,7 @@ spec:
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
-          claimName: postgres-pvc
+          claimName: postgres-pvc-longhorn
 ---
 apiVersion: v1
 kind: Service
