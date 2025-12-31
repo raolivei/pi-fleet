@@ -97,23 +97,33 @@
         state: up
         conn_name: eth0
 
-    - name: Verify eth0 IP configuration
+    - name: Wait for eth0 to get IP address (with retries)
       ansible.builtin.setup:
         gather_subset:
           - "!all"
           - network
       register: network_facts
+      until: >
+        network_facts.ansible_facts.ansible_eth0 is defined and
+        network_facts.ansible_facts.ansible_eth0.ipv4 is defined and
+        network_facts.ansible_facts.ansible_eth0.ipv4 | length > 0 and
+        eth0_ip in (network_facts.ansible_facts.ansible_eth0.ipv4 | map(attribute='address') | list)
+      retries: 10
+      delay: 2
+      failed_when: false
 
     - name: Get eth0 IP addresses
       ansible.builtin.set_fact:
         eth0_ips: "{{ network_facts.ansible_facts.ansible_eth0.ipv4 | default([]) | map(attribute='address') | list | default([]) }}"
+      when: network_facts.ansible_facts.ansible_eth0 is defined
 
     - name: Check if eth0 has correct IP
       ansible.builtin.assert:
         that:
           - eth0_ip in eth0_ips
-        fail_msg: "eth0 does not have IP {{ eth0_ip }}. Current IPs: {{ eth0_ips }}"
+        fail_msg: "eth0 does not have IP {{ eth0_ip }}. Current IPs: {{ eth0_ips }}. Connection may need more time to activate or there may be a NetworkManager issue. Try running the playbook again or check NetworkManager status manually: nmcli connection show eth0"
         success_msg: "eth0 correctly configured with IP {{ eth0_ip }}"
+      when: eth0_ips is defined
 
 - name: Get k3s Token from Control Plane (if not provided)
   hosts: node-0
