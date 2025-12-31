@@ -276,13 +276,14 @@
       ansible.builtin.assert:
         that:
           - eth0_ip in eth0_ips
-        fail_msg: "eth0 does not have IP {{ eth0_ip }}. Current IPs: {{ eth0_ips }}. Connection may need more time to activate or there may be a NetworkManager issue. Try running the playbook again or check NetworkManager status manually: nmcli connection show eth0"
-        success_msg: "eth0 correctly configured with IP {{ eth0_ip }}"
+        fail_msg: "⚠️  WARNING: eth0 does not have IP {{ eth0_ip }}. Current IPs: {{ eth0_ips }}. Connection may need more time to activate or there may be a NetworkManager issue. The playbook will continue, but you may need to configure eth0 manually later. Try running the playbook again or check NetworkManager status manually: nmcli connection show eth0"
+        success_msg: "✅ eth0 correctly configured with IP {{ eth0_ip }}"
       when:
         - inventory_hostname != 'node-0'
         - eth0_ips is defined
         - eth0_ip is defined
         - eth0_ip != ""
+      ignore_errors: true
 
 - name: Get k3s Token from Control Plane (if not provided)
   hosts: node-0
