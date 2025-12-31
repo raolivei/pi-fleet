@@ -122,7 +122,9 @@
   hosts: raspberry_pi
   become: true
   vars:
-    eth0_ip: "{{ eth0_ip_override | default(hostvars['localhost']['calculated_eth0_ip'] | default('')) }}"
+    # Calculate eth0 IP based on this node's number (node-2 → 10.0.0.3)
+    eth0_ip_calculated: "{{ '10.0.0.' + ((inventory_hostname | regex_replace('node-', '') | int) + 1)|string }}"
+    eth0_ip: "{{ eth0_ip_override | default(eth0_ip_calculated) }}"
     gigabit_interface: eth0
 
   tasks:
