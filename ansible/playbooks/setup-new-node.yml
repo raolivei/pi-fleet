@@ -182,13 +182,28 @@
       when: inventory_hostname != 'node-0'
       changed_when: false
 
+    - name: Extract current eth0 IP for comparison
+      ansible.builtin.set_fact:
+        current_eth0_ip: >-
+          {%- set ipv4 = current_eth0_check.ansible_facts.ansible_eth0.ipv4 | default({}) -%}
+          {%- if ipv4 is mapping and ipv4.address is defined -%}
+            {{ ipv4.address }}
+          {%- elif ipv4 is iterable and ipv4 is not string -%}
+            {{ ipv4[0].address | default('') }}
+          {%- else -%}
+            {{ '' }}
+          {%- endif -%}
+      when:
+        - inventory_hostname != 'node-0'
+        - current_eth0_check.ansible_facts.ansible_eth0 is defined
+
     - name: Activate eth0 connection (only if IP needs to change)
       community.general.nmcli:
         state: up
         conn_name: eth0
       when:
         - inventory_hostname != 'node-0'
-        - current_eth0_check.ansible_facts.ansible_eth0.ipv4[0].address | default('') != eth0_ip
+        - current_eth0_ip | default('') != eth0_ip
       ignore_errors: true
 
     - name: Wait for eth0 to get any IP address (with retries)
