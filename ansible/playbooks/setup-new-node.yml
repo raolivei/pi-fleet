@@ -17,6 +17,9 @@
 #   # Note: k3s_token_override is optional - playbook will retrieve it from node-0 if omitted
 #   # If node-0 is not accessible, provide token manually:
 #   #   -e "k3s_token_override=<token-from-control-plane>"
+#   
+#   # To verify idempotency (rerun setup to ensure no changes):
+#   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-0,node-2 -e verify_idempotency=true
 #
 # Prerequisites:
 #   1. Node is booted from SD card with generic hostname "node-x"
