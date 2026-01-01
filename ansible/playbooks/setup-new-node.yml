@@ -283,12 +283,20 @@
         regexp: "^192\\.168\\.2\\.85.*node-1"
         state: present
 
-    - name: Add node-2 to /etc/hosts (if not this node)
+    - name: Add node-2 to /etc/hosts
       lineinfile:
         path: /etc/hosts
         line: "192.168.2.84 node-2.eldertree.local node-2"
         regexp: "^192\\.168\\.2\\.84.*node-2"
         state: present
+
+    - name: Add this node's own hostname to /etc/hosts (fixes sudo warnings)
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ ansible_default_ipv4.address }} {{ inventory_hostname }}.eldertree.local {{ inventory_hostname }}"
+        regexp: "^{{ ansible_default_ipv4.address }}.*{{ inventory_hostname }}"
+        state: present
+      when: ansible_default_ipv4.address is defined
 
 - name: Get k3s Token from Control Plane (if not provided)
   hosts: node-0

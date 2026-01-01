@@ -136,26 +136,19 @@
       systemd:
         name: k3s
         state: restarted
-      when:
-        - is_control_plane
-        - inventory_hostname != 'node-0'  # Skip on control plane during new node setup
-      ignore_errors: true
+      when: is_control_plane
 
     - name: Restart k3s-agent service (worker)
       systemd:
         name: k3s-agent
         state: restarted
       when: is_worker
-      async: 60
-      poll: 5
-      ignore_errors: true
 
     - name: Wait for k3s to be ready
       command: k3s kubectl get nodes
       register: k3s_ready
       until: k3s_ready.rc == 0
-      retries: 6
-      timeout: 30
+      retries: 30
       delay: 5
       failed_when: false
       when: is_control_plane
