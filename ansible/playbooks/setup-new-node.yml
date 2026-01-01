@@ -17,7 +17,7 @@
 #   # Note: k3s_token_override is optional - playbook will retrieve it from node-0 if omitted
 #   # If node-0 is not accessible, provide token manually:
 #   #   -e "k3s_token_override=<token-from-control-plane>"
-#   
+#
 #   # To verify idempotency (rerun setup to ensure no changes):
 #   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-0,node-2 -e verify_idempotency=true
 #
@@ -400,10 +400,19 @@
   hosts: raspberry_pi
   become: true
   gather_facts: true
-  when: 
-    - verify_idempotency | default(false) | bool
-    - inventory_hostname != 'node-0'
   tasks:
+    - name: Skip if idempotency verification not requested
+      debug:
+        msg: "Skipping idempotency verification (use -e verify_idempotency=true to enable)"
+      when: not (verify_idempotency | default(false) | bool)
+      changed_when: false
+
+    - name: Skip if this is the control plane
+      debug:
+        msg: "Skipping idempotency verification on control plane (node-0)"
+      when: inventory_hostname == 'node-0'
+      changed_when: false
+
     - name: Display idempotency verification start
       debug:
         msg:
@@ -411,12 +420,15 @@
           - "Rerunning setup on {{ inventory_hostname }} to verify idempotency..."
           - "All tasks should show 'ok' (no changes) if playbook is truly idempotent"
           - ""
+      when:
+        - verify_idempotency | default(false) | bool
+        - inventory_hostname != 'node-0'
 
     - name: Rerun complete setup (idempotency check)
       include_tasks: "{{ playbook_dir }}/setup-new-node-tasks.yml"
       vars:
-        skip_verification: true  # Prevent infinite loop
-      when: false  # Disabled for now - would cause infinite loop
+        skip_verification: true # Prevent infinite loop
+      when: false # Disabled for now - would cause infinite loop
       # Instead, we'll verify key configurations below
 
     - name: Verify hostname is correct
@@ -430,6 +442,9 @@
       register: dns_check
       changed_when: false
       failed_when: false
+      when:
+        - verify_idempotency | default(false) | bool
+        - inventory_hostname != 'node-0'
 
     - name: Verify eth0 IP configuration
       ansible.builtin.setup:
@@ -438,6 +453,9 @@
           - network
       register: network_facts_check
       changed_when: false
+      when:
+        - verify_idempotency | default(false) | bool
+        - inventory_hostname != 'node-0'
 
     - name: Extract eth0 IP for verification
       ansible.builtin.set_fact:
@@ -457,7 +475,9 @@
       register: k3s_check
       changed_when: false
       failed_when: false
-      when: inventory_hostname != 'node-0'
+      when:
+        - verify_idempotency | default(false) | bool
+        - inventory_hostname != 'node-0'
 
     - name: Verify k3s-agent service status
       systemd:
@@ -465,19 +485,27 @@
       register: k3s_agent_status
       changed_when: false
       failed_when: false
-      when: inventory_hostname != 'node-0'
+      when:
+        - verify_idempotency | default(false) | bool
+        - inventory_hostname != 'node-0'
 
     - name: Verify SSH keys exist
       stat:
         path: "{{ ansible_env.HOME }}/.ssh/id_ed25519"
       register: ssh_key_check
       changed_when: false
+      when:
+        - verify_idempotency | default(false) | bool
+        - inventory_hostname != 'node-0'
 
     - name: Verify btop is installed
       command: which btop
       register: btop_check
       changed_when: false
       failed_when: false
+      when:
+        - verify_idempotency | default(false) | bool
+        - inventory_hostname != 'node-0'
 
     - name: Display idempotency verification results
       debug:
@@ -494,3 +522,6 @@
           - ""
           - "💡 To rerun full setup for verification, use:"
           - "   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-0,{{ inventory_hostname }} -e verify_idempotency=true"
+      when:
+        - verify_idempotency | default(false) | bool
+        - inventory_hostname != 'node-0'
