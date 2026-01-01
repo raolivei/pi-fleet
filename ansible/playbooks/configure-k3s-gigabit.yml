@@ -138,11 +138,31 @@
         state: restarted
       when: is_control_plane
 
+    - name: Stop k3s-agent before restart (cleanup stuck state)
+      systemd:
+        name: k3s-agent
+        state: stopped
+      when: is_worker
+      ignore_errors: true
+
+    - name: Clean k3s-agent state if needed
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rancher/k3s/agent
+        - /var/lib/rancher/k3s/agent-tls
+      when: is_worker
+      ignore_errors: true
+
     - name: Restart k3s-agent service (worker)
       systemd:
         name: k3s-agent
         state: restarted
       when: is_worker
+      async: 60
+      poll: 5
+      ignore_errors: true
 
     - name: Wait for k3s to be ready
       command: k3s kubectl get nodes

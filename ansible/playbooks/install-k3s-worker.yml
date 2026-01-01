@@ -245,6 +245,23 @@
       changed_when: false
       when: k3s_check.rc == 0
 
+    - name: Stop k3s-agent if stuck (cleanup before restart)
+      systemd:
+        name: k3s-agent
+        state: stopped
+      ignore_errors: true
+      when: k3s_check.rc == 0
+
+    - name: Clean k3s-agent state if service was stuck
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rancher/k3s/agent
+        - /var/lib/rancher/k3s/agent-tls
+      ignore_errors: true
+      when: k3s_check.rc == 0
+
     - name: Ensure k3s-agent service is started
       systemd:
         name: k3s-agent
