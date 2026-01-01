@@ -13,7 +13,7 @@
     # Install open-iscsi (required for Longhorn)
     # =========================================================================
     - name: Check if open-iscsi is installed
-      command: dpkg -l open-iscsi
+      command: which iscsiadm
       register: iscsi_check
       changed_when: false
       failed_when: false
