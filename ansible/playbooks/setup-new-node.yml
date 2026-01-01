@@ -261,6 +261,32 @@
         - eth0_ip != ""
       ignore_errors: true
 
+- name: Configure DNS for cluster nodes
+  hosts: raspberry_pi
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Add node-0 to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.2.86 node-0.eldertree.local node-0"
+        regexp: "^192\\.168\\.2\\.86.*node-0"
+        state: present
+
+    - name: Add node-1 to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.2.85 node-1.eldertree.local node-1"
+        regexp: "^192\\.168\\.2\\.85.*node-1"
+        state: present
+
+    - name: Add node-2 to /etc/hosts (if not this node)
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.2.84 node-2.eldertree.local node-2"
+        regexp: "^192\\.168\\.2\\.84.*node-2"
+        state: present
+
 - name: Get k3s Token from Control Plane (if not provided)
   hosts: node-0
   become: true
