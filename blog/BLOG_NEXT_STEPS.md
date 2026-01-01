@@ -3,6 +3,7 @@
 ## ✅ What's Been Done
 
 You now have:
+
 - **Introduction** - Enhanced with statistics and narrative
 - **Chapter 1: The Vision** - Fully populated with motivations and goals
 - **Chapter 5: Initial Cluster Setup** - Complete timeline from November 2025
@@ -33,6 +34,7 @@ grep -A 200 "## Chapter 14: Troubleshooting" blog/BLOG.md
 ```
 
 **Action Items:**
+
 - [ ] Read through each section
 - [ ] Add any personal details you remember
 - [ ] Correct any inaccuracies
@@ -43,13 +45,16 @@ grep -A 200 "## Chapter 14: Troubleshooting" blog/BLOG.md
 These chapters are easiest because they have existing documentation:
 
 #### Chapter 2: Hardware Decisions
+
 **Why it's easy:** You know the hardware specs
 **Sources:**
+
 - Your memory of the purchase
 - README.md (Raspberry Pi 5, 8GB, ARM64)
 - Any purchase receipts or notes
 
 **What to add:**
+
 - When/where you bought the Raspberry Pi 5
 - Why you chose 8GB over 4GB
 - Storage choice (SD card vs NVMe)
@@ -60,13 +65,16 @@ These chapters are easiest because they have existing documentation:
 **Time estimate:** 30-60 minutes
 
 #### Chapter 4: Kubernetes Choice - Why K3s
+
 **Why it's easy:** The rationale is already in the template
 **Sources:**
+
 - BLOG.md template (already has rationale)
 - Your memory of the decision
 - Any research you did
 
 **What to add:**
+
 - Personal context: What alternatives did you consider?
 - Why K3s over full Kubernetes?
 - Why K3s over other lightweight options (k0s, MicroK8s)?
@@ -76,14 +84,17 @@ These chapters are easiest because they have existing documentation:
 **Time estimate:** 30-45 minutes
 
 #### Chapter 7: Secrets Management with Vault
+
 **Why it's easy:** Extensive documentation exists
 **Sources:**
+
 - `VAULT.md` - Complete Vault guide
 - `VAULT_DEPLOYMENT_SUCCESS.md` - Deployment journey
 - `blog-analysis/problems-and-solutions.md` - Vault-related problems
 - `blog-analysis/features-and-decisions.md` - Vault features
 
 **What to add:**
+
 - Why you chose Vault
 - Migration from dev to production mode
 - Policy setup process
@@ -97,24 +108,30 @@ These chapters are easiest because they have existing documentation:
 These chapters can use the narrative data:
 
 #### Chapter 9: Monitoring and Observability
+
 **Sources:**
+
 - `blog-analysis/features-and-decisions.md` - Grafana dashboards
 - `blog-analysis/problems-and-solutions.md` - Monitoring issues
 - `clusters/eldertree/observability/README.md`
 
 **Key events to document:**
+
 - Initial Prometheus + Grafana setup
 - Dashboard creation
 - Raspberry Pi-specific metrics
 - Resource monitoring challenges
 
 #### Chapter 11: Deploying Applications
+
 **Sources:**
+
 - `blog-analysis/blog-narrative.md` - Application deployments
 - `blog-analysis/features-and-decisions.md` - App features
 - Individual app READMEs
 
 **Applications to document:**
+
 - Canopy (personal finance)
 - SwimTO (commercial project)
 - Journey (AI career pathfinder)
@@ -124,6 +141,7 @@ These chapters can use the narrative data:
 ### Step 4: Add Personal Context
 
 For each chapter, add:
+
 - **Why you made decisions** - Not just what, but why
 - **What you learned** - Lessons from experience
 - **What you'd do differently** - Honest reflection
@@ -133,6 +151,7 @@ For each chapter, add:
 ### Step 5: Enhance with Memory
 
 Use your memory to add:
+
 - **Specific dates** - When things happened
 - **Challenges you remember** - Problems that stuck with you
 - **Decisions you debated** - What you considered
@@ -144,23 +163,23 @@ Use your memory to add:
 
 ### Quick Reference: What to Use for Each Chapter
 
-| Chapter | Primary Source | Secondary Source | Personal Context Needed |
-|---------|---------------|------------------|------------------------|
-| 1. Vision | ✅ Done | Your memory | Your motivations |
-| 2. Hardware | README.md | Your memory | Purchase details |
-| 3. OS Setup | docs/OS_*.md | Ansible playbooks | Installation process |
-| 4. K3s Choice | BLOG.md template | Your memory | Decision process |
-| 5. Cluster Setup | ✅ Done | blog-narrative.md | Your experience |
-| 6. Networking | NETWORK.md | DNS commits | DNS decisions |
-| 7. Vault | VAULT.md | Vault commits | Migration story |
-| 8. DNS | NETWORK.md | DNS problems | DNS journey |
-| 9. Monitoring | features.md | observability/ | Dashboard creation |
-| 10. GitOps | blog-narrative.md | FluxCD commits | GitOps benefits |
-| 11. Applications | blog-narrative.md | App READMEs | Deployment stories |
-| 12. Storage | Storage commits | Your memory | Storage decisions |
-| 13. Remote Access | Tunnel docs | Security commits | Access decisions |
-| 14. Troubleshooting | ✅ Done | problems.md | Your experience |
-| 15. Future Plans | Your plans | Your vision | Roadmap |
+| Chapter             | Primary Source    | Secondary Source  | Personal Context Needed |
+| ------------------- | ----------------- | ----------------- | ----------------------- |
+| 1. Vision           | ✅ Done           | Your memory       | Your motivations        |
+| 2. Hardware         | README.md         | Your memory       | Purchase details        |
+| 3. OS Setup         | docs/OS\_\*.md    | Ansible playbooks | Installation process    |
+| 4. K3s Choice       | BLOG.md template  | Your memory       | Decision process        |
+| 5. Cluster Setup    | ✅ Done           | blog-narrative.md | Your experience         |
+| 6. Networking       | NETWORK.md        | DNS commits       | DNS decisions           |
+| 7. Vault            | VAULT.md          | Vault commits     | Migration story         |
+| 8. DNS              | NETWORK.md        | DNS problems      | DNS journey             |
+| 9. Monitoring       | features.md       | observability/    | Dashboard creation      |
+| 10. GitOps          | blog-narrative.md | FluxCD commits    | GitOps benefits         |
+| 11. Applications    | blog-narrative.md | App READMEs       | Deployment stories      |
+| 12. Storage         | Storage commits   | Your memory       | Storage decisions       |
+| 13. Remote Access   | Tunnel docs       | Security commits  | Access decisions        |
+| 14. Troubleshooting | ✅ Done           | problems.md       | Your experience         |
+| 15. Future Plans    | Your plans        | Your vision       | Roadmap                 |
 
 ## 🛠️ Tools to Help
 
@@ -207,6 +226,7 @@ grep -i "vault" blog-analysis/blog-narrative.md >> vault-content.txt
 ## 🎯 This Week's Goal
 
 **Target:** Complete 3 more chapters
+
 - Chapter 2: Hardware Decisions (easy)
 - Chapter 4: Kubernetes Choice (easy)
 - Chapter 7: Vault (moderate, but well-documented)
@@ -236,6 +256,7 @@ When populating a chapter, use this structure:
 ## 🚀 Ready to Continue?
 
 You have everything you need:
+
 - ✅ Complete blog structure
 - ✅ Comprehensive Git analysis
 - ✅ 4 chapters as examples
@@ -247,4 +268,3 @@ You have everything you need:
 ---
 
 **Remember:** This is YOUR journey. Make it personal, authentic, and useful for others.
-

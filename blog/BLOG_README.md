@@ -5,7 +5,9 @@ This directory contains everything you need to create a comprehensive blog about
 ## Files Created
 
 ### 1. `BLOG.md` - Main Blog Structure
+
 The complete blog template with 15 chapters covering:
+
 - Vision and goals
 - Hardware decisions
 - OS and setup
@@ -25,7 +27,9 @@ The complete blog template with 15 chapters covering:
 **Status:** Template ready for population
 
 ### 2. `BLOG_GUIDE.md` - Writing Guide
+
 Comprehensive guide on:
+
 - How to extract information from Cursor (if available)
 - How to use existing documentation
 - How to populate each chapter
@@ -36,7 +40,9 @@ Comprehensive guide on:
 **Status:** Complete guide
 
 ### 3. `scripts/blog-extract-info.sh` - Information Extractor
+
 Interactive script to extract information from your codebase:
+
 - Hardware information
 - Cluster configuration
 - Deployed services
@@ -48,6 +54,7 @@ Interactive script to extract information from your codebase:
 - Git history
 
 **Usage:**
+
 ```bash
 # Interactive mode
 ./scripts/blog-extract-info.sh
@@ -63,7 +70,9 @@ Interactive script to extract information from your codebase:
 ```
 
 ### 4. `scripts/blog-analyze-git-history.sh` - Git History Analyzer ⭐ **NEW!**
+
 Comprehensive analysis of Git commit history to extract:
+
 - **Complete timeline** - Chronological journey with dates
 - **Problems and solutions** - All issues encountered and fixes
 - **Features and decisions** - Major features and architectural choices
@@ -72,6 +81,7 @@ Comprehensive analysis of Git commit history to extract:
 - **Statistics** - Overall project metrics
 
 **Usage:**
+
 ```bash
 # Run comprehensive analysis
 ./scripts/blog-analyze-git-history.sh
@@ -86,13 +96,16 @@ Comprehensive analysis of Git commit history to extract:
 ```
 
 ### 5. `scripts/blog-fetch-pr-details.sh` - PR Details Fetcher ⭐ **NEW!**
+
 Fetches detailed PR information from GitHub API:
+
 - Full PR descriptions
 - Labels and metadata
 - Review information
 - Merge dates
 
 **Usage:**
+
 ```bash
 # Requires GitHub CLI (gh) or GITHUB_TOKEN
 ./scripts/blog-fetch-pr-details.sh
@@ -104,6 +117,7 @@ Fetches detailed PR information from GitHub API:
 ## Quick Start
 
 ### Step 1: Analyze Git History (Recommended First!)
+
 ```bash
 cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet
 
@@ -119,13 +133,16 @@ cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet
 This generates multiple files in `blog-analysis/` that you can use directly in your blog!
 
 ### Step 2: Extract Additional Information
+
 ```bash
 # Extract codebase information
 ./scripts/blog-extract-info.sh --all > blog-info-extract.txt
 ```
 
 ### Step 3: Review Existing Documentation
+
 Key files to review:
+
 - `README.md` - Overview
 - `CHANGELOG.md` - Chronological changes
 - `NETWORK.md` - Network architecture
@@ -135,6 +152,7 @@ Key files to review:
 - `docs/` - Detailed guides
 
 ### Step 4: Populate Blog Chapters
+
 1. Open `BLOG.md`
 2. Start with Chapter 1 (Vision) - easiest to fill
 3. Work through chapters chronologically
@@ -142,12 +160,14 @@ Key files to review:
 5. Reference extracted information
 
 ### Step 5: Add Personal Context
+
 - Why you made specific decisions
 - What you learned
 - Challenges you faced
 - What you'd do differently
 
 ### Step 6: Review and Refine
+
 - Check technical accuracy
 - Remove sensitive information
 - Add screenshots/diagrams
@@ -164,6 +184,7 @@ Key files to review:
 5. **Manual Review:** Review key documentation files to reconstruct your journey
 
 **The Git history analysis is particularly powerful because:**
+
 - Commit messages document problems and solutions
 - PR descriptions contain detailed context
 - Timeline shows the evolution of your cluster
@@ -172,6 +193,7 @@ Key files to review:
 ### If Cursor Chat History Becomes Available
 
 If you find a way to access Cursor chat history:
+
 1. Export chat history
 2. Search for key terms (decisions, challenges, solutions)
 3. Extract relevant conversations
@@ -203,6 +225,7 @@ Introduction
 ## Information Sources
 
 ### Primary Sources
+
 - `README.md` - Project overview
 - `CHANGELOG.md` - Version history and changes
 - `NETWORK.md` - Network architecture
@@ -210,6 +233,7 @@ Introduction
 - `docs/` - Detailed guides
 
 ### Secondary Sources
+
 - Git commit history
 - Deployment summaries
 - Troubleshooting guides
@@ -217,6 +241,7 @@ Introduction
 - Ansible playbooks
 
 ### Personal Context
+
 - Your memories of decisions
 - Challenges you remember
 - Lessons you learned
@@ -225,24 +250,28 @@ Introduction
 ## Publishing Options
 
 ### Option 1: Keep as Markdown
+
 - Maintain in repository
 - Easy to update
 - Version controlled
 - Can convert later
 
 ### Option 2: Static Site Generator
+
 - Hugo, Jekyll, or similar
 - GitHub Pages hosting
 - Professional appearance
 - Easy to maintain
 
 ### Option 3: Blog Platform
+
 - Medium, Dev.to, personal blog
 - Wider audience
 - Built-in formatting
 - Social features
 
 ### Option 4: PDF/Book
+
 - Convert to PDF
 - Professional document
 - Easy to share
@@ -251,6 +280,7 @@ Introduction
 ## Maintenance
 
 Keep the blog updated:
+
 - After major changes
 - When adding new services
 - When solving major issues
@@ -279,6 +309,7 @@ Keep the blog updated:
 ## Getting Help
 
 Use Cursor AI to:
+
 - Extract information from docs
 - Summarize technical details
 - Format content
@@ -323,4 +354,3 @@ cat blog-analysis/problems-and-solutions.md
 **Remember:** This is YOUR journey. Make it personal, authentic, and useful for others following a similar path.
 
 **Good luck with your blog!** 📝✨
-

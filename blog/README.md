@@ -15,6 +15,7 @@ This directory contains the comprehensive blog documenting the journey of buildi
 **Progress:** ~27% complete
 
 **Completed Sections:**
+
 - ✅ Introduction (enhanced with statistics)
 - ✅ Chapter 1: The Vision
 - ✅ Chapter 5: Initial Cluster Setup
@@ -22,6 +23,7 @@ This directory contains the comprehensive blog documenting the journey of buildi
 - ✅ Chapter 14: Troubleshooting and Lessons Learned
 
 **Remaining Chapters:**
+
 - Chapter 2: Hardware Decisions
 - Chapter 3: Operating System and Base Setup
 - Chapter 4: Kubernetes Choice - Why K3s
@@ -37,15 +39,17 @@ This directory contains the comprehensive blog documenting the journey of buildi
 ## Quick Start
 
 1. **Review completed chapters:**
+
    ```bash
    # Read the main blog
    cat BLOG.md
-   
+
    # Or view specific chapters
    grep -A 100 "## Chapter 1" BLOG.md
    ```
 
 2. **Use the guides:**
+
    - `BLOG_GUIDE.md` - How to populate chapters
    - `BLOG_NEXT_STEPS.md` - What to do next
    - `BLOG_PROGRESS.md` - Current status
@@ -63,6 +67,7 @@ This directory contains the comprehensive blog documenting the journey of buildi
 ## Publishing
 
 When ready to publish:
+
 1. Review all chapters for accuracy
 2. Remove sensitive information
 3. Add screenshots/diagrams where helpful
@@ -72,4 +77,3 @@ When ready to publish:
 ---
 
 **Last Updated:** 2025-12-30
-

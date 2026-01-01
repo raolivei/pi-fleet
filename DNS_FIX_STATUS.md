@@ -74,10 +74,34 @@ Once fixes are applied:
 - **LoadBalancer IP not reachable** - MetalLB not advertising (needs interface config applied)
 - **ExternalDNS not running** - Needs ClusterIP fix applied
 
+## Execution Status
+
+**Last Attempt:** Script execution attempted but cluster API appears unreachable. Commands are timing out.
+
+**Debug Script Created:** `scripts/dns-fix-when-cluster-accessible-debug.sh` - Version that doesn't exit on errors for better diagnostics.
+
 ## Next Steps
 
-1. Wait for cluster API to become accessible
-2. Run `./scripts/dns-fix-when-cluster-accessible.sh` or manually apply steps above
-3. Verify DNS resolution works automatically
-4. Test HTTP access to services
+1. **Verify cluster connectivity:**
+   ```bash
+   export KUBECONFIG=~/.kube/config-eldertree
+   kubectl get nodes
+   ```
+
+2. **If cluster is accessible, run the fix script:**
+   ```bash
+   cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet
+   ./scripts/dns-fix-when-cluster-accessible-debug.sh
+   ```
+
+3. **Or apply manually:**
+   ```bash
+   export KUBECONFIG=~/.kube/config-eldertree
+   kubectl apply -f clusters/eldertree/core-infrastructure/metallb/config.yaml
+   kubectl rollout restart daemonset -n metallb-system metallb-speaker
+   flux reconcile helmrelease -n external-dns external-dns
+   ```
+
+4. **Verify DNS resolution works automatically**
+5. **Test HTTP access to services**
 
