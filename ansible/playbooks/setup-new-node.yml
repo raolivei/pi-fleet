@@ -299,7 +299,7 @@
 - name: Install k3s Worker
   import_playbook: install-k3s-worker.yml
   vars:
-    k3s_token: "{{ hostvars['localhost']['k3s_token_final'] | default('') }}"
+    k3s_token: "{{ k3s_token_final | default(hostvars['localhost']['k3s_token_final'] | default('')) }}"
     k3s_server_url: "https://node-0.eldertree.local:6443"
   when: inventory_hostname != 'node-0' # Only install worker on non-control-plane nodes
 
@@ -312,7 +312,7 @@
 - name: Setup SSH Keys for Node-to-Node Communication
   import_playbook: setup-ssh-keys.yml
   vars:
-    add_local_key: true  # Add local machine's SSH key for Ansible access
+    add_local_key: true # Add local machine's SSH key for Ansible access
 
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml
