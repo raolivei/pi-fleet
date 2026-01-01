@@ -285,9 +285,12 @@
   hosts: localhost
   connection: local
   gather_facts: false
-  vars:
-    k3s_token_final: "{{ k3s_token_override | default(hostvars['node-0']['k3s_token_retrieved'] | default('')) }}"
   tasks:
+    - name: Set k3s token final value
+      ansible.builtin.set_fact:
+        k3s_token_final: "{{ k3s_token_override | default(hostvars['node-0']['k3s_token_retrieved'] | default('')) }}"
+      changed_when: false
+
     - name: Fail if k3s token not available
       ansible.builtin.fail:
         msg: |
