@@ -5,21 +5,21 @@
 # Usage:
 #   # For a new node booted from SD card (will migrate to NVMe):
 #   # Example: Setting up node-3 (IPs are calculated automatically from inventory)
-#   # Note: Must include localhost (for IP calculation) and node-0 (for k3s token)
-#   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-0,node-3
+#   # Note: Must include localhost (for IP calculation) and node-1 (for k3s token)
+#   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-1,node-4
 #
 #   # To override automatic IP calculation:
 #   ansible-playbook playbooks/setup-new-node.yml \
-#     --limit localhost,node-0,node-3 \
+#     --limit localhost,node-1,node-4 \
 #     -e "wlan0_ip_override=192.168.2.83" \
 #     -e "eth0_ip_override=10.0.0.4"
 #
-#   # Note: k3s_token_override is optional - playbook will retrieve it from node-0 if omitted
-#   # If node-0 is not accessible, provide token manually:
+#   # Note: k3s_token_override is optional - playbook will retrieve it from node-1 if omitted
+#   # If node-1 is not accessible, provide token manually:
 #   #   -e "k3s_token_override=<token-from-control-plane>"
 #
 #   # To verify idempotency (rerun setup to ensure no changes):
-#   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-0,node-2 -e verify_idempotency=true
+#   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-1,node-3 -e verify_idempotency=true
 #
 # Prerequisites:
 #   1. Node is booted from SD card with generic hostname "node-x"
@@ -59,10 +59,10 @@
           {%- endfor -%}
           {{ eth0_ips }}
 
-    - name: Calculate next wlan0 IP (descending from 192.168.2.86)
+    - name: Calculate next wlan0 IP (descending from 192.168.2.101)
       ansible.builtin.set_fact:
         calculated_wlan0_ip: >-
-          {%- set base_ip = 86 -%}
+          {%- set base_ip = 101 -%}
           {%- set used_ips = existing_wlan0_ips | map('regex_replace', '192\\.168\\.2\\.', '') | map('int') | list -%}
           {%- set next_num = base_ip - (used_ips | length) -%}
           {{ '192.168.2.' + next_num|string }}
@@ -70,7 +70,7 @@
     - name: Calculate eth0 IP based on target node number
       ansible.builtin.set_fact:
         calculated_eth0_ip: >-
-          {%- set target_nodes = ansible_play_batch | select('match', '^node-\\d+$') | reject('equalto', 'node-0') | list -%}
+          {%- set target_nodes = ansible_play_batch | select('match', '^node-\\d+$') | reject('equalto', 'node-1') | list -%}
           {%- if target_nodes | length > 0 -%}
             {%- set target_node = target_nodes[0] -%}
             {%- set node_num = target_node | regex_replace('node-', '') | int -%}
@@ -97,14 +97,14 @@
     - name: Calculate eth0 IP for this node
       ansible.builtin.set_fact:
         calculated_eth0_for_node: "{{ '10.0.0.' + ((inventory_hostname | regex_replace('node-', '') | int) + 1)|string }}"
-      when: inventory_hostname != 'node-0'
+      when: inventory_hostname != 'node-1'
 
     - name: Set calculated eth0 IP on localhost
       ansible.builtin.set_fact:
         calculated_eth0_ip: "{{ calculated_eth0_for_node }}"
       delegate_to: localhost
       run_once: false
-      when: inventory_hostname != 'node-0'
+      when: inventory_hostname != 'node-1'
 
 - name: System Configuration
   import_playbook: setup-system.yml
@@ -119,13 +119,13 @@
     clone_from_sd: true
   when:
     - nvme_detected | default(true) # Default to true, playbook will check
-    - inventory_hostname != 'node-0' # Skip on control plane
+    - inventory_hostname != 'node-1' # Skip on control plane
 
 - name: Configure Gigabit Network (eth0)
   hosts: raspberry_pi
   become: true
   vars:
-    # Calculate eth0 IP based on this node's number (node-0 → 10.0.0.1, node-2 → 10.0.0.3)
+    # Calculate eth0 IP based on this node's number (node-1 → 10.0.0.1, node-3 → 10.0.0.3)
     eth0_ip_calculated: "{{ '10.0.0.' + ((inventory_hostname | regex_replace('node-', '') | int) + 1)|string }}"
     eth0_ip: "{{ eth0_ip_override | default(eth0_ip_calculated) }}"
     gigabit_interface: eth0
@@ -144,7 +144,7 @@
       changed_when: false
       failed_when: false
       ignore_errors: true
-      when: inventory_hostname != 'node-0'
+      when: inventory_hostname != 'node-1'
 
     - name: Create eth0 NetworkManager connection
       community.general.nmcli:
@@ -269,25 +269,25 @@
   become: true
   gather_facts: false
   tasks:
-    - name: Add node-0 to /etc/hosts
-      lineinfile:
-        path: /etc/hosts
-        line: "192.168.2.86 node-0.eldertree.local node-0"
-        regexp: "^192\\.168\\.2\\.86.*node-0"
-        state: present
-
     - name: Add node-1 to /etc/hosts
       lineinfile:
         path: /etc/hosts
-        line: "192.168.2.85 node-1.eldertree.local node-1"
-        regexp: "^192\\.168\\.2\\.85.*node-1"
+        line: "192.168.2.101 node-1.eldertree.local node-1"
+        regexp: "^192\\.168\\.2\\.101.*node-1"
         state: present
 
     - name: Add node-2 to /etc/hosts
       lineinfile:
         path: /etc/hosts
-        line: "192.168.2.84 node-2.eldertree.local node-2"
-        regexp: "^192\\.168\\.2\\.84.*node-2"
+        line: "192.168.2.102 node-2.eldertree.local node-2"
+        regexp: "^192\\.168\\.2\\.102.*node-2"
+        state: present
+
+    - name: Add node-3 to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.2.103 node-3.eldertree.local node-3"
+        regexp: "^192\\.168\\.2\\.103.*node-3"
         state: present
 
     - name: Add this node's own hostname to /etc/hosts (fixes sudo warnings)
@@ -299,7 +299,7 @@
       when: ansible_default_ipv4.address is defined
 
 - name: Get k3s Token from Control Plane (if not provided)
-  hosts: node-0
+  hosts: node-1
   become: true
   gather_facts: false
   tasks:
@@ -325,7 +325,7 @@
   tasks:
     - name: Set k3s token final value
       ansible.builtin.set_fact:
-        k3s_token_final: "{{ k3s_token_override | default(hostvars['node-0']['k3s_token_retrieved'] | default('')) }}"
+        k3s_token_final: "{{ k3s_token_override | default(hostvars['node-1']['k3s_token_retrieved'] | default('')) }}"
       changed_when: false
 
     - name: Fail if k3s token not available
@@ -333,21 +333,21 @@
         msg: |
           k3s_token is required. Either:
           1. Provide via -e k3s_token_override=<token>
-          2. Ensure node-0 is accessible and token can be retrieved automatically
+          2. Ensure node-1 is accessible and token can be retrieved automatically
       when: k3s_token_final == "" or k3s_token_final is not defined
 
 - name: Install k3s Worker
   import_playbook: install-k3s-worker.yml
   vars:
     k3s_token: "{{ k3s_token_final | default(hostvars['localhost']['k3s_token_final'] | default('')) }}"
-    k3s_server_url: "https://node-0.eldertree.local:6443"
-  when: inventory_hostname != 'node-0' # Only install worker on non-control-plane nodes
+    k3s_server_url: "https://node-1.eldertree.local:6443"
+  when: inventory_hostname != 'node-1' # Only install worker on non-control-plane nodes
 
 - name: Configure k3s for Gigabit Network
   import_playbook: configure-k3s-gigabit.yml
   # Note: configure-k3s-gigabit.yml handles both control plane and workers
   # For new node setup, we only want to configure workers, so we'll limit to non-control-plane nodes
-  # However, the playbook is designed to work on all nodes, so we'll let it run but it should skip node-0
+  # However, the playbook is designed to work on all nodes, so we'll let it run but it should skip node-1
 
 - name: Setup SSH Keys for Node-to-Node Communication
   import_playbook: setup-ssh-keys.yml
@@ -374,7 +374,7 @@
   tasks:
     - name: Get target node name
       ansible.builtin.set_fact:
-        target_node_name: "{{ ansible_play_batch | select('match', '^node-\\d+$') | reject('equalto', 'node-0') | first | default('unknown') }}"
+        target_node_name: "{{ ansible_play_batch | select('match', '^node-\\d+$') | reject('equalto', 'node-1') | first | default('unknown') }}"
 
     - name: Display completion summary
       debug:
@@ -402,7 +402,7 @@
           - "  3. Check node status: kubectl describe node {{ target_node_name }}.eldertree.local"
           - ""
           - "💡 To verify idempotency, rerun this playbook:"
-          - "   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-0,{{ target_node_name }}"
+          - "   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-1,{{ target_node_name }}"
 
 - name: Verify Idempotency - Rerun Setup on Target Node
   hosts: raspberry_pi
@@ -417,8 +417,8 @@
 
     - name: Skip if this is the control plane
       debug:
-        msg: "Skipping idempotency verification on control plane (node-0)"
-      when: inventory_hostname == 'node-0'
+        msg: "Skipping idempotency verification on control plane (node-1)"
+      when: inventory_hostname == 'node-1'
       changed_when: false
 
     - name: Display idempotency verification start
@@ -430,7 +430,7 @@
           - ""
       when:
         - verify_idempotency | default(false) | bool
-        - inventory_hostname != 'node-0'
+        - inventory_hostname != 'node-1'
 
     - name: Rerun complete setup (idempotency check)
       include_tasks: "{{ playbook_dir }}/setup-new-node-tasks.yml"
@@ -446,13 +446,13 @@
       failed_when: false
 
     - name: Verify DNS entries exist
-      command: getent hosts node-0.eldertree.local node-1.eldertree.local
+      command: getent hosts node-1.eldertree.local node-2.eldertree.local node-3.eldertree.local
       register: dns_check
       changed_when: false
       failed_when: false
       when:
         - verify_idempotency | default(false) | bool
-        - inventory_hostname != 'node-0'
+        - inventory_hostname != 'node-1'
 
     - name: Verify eth0 IP configuration
       ansible.builtin.setup:
@@ -463,7 +463,7 @@
       changed_when: false
       when:
         - verify_idempotency | default(false) | bool
-        - inventory_hostname != 'node-0'
+        - inventory_hostname != 'node-1'
 
     - name: Extract eth0 IP for verification
       ansible.builtin.set_fact:
@@ -485,7 +485,7 @@
       failed_when: false
       when:
         - verify_idempotency | default(false) | bool
-        - inventory_hostname != 'node-0'
+        - inventory_hostname != 'node-1'
 
     - name: Verify k3s-agent service status
       systemd:
@@ -495,7 +495,7 @@
       failed_when: false
       when:
         - verify_idempotency | default(false) | bool
-        - inventory_hostname != 'node-0'
+        - inventory_hostname != 'node-1'
 
     - name: Verify SSH keys exist
       stat:
@@ -504,7 +504,7 @@
       changed_when: false
       when:
         - verify_idempotency | default(false) | bool
-        - inventory_hostname != 'node-0'
+        - inventory_hostname != 'node-1'
 
     - name: Verify btop is installed
       command: which btop
@@ -513,7 +513,7 @@
       failed_when: false
       when:
         - verify_idempotency | default(false) | bool
-        - inventory_hostname != 'node-0'
+        - inventory_hostname != 'node-1'
 
     - name: Display idempotency verification results
       debug:
@@ -523,13 +523,13 @@
           - "Hostname: {{ hostname_check.stdout | default('N/A') }}"
           - "DNS Resolution: {{ '✅ OK' if dns_check.rc == 0 else '❌ FAILED' }}"
           - "eth0 IP: {{ current_eth0_ip_check | default('Not configured') }}"
-          - "k3s Installed: {{ '✅ Yes' if (k3s_check.rc == 0 if inventory_hostname != 'node-0' else true) else '❌ No' }}"
-          - "k3s Service: {{ '✅ ' + (k3s_agent_status.status.ActiveState if inventory_hostname != 'node-0' and k3s_agent_status.status is defined else 'Unknown') }}"
+          - "k3s Installed: {{ '✅ Yes' if (k3s_check.rc == 0 if inventory_hostname != 'node-1' else true) else '❌ No' }}"
+          - "k3s Service: {{ '✅ ' + (k3s_agent_status.status.ActiveState if inventory_hostname != 'node-1' and k3s_agent_status.status is defined else 'Unknown') }}"
           - "SSH Key: {{ '✅ Exists' if ssh_key_check.stat.exists else '❌ Missing' }}"
           - "btop Installed: {{ '✅ Yes' if btop_check.rc == 0 else '❌ No' }}"
           - ""
           - "💡 To rerun full setup for verification, use:"
-          - "   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-0,{{ inventory_hostname }} -e verify_idempotency=true"
+          - "   ansible-playbook playbooks/setup-new-node.yml --limit localhost,node-1,{{ inventory_hostname }} -e verify_idempotency=true"
       when:
         - verify_idempotency | default(false) | bool
-        - inventory_hostname != 'node-0'
+        - inventory_hostname != 'node-1'

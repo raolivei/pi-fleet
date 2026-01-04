@@ -29,6 +29,11 @@
     static_netmask: "255.255.255.0"
     static_gateway: "192.168.2.1"
     static_dns: ["192.168.2.1", "8.8.8.8"]
+    # Backup mount configuration (OPTIONAL)
+    # Set enable_backup_mount=true only if you have a USB backup drive that will be permanently connected
+    # Trade-off: ON = prepared for backup, but causes boot timeout if drive not connected
+    #           OFF = faster boot, but need to configure manually when connecting drive
+    enable_backup_mount: "{{ enable_backup_mount | default(false) | bool }}"
     backup_device: "/dev/sdb1"
     backup_mount: "/mnt/backup"
     password_hash: "{{ target_password | password_hash('sha512') }}"
@@ -392,35 +397,57 @@
         msg: "{{ bluetooth_status.stdout_lines }}"
 
     # =========================================================================
-    # Backup Mount Configuration
+    # Backup Mount Configuration (OPTIONAL)
     # =========================================================================
-    - name: Create backup mount directory
+    # NOTE: This is NOT from Longhorn. Longhorn uses /mnt/longhorn-backup (different mount)
+    # This is for general system backups to USB drive (/dev/sdb1)
+    # 
+    # Trade-off analysis:
+    # - ON (enable_backup_mount=true): Prepared for backup drive, but causes boot timeout if drive not connected
+    # - OFF (default): Faster boot, but need to configure manually when connecting backup drive
+    #
+    # Recommendation: Keep OFF by default. Enable only if you have a permanently connected backup drive.
+    # If you need backups, use Longhorn backup target or configure backup mount manually when needed.
+    - name: Create backup mount directory (if enabled)
       file:
         path: "{{ backup_mount }}"
         state: directory
         mode: "0755"
+      when: enable_backup_mount | bool
 
     - name: Check if backup device exists in fstab
       shell: grep "{{ backup_device }}" /etc/fstab || echo "not_found"
       register: fstab_check
       changed_when: false
       failed_when: false
+      when: enable_backup_mount | bool
 
-    - name: Add backup mount to fstab with nofail option (if not exists)
+    - name: Add backup mount to fstab with nofail option (if enabled and not exists)
       lineinfile:
         path: /etc/fstab
         line: "{{ backup_device }} {{ backup_mount }} ext4 defaults,nofail 0 2"
         state: present
         backup: yes
-      when: "'not_found' in fstab_check.stdout"
+      when:
+        - enable_backup_mount | bool
+        - "'not_found' in fstab_check.stdout"
 
-    - name: Update existing fstab entry to include nofail
+    - name: Update existing fstab entry to include nofail (if enabled)
       replace:
         path: /etc/fstab
         regexp: '^({{ backup_device }}[^\s]+)\s+([^\s]+)\s+(ext4)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
         replace: '\1 \2 \3 \4,nofail\5\6'
         backup: yes
-      when: "'not_found' not in fstab_check.stdout and 'nofail' not in fstab_check.stdout"
+      when:
+        - enable_backup_mount | bool
+        - "'not_found' not in fstab_check.stdout and 'nofail' not in fstab_check.stdout"
+
+    - name: Remove backup mount from fstab if disabled
+      replace:
+        path: /etc/fstab
+        regexp: '^{{ backup_device }}.*{{ backup_mount }}.*\n?'
+        replace: ''
+      when: not (enable_backup_mount | bool)
 
     # =========================================================================
     # SSH Configuration
@@ -457,7 +484,7 @@
         backup: yes
       loop:
         - {regexp: "^#?PermitRootLogin", line: "PermitRootLogin no"}
-        - {regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication yes"}
+        - {regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication no"}
         - {regexp: "^#?PubkeyAuthentication", line: "PubkeyAuthentication yes"}
         # Note: SendEnv is a CLIENT option, not server. Removed from server config.
         # To enable TERM forwarding, clients should use: SendEnv TERM in ~/.ssh/config
