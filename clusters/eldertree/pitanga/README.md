@@ -13,8 +13,9 @@ This namespace provides the foundation for Pitanga LLC's infrastructure, includi
 ## Current Status
 
 - ✅ Namespace created
+- ✅ Website deployed (pitanga-website)
 - ✅ DNS documentation for Framer site
-- ✅ Email forwarding setup (ImprovMX)
+- ✅ Email forwarding setup (Cloudflare Email Routing)
 
 ## Structure
 
@@ -22,9 +23,14 @@ This namespace provides the foundation for Pitanga LLC's infrastructure, includi
 pitanga/
 ├── namespace.yaml              # Kubernetes namespace definition
 ├── kustomization.yaml          # Kustomize resources
+├── website-deployment.yaml     # Website deployment
+├── website-service.yaml        # Website service
+├── website-ingress.yaml        # Website ingress (local + public)
+├── image-automation.yaml       # Flux image automation
 ├── README.md                   # This file
 ├── FRAMER_DNS_SETUP.md         # DNS configuration for Framer site
-└── IMPROVMX_SETUP.md           # Email forwarding setup guide
+├── CLOUDFLARE_EMAIL_SETUP.md   # Cloudflare Email Routing setup
+└── IMPROVMX_SETUP.md           # Legacy email setup (deprecated)
 ```
 
 ## Documentation
@@ -35,7 +41,27 @@ pitanga/
 
 ### Email Setup
 
-- **[IMPROVMX_SETUP.md](IMPROVMX_SETUP.md)**: Guide for setting up `contact@pitanga.cloud` email forwarding via ImprovMX
+- **[CLOUDFLARE_EMAIL_SETUP.md](CLOUDFLARE_EMAIL_SETUP.md)**: Guide for setting up email forwarding via Cloudflare Email Routing (Recommended)
+- **[IMPROVMX_SETUP.md](IMPROVMX_SETUP.md)**: Legacy guide for ImprovMX (deprecated)
+
+### Website Deployment
+
+The Pitanga website is deployed as a Next.js static site served via nginx:
+
+- **Image**: `ghcr.io/raolivei/pitanga-website:latest`
+- **Automation**: Managed via Flux Image Automation (semver: `0.1.x`)
+- **Local Access**: `https://pitanga.eldertree.local` (self-signed cert)
+- **Public Access**: `https://pitanga.cloud` and `https://www.pitanga.cloud` (Cloudflare Origin Certificate)
+- **Deployment**: Managed via FluxCD GitOps
+- **Source**: [pitanga-website repository](../../../../pitanga-website/)
+
+**Prerequisites**:
+
+- Cloudflare Origin Certificate stored as Kubernetes secret: `pitanga-cloudflare-origin-tls`
+  - See [CLOUDFLARE_ORIGIN_CERT_SETUP.md](CLOUDFLARE_ORIGIN_CERT_SETUP.md) for setup instructions
+- GHCR secret (`ghcr-secret`) configured in namespace for image pulls
+  - Managed via External Secrets Operator (syncs from Vault)
+  - Secret path in Vault: `secret/pitanga/ghcr-token`
 
 ## Quick Start
 
@@ -51,16 +77,18 @@ kubectl apply -k .
 ### 2. Configure DNS
 
 Follow the guide in [FRAMER_DNS_SETUP.md](FRAMER_DNS_SETUP.md) to:
+
 - Configure `www.pitanga.cloud` CNAME in Cloudflare
 - Configure `pitanga.cloud` apex domain
 - Set up SSL/TLS
 
 ### 3. Configure Email
 
-Follow the guide in [IMPROVMX_SETUP.md](IMPROVMX_SETUP.md) to:
-- Set up ImprovMX account
-- Configure MX records in Cloudflare
-- Forward `contact@pitanga.cloud` to Gmail
+Follow the guide in [CLOUDFLARE_EMAIL_SETUP.md](CLOUDFLARE_EMAIL_SETUP.md) to:
+
+- Enable Email Routing in Cloudflare
+- Configure forwarding to `rafa.oliveira1@gmail.com`
+- Set up custom addresses for `contact` and `raolivei`
 
 ## Future Expansion
 
@@ -89,7 +117,7 @@ This namespace follows workspace conventions:
 
 ## Notes
 
-- This namespace is currently infrastructure-only (no running pods)
+- Website is deployed and running in the cluster
 - DNS and email are managed via Cloudflare (external to cluster)
+- Local DNS records are managed by External-DNS via Pi-hole
 - Future services can be added as needed
-

@@ -16,11 +16,13 @@ ImprovMX provides email forwarding without requiring a mail server. Emails sent 
 ## Step 1: Create ImprovMX Account
 
 1. **Sign Up for ImprovMX**
+
    - Go to https://improvmx.com
    - Click **Sign Up** (free account)
    - Create account with your email
 
 2. **Add Domain**
+
    - After logging in, click **Add Domain**
    - Enter `pitanga.cloud`
    - Click **Add**
@@ -34,13 +36,16 @@ ImprovMX provides email forwarding without requiring a mail server. Emails sent 
 ### 2.1 Add Domain Verification TXT Record
 
 1. **Log in to Cloudflare Dashboard**
+
    - Go to https://dash.cloudflare.com
    - Select `pitanga.cloud` domain
 
 2. **Navigate to DNS Records**
+
    - Go to **DNS** → **Records**
 
 3. **Add Verification TXT Record**
+
    - Click **Add record**
    - **Type**: TXT
    - **Name**: `@` (or `pitanga.cloud`)
@@ -58,14 +63,17 @@ ImprovMX provides email forwarding without requiring a mail server. Emails sent 
 ### 2.2 Add MX Records for Email Forwarding
 
 1. **Get MX Records from ImprovMX**
+
    - In ImprovMX dashboard, go to your domain settings
    - Navigate to **MX Records** section
    - ImprovMX will provide MX records (typically something like `mx1.improvmx.com` with priority 10)
 
 2. **Add MX Records in Cloudflare**
+
    - Go to Cloudflare Dashboard → **DNS** → **Records**
 
 3. **Add Primary MX Record**
+
    - Click **Add record**
    - **Type**: MX
    - **Name**: `@` (or `pitanga.cloud`)
@@ -82,10 +90,12 @@ ImprovMX provides email forwarding without requiring a mail server. Emails sent 
 ## Step 3: Configure Email Forwarding in ImprovMX
 
 1. **Create Email Alias**
+
    - In ImprovMX dashboard, go to **Aliases** or **Email Forwarding**
    - Click **Add Alias** or **Create Forward**
 
 2. **Configure Forward**
+
    - **Email**: `contact` (this creates `contact@pitanga.cloud`)
    - **Forward to**: Your Gmail address (e.g., `yourname@gmail.com`)
    - Click **Save** or **Create**
@@ -101,20 +111,24 @@ ImprovMX provides email forwarding without requiring a mail server. Emails sent 
 To send emails FROM `contact@pitanga.cloud` (not just receive):
 
 1. **Open Gmail Settings**
+
    - Go to Gmail → **Settings** → **See all settings**
    - Click **Accounts and Import** tab
 
 2. **Add Send Mail As**
+
    - Scroll to **Send mail as** section
    - Click **Add another email address**
 
 3. **Configure SMTP**
+
    - **Name**: Your name
    - **Email address**: `contact@pitanga.cloud`
    - Check **Treat as an alias**
    - Click **Next Step**
 
 4. **SMTP Settings**
+
    - **SMTP Server**: `smtp.gmail.com`
    - **Port**: `587`
    - **Username**: Your Gmail address
@@ -132,6 +146,7 @@ To send emails FROM `contact@pitanga.cloud` (not just receive):
 Gmail requires an app password for SMTP (not your regular password):
 
 1. **Enable 2-Step Verification** (if not already enabled)
+
    - Go to https://myaccount.google.com/security
    - Enable 2-Step Verification
 
@@ -148,6 +163,7 @@ Gmail requires an app password for SMTP (not your regular password):
 ### Test Email Reception
 
 1. **Send Test Email**
+
    - Send an email from any email account to `contact@pitanga.cloud`
    - Check your Gmail inbox
    - Email should arrive within a few minutes
@@ -170,14 +186,16 @@ Gmail requires an app password for SMTP (not your regular password):
 ### MX Records Not Working
 
 1. **Verify MX Records**
+
    ```bash
    # Check MX records
    dig MX pitanga.cloud
-   
+
    # Should show ImprovMX MX records
    ```
 
 2. **Check DNS Propagation**
+
    - Use online tools like https://mxtoolbox.com
    - Enter `pitanga.cloud` and check MX records
 
@@ -189,11 +207,13 @@ Gmail requires an app password for SMTP (not your regular password):
 ### Emails Not Arriving
 
 1. **Check ImprovMX Dashboard**
+
    - Go to **Logs** or **Activity**
    - Look for incoming emails
    - Check for any error messages
 
 2. **Verify Forwarding Configuration**
+
    - Ensure alias `contact` is created
    - Verify forwarding address is correct
    - Check for typos in email address
@@ -206,10 +226,12 @@ Gmail requires an app password for SMTP (not your regular password):
 ### Gmail SMTP Not Working
 
 1. **Verify App Password**
+
    - Ensure you're using app password, not regular password
    - Regenerate if needed
 
 2. **Check SMTP Settings**
+
    - Server: `smtp.gmail.com`
    - Port: `587`
    - Security: TLS
@@ -222,12 +244,14 @@ Gmail requires an app password for SMTP (not your regular password):
 ### Domain Verification Failed
 
 1. **Check TXT Record**
+
    ```bash
    # Verify TXT record exists
    dig TXT pitanga.cloud
    ```
 
 2. **Wait for Propagation**
+
    - DNS changes can take time
    - Wait 5-10 minutes and try again
 

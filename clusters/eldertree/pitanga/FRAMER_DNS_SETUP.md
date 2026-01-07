@@ -12,20 +12,24 @@ This guide explains how to configure DNS records in Cloudflare to connect your F
 ## Overview
 
 Framer requires CNAME records to connect your custom domain. We'll configure:
+
 - `www.pitanga.cloud` → CNAME to Framer
 - `pitanga.cloud` (apex domain) → CNAME flattening or A record
 
 ## Step 1: Get Framer Domain Information
 
 1. **Log in to Framer**
+
    - Go to https://framer.com
    - Open your site project
 
 2. **Navigate to Site Settings**
+
    - Click on your site name
    - Go to **Settings** → **Custom Domain**
 
 3. **Add Custom Domain**
+
    - Enter `www.pitanga.cloud`
    - Framer will provide you with a CNAME target (e.g., `www.pitanga.cloud.cdn.framer.com` or similar)
    - Note down this CNAME target value
@@ -39,10 +43,12 @@ Framer requires CNAME records to connect your custom domain. We'll configure:
 ### Option A: www.pitanga.cloud (CNAME)
 
 1. **Log in to Cloudflare Dashboard**
+
    - Go to https://dash.cloudflare.com
    - Select `pitanga.cloud` domain
 
 2. **Navigate to DNS Records**
+
    - Go to **DNS** → **Records**
 
 3. **Add CNAME Record for www**
@@ -63,6 +69,7 @@ For the apex domain (`pitanga.cloud`), you have two options:
 Cloudflare automatically flattens CNAME records at the apex. This is the easiest method:
 
 1. **Add CNAME Record**
+
    - **Type**: CNAME
    - **Name**: `@` (or `pitanga.cloud`)
    - **Target**: (The CNAME target from Framer)
@@ -87,9 +94,11 @@ If Framer provides an IP address for the apex domain:
 ## Step 3: Configure SSL/TLS in Cloudflare
 
 1. **Navigate to SSL/TLS Settings**
+
    - Go to **SSL/TLS** → **Overview**
 
 2. **Set Encryption Mode**
+
    - Select **Full (strict)** or **Full**
    - This ensures HTTPS is enabled end-to-end
 
@@ -115,6 +124,7 @@ dig pitanga.cloud
 ### Verify in Framer
 
 1. **Check Domain Status in Framer**
+
    - Go to **Settings** → **Custom Domain**
    - Verify domain shows as "Connected" or "Active"
    - Wait a few minutes for DNS propagation (can take up to 48 hours, usually much faster)
@@ -142,6 +152,7 @@ If you want to redirect `pitanga.cloud` to `www.pitanga.cloud`:
 ### DNS Not Resolving
 
 1. **Check DNS Records**
+
    ```bash
    # Verify records exist
    dig www.pitanga.cloud
@@ -149,6 +160,7 @@ If you want to redirect `pitanga.cloud` to `www.pitanga.cloud`:
    ```
 
 2. **Check Cloudflare Status**
+
    - Ensure domain is active in Cloudflare
    - Verify nameservers are correctly configured at registrar
 
@@ -159,10 +171,12 @@ If you want to redirect `pitanga.cloud` to `www.pitanga.cloud`:
 ### SSL Certificate Issues
 
 1. **Check SSL/TLS Mode**
+
    - Must be "Full" or "Full (strict)"
    - "Flexible" won't work properly with Framer
 
 2. **Verify Proxy Status**
+
    - DNS records should have orange cloud (proxied)
    - Gray cloud = DNS only (no SSL from Cloudflare)
 
@@ -173,10 +187,12 @@ If you want to redirect `pitanga.cloud` to `www.pitanga.cloud`:
 ### Website Not Loading
 
 1. **Check Framer Site Status**
+
    - Ensure site is published in Framer
    - Verify custom domain is enabled in Framer settings
 
 2. **Check Cloudflare Settings**
+
    - Review Page Rules for any conflicting rules
    - Check Firewall rules for any blocks
 

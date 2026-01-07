@@ -41,6 +41,7 @@ spec:
       - service
     domainFilters:
       - eldertree.xyz
+      - pitanga.cloud
     policy: sync
     registry: txt
     txtOwnerId: k8s-eldertree-cloudflare
