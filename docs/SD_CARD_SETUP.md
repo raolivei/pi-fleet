@@ -168,3 +168,4 @@ The SD card OS should be:
 - Check SSH access: `ssh raolivei@<IP>`
 - Review playbook output for errors
 
+

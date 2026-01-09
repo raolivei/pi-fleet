@@ -84,3 +84,4 @@ sed -i 's|\(/dev/mmcblk.*defaults\)|\1,nofail|g' /mnt/etc/fstab
 
 Then `exit` to continue boot.
 
+

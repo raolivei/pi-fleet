@@ -1,0 +1,21 @@
+---
+# Temporary inventory for migration - uses OLD IPs to connect
+# This inventory will be used to migrate nodes from old names/IPs to new ones
+all:
+  children:
+    raspberry_pi:
+      vars:
+        ansible_user: raolivei
+        ansible_ssh_private_key_file: ~/.ssh/id_ed25519_raolivei
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        ansible_python_interpreter: /usr/bin/python3
+        poe_hat_enabled: true
+      hosts:
+        # OLD names with OLD IPs - these are what the nodes currently have
+        node-0:
+          ansible_host: 192.168.2.86
+        node-1:
+          ansible_host: 192.168.2.85
+        node-2:
+          ansible_host: 192.168.2.84
+

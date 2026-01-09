@@ -161,6 +161,20 @@ resource "cloudflare_record" "swimto_eldertree_xyz_tunnel" {
   comment         = "swimto.eldertree.xyz - managed by Terraform via Cloudflare Tunnel"
 }
 
+# DNS CNAME record for blog.eldertree.xyz pointing to GitHub Pages
+# This creates the DNS record for the pi-fleet-blog GitHub Pages site
+resource "cloudflare_record" "blog_eldertree_xyz_github_pages" {
+  count           = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "blog"
+  content         = "raolivei.github.io"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy (orange cloud) for automatic HTTPS
+  allow_overwrite = true
+  comment         = "blog.eldertree.xyz - GitHub Pages for pi-fleet-blog - managed by Terraform"
+}
+
 # Output zone ID for External-DNS integration
 output "cloudflare_zone_id" {
   description = "Cloudflare Zone ID for eldertree.xyz (for External-DNS configuration)"

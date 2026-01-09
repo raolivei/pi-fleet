@@ -53,3 +53,8 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-
 3.  Prefer **SSH keys** over passwords whenever possible.
 4.  Change default passwords immediately after a fresh install.
 
+
+
+
+
+

@@ -42,3 +42,10 @@ echo "   To permanently fix this, disable ServiceLB globally in K3s:"
 echo "   1. Run: ansible-playbook ansible/playbooks/disable-k3s-servicelb.yml"
 echo "   2. Or manually add '--disable servicelb' to K3s service files on all nodes"
 
+
+
+
+
+
+
+

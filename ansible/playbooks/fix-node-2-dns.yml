@@ -3,7 +3,7 @@
   hosts: node-2
   become: true
   gather_facts: false
-  
+
   tasks:
     - name: Add node-0 to /etc/hosts
       lineinfile:

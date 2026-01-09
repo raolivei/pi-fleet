@@ -105,3 +105,8 @@ Once fixes are applied:
 4. **Verify DNS resolution works automatically**
 5. **Test HTTP access to services**
 
+
+
+
+
+

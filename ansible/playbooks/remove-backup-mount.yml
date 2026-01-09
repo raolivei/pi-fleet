@@ -57,3 +57,4 @@
         msg: "Backup mount not found in fstab - nothing to remove"
       when: "'not_found' in backup_mount_check.stdout"
 
+

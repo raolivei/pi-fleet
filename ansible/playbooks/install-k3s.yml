@@ -9,6 +9,8 @@
     k3s_hostname: "{{ k3s_hostname_override | default(inventory_hostname + '.eldertree.local') }}" # Hostname for TLS SAN
     kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig (eldertree is cluster name)
     k3s_install_k9s: true # Install k9s CLI tool
+    k3s_role: "{{ k3s_role_override | default('worker') }}" # 'control-plane' or 'worker'
+    k3s_ha_control_plane: "{{ k3s_ha_control_plane_override | default('node-1.eldertree.local') }}" # Existing control plane for HA join
 
   tasks:
     # =========================================================================
@@ -212,9 +214,23 @@
       when: not (k3s_already_installed | default(false))
 
     # =========================================================================
-    # Install k3s
+    # Determine if this is first control plane or additional
     # =========================================================================
-    - name: Install k3s
+    - name: Check if this is first control plane node
+      set_fact:
+        is_first_control_plane: "{{ inventory_hostname == 'node-1' and k3s_role == 'control-plane' }}"
+      changed_when: false
+
+    - name: Get existing control plane endpoint for HA join
+      set_fact:
+        ha_control_plane_endpoint: "https://{{ k3s_ha_control_plane }}:6443"
+      changed_when: false
+      when: k3s_role == 'control-plane' and not is_first_control_plane
+
+    # =========================================================================
+    # Install k3s - Control Plane
+    # =========================================================================
+    - name: Install k3s (first control plane with cluster-init)
       shell: |
         set -e
         export INSTALL_K3S_VERSION="{{ k3s_version }}"
@@ -227,7 +243,45 @@
       args:
         creates: /usr/local/bin/k3s
       register: k3s_install
-      when: not (k3s_already_installed | default(false))
+      when: 
+        - not (k3s_already_installed | default(false))
+        - k3s_role == 'control-plane'
+        - is_first_control_plane
+
+    - name: Install k3s (additional control plane - HA join)
+      shell: |
+        set -e
+        export INSTALL_K3S_VERSION="{{ k3s_version }}"
+        export K3S_TOKEN="{{ k3s_token }}"
+        curl -sfL https://get.k3s.io | sh -s - server \
+          --server {{ ha_control_plane_endpoint }} \
+          --write-kubeconfig-mode=644 \
+          --tls-san={{ k3s_hostname }} \
+          --disable servicelb
+      args:
+        creates: /usr/local/bin/k3s
+      register: k3s_install
+      when: 
+        - not (k3s_already_installed | default(false))
+        - k3s_role == 'control-plane'
+        - not is_first_control_plane
+
+    # =========================================================================
+    # Install k3s - Worker Node
+    # =========================================================================
+    - name: Install k3s (worker node)
+      shell: |
+        set -e
+        export INSTALL_K3S_VERSION="{{ k3s_version }}"
+        export K3S_TOKEN="{{ k3s_token }}"
+        export K3S_URL="https://{{ k3s_ha_control_plane }}:6443"
+        curl -sfL https://get.k3s.io | sh -s - agent
+      args:
+        creates: /usr/local/bin/k3s
+      register: k3s_install
+      when: 
+        - not (k3s_already_installed | default(false))
+        - k3s_role == 'worker'
 
     # =========================================================================
     # Ensure k3s service is running
@@ -277,30 +331,45 @@
       failed_when: false
       when: k3s_check.rc == 0
 
-    - name: Wait for k3s to be ready
+    - name: Wait for k3s to be ready (control plane)
       command: k3s kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml get nodes
       register: k3s_ready
       until: k3s_ready.rc == 0
       retries: 60
       delay: 5
       failed_when: false
-      when: k3s_check.rc == 0
+      when: k3s_check.rc == 0 and k3s_role == 'control-plane'
 
-    - name: Fail if k3s is not ready
+    - name: Wait for k3s-agent to be ready (worker)
+      command: systemctl is-active k3s-agent
+      register: k3s_agent_ready
+      until: k3s_agent_ready.rc == 0
+      retries: 60
+      delay: 5
+      failed_when: false
+      when: k3s_check.rc == 0 and k3s_role == 'worker'
+
+    - name: Fail if k3s is not ready (control plane)
       fail:
         msg: "k3s service is not responding after 5 minutes. Check logs with: sudo journalctl -u k3s -n 50. Service status: {{ k3s_service_wait.status.ActiveState | default('unknown') }}"
-      when: k3s_check.rc == 0 and k3s_ready.rc != 0
+      when: k3s_check.rc == 0 and k3s_role == 'control-plane' and k3s_ready.rc != 0
 
-    - name: Display k3s status
+    - name: Fail if k3s-agent is not ready (worker)
+      fail:
+        msg: "k3s-agent service is not responding after 5 minutes. Check logs with: sudo journalctl -u k3s-agent -n 50"
+      when: k3s_check.rc == 0 and k3s_role == 'worker' and k3s_agent_ready.rc != 0
+
+    - name: Display k3s status (control plane)
       command: k3s kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml get nodes
       register: k3s_nodes
       changed_when: false
       failed_when: false
+      when: k3s_role == 'control-plane'
 
-    - name: Show k3s nodes
+    - name: Show k3s nodes (control plane)
       debug:
         var: k3s_nodes.stdout_lines
-      when: k3s_nodes.rc == 0
+      when: k3s_nodes.rc == 0 and k3s_role == 'control-plane'
 
     # =========================================================================
     # Install k9s (optional)
@@ -507,14 +576,15 @@
       register: local_token_check
       changed_when: false
 
-    - name: Check if remote node token exists
+    - name: Check if remote node token exists (control plane)
       stat:
         path: /var/lib/rancher/k3s/server/node-token
       register: remote_token_check
       changed_when: false
       failed_when: false
+      when: k3s_role == 'control-plane'
 
-    - name: Download node token
+    - name: Download node token (control plane)
       delegate_to: localhost
       connection: local
       become: false
@@ -524,7 +594,10 @@
         flat: true
       register: token_fetch
       failed_when: false
-      when: not local_token_check.stat.exists and remote_token_check.stat.exists | default(false)
+      when: 
+        - not local_token_check.stat.exists
+        - remote_token_check.stat.exists | default(false)
+        - k3s_role == 'control-plane'
 
     - name: Set node token permissions
       delegate_to: localhost
@@ -538,15 +611,30 @@
     # =========================================================================
     # Completion message
     # =========================================================================
-    - name: Display completion message
+    - name: Display completion message (control plane)
       debug:
         msg:
-          - "{{ '✅ k3s installation complete!' if not (k3s_already_installed | default(false)) else '✅ k3s is already installed and running' }}"
+          - "{{ '✅ k3s control plane installation complete!' if not (k3s_already_installed | default(false)) else '✅ k3s control plane is already installed and running' }}"
           - ""
+          - "Role: {{ k3s_role }}"
+          - "{{ 'HA Join: ' + ha_control_plane_endpoint if k3s_role == 'control-plane' and not is_first_control_plane else 'Cluster Init: First control plane' if k3s_role == 'control-plane' and is_first_control_plane else '' }}"
           - "Cluster endpoint: https://{{ k3s_hostname }}:6443"
           - "Kubeconfig saved to: {{ kubeconfig_path }}"
-          - "Node token saved to: {{ playbook_dir }}/../k3s-node-token"
+          - "{{ 'Node token saved to: ' + playbook_dir + '/../k3s-node-token' if k3s_role == 'control-plane' else '' }}"
           - ""
           - "Next steps:"
           - "  export KUBECONFIG={{ kubeconfig_path }}"
           - "  kubectl get nodes"
+      when: k3s_role == 'control-plane'
+
+    - name: Display completion message (worker)
+      debug:
+        msg:
+          - "{{ '✅ k3s worker installation complete!' if not (k3s_already_installed | default(false)) else '✅ k3s worker is already installed and running' }}"
+          - ""
+          - "Role: {{ k3s_role }}"
+          - "Connected to: https://{{ k3s_ha_control_plane }}:6443"
+          - ""
+          - "Next steps:"
+          - "  kubectl get nodes (from control plane)"
+      when: k3s_role == 'worker'

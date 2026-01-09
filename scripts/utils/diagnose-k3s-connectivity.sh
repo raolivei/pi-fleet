@@ -151,3 +151,5 @@ echo "  3. If you need to fix TLS SAN configuration:"
 echo "     cd pi-fleet/scripts/utils"
 echo "     ./fix-k3s-external-access.sh $NODE_IP $NODE_NAME"
 
+
+

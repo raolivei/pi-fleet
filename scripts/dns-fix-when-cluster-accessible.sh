@@ -60,3 +60,10 @@ echo "  - Test: nslookup grafana.eldertree.local"
 echo "  - Test: curl http://grafana.eldertree.local/login"
 echo "  - Verify no /etc/hosts entries needed"
 
+
+
+
+
+
+
+

@@ -182,3 +182,4 @@ After implementation, verify:
 - Only cluster traffic (pods and services) goes through the encrypted tunnel
 - DNS should be configured to resolve `*.cluster.local` domains through CoreDNS
 - Existing clients will need to update their configurations after these changes
+

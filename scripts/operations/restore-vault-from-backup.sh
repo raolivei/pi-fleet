@@ -163,3 +163,10 @@ echo "   2. Update External Secrets Operator token if needed"
 echo ""
 
 
+
+
+
+
+
+
+

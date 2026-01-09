@@ -23,6 +23,7 @@
 ### Boot Configuration
 
 Both nodes are configured to boot from NVMe with:
+
 - **cmdline.txt**: `root=/dev/nvme0n1p2 rootfstype=ext4 rootwait rootdelay=5`
 - **fstab**: Uses UUIDs for reliability:
   - Boot: `UUID=F587-071F` (node-0) / `UUID=F587-071F` (node-1)
@@ -32,6 +33,7 @@ Both nodes are configured to boot from NVMe with:
 ### PoE+ Configuration
 
 PoE+ HAT is configured on both nodes with fan temperature thresholds:
+
 ```
 dtparam=poe_fan_temp0=50000
 dtparam=poe_fan_temp1=60000
@@ -85,6 +87,7 @@ ansible all -m ping
 ## Issues Fixed During Migration
 
 1. **Emergency Mode on Boot**: Fixed by:
+
    - Updating fstab to use UUIDs instead of device names
    - Adding `rootdelay=5` to cmdline.txt
    - Creating `/boot/firmware` directory in root filesystem
@@ -115,5 +118,9 @@ SD cards remain as backup boot options. If NVMe boot fails, the system will fall
 - [Migration Quick Start](MIGRATION_NVME_HAT_QUICK_START.md)
 - [Fresh Install Guide](FRESH_INSTALL_MIGRATION.md)
 - [Secure Erase Guide](SECURE_ERASE_OLD_DRIVES.md)
+
+
+
+
 
 

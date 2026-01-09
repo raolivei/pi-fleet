@@ -84,3 +84,4 @@ sudo sed -i '/\/dev\/sdb1.*\/mnt\/backup/d' /etc/fstab
 - Make optional features truly optional (default OFF)
 - Document trade-offs clearly
 
+

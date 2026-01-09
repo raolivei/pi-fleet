@@ -1,0 +1,284 @@
+---
+- name: Convert worker node to control plane node for HA
+  hosts: raspberry_pi
+  become: true
+  vars:
+    control_plane_node: "node-1.eldertree.local"  # Existing control plane to join
+    control_plane_ip: "192.168.2.101"
+    k3s_hostname: "{{ inventory_hostname }}.eldertree.local"
+    kubeconfig_path: "~/.kube/config-eldertree"
+
+  tasks:
+    # =========================================================================
+    # Verify this is a worker node
+    # =========================================================================
+    - name: Check if k3s-agent service exists (worker)
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service
+      changed_when: false
+
+    - name: Check if k3s service exists (control plane)
+      stat:
+        path: /etc/systemd/system/k3s.service
+      register: k3s_service
+      changed_when: false
+
+    - name: Fail if already a control plane
+      fail:
+        msg: "Node {{ inventory_hostname }} is already a control plane node"
+      when: k3s_service.stat.exists | default(false)
+
+    - name: Fail if not a worker
+      fail:
+        msg: "Node {{ inventory_hostname }} is not a worker node (k3s-agent not found)"
+      when: not (k3s_agent_service.stat.exists | default(false))
+
+    # =========================================================================
+    # Get k3s token and version from existing control plane
+    # =========================================================================
+    - name: Get k3s token from control plane
+      delegate_to: "{{ control_plane_ip }}"
+      become: true
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_content
+      when: inventory_hostname != 'node-1'
+
+    - name: Get k3s version from control plane
+      delegate_to: "{{ control_plane_ip }}"
+      become: true
+      command: k3s --version
+      register: k3s_version_output
+      changed_when: false
+      when: inventory_hostname != 'node-1'
+
+    - name: Extract k3s version
+      set_fact:
+        k3s_version: "{{ k3s_version_output.stdout_lines[0] | regex_search('v[0-9]+\\.[0-9]+\\.[0-9]+\\+k3s[0-9]+') | first }}"
+      when: inventory_hostname != 'node-1' and k3s_version_output.stdout_lines is defined
+
+    # =========================================================================
+    # Get configuration from existing control plane to match
+    # =========================================================================
+    - name: Get k3s service file from control plane
+      delegate_to: "{{ control_plane_ip }}"
+      become: true
+      slurp:
+        src: /etc/systemd/system/k3s.service
+      register: control_plane_service_file
+      when: inventory_hostname != 'node-1'
+
+    - name: Extract k3s server flags from control plane
+      set_fact:
+        control_plane_flags: "{{ control_plane_service_file.content | b64decode | regex_findall('--[a-z-]+') | list }}"
+      when: inventory_hostname != 'node-1' and control_plane_service_file.content is defined
+
+    - name: Check if disable-network-policy is set
+      set_fact:
+        has_disable_network_policy: "{{ '--disable-network-policy' in (control_plane_flags | default([])) }}"
+      when: inventory_hostname != 'node-1'
+
+    # =========================================================================
+    # Drain node (from control plane)
+    # =========================================================================
+    - name: Drain node before conversion
+      delegate_to: localhost
+      connection: local
+      become: false
+      command: >
+        kubectl drain {{ k3s_hostname }}
+        --ignore-daemonsets
+        --delete-emptydir-data
+        --force
+        --timeout=300s
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
+      register: drain_result
+      failed_when: false
+      changed_when: drain_result.rc == 0
+      when: inventory_hostname != 'node-1'
+
+    # =========================================================================
+    # Stop and remove worker components
+    # =========================================================================
+    - name: Stop k3s-agent service
+      systemd:
+        name: k3s-agent
+        state: stopped
+      when: inventory_hostname != 'node-1'
+
+    - name: Disable k3s-agent service
+      systemd:
+        name: k3s-agent
+        enabled: false
+      when: inventory_hostname != 'node-1'
+
+    - name: Remove k3s-agent service file
+      file:
+        path: /etc/systemd/system/k3s-agent.service
+        state: absent
+      when: inventory_hostname != 'node-1'
+
+    - name: Clean up k3s-agent state
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rancher/k3s/agent
+        - /var/lib/rancher/k3s/agent-tls
+        - /etc/rancher/node/password
+        - /etc/rancher/node/node-name
+      when: inventory_hostname != 'node-1'
+
+    # =========================================================================
+    # Remove node from cluster (from control plane)
+    # =========================================================================
+    - name: Remove node from cluster
+      delegate_to: localhost
+      connection: local
+      become: false
+      command: kubectl delete node {{ k3s_hostname }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
+      register: delete_node_result
+      failed_when: false
+      changed_when: delete_node_result.rc == 0
+      when: inventory_hostname != 'node-1'
+
+    - name: Wait for node removal
+      pause:
+        seconds: 5
+      when: inventory_hostname != 'node-1'
+
+    # =========================================================================
+    # Install k3s as control plane
+    # =========================================================================
+    - name: Get gigabit IP for this node
+      set_fact:
+        node_gigabit_ip: >-
+          {%- if inventory_hostname == 'node-1' -%}
+            10.0.0.1
+          {%- elif inventory_hostname == 'node-2' -%}
+            10.0.0.2
+          {%- elif inventory_hostname == 'node-3' -%}
+            10.0.0.3
+          {%- else -%}
+            10.0.0.1
+          {%- endif -%}
+      changed_when: false
+
+    - name: Build k3s server command with matching configuration
+      set_fact:
+        k3s_server_flags: >-
+          --server https://{{ control_plane_node }}:6443
+          --write-kubeconfig-mode=644
+          --tls-san={{ k3s_hostname }}
+          --node-ip={{ node_gigabit_ip }}
+          --advertise-address={{ node_gigabit_ip }}
+          --flannel-iface=eth0
+          --disable servicelb
+          {%- if has_disable_network_policy | default(false) %}
+          --disable-network-policy
+          {%- endif %}
+      when: inventory_hostname != 'node-1'
+
+    - name: Install k3s as control plane (HA join)
+      shell: |
+        set -e
+        export INSTALL_K3S_VERSION="{{ k3s_version }}"
+        export K3S_TOKEN="{{ k3s_token_content.content | b64decode | trim }}"
+        curl -sfL https://get.k3s.io | sh -s - server {{ k3s_server_flags }}
+      args:
+        creates: /usr/local/bin/k3s
+      register: k3s_install
+      when: inventory_hostname != 'node-1'
+
+    # =========================================================================
+    # Ensure k3s service is running
+    # =========================================================================
+    - name: Ensure k3s service is started
+      systemd:
+        name: k3s
+        state: started
+        enabled: true
+      when: inventory_hostname != 'node-1'
+
+    - name: Wait for k3s service to be active
+      systemd:
+        name: k3s
+      register: k3s_service_wait
+      until: k3s_service_wait.status.ActiveState == 'active'
+      retries: 30
+      delay: 5
+      failed_when: false
+      when: inventory_hostname != 'node-1'
+
+    - name: Wait for k3s to be ready
+      command: k3s kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml get nodes
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 60
+      delay: 5
+      failed_when: false
+      when: inventory_hostname != 'node-1'
+
+    - name: Fail if k3s is not ready
+      fail:
+        msg: "k3s control plane service is not responding after 5 minutes. Check logs with: sudo journalctl -u k3s -n 50"
+      when: inventory_hostname != 'node-1' and k3s_ready.rc != 0
+
+    # =========================================================================
+    # Verify node joined as control plane
+    # =========================================================================
+    - name: Wait for node to appear in cluster
+      delegate_to: localhost
+      connection: local
+      become: false
+      command: kubectl get node {{ k3s_hostname }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
+      register: node_check
+      until: node_check.rc == 0
+      retries: 30
+      delay: 5
+      failed_when: false
+      when: inventory_hostname != 'node-1'
+
+    - name: Verify node is control plane
+      delegate_to: localhost
+      connection: local
+      become: false
+      command: kubectl get node {{ k3s_hostname }} -o jsonpath='{.metadata.labels.node-role\.kubernetes\.io/control-plane}'
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
+      register: control_plane_check
+      changed_when: false
+      when: inventory_hostname != 'node-1'
+
+    - name: Verify etcd membership
+      delegate_to: localhost
+      connection: local
+      become: false
+      command: >
+        kubectl get node {{ k3s_hostname }} -o jsonpath='{.status.conditions[?(@.type=="EtcdIsVoter")].status}'
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path | expanduser }}"
+      register: etcd_check
+      changed_when: false
+      when: inventory_hostname != 'node-1'
+
+    # =========================================================================
+    # Display completion message
+    # =========================================================================
+    - name: Display conversion status
+      debug:
+        msg:
+          - "✅ Node {{ inventory_hostname }} converted to control plane"
+          - "Control Plane: {{ control_plane_check.stdout | default('unknown') }}"
+          - "etcd Voter: {{ etcd_check.stdout | default('unknown') }}"
+          - ""
+          - "Verify with: kubectl get nodes"
+      when: inventory_hostname != 'node-1'
+
+

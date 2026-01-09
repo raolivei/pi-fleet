@@ -50,7 +50,7 @@ identify_node() {
 if [[ -z "$IP" ]]; then
     echo -e "${RED}Error: IP address required${NC}"
     echo "Usage: $0 <IP_ADDRESS>"
-    echo "Example: $0 192.168.2.86"
+    echo "Example: $0 192.168.2.101"
     echo ""
     echo "Available nodes:"
     echo "  - node-1: 192.168.2.101 or 10.0.0.1"

@@ -13,38 +13,44 @@
 ## Current DNS Architecture
 
 ### Cluster Services (NOT affected by Pi-hole)
+
 ```
 Pod → CoreDNS (10.43.0.10) → Router DNS (192.168.2.1) → Upstream DNS
 ```
+
 - **Latency**: ~0ms (cached) to ~90ms (uncached)
 - **Status**: ✅ Optimal path, no Pi-hole in chain
 
 ### Network Clients (Affected by Pi-hole)
+
 ```
 Client → Pi-hole (192.168.2.201) → Upstream DNS (8.8.8.8, 1.1.1.1)
 ```
+
 - **Latency**: ~190ms
 - **Status**: ⚠️ 100ms slower than direct DNS
 
 ## Latency Test Results
 
-| DNS Server | Latency | Notes |
-|------------|---------|-------|
-| CoreDNS (10.43.0.10) | ~0ms | Cached responses, very fast |
-| Pi-hole (192.168.2.201) | ~190ms | **Bottleneck** - 100ms overhead |
-| Direct (8.8.8.8) | ~90ms | Baseline for comparison |
+| DNS Server              | Latency | Notes                           |
+| ----------------------- | ------- | ------------------------------- |
+| CoreDNS (10.43.0.10)    | ~0ms    | Cached responses, very fast     |
+| Pi-hole (192.168.2.201) | ~190ms  | **Bottleneck** - 100ms overhead |
+| Direct (8.8.8.8)        | ~90ms   | Baseline for comparison         |
 
 ## Root Cause Analysis
 
 ### Why Pi-hole is Slow
 
 1. **Processing Overhead** (~50-70ms)
+
    - Blocklist checks against ~1M+ domains
    - Query logging to database
    - dnsmasq processing
    - BIND backend for RFC2136 (additional layer)
 
 2. **Network Path** (~20-30ms)
+
    - LoadBalancer IP (192.168.2.201) adds network hop
    - MetalLB routing overhead
    - Pod network namespace
@@ -64,11 +70,13 @@ Client → Pi-hole (192.168.2.201) → Upstream DNS (8.8.8.8, 1.1.1.1)
 ## Current Configuration
 
 ### CoreDNS ConfigMap
+
 ```yaml
-forward . /etc/resolv.conf  # Points to router (192.168.2.1)
+forward . /etc/resolv.conf # Points to router (192.168.2.1)
 ```
 
 ### Pi-hole Configuration
+
 - **Upstream DNS**: 8.8.8.8, 1.1.1.1, 8.8.4.4
 - **LoadBalancer IP**: 192.168.2.201
 - **Resources**: 100m-500m CPU, 256Mi-512Mi memory
@@ -87,36 +95,41 @@ forward . /etc/resolv.conf  # Points to router (192.168.2.1)
 If you want to reduce Pi-hole latency:
 
 #### A. Increase DNS Cache Size
+
 ```yaml
 # In pi-hole ConfigMap, add to dnsmasq config:
-cache-size=10000  # Default is 1000
+cache-size=10000 # Default is 1000
 ```
 
 #### B. Reduce Query Logging
+
 - Disable query logging for non-blocked queries
 - Reduce log retention period
 - Use conditional logging (only log blocked queries)
 
 #### C. Optimize Blocklist Processing
+
 - Use fewer, more efficient blocklists
 - Enable aggressive caching
 - Consider using Pi-hole's built-in cache more aggressively
 
 #### D. Increase Resources (if needed)
+
 ```yaml
 resources:
   pihole:
     requests:
-      cpu: 200m      # Increase from 100m
-      memory: 512Mi  # Increase from 256Mi
+      cpu: 200m # Increase from 100m
+      memory: 512Mi # Increase from 256Mi
     limits:
-      cpu: 1000m     # Increase from 500m
-      memory: 1Gi    # Increase from 512Mi
+      cpu: 1000m # Increase from 500m
+      memory: 1Gi # Increase from 512Mi
 ```
 
 ### 3. Alternative: Bypass Pi-hole for Performance-Critical Clients
 
 Configure specific devices to use direct DNS (8.8.8.8, 1.1.1.1) instead of Pi-hole:
+
 - Servers/workstations that need low-latency DNS
 - Devices that don't need ad-blocking
 - Performance-critical applications
@@ -124,6 +137,7 @@ Configure specific devices to use direct DNS (8.8.8.8, 1.1.1.1) instead of Pi-ho
 ### 4. Monitor Pi-hole Performance
 
 Set up monitoring to track:
+
 - DNS query latency over time
 - Cache hit rates
 - Resource utilization
@@ -132,11 +146,13 @@ Set up monitoring to track:
 ## Impact Assessment
 
 ### Affected Services
+
 - ❌ **Network clients** using Pi-hole (192.168.2.201) as DNS
 - ❌ **Router-configured DNS** if router points to Pi-hole
 - ✅ **Kubernetes cluster services** - NOT affected
 
 ### Performance Impact
+
 - **DNS resolution**: +100ms per uncached query
 - **First page load**: +200-500ms (multiple DNS queries)
 - **Cached queries**: Minimal impact (~5-10ms)
@@ -144,6 +160,7 @@ Set up monitoring to track:
 ## Testing Commands
 
 ### Test DNS Latency
+
 ```bash
 # Test CoreDNS (cluster services)
 kubectl run -it --rm --restart=Never dns-test --image=busybox -- \
@@ -159,6 +176,7 @@ kubectl run -it --rm --restart=Never dns-test --image=busybox -- \
 ```
 
 ### Check Current Configuration
+
 ```bash
 # CoreDNS config
 kubectl get configmap coredns -n kube-system -o yaml
@@ -177,7 +195,13 @@ kubectl top pod -n pihole
 **Recommendation**: Keep current setup unless network clients are experiencing noticeable performance issues. The ~100ms latency is a reasonable trade-off for ad-blocking benefits.
 
 **Action Items**:
+
 1. ✅ No immediate action needed for cluster services
 2. ⚠️ Monitor Pi-hole performance if network clients complain
 3. 📊 Consider Pi-hole optimizations if latency becomes problematic
+
+
+
+
+
 

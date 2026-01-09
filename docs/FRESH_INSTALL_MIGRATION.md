@@ -3,6 +3,7 @@
 ## Overview
 
 Starting fresh with new HAT and 128GB NVMe drives. We'll:
+
 1. Install Raspberry Pi OS on SD card
 2. Boot from SD card
 3. Clone OS to new NVMe
@@ -13,12 +14,14 @@ Starting fresh with new HAT and 128GB NVMe drives. We'll:
 ### Option A: Using Raspberry Pi Imager (Recommended)
 
 1. **Download Raspberry Pi Imager**:
+
    - Visit: https://www.raspberrypi.com/software/
    - Download for macOS
 
 2. **Insert SD card** into your Mac
 
 3. **Open Raspberry Pi Imager**:
+
    - Click "Choose OS" → Select "Raspberry Pi OS (other)" → "Raspberry Pi OS (64-bit)"
    - Click "Choose Storage" → Select your SD card
    - Click the gear icon (⚙️) to configure:
@@ -100,6 +103,7 @@ sudo ./migrate-nvme-hat.sh node-0
 ```
 
 The script will:
+
 1. Detect new 128GB NVMe
 2. Create partitions (512MB boot + root)
 3. Clone OS from SD card to new NVMe
@@ -164,5 +168,9 @@ curl -sfL https://get.k3s.io | K3S_URL=https://node-0.eldertree.local:6443 K3S_T
 3. ✅ Restore any backups (if you have them)
 4. ✅ Configure cluster
 5. ✅ Deploy workloads
+
+
+
+
 
 

@@ -19,21 +19,25 @@ The playbook applied Netplan configuration with incorrect or conflicting static 
 1. **Connect keyboard/monitor** to the affected node
 
 2. **Check current Netplan configuration**:
+
    ```bash
    cat /etc/netplan/01-netcfg.yaml
    ```
 
 3. **Fix the configuration**:
+
    ```bash
    sudo nano /etc/netplan/01-netcfg.yaml
    ```
 
 4. **Set correct IP** based on node number:
+
    - **node-0**: `192.168.2.80`
    - **node-1**: `192.168.2.81`
    - **node-2**: `192.168.2.82` (future)
 
    Example for node-0:
+
    ```yaml
    network:
      version: 2
@@ -49,6 +53,7 @@ The playbook applied Netplan configuration with incorrect or conflicting static 
    ```
 
 5. **Apply configuration**:
+
    ```bash
    sudo netplan apply
    ```
@@ -64,11 +69,13 @@ The playbook applied Netplan configuration with incorrect or conflicting static 
 If you need to recover quickly and can find the node via DHCP:
 
 1. **Edit Netplan config**:
+
    ```bash
    sudo nano /etc/netplan/01-netcfg.yaml
    ```
 
 2. **Change to DHCP**:
+
    ```yaml
    network:
      version: 2
@@ -79,6 +86,7 @@ If you need to recover quickly and can find the node via DHCP:
    ```
 
 3. **Apply**:
+
    ```bash
    sudo netplan apply
    ```
@@ -122,5 +130,9 @@ ansible raspberry_pi -m shell -a "ip addr show eth0 | grep 'inet '"
 
 - [Node IP Assignment](./NODE_IP_ASSIGNMENT.md)
 - [Ansible README](../ansible/README.md)
+
+
+
+
 
 
