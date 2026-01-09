@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.2] - 2026-01-07
+
+### Added
+- **Flux Image Automation for Pitanga Website**:
+  - `ImageRepository` for scanning GHCR for new images
+  - `ImagePolicy` with semver range (`>=0.1.0 <0.2.0`)
+  - `ImageUpdateAutomation` to automatically update the deployment image tag in Git
+- Enabled automatic deployment for `pitanga-website` via GitOps setters
+- Added `pitanga.cloud` to `external-dns` Cloudflare domain filters
+- Enabled Cloudflare Proxy (orange cloud) for Pitanga public ingress via annotations
+
 ## [1.3.1] - 2025-12-28
 
 ### Added

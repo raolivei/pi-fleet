@@ -11,6 +11,7 @@ This document describes all safety measures implemented in Ansible playbooks to 
 ### 1. Network Configuration (`setup-system.yml`)
 
 #### Pre-Flight Checks
+
 - ✅ **Gateway Reachability**: Tests gateway connectivity before making any network changes
 - ✅ **Current IP Connectivity**: Verifies current IP is reachable before changes
 - ✅ **Network Mode Detection**: Only modifies DHCP configurations (never changes existing static configs)
@@ -21,49 +22,58 @@ This document describes all safety measures implemented in Ansible playbooks to 
   - Already using static IP (preserves working configs)
 
 #### Validation
+
 - ✅ **Configuration Validation**: Runs `netplan generate` (dry-run) before applying
 - ✅ **Syntax Checking**: Fails immediately if configuration is invalid
 - ✅ **Backup Creation**: Automatically backs up Netplan configs before changes
 
 #### Post-Change Verification
+
 - ✅ **IP Verification**: Confirms new IP matches target IP
 - ✅ **Connectivity Testing**: Tests gateway and DNS connectivity after changes
 - ✅ **Automatic Failure**: Fails playbook if connectivity is lost, with rollback instructions
 
 #### Rollback
+
 - ✅ **Backup Location**: All backups stored in `/root/netplan-backups/`
 - ✅ **Failure Messages**: Include exact backup file path for manual restoration
 
 ### 2. Firewall Configuration (`setup-system.yml`)
 
 #### SSH Protection
+
 - ✅ **SSH Always Allowed**: Ensures SSH is allowed BEFORE any firewall changes
 - ✅ **Pre-Change Verification**: Checks if SSH is already allowed
 - ✅ **Post-Change Verification**: Verifies SSH rule is active after changes
 - ✅ **Automatic Failure**: Fails playbook if SSH is not allowed
 
 #### Safe Defaults
+
 - ✅ **UFW Reset Disabled**: UFW reset is disabled by default (can break connectivity)
 - ✅ **UFW Enable Optional**: UFW enable is optional and disabled by default
 
 ### 3. Hostname Configuration (`setup-system.yml`)
 
 #### Validation
+
 - ✅ **FQDN Enforcement**: Validates hostname is in FQDN format (node-X.eldertree.local)
 - ✅ **Prevents "eldertree"**: Explicitly prevents setting hostname to just "eldertree"
 - ✅ **Idempotent Changes**: Only changes hostname if different from current
 
 #### Safety
+
 - ✅ **No SSH Impact**: Hostname changes don't affect SSH connectivity
 - ✅ **Preserves /etc/hosts**: Updates /etc/hosts to maintain local resolution
 
 ### 4. Reboot Operations (`install-k3s.yml`, `install-k3s-worker.yml`)
 
 #### Pre-Reboot
+
 - ✅ **Only When Necessary**: Reboots only when cgroup configuration changes
 - ✅ **Safe cmdline.txt**: Uses safe shell-based approach (never uses `lineinfile`)
 
 #### Post-Reboot
+
 - ✅ **Connection Wait**: Waits up to 300 seconds for node to come back online
 - ✅ **Connectivity Verification**: Tests SSH and network connectivity after reboot
 - ✅ **Automatic Failure**: Fails if connectivity is lost after reboot
@@ -71,6 +81,7 @@ This document describes all safety measures implemented in Ansible playbooks to 
 ### 5. cmdline.txt Modifications (`install-k3s.yml`, `install-k3s-worker.yml`)
 
 #### Safety Measures
+
 - ✅ **Source of Truth**: Uses `/proc/cmdline` (kernel) as source of truth
 - ✅ **Backup Creation**: Backs up cmdline.txt before any changes
 - ✅ **root= Protection**: Validates `root=` parameter exists before and after changes
@@ -103,6 +114,7 @@ Before any playbook makes a change that could affect connectivity:
 If connectivity is lost despite safety measures:
 
 ### Network Issues
+
 1. Check backup location: `/root/netplan-backups/`
 2. Restore from backup:
    ```bash
@@ -113,11 +125,13 @@ If connectivity is lost despite safety measures:
 4. See [FIX_NODES_AFTER_NETPLAN.md](./FIX_NODES_AFTER_NETPLAN.md) for detailed steps
 
 ### SSH Issues
+
 1. Check firewall: `sudo ufw status`
 2. Ensure SSH is allowed: `sudo ufw allow OpenSSH`
 3. Check SSH service: `sudo systemctl status ssh`
 
 ### Boot Issues
+
 1. Boot from SD card (recovery SD)
 2. Mount NVMe drive
 3. Fix `/boot/firmware/cmdline.txt` (ensure `root=` parameter exists)
@@ -147,6 +161,7 @@ All safety measures are tested in the following scenarios:
 ## Summary
 
 All playbooks are designed with **defense in depth**:
+
 - Multiple layers of safety checks
 - Automatic validation and verification
 - Clear failure messages with recovery instructions
@@ -154,5 +169,9 @@ All playbooks are designed with **defense in depth**:
 - Always preserve connectivity
 
 **Result**: Playbooks can be run safely, repeatedly, and will never break connectivity to nodes.
+
+
+
+
 
 

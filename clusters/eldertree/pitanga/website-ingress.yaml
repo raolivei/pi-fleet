@@ -1,0 +1,75 @@
+---
+# Local domain Ingress (pitanga.eldertree.local)
+# ExternalDNS annotation ensures DNS record is created in Pi-hole via RFC2136
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pitanga-website-local
+  namespace: pitanga
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    external-dns.alpha.kubernetes.io/hostname: pitanga.eldertree.local
+  labels:
+    app: pitanga-website
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - pitanga.eldertree.local
+      secretName: pitanga-website-tls
+  rules:
+    - host: pitanga.eldertree.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pitanga-website-service
+                port:
+                  number: 80
+---
+# Public domain Ingress (pitanga.cloud)
+# Uses Cloudflare Origin Certificate - HTTPS termination handled by Cloudflare
+# Do NOT use redirect-https middleware (causes redirect loops with Cloudflare)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pitanga-website-public
+  namespace: pitanga
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    external-dns.alpha.kubernetes.io/hostname: pitanga.cloud,www.pitanga.cloud
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+  labels:
+    app: pitanga-website
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - pitanga.cloud
+        - www.pitanga.cloud
+      secretName: pitanga-cloudflare-origin-tls
+  rules:
+    - host: pitanga.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pitanga-website-service
+                port:
+                  number: 80
+    - host: www.pitanga.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pitanga-website-service
+                port:
+                  number: 80

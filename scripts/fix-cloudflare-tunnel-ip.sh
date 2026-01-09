@@ -39,3 +39,10 @@ echo ""
 echo "Alternatively, you can update via Cloudflare API if you have the API token."
 echo "See: https://developers.cloudflare.com/api/operations/cloudflare-tunnel-update-cloudflare-tunnel-configuration"
 
+
+
+
+
+
+
+

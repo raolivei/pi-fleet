@@ -37,7 +37,7 @@ Before starting, verify:
    # Try to discover the node first
    ping -c 1 node-x.local
    ssh raolivei@node-x.local
-   # Password: ac0df36b52
+   # Password: <PI_PASSWORD> (use environment variable or --ask-pass)
    ```
 
 2. **NVMe Detection**: Is NVMe installed and detected?
@@ -113,8 +113,8 @@ ansible-playbook playbooks/setup-system.yml \
   -e "static_ip=192.168.2.84" \
   --ask-pass --ask-become-pass
 # When prompted:
-#   SSH password: ac0df36b52 (Raspberry Pi user password)
-#   BECOME password (sudo): ac0df36b52 (Raspberry Pi sudo password, NOT your Mac's)
+#   SSH password: <PI_PASSWORD> (Raspberry Pi user password)
+#   BECOME password (sudo): <PI_PASSWORD> (Raspberry Pi sudo password, NOT your Mac's)
 
 # Or if node-2 is already in inventory:
 ansible-playbook playbooks/setup-system.yml \
@@ -123,8 +123,8 @@ ansible-playbook playbooks/setup-system.yml \
   -e "static_ip=192.168.2.84" \
   --ask-pass --ask-become-pass
 # When prompted:
-#   SSH password: ac0df36b52 (Raspberry Pi user password)
-#   BECOME password (sudo): ac0df36b52 (Raspberry Pi sudo password, NOT your Mac's)
+#   SSH password: <PI_PASSWORD> (Raspberry Pi user password)
+#   BECOME password (sudo): <PI_PASSWORD> (Raspberry Pi sudo password, NOT your Mac's)
 
 # Note: After this playbook runs, passwordless sudo will be configured,
 # so subsequent playbooks won't need --ask-become-pass
@@ -151,27 +151,61 @@ ansible node-2 -i ansible/inventory/hosts.yml \
 # Should show: inet 192.168.2.84/24
 ```
 
-### Step 4: Fix NVMe Boot Configuration (if NVMe exists)
+### Step 4: Setup NVMe Boot (if NVMe exists)
 
-If the node has an NVMe drive installed, fix the boot configuration:
+If the node has an NVMe drive installed, use the comprehensive NVMe setup playbook:
 
 ```bash
 cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet/ansible
-ansible-playbook playbooks/fix-nvme-boot.yml --limit node-2
+
+# Setup NVMe boot (partitions, cloning, configuration)
+ansible-playbook playbooks/setup-nvme-boot.yml \
+  --limit node-2 \
+  -e "setup_nvme_boot=true" \
+  -e "clone_from_sd=true"
 ```
 
 **What this does**:
 
-- Mounts NVMe boot partition (`/dev/nvme0n1p1`)
-- Updates `cmdline.txt` to point to `/dev/nvme0n1p2` (NVMe root partition)
-- Adds cgroup parameters for k3s
-- Ensures proper boot configuration
+- **Idempotent**: Safe to run multiple times - won't recreate partitions if they already exist and are in use
+- Creates GPT partition table (only if partitions don't exist)
+- Creates boot partition (1024MiB, FAT32, ESP flag)
+- Creates root partition (ext4)
+- Formats partitions (only if not already formatted)
+- Clones OS from SD card to NVMe (if enabled and root partition is empty)
+- Applies comprehensive emergency mode prevention fixes:
+  - Clean fstab with correct NVMe PARTUUIDs
+  - Clean cmdline.txt with correct root device and cgroup settings
+  - Unlocks root account and sets password
+  - Disables PAM faillock
+  - Removes password expiration
+
+**Important Notes**:
+
+- **Idempotency**: The playbook is safe to run on working nodes. It will:
+  - Skip partition creation if partitions exist and are mounted
+  - Skip formatting if partitions are already formatted
+  - Skip cloning if root partition already has content
+  - Only perform necessary operations
+
+- **Force Repartitioning**: If you need to recreate partitions (⚠️ **WARNING: This will erase all data**):
+  ```bash
+  ansible-playbook playbooks/setup-nvme-boot.yml \
+    --limit node-2 \
+    -e "setup_nvme_boot=true" \
+    -e "force_repartition=true"
+  ```
 
 **Verification**:
 
 ```bash
+# Check if partitions exist
 ansible node-2 -i ansible/inventory/hosts.yml \
-  -m shell -a "sudo mount /dev/nvme0n1p1 /mnt/nvme-boot && sudo cat /mnt/nvme-boot/cmdline.txt | grep 'root=/dev/nvme0n1p2' && sudo umount /mnt/nvme-boot" --become
+  -m shell -a "lsblk | grep nvme" --become
+
+# Check cmdline.txt (if boot partition is accessible)
+ansible node-2 -i ansible/inventory/hosts.yml \
+  -m shell -a "sudo mount /dev/nvme0n1p1 /mnt/nvme-boot 2>/dev/null && sudo cat /mnt/nvme-boot/cmdline.txt | grep 'root=/dev/nvme0n1p2' && sudo umount /mnt/nvme-boot || echo 'Partition not mounted'" --become
 # Should show: root=/dev/nvme0n1p2 in the output
 ```
 
@@ -447,8 +481,8 @@ kubectl get pods -A -o wide | grep node-2
 ### Authentication
 
 **User**: `raolivei`  
-**User Password**: `ac0df36b52`  
-**Sudo Password (on Raspberry Pi)**: `ac0df36b52` (typically same as user password on fresh installations)
+**User Password**: Set via `PI_PASSWORD` environment variable or `--ask-pass`  
+**Sudo Password (on Raspberry Pi)**: Same as user password on fresh installations
 
 **Important Notes**:
 
@@ -459,7 +493,7 @@ kubectl get pods -A -o wide | grep node-2
 **Alternative to --ask-pass**: You can use environment variable instead:
 
 ```bash
-export env_target_password='ac0df36b52'
+export env_target_password='<your-password>'
 ansible-playbook playbooks/setup-system.yml --limit node-2
 ```
 
@@ -530,18 +564,19 @@ kubectl describe node node-2.eldertree.local
 
 **Solution**:
 
-1. Verify NVMe boot partition has correct `cmdline.txt`:
+1. **Re-run the setup playbook** (idempotent, safe):
+   ```bash
+   ansible-playbook playbooks/setup-nvme-boot.yml \
+     --limit node-2 \
+     -e "setup_nvme_boot=true"
+   ```
+   This will verify and fix boot configuration without recreating partitions.
 
+2. Verify NVMe boot partition has correct `cmdline.txt`:
    ```bash
    # Boot from SD card again
    ansible node-2 -i ansible/inventory/hosts.yml \
      -m shell -a "sudo mount /dev/nvme0n1p1 /mnt/nvme-boot && sudo cat /mnt/nvme-boot/cmdline.txt | grep 'root=/dev/nvme0n1p2' && sudo umount /mnt/nvme-boot" --become
-   ```
-
-2. Re-run NVMe boot fix playbook:
-
-   ```bash
-   ansible-playbook playbooks/fix-nvme-boot.yml --limit node-2
    ```
 
 3. Ensure SD card is removed before reboot

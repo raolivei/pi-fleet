@@ -1,0 +1,60 @@
+---
+# Remove unused backup mount from fstab
+# This fixes boot timeouts caused by /dev/sdb1 mount when backup drive is not connected
+#
+# Trade-off analysis:
+# - Removing: Faster boot, no timeout, but need to configure manually if connecting backup drive later
+# - Keeping: Prepared for backup, but causes ~30s timeout on every boot if drive not connected
+#
+# Recommendation: Remove if backup drive is not permanently connected
+# If you need backups, use Longhorn backup target or configure backup mount manually when needed
+
+- name: Remove Unused Backup Mount
+  hosts: raspberry_pi
+  become: true
+
+  tasks:
+    - name: Check if backup mount exists in fstab
+      shell: grep -q "{{ backup_device }}" /etc/fstab && echo "exists" || echo "not_found"
+      register: backup_mount_check
+      changed_when: false
+      vars:
+        backup_device: "/dev/sdb1"
+        backup_mount: "/mnt/backup"
+
+    - name: Backup fstab
+      copy:
+        src: /etc/fstab
+        dest: /etc/fstab.bak.$(date +%Y%m%d-%H%M%S)
+        remote_src: yes
+      when: "'exists' in backup_mount_check.stdout"
+
+    - name: Remove backup mount from fstab
+      replace:
+        path: /etc/fstab
+        regexp: '^{{ backup_device }}.*{{ backup_mount }}.*\n?'
+        replace: ''
+      when: "'exists' in backup_mount_check.stdout"
+
+    - name: Verify fstab syntax
+      command: mount -a --fake
+      register: fstab_test
+      changed_when: false
+      failed_when: false
+
+    - name: Display result
+      debug:
+        msg:
+          - "✅ Backup mount removed from fstab"
+          - "Boot will be faster now (no timeout waiting for /dev/sdb1)"
+          - ""
+          - "If you need to add it back later (when connecting backup drive):"
+          - "  echo '/dev/sdb1 /mnt/backup ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab"
+      when: "'exists' in backup_mount_check.stdout"
+
+    - name: Already removed
+      debug:
+        msg: "Backup mount not found in fstab - nothing to remove"
+      when: "'not_found' in backup_mount_check.stdout"
+
+

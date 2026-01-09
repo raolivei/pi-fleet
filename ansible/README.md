@@ -67,16 +67,36 @@ ansible/
 
 **📖 Complete Guide**: See [ADD_NODE_COMPLETE.md](../docs/ADD_NODE_COMPLETE.md) for the complete step-by-step process.
 
-The process includes:
-1. NVMe boot configuration
-2. System setup (hostname, management IP)
-3. Network configuration (gigabit IP on eth0)
+**⭐ Quick Setup**: Use the master playbook `setup-new-node.yml` for automated setup of new worker nodes:
+
+```bash
+# Example: Setting up node-3
+cd ansible
+ansible-playbook playbooks/setup-new-node.yml \
+  --limit node-3 \
+  -e "wlan0_ip=192.168.2.83" \
+  -e "eth0_ip=10.0.0.4" \
+  --ask-pass --ask-become-pass
+```
+
+**IP Address Pattern:**
+- wlan0: `192.168.2.XX` where XX = 86 - node_number (node-0=86, node-1=85, node-2=84, node-3=83)
+- eth0: `10.0.0.N` where N = node_number (node-0=1, node-1=2, node-2=3, node-3=4)
+- `k3s_token` is optional - the playbook will retrieve it from node-0 automatically if omitted
+
+The master playbook handles:
+1. System configuration (hostname, network, packages, SSH, firewall)
+2. NVMe boot setup (if NVMe detected) - includes emergency mode prevention
+3. Gigabit network configuration (eth0)
 4. k3s worker installation
-5. Gigabit network configuration
+5. k3s gigabit network configuration
+6. SSH keys setup for node-to-node communication
+7. Terminal monitoring tools (btop, tmux, neofetch)
+8. Longhorn prerequisites (open-iscsi)
 
 **Quick Reference**: The pattern established with node-0 and node-1:
 - **Management IP**: On `wlan0` via NetworkManager/DHCP (e.g., `192.168.2.85`)
-- **Gigabit IP**: On `eth0` only via netplan (e.g., `10.0.0.2`)
+- **Gigabit IP**: On `eth0` via NetworkManager (e.g., `10.0.0.2`)
 - **Boot**: From NVMe (SD card removed after setup)
 - **Hostname**: `node-X.eldertree.local`
 

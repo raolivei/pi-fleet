@@ -1,0 +1,49 @@
+server:
+  dev:
+    enabled: false # Production mode with persistence
+
+  # Enable persistence for secrets
+  dataStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: longhorn
+    accessMode: ReadWriteOnce
+
+  # Standalone mode (single-node cluster)
+  ha:
+    enabled: false
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+      }
+
+      storage "file" {
+        path = "/vault/data"
+      }
+
+      # Disable mlock for non-root containers
+      disable_mlock = true
+
+  replicas: 1
+  ui:
+    enabled: true
+    serviceType: ClusterIP
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - host: vault.eldertree.local
+    tls:
+      - secretName: vault-tls
+        hosts:
+          - vault.eldertree.local
+    annotations:
+      cert-manager.io/cluster-issuer: ca-cluster-issuer
+injector:
+  enabled: true

@@ -1,0 +1,78 @@
+---
+- name: Fix DNS resolution and k3s-agent connection on node-2
+  hosts: node-2
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Add node-0 to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.2.86 node-0.eldertree.local node-0"
+        regexp: "^192\\.168\\.2\\.86.*node-0"
+        state: present
+
+    - name: Add node-1 to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.2.85 node-1.eldertree.local node-1"
+        regexp: "^192\\.168\\.2\\.85.*node-1"
+        state: present
+
+    - name: Verify DNS resolution
+      command: getent hosts node-0.eldertree.local
+      register: dns_check
+      changed_when: false
+      failed_when: false
+
+    - name: Stop k3s-agent
+      systemd:
+        name: k3s-agent
+        state: stopped
+      ignore_errors: true
+
+    - name: Clean k3s-agent state
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rancher/k3s/agent
+        - /var/lib/rancher/k3s/agent-tls
+      ignore_errors: true
+
+    - name: Update k3s-agent service to use IP instead of hostname
+      lineinfile:
+        path: /etc/systemd/system/k3s-agent.service
+        regexp: "^ExecStart=.*--server=https://.*:6443"
+        line: "ExecStart=/usr/local/bin/k3s agent --node-ip=10.0.0.3 --flannel-iface=eth0 --server=https://192.168.2.86:6443 --token={{ k3s_token }}"
+        backrefs: no
+      when: k3s_token is defined
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Start k3s-agent
+      systemd:
+        name: k3s-agent
+        state: started
+      async: 120
+      poll: 10
+      ignore_errors: true
+
+    - name: Wait for k3s-agent to stabilize
+      pause:
+        seconds: 20
+
+    - name: Check k3s-agent status
+      systemd:
+        name: k3s-agent
+      register: agent_status
+
+    - name: Display status
+      debug:
+        msg:
+          - "k3s-agent status: {{ agent_status.status.ActiveState }}"
+          - "DNS resolution: {{ 'OK' if dns_check.rc == 0 else 'FAILED' }}"
+          - "Check cluster: kubectl get nodes on node-0"
+

@@ -18,10 +18,11 @@ spec:
   {{- if and (eq .Values.service.type "LoadBalancer") .Values.service.loadBalancerIP }}
   loadBalancerIP: {{ .Values.service.loadBalancerIP }}
   {{- end }}
-  # Use Local policy for DNS to ensure responses route correctly back to clients
-  # Local policy routes traffic directly to the node hosting the pod, which is
-  # required for proper DNS response routing in MetalLB LoadBalancer setup
-  externalTrafficPolicy: Local
+  # Use Cluster policy for DNS to allow traffic from any node
+  # Cluster policy allows traffic from any node, which is required for
+  # proper DNS response routing in MetalLB LoadBalancer setup with multiple nodes
+  # Local policy was too restrictive and caused DNS queries to timeout
+  externalTrafficPolicy: Cluster
   ports:
     - name: dns-udp
       port: {{ .Values.service.dnsUdpPort }}

@@ -5,7 +5,8 @@
   vars:
     k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
     k3s_token: "" # Required - node token from control plane
-    k3s_server_url: "https://node-0.eldertree.local:6443" # Control plane URL (FQDN)
+    k3s_server_url: "https://node-0.eldertree.local:6443" # Control plane URL (FQDN) - will fallback to IP if DNS fails
+    k3s_server_ip: "192.168.2.86" # Control plane IP as fallback
     k3s_install_k9s: false # k9s not needed on worker nodes
 
   tasks:
@@ -242,6 +243,23 @@
         name: k3s-agent
       register: k3s_service_status_before
       changed_when: false
+      when: k3s_check.rc == 0
+
+    - name: Stop k3s-agent if stuck (cleanup before restart)
+      systemd:
+        name: k3s-agent
+        state: stopped
+      ignore_errors: true
+      when: k3s_check.rc == 0
+
+    - name: Clean k3s-agent state if service was stuck
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rancher/k3s/agent
+        - /var/lib/rancher/k3s/agent-tls
+      ignore_errors: true
       when: k3s_check.rc == 0
 
     - name: Ensure k3s-agent service is started

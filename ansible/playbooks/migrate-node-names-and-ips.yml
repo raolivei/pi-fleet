@@ -1,0 +1,250 @@
+---
+# Migration Playbook: Rename nodes and update IPs
+#
+# This playbook migrates the cluster from:
+# - node-0 → node-1 (192.168.2.86 → 192.168.2.101)
+# - node-1 → node-2 (192.168.2.85 → 192.168.2.102)
+# - node-2 → node-3 (192.168.2.84 → 192.168.2.103)
+#
+# IMPORTANT: This will cause cluster downtime. Execute carefully.
+#
+# Usage:
+#   ansible-playbook playbooks/migrate-node-names-and-ips.yml
+#
+# Prerequisites:
+#   1. Update router DHCP reservations for new IPs
+#   2. Update Ansible inventory (hosts.yml) with new names/IPs
+#   3. Backup current state
+#   4. Ensure all nodes are accessible via old IPs
+
+- name: Migrate Node Names and IPs
+  hosts: raspberry_pi
+  become: true
+  gather_facts: true
+
+  vars:
+    # Mapping of old to new node names
+    # NOTE: eth0 IPs do NOT change - they're based on physical position
+    node_migration_map:
+      node-0:
+        new_name: node-1
+        new_wlan0_ip: 192.168.2.101
+        new_hostname: node-1.eldertree.local
+        eth0_ip: 10.0.0.1 # Does NOT change
+      node-1:
+        new_name: node-2
+        new_wlan0_ip: 192.168.2.102
+        new_hostname: node-2.eldertree.local
+        eth0_ip: 10.0.0.2 # Does NOT change
+      node-2:
+        new_name: node-3
+        new_wlan0_ip: 192.168.2.103
+        new_hostname: node-3.eldertree.local
+        eth0_ip: 10.0.0.3 # Does NOT change
+
+    # Get migration info for this node
+    migration_info: "{{ node_migration_map[inventory_hostname] }}"
+    new_node_name: "{{ migration_info.new_name }}"
+    new_wlan0_ip: "{{ migration_info.new_wlan0_ip }}"
+    new_hostname: "{{ migration_info.new_hostname }}"
+    eth0_ip: "{{ migration_info.eth0_ip }}"
+
+  tasks:
+    - name: Verify migration info exists
+      fail:
+        msg: "No migration mapping found for {{ inventory_hostname }}"
+      when: migration_info is not defined
+
+    - name: Display migration plan
+      debug:
+        msg:
+          - "Migrating {{ inventory_hostname }} → {{ new_node_name }}"
+          - "wlan0 IP: {{ ansible_default_ipv4.address }} → {{ new_wlan0_ip }}"
+          - "eth0 IP: {{ eth0_ip }} (unchanged)"
+          - "Hostname: {{ ansible_hostname }} → {{ new_hostname }}"
+          - ""
+          - "⚠️  This will cause downtime. Ensure router DHCP is updated first!"
+
+    # =========================================================================
+    # Step 1: Update /etc/hosts
+    # =========================================================================
+    - name: Update /etc/hosts with new node IPs
+      lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ item.old_ip }}.*{{ item.old_name }}"
+        line: "{{ item.new_ip }} {{ item.new_hostname }} {{ item.new_name }}"
+        state: present
+      loop:
+        - {
+            old_ip: "192.168.2.86",
+            old_name: "node-0",
+            new_ip: "192.168.2.101",
+            new_hostname: "node-1.eldertree.local",
+            new_name: "node-1",
+          }
+        - {
+            old_ip: "192.168.2.85",
+            old_name: "node-1",
+            new_ip: "192.168.2.102",
+            new_hostname: "node-2.eldertree.local",
+            new_name: "node-2",
+          }
+        - {
+            old_ip: "192.168.2.84",
+            old_name: "node-2",
+            new_ip: "192.168.2.103",
+            new_hostname: "node-3.eldertree.local",
+            new_name: "node-3",
+          }
+      when: item.old_ip != ansible_default_ipv4.address
+
+    - name: Update this node's own entry in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ ansible_default_ipv4.address }}.*{{ inventory_hostname }}"
+        line: "{{ new_wlan0_ip }} {{ new_hostname }} {{ new_node_name }}"
+        state: present
+
+    # =========================================================================
+    # Step 2: Update hostname
+    # =========================================================================
+    - name: Update hostname to new name
+      hostname:
+        name: "{{ new_hostname }}"
+
+    - name: Update /etc/hostname
+      copy:
+        content: "{{ new_hostname }}\n"
+        dest: /etc/hostname
+        mode: "0644"
+
+    # =========================================================================
+    # Step 3: Update NetworkManager connections (wlan0 and eth0)
+    # =========================================================================
+    - name: Get WiFi connection name
+      shell: |
+        nmcli connection show | grep -i wifi | grep wlan0 | head -1 | awk '{print $1}' || echo "not_found"
+      register: wifi_conn_name
+      changed_when: false
+      failed_when: false
+
+    - name: Update wlan0 IP address via NetworkManager (modify existing)
+      shell: |
+        CONN_NAME="{{ wifi_conn_name.stdout }}"
+        if [ "$CONN_NAME" != "not_found" ] && [ -n "$CONN_NAME" ]; then
+          nmcli connection modify "$CONN_NAME" ipv4.addresses "{{ new_wlan0_ip }}/24"
+          nmcli connection modify "$CONN_NAME" ipv4.gateway "192.168.2.1"
+          nmcli connection modify "$CONN_NAME" ipv4.dns "192.168.2.201 8.8.8.8"
+          nmcli connection modify "$CONN_NAME" ipv4.method manual
+          nmcli connection up "$CONN_NAME"
+        fi
+      when:
+        - wifi_conn_name.stdout != "not_found"
+        - wifi_conn_name.stdout | length > 0
+
+    - name: Get eth0 connection name
+      shell: |
+        nmcli connection show | grep -i ethernet | grep eth0 | head -1 | awk '{print $1}' || echo "not_found"
+      register: eth0_conn_name
+      changed_when: false
+      failed_when: false
+
+    - name: Update eth0 IP address via NetworkManager (modify existing)
+      shell: |
+        CONN_NAME="{{ eth0_conn_name.stdout }}"
+        if [ "$CONN_NAME" != "not_found" ] && [ -n "$CONN_NAME" ]; then
+          nmcli connection modify "$CONN_NAME" ipv4.addresses "{{ eth0_ip }}/24"
+          nmcli connection modify "$CONN_NAME" ipv4.gateway "10.0.0.1"
+          nmcli connection modify "$CONN_NAME" ipv4.dns "192.168.2.201 8.8.8.8"
+          nmcli connection modify "$CONN_NAME" ipv4.method manual
+          nmcli connection up "$CONN_NAME"
+        fi
+      when:
+        - eth0_conn_name.stdout != "not_found"
+        - eth0_conn_name.stdout | length > 0
+
+    # =========================================================================
+    # Step 4: Update k3s configuration (control plane only)
+    # =========================================================================
+    - name: Check if k3s service exists
+      stat:
+        path: /etc/systemd/system/k3s.service
+      register: k3s_service_file
+      changed_when: false
+
+    - name: Update k3s service with new hostname and IPs
+      blockinfile:
+        path: /etc/systemd/system/k3s.service
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - k3s migration"
+        block: |
+          ExecStart=/usr/local/bin/k3s \
+              server \
+              --cluster-init \
+              --write-kubeconfig-mode=644 \
+              --tls-san={{ new_hostname }} \
+              --tls-san={{ new_wlan0_ip }} \
+              --tls-san={{ eth0_ip }} \
+              --node-ip={{ eth0_ip }},{{ new_wlan0_ip }} \
+              --advertise-address={{ new_wlan0_ip }} \
+              --bind-address=0.0.0.0 \
+              --flannel-iface=eth0 \
+              --disable servicelb
+        insertafter: "^ExecStart="
+        backup: yes
+      when: k3s_service_file.stat.exists
+
+    - name: Reload systemd after k3s service update
+      systemd:
+        daemon_reload: yes
+      when: k3s_service_file.stat.exists
+
+    # =========================================================================
+    # Step 5: Update k3s-agent configuration (workers only)
+    # =========================================================================
+    - name: Check if k3s-agent service exists
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service_file
+      changed_when: false
+
+    - name: Update k3s-agent service with new hostname and IPs
+      blockinfile:
+        path: /etc/systemd/system/k3s-agent.service
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - k3s-agent migration"
+        block: |
+          ExecStart=/usr/local/bin/k3s \
+              agent \
+              --server=https://node-1.eldertree.local:6443 \
+              --node-ip={{ eth0_ip }},{{ new_wlan0_ip }} \
+              --flannel-iface=eth0
+        insertafter: "^ExecStart="
+        backup: yes
+      when: k3s_agent_service_file.stat.exists
+
+    - name: Reload systemd after k3s-agent service update
+      systemd:
+        daemon_reload: yes
+      when: k3s_agent_service_file.stat.exists
+
+    # =========================================================================
+    # Step 6: Display next steps
+    # =========================================================================
+    - name: Display migration completion and next steps
+      debug:
+        msg:
+          - "✅ Migration configuration applied to {{ inventory_hostname }}"
+          - ""
+          - "⚠️  IMPORTANT: Next steps:"
+          - "   1. Update router DHCP reservations for new IPs"
+          - "   2. Reboot this node: sudo reboot"
+          - "   3. After reboot, node will use new IP: {{ new_wlan0_ip }}"
+          - "   4. Update SSH known_hosts: ssh-keygen -R {{ ansible_default_ipv4.address }}"
+          - "   5. Verify: ping {{ new_wlan0_ip }} && ssh {{ new_node_name }}"
+          - ""
+          - "⚠️  For control plane (node-1):"
+          - "   - k3s will restart with new hostname/IP"
+          - "   - Update kubeconfig: kubectl config set-cluster default --server=https://{{ new_wlan0_ip }}:6443"
+          - ""
+          - "⚠️  For workers:"
+          - "   - k3s-agent will reconnect to new control plane hostname"
+          - "   - Verify: kubectl get nodes"

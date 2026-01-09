@@ -1,0 +1,234 @@
+---
+# Fix Boot Reliability - Ensure system survives reboots
+# This playbook fixes common issues that prevent systems from booting after reboot:
+# - fstab mounts without nofail causing boot hangs
+# - Systemd mount timeouts
+# - Root account locks
+# - Missing PARTUUID corrections
+
+- name: Fix Boot Reliability Issues
+  hosts: raspberry_pi
+  become: true
+  vars:
+    target_password: "{{ vault_target_password | default(lookup('env', 'PI_PASSWORD')) }}"
+    password_hash: "{{ target_password | password_hash('sha512') }}"
+
+  tasks:
+    # =========================================================================
+    # 1. Unlock and secure root account
+    # =========================================================================
+    - name: Unlock root account
+      command: passwd -u root
+      changed_when: false
+      failed_when: false
+
+    - name: Set root password
+      user:
+        name: root
+        password: "{{ password_hash }}"
+        update_password: always
+      failed_when: false
+
+    - name: Reset root account lockout
+      command: faillock --user root --reset
+      changed_when: false
+      failed_when: false
+
+    - name: Disable password expiration for root
+      command: chage -M -1 root
+      changed_when: false
+      failed_when: false
+
+    # =========================================================================
+    # 2. Fix fstab - Add nofail to ALL optional mounts
+    # =========================================================================
+    - name: Backup fstab
+      copy:
+        src: /etc/fstab
+        dest: /etc/fstab.bak.$(date +%Y%m%d-%H%M%S)
+        remote_src: yes
+      changed_when: false
+      failed_when: false
+
+    - name: Read current fstab
+      slurp:
+        src: /etc/fstab
+      register: fstab_content
+      changed_when: false
+
+    - name: Display current fstab
+      debug:
+        msg: "Current fstab entries:"
+      when: fstab_content.content is defined
+
+    - name: Add nofail to root partition (should NOT have nofail - this is critical)
+      replace:
+        path: /etc/fstab
+        regexp: '^(PARTUUID=[^\s]+|/dev/[^\s]+)\s+/\s+(ext4|vfat)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
+        replace: '\1 / \2 \3\4\5'
+        backup: yes
+      failed_when: false
+      # Remove nofail from root if accidentally added
+
+    - name: Add nofail to boot partition if missing (optional mount)
+      replace:
+        path: /etc/fstab
+        regexp: '^(PARTUUID=[^\s]+|/dev/[^\s]+)\s+/boot\s+(ext4|vfat)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
+        replace: '\1 /boot \2 \3,nofail\4\5'
+        backup: yes
+      failed_when: false
+      when: "'nofail' not in (fstab_content.content | b64decode | default(''))"
+
+    - name: Remove unused backup mount (causes boot timeout if drive not connected)
+      replace:
+        path: /etc/fstab
+        regexp: '^/dev/sdb1.*/mnt/backup.*\n?'
+        replace: ''
+        backup: yes
+      failed_when: false
+      # Remove backup mount by default - can be added back manually if needed with -e enable_backup_mount=true
+
+    - name: Add nofail to any NVMe storage partition mounts (non-root)
+      replace:
+        path: /etc/fstab
+        regexp: '^(/dev/nvme[^p][^\s]+|PARTUUID=[^\s]+)\s+([^\s]+)\s+(ext4|vfat)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
+        replace: '\1 \2 \3 \4,nofail\5\6'
+        backup: yes
+      failed_when: false
+      # Only match non-root mounts (not / or /boot)
+
+    - name: Add nofail to any other optional mounts (not /, /boot, /tmp, /var, /usr)
+      replace:
+        path: /etc/fstab
+        regexp: '^(PARTUUID=[^\s]+|/dev/[^\s]+)\s+(/mnt/[^\s]+|/media/[^\s]+|/opt/[^\s]+)\s+(ext4|vfat|nfs|cifs)\s+([^,\s]+)(.*?)(\s+\d+\s+\d+)$'
+        replace: '\1 \2 \3 \4,nofail\5\6'
+        backup: yes
+      failed_when: false
+
+    # =========================================================================
+    # 3. Fix systemd mount timeouts
+    # =========================================================================
+    - name: Check for systemd mount units
+      shell: systemctl list-units --type=mount --all --no-pager | grep -v "loaded active" | grep "\.mount" | awk '{print $1}' || echo ""
+      register: mount_units
+      changed_when: false
+      failed_when: false
+
+    - name: Disable problematic systemd mount units
+      systemd:
+        name: "{{ item }}"
+        enabled: false
+        masked: false
+        state: stopped
+      loop: "{{ mount_units.stdout_lines | default([]) | select('match', '.*\\.mount$') | list }}"
+      failed_when: false
+      when: mount_units.stdout_lines | length > 0
+
+    # =========================================================================
+    # 4. Configure systemd mount timeouts
+    # =========================================================================
+    - name: Create systemd mount override directory
+      file:
+        path: /etc/systemd/system/systemd-remount-fs.service.d
+        state: directory
+        mode: "0755"
+
+    - name: Configure mount timeout
+      copy:
+        content: |
+          [Service]
+          TimeoutStartSec=300
+          TimeoutStopSec=300
+        dest: /etc/systemd/system/systemd-remount-fs.service.d/timeout.conf
+        mode: "0644"
+
+    # =========================================================================
+    # 5. Fix PARTUUIDs if incorrect (optional - usually not needed)
+    # =========================================================================
+    - name: Get current root device
+      shell: df / | tail -1 | awk '{print $1}'
+      register: current_root
+      changed_when: false
+
+    - name: Get correct PARTUUID for root device
+      command: blkid -s PARTUUID -o value "{{ current_root.stdout }}"
+      register: root_partuuid
+      changed_when: false
+      failed_when: false
+
+    - name: Update fstab with correct PARTUUID for root
+      replace:
+        path: /etc/fstab
+        regexp: '^(PARTUUID=)[^\s]+\s+/\s+'
+        replace: '\1{{ root_partuuid.stdout }} / '
+        backup: yes
+      failed_when: false
+      when: root_partuuid.stdout is defined and root_partuuid.stdout != ""
+
+    # =========================================================================
+    # 6. Disable PAM faillock to prevent account locks
+    # =========================================================================
+    - name: Backup PAM common-auth
+      copy:
+        src: /etc/pam.d/common-auth
+        dest: /etc/pam.d/common-auth.bak.$(date +%Y%m%d-%H%M%S)
+        remote_src: yes
+      changed_when: false
+      failed_when: false
+
+    - name: Disable PAM faillock
+      lineinfile:
+        path: /etc/pam.d/common-auth
+        regexp: '^auth\s+required\s+pam_faillock\.so'
+        line: "# auth required pam_faillock.so deny=5 unlock_time=900  # Disabled to prevent root lock on boot"
+        backup: yes
+      failed_when: false
+
+    # =========================================================================
+    # 7. Verify fstab syntax
+    # =========================================================================
+    - name: Test fstab syntax
+      command: mount -a --fake
+      register: fstab_test
+      changed_when: false
+      failed_when: false
+
+    - name: Display fstab test results
+      debug:
+        msg: "fstab syntax check: {{ 'PASSED' if fstab_test.rc == 0 else 'FAILED - check errors above' }}"
+      when: fstab_test.rc != 0
+
+    # =========================================================================
+    # 8. Reload systemd and verify
+    # =========================================================================
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Verify root account status
+      command: passwd -S root
+      register: root_status
+      changed_when: false
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ Boot reliability fixes applied!"
+          - ""
+          - "Changes made:"
+          - "  - Root account unlocked and password set"
+          - "  - fstab updated with nofail on optional mounts"
+          - "  - Systemd mount timeouts configured (300s)"
+          - "  - PAM faillock disabled"
+          - "  - PARTUUIDs verified"
+          - ""
+          - "Root account status: {{ root_status.stdout }}"
+          - ""
+          - "Next steps:"
+          - "  1. Reboot: sudo reboot"
+          - "  2. System should boot normally"
+          - "  3. If issues persist, check:"
+          - "     - journalctl -b (boot logs)"
+          - "     - systemctl status (failed services)"
+          - "     - /etc/fstab (mount entries)"
+

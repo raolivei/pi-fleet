@@ -13,11 +13,13 @@ Connect keyboard and monitor to each node.
 ### Step 2: Fix Netplan Configuration
 
 For **node-0**:
+
 ```bash
 sudo nano /etc/netplan/01-netcfg.yaml
 ```
 
 Set content to:
+
 ```yaml
 network:
   version: 2
@@ -33,11 +35,13 @@ network:
 ```
 
 For **node-1**:
+
 ```bash
 sudo nano /etc/netplan/01-netcfg.yaml
 ```
 
 Set content to:
+
 ```yaml
 network:
   version: 2
@@ -55,6 +59,7 @@ network:
 ### Step 3: Apply Configuration
 
 On each node:
+
 ```bash
 sudo netplan apply
 ```
@@ -62,6 +67,7 @@ sudo netplan apply
 ### Step 4: Verify
 
 On each node:
+
 ```bash
 # Check IP address
 ip addr show eth0 | grep 'inet '
@@ -116,6 +122,7 @@ ansible raspberry_pi -m shell -a "ip addr show eth0 | grep 'inet '"
 ```
 
 Expected output:
+
 - node-0: `node-0.eldertree.local`, IP: `192.168.2.80`
 - node-1: `node-1.eldertree.local`, IP: `192.168.2.81`
 
@@ -136,5 +143,9 @@ Once nodes are reachable:
 
 - [Node IP Assignment](./NODE_IP_ASSIGNMENT.md)
 - [Recover Network Connectivity](./RECOVER_NETWORK_CONNECTIVITY.md)
+
+
+
+
 
 

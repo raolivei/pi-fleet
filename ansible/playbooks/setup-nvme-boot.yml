@@ -7,6 +7,7 @@
     sd_card: "/dev/mmcblk0"
     setup_nvme_boot: "{{ setup_nvme_boot | default(false) | bool }}"
     clone_from_sd: "{{ clone_from_sd | default(true) | bool }}"
+    # force_repartition should be passed via -e, not defined here to avoid recursion
     target_password: "{{ vault_target_password | default(lookup('env', 'PI_PASSWORD')) }}"
     password_hash: "{{ target_password | password_hash('sha512') }}"
 
@@ -58,9 +59,14 @@
           - "⚠️  WARNING: This will erase all data on NVMe!"
           - "⚠️  Make sure you have backups before proceeding!"
 
-    - name: Skip if already booting from NVMe
+    - name: Check if already booting from NVMe
+      set_fact:
+        already_booting_from_nvme: "{{ nvme_device in (current_root.stdout | default('')) }}"
+      changed_when: false
+
+    - name: Skip entire playbook if already booting from NVMe
       meta: end_play
-      when: nvme_device in (current_root.stdout | default(''))
+      when: already_booting_from_nvme | default(false)
 
     # =========================================================================
     # Check if NVMe already has partitions
@@ -105,33 +111,95 @@
       changed_when: false
 
     # =========================================================================
-    # Unmount NVMe if mounted
+    # Check if partitions are in use (mounted)
     # =========================================================================
-    - name: Get NVMe mount points
-      command: mount | grep "{{ nvme_device }}" | awk '{print $3}'
+    - name: Get all NVMe partition devices
+      ansible.builtin.set_fact:
+        nvme_partition_devices: "{{ nvme_partitions.stdout_lines | default([]) | select('match', nvme_device + 'p') | list }}"
+      changed_when: false
+      when: nvme_partition_count | int > 0
+
+    - name: Check which NVMe partitions are mounted
+      ansible.builtin.mount:
+        path: "{{ item }}"
+      register: nvme_mount_check
+      loop: "{{ nvme_partition_devices | default([]) }}"
+      changed_when: false
+      failed_when: false
+      when: nvme_partition_count | int > 0
+
+    - name: Get list of mounted NVMe partitions
+      ansible.builtin.set_fact:
+        mounted_nvme_partitions: "{{ nvme_mount_check.results | selectattr('mount', 'defined') | map(attribute='mount') | list }}"
+      changed_when: false
+      when: nvme_partition_count | int > 0
+
+    - name: Check if any partitions are in use
+      ansible.builtin.set_fact:
+        nvme_partitions_in_use: "{{ (mounted_nvme_partitions | default([]) | length) > 0 }}"
+      changed_when: false
+
+    # =========================================================================
+    # Unmount NVMe if mounted (only if we need to recreate partitions)
+    # =========================================================================
+    - name: Get NVMe mount points (for unmounting if needed)
+      ansible.builtin.command: mount | grep "{{ nvme_device }}" | awk '{print $3}'
       register: nvme_mounts
       changed_when: false
       failed_when: false
+      when:
+        - nvme_partition_count | int > 0
+        - nvme_partitions_in_use | default(false)
+        - force_repartition is defined and force_repartition | bool
 
-    - name: Unmount NVMe partitions
-      mount:
+    - name: Unmount NVMe partitions (only if force_repartition is set)
+      ansible.builtin.mount:
         path: "{{ item }}"
         state: unmounted
       loop: "{{ nvme_mounts.stdout_lines | default([]) }}"
       failed_when: false
-      when: nvme_mounts.stdout_lines | length > 0
+      when:
+        - nvme_mounts.stdout_lines | length > 0
+        - force_repartition is defined and force_repartition | bool
 
     # =========================================================================
-    # Create partitions on NVMe
+    # Create partitions on NVMe (only if they don't exist or force_repartition)
     # =========================================================================
-    - name: Create GPT partition table on NVMe (will erase existing partitions)
-      command: "parted {{ nvme_device }} --script mklabel gpt"
+    - name: Skip partition creation if partitions exist and are in use
+      ansible.builtin.debug:
+        msg:
+          - "⚠️  NVMe partitions already exist and are in use"
+          - "Skipping partition creation to preserve existing setup"
+          - "If you need to recreate partitions, use: -e force_repartition=true"
+          - "WARNING: force_repartition will erase all data on NVMe!"
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
+        - nvme_partition_count | int > 0
+        - nvme_partitions_in_use | default(false)
+        - not (force_repartition is defined and force_repartition | bool)
+
+    - name: Create GPT partition table on NVMe (will erase existing partitions)
+      ansible.builtin.command: "parted {{ nvme_device }} --script mklabel gpt"
+      when:
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
+
+    - name: Check if boot partition already exists
+      ansible.builtin.stat:
+        path: "{{ nvme_device }}p1"
+      register: nvme_boot_part_exists
+      changed_when: false
+      when: nvme_partition_count | int > 0
+
+    - name: Check if root partition already exists
+      ansible.builtin.stat:
+        path: "{{ nvme_device }}p2"
+      register: nvme_root_part_exists
+      changed_when: false
+      when: nvme_partition_count | int > 0
 
     - name: Create boot partition on NVMe (1024MiB for safety)
-      parted:
+      ansible.builtin.parted:
         device: "{{ nvme_device }}"
         number: 1
         part_type: primary
@@ -140,20 +208,24 @@
         part_start: 1MiB
         part_end: 1024MiB
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
+        - not (nvme_boot_part_exists.stat.exists | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Set boot partition as ESP
-      parted:
+      ansible.builtin.parted:
         device: "{{ nvme_device }}"
         number: 1
         flags: [esp]
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
+        - not (nvme_boot_part_exists.stat.exists | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Create root partition on NVMe
-      parted:
+      ansible.builtin.parted:
         device: "{{ nvme_device }}"
         number: 2
         part_type: primary
@@ -162,8 +234,10 @@
         part_start: "{{ boot_partition_size | default('1024MiB') }}"
         part_end: "{{ root_partition_size | default('30GiB') }}"
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
+        - not (nvme_root_part_exists.stat.exists | default(false) and not (force_repartition is defined and force_repartition | bool))
 
     - name: Create storage partition on NVMe (optional, for K3s data)
       parted:
@@ -179,59 +253,121 @@
         - create_storage_partition | default(false) | bool
 
     - name: Wait for partitions to be available
-      wait_for:
+      ansible.builtin.wait_for:
         path: "{{ nvme_device }}p1"
         timeout: 10
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
 
-    - name: Format boot partition
-      filesystem:
+    - name: Check if boot partition is already formatted
+      ansible.builtin.command: blkid -s TYPE -o value "{{ nvme_device }}p1"
+      register: boot_part_fs
+      changed_when: false
+      failed_when: false
+      when: nvme_partition_count | int > 0
+
+    - name: Format boot partition (only if not already formatted)
+      ansible.builtin.filesystem:
         fstype: vfat
         device: "{{ nvme_device }}p1"
-        force: yes
+        force: "{{ force_repartition is defined and force_repartition | bool }}"
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool) or boot_part_fs.stdout | default('') == '')
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
 
-    - name: Set boot partition label
-      command: fatlabel "{{ nvme_device }}p1" BOOT
+    - name: Set boot partition label (only if newly formatted)
+      ansible.builtin.command: fatlabel "{{ nvme_device }}p1" BOOT
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
       failed_when: false
+      changed_when: false
 
-    - name: Format root partition
-      filesystem:
+    - name: Check if root partition is already formatted
+      ansible.builtin.command: blkid -s TYPE -o value "{{ nvme_device }}p2"
+      register: root_part_fs
+      changed_when: false
+      failed_when: false
+      when: nvme_partition_count | int > 0
+
+    - name: Format root partition (only if not already formatted)
+      ansible.builtin.filesystem:
         fstype: ext4
         device: "{{ nvme_device }}p2"
-        force: yes
+        force: "{{ force_repartition is defined and force_repartition | bool }}"
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool) or root_part_fs.stdout | default('') == '')
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
 
-    - name: Set root partition label
-      command: e2label "{{ nvme_device }}p2" rootfs
+    - name: Set root partition label (only if newly formatted)
+      ansible.builtin.command: e2label "{{ nvme_device }}p2" rootfs
       when:
-        - (nvme_partition_count | int == 0 or not (nvme_already_has_boot | default(false)))
         - setup_nvme_boot | bool
+        - (nvme_partition_count | int == 0 or (force_repartition is defined and force_repartition | bool))
+        - not (nvme_partitions_in_use | default(false) and not (force_repartition is defined and force_repartition | bool))
       failed_when: false
+      changed_when: false
 
     # =========================================================================
     # Clone OS from SD card (if enabled)
     # =========================================================================
-    - name: Check if root partition has filesystem content
-      stat:
-        path: /mnt/nvme-root
-      register: nvme_root_mount_check
+    # Check if SD card is available for cloning
+    - name: Check if SD card boot partition exists
+      ansible.builtin.stat:
+        path: "{{ sd_card }}p1"
+      register: sd_boot_part_exists
       changed_when: false
       failed_when: false
 
-    - name: Check if clone is needed (clone if enabled and root partition is empty)
-      set_fact:
-        need_clone: "{{ clone_from_sd | bool and (not nvme_already_has_boot | default(false)) }}"
+    - name: Check if SD card root partition exists
+      ansible.builtin.stat:
+        path: "{{ sd_card }}p2"
+      register: sd_root_part_exists
       changed_when: false
+      failed_when: false
+
+    - name: Check if clone is needed
+      ansible.builtin.set_fact:
+        need_clone: >-
+          {{
+            clone_from_sd | bool and
+            nvme_partition_count | int > 0 and
+            not (already_booting_from_nvme | default(false)) and
+            sd_boot_part_exists.stat.exists | default(false) and
+            sd_root_part_exists.stat.exists | default(false)
+          }}
+      changed_when: false
+
+    - name: Check if NVMe root already has content (skip clone if already set up)
+      ansible.builtin.command: test -d /mnt/nvme-root/etc && echo "has_content" || echo "empty"
+      register: nvme_root_content_check
+      changed_when: false
+      failed_when: false
+      when:
+        - need_clone | bool
+        - nvme_partition_count | int > 0
+
+    - name: Update need_clone based on content check
+      ansible.builtin.set_fact:
+        need_clone: >-
+          {{
+            need_clone | bool and
+            (nvme_root_content_check.stdout | default('empty') == 'empty')
+          }}
+      changed_when: false
+      when: nvme_root_content_check is defined
+
+    - name: Skip clone if SD card not available or already booting from NVMe
+      ansible.builtin.debug:
+        msg:
+          - "⚠️  Skipping OS clone from SD card"
+          - "Reason: {{ 'Already booting from NVMe' if (already_booting_from_nvme | default(false)) else ('SD card not found' if not (sd_boot_part_exists.stat.exists | default(false)) else 'NVMe root already has content') }}"
+      when: not (need_clone | bool)
 
     - name: Clone boot partition from SD card
       command: >

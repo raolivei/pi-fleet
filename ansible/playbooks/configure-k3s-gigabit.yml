@@ -4,9 +4,9 @@
   become: true
   vars:
     # Gigabit network IPs - adjust if different
-    node_0_gigabit_ip: "10.0.0.1"
-    node_1_gigabit_ip: "10.0.0.2"
-    node_2_gigabit_ip: "10.0.0.3"
+    node_1_gigabit_ip: "10.0.0.1"
+    node_2_gigabit_ip: "10.0.0.2"
+    node_3_gigabit_ip: "10.0.0.3"
     gigabit_interface: "eth0"
 
   tasks:
@@ -16,12 +16,12 @@
     - name: Get gigabit IP for this node
       set_fact:
         node_gigabit_ip: >-
-          {%- if inventory_hostname == 'node-0' -%}
-            {{ node_0_gigabit_ip }}
-          {%- elif inventory_hostname == 'node-1' -%}
+          {%- if inventory_hostname == 'node-1' -%}
             {{ node_1_gigabit_ip }}
           {%- elif inventory_hostname == 'node-2' -%}
             {{ node_2_gigabit_ip }}
+          {%- elif inventory_hostname == 'node-3' -%}
+            {{ node_3_gigabit_ip }}
           {%- else -%}
             {{ node_1_gigabit_ip }}
           {%- endif -%}
@@ -138,11 +138,31 @@
         state: restarted
       when: is_control_plane
 
+    - name: Stop k3s-agent before restart (cleanup stuck state)
+      systemd:
+        name: k3s-agent
+        state: stopped
+      when: is_worker
+      ignore_errors: true
+
+    - name: Clean k3s-agent state if needed
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rancher/k3s/agent
+        - /var/lib/rancher/k3s/agent-tls
+      when: is_worker
+      ignore_errors: true
+
     - name: Restart k3s-agent service (worker)
       systemd:
         name: k3s-agent
         state: restarted
       when: is_worker
+      async: 60
+      poll: 5
+      ignore_errors: true
 
     - name: Wait for k3s to be ready
       command: k3s kubectl get nodes

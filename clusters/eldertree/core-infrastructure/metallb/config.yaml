@@ -15,8 +15,9 @@ metadata:
 spec:
   ipAddressPools:
     - default
-  # Specify interfaces to use for Layer 2 advertising
-  # This ensures MetalLB uses the correct network interface (192.168.2.x)
-  # instead of the k3s internal interface (10.0.0.x)
-  # MetalLB will auto-detect interfaces, but we can also specify them explicitly
-  # interfaces: []  # Empty array means use all interfaces (default behavior)
+  # Specify wlan0 interface to ensure MetalLB advertises on physical network
+  # Nodes have InternalIPs 10.0.0.1/10.0.0.2 (k3s internal) but physical IPs
+  # are on 192.168.2.0/24 via wlan0. This ensures LoadBalancer IPs (192.168.2.x)
+  # are advertised on the correct network interface.
+  interfaces:
+    - wlan0

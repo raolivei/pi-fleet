@@ -1,47 +1,51 @@
 ---
 - name: Disable K3s ServiceLB (Klipper) to prevent conflicts with MetalLB
-  hosts: all
+  hosts: raspberry_pi
   become: yes
   vars:
-    k3s_service_file: /etc/systemd/system/k3s.service
-    k3s_agent_service_file: /etc/systemd/system/k3s-agent.service
+    k3s_service_path: /etc/systemd/system/k3s.service
+    k3s_agent_service_path: /etc/systemd/system/k3s-agent.service
 
   tasks:
     - name: Check if k3s service exists (control plane)
       stat:
-        path: "{{ k3s_service_file }}"
-      register: k3s_service_file
+        path: "{{ k3s_service_path }}"
+      register: k3s_service_stat
 
     - name: Check if k3s-agent service exists (worker)
       stat:
-        path: "{{ k3s_agent_service_file }}"
-      register: k3s_agent_service_file
+        path: "{{ k3s_agent_service_path }}"
+      register: k3s_agent_service_stat
 
     - name: Set fact for service type
       set_fact:
-        is_control_plane: "{{ k3s_service_file.stat.exists | default(false) }}"
-        is_worker: "{{ k3s_agent_service_file.stat.exists | default(false) }}"
+        is_control_plane: "{{ k3s_service_stat.stat.exists | default(false) }}"
+        is_worker: "{{ k3s_agent_service_stat.stat.exists | default(false) }}"
 
     - name: Fail if k3s is not installed
       fail:
         msg: "k3s is not installed. Please install k3s first."
       when: not is_control_plane and not is_worker
 
-    - name: Backup k3s service file
+    - name: Backup k3s service file (control plane)
       copy:
-        src: "{{ item }}"
-        dest: "{{ item }}.backup-{{ ansible_date_time.epoch }}"
+        src: "{{ k3s_service_path }}"
+        dest: "{{ k3s_service_path }}.backup-{{ ansible_date_time.epoch }}"
         remote_src: yes
-      loop:
-        - "{{ k3s_service_file }}"
-        - "{{ k3s_agent_service_file }}"
-      when: item is defined and item.stat.exists | default(false)
+      when: is_control_plane
+
+    - name: Backup k3s-agent service file (worker)
+      copy:
+        src: "{{ k3s_agent_service_path }}"
+        dest: "{{ k3s_agent_service_path }}.backup-{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      when: is_worker
 
     # =========================================================================
     # Update k3s service file (control plane)
     # =========================================================================
     - name: Check if servicelb is already disabled in k3s service
-      command: grep -q "disable servicelb" "{{ k3s_service_file }}" || echo "not_disabled"
+      shell: grep -E "(disable.*servicelb|--disable servicelb)" "{{ k3s_service_path }}" || echo "not_disabled"
       register: k3s_servicelb_check
       changed_when: false
       failed_when: false
@@ -49,9 +53,9 @@
 
     - name: Update k3s service to disable ServiceLB
       lineinfile:
-        path: "{{ k3s_service_file }}"
-        regexp: "^ExecStart=(.*)$"
-        line: 'ExecStart=\1 --disable servicelb'
+        path: "{{ k3s_service_path }}"
+        regexp: "^ExecStart=/usr/local/bin/k3s(.*)$"
+        line: 'ExecStart=/usr/local/bin/k3s\1 --disable servicelb'
         backrefs: yes
         mode: "0644"
       when:
@@ -62,7 +66,7 @@
     # Update k3s-agent service file (worker)
     # =========================================================================
     - name: Check if servicelb is already disabled in k3s-agent service
-      command: grep -q "disable servicelb" "{{ k3s_agent_service_file }}" || echo "not_disabled"
+      shell: grep -E "(disable.*servicelb|--disable servicelb)" "{{ k3s_agent_service_path }}" || echo "not_disabled"
       register: k3s_agent_servicelb_check
       changed_when: false
       failed_when: false
@@ -70,9 +74,9 @@
 
     - name: Update k3s-agent service to disable ServiceLB
       lineinfile:
-        path: "{{ k3s_agent_service_file }}"
-        regexp: "^ExecStart=(.*)$"
-        line: 'ExecStart=\1 --disable servicelb'
+        path: "{{ k3s_agent_service_path }}"
+        regexp: "^ExecStart=/usr/local/bin/k3s(.*)$"
+        line: 'ExecStart=/usr/local/bin/k3s\1 --disable servicelb'
         backrefs: yes
         mode: "0644"
       when:

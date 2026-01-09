@@ -1,17 +1,34 @@
 ---
+# Setup SSH Keys for Node-to-Node Communication
+# This playbook:
+# 1. Generates SSH keys on each node (if they don't exist)
+# 2. Adds each node's public key to all other nodes' authorized_keys
+# 3. Optionally adds local machine's SSH key to nodes (for Ansible access)
+#
+# Usage:
+#   ansible-playbook playbooks/setup-ssh-keys.yml --limit node-X
+#   ansible-playbook playbooks/setup-ssh-keys.yml  # All nodes
+
 - name: Setup SSH Keys for Node-to-Node Communication
   hosts: raspberry_pi
   become: true
   vars:
     target_user: "{{ ansible_user | default('raolivei') }}"
+    add_local_key: "{{ add_local_key | default(false) | bool }}"
 
   tasks:
-    - name: Install sshpass for password authentication
+    # =========================================================================
+    # Install prerequisites
+    # =========================================================================
+    - name: Install sshpass for password authentication (if needed)
       package:
         name: sshpass
         state: present
       when: ansible_os_family == "Debian"
 
+    # =========================================================================
+    # Ensure SSH directory exists
+    # =========================================================================
     - name: Ensure .ssh directory exists
       file:
         path: "/home/{{ target_user }}/.ssh"
@@ -20,10 +37,14 @@
         group: "{{ target_user }}"
         mode: "0700"
 
+    # =========================================================================
+    # Generate SSH key if it doesn't exist
+    # =========================================================================
     - name: Generate SSH key if it doesn't exist
       openssh_keypair:
         path: "/home/{{ target_user }}/.ssh/id_rsa"
         type: rsa
+        size: 4096
         owner: "{{ target_user }}"
         group: "{{ target_user }}"
         mode: "0600"
@@ -31,22 +52,25 @@
       register: ssh_key_result
       changed_when: ssh_key_result.changed
 
-    - name: Display SSH key fingerprint
-      debug:
-        msg: "SSH key generated/verified for {{ target_user }}@{{ inventory_hostname }}"
-
+    # =========================================================================
+    # Get public key content
+    # =========================================================================
     - name: Get public key content
       slurp:
         src: "/home/{{ target_user }}/.ssh/id_rsa.pub"
       register: public_key
       when: ssh_key_result.changed or not ssh_key_result.failed
 
+    # =========================================================================
+    # Add public key to all other nodes (node-to-node communication)
+    # =========================================================================
     - name: Add public key to all other nodes
       authorized_key:
         user: "{{ target_user }}"
         state: present
         key: "{{ public_key.content | b64decode | trim }}"
         comment: "{{ inventory_hostname }}"
+        exclusive: false
       delegate_to: "{{ item }}"
       loop: "{{ groups['raspberry_pi'] }}"
       when:
@@ -54,11 +78,57 @@
         - public_key.content is defined
         - groups['raspberry_pi'] | length > 1
       ignore_errors: yes
-      # Password authentication will be used from inventory for initial setup
 
+    # =========================================================================
+    # Optionally add local machine's SSH key (for Ansible access)
+    # =========================================================================
+    - name: Get local SSH public key path from inventory
+      set_fact:
+        local_ssh_key_path: "{{ (ansible_ssh_private_key_file | default('~/.ssh/id_ed25519_raolivei')) | replace('~', ansible_env.HOME) }}.pub"
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      when: add_local_key | bool
+
+    - name: Get local SSH public key
+      slurp:
+        src: "{{ local_ssh_key_path }}"
+      register: local_ssh_key
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      failed_when: false
+      when: add_local_key | bool
+
+    - name: Add local SSH public key to authorized_keys
+      authorized_key:
+        user: "{{ target_user }}"
+        state: present
+        key: "{{ local_ssh_key.content | b64decode | trim }}"
+        comment: "Ansible managed - {{ ansible_hostname }}"
+        exclusive: false
+      when:
+        - add_local_key | bool
+        - local_ssh_key.content is defined
+
+    # =========================================================================
+    # Ensure authorized_keys has correct permissions
+    # =========================================================================
+    - name: Ensure authorized_keys has correct permissions
+      file:
+        path: "/home/{{ target_user }}/.ssh/authorized_keys"
+        mode: "0600"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+      when: public_key.content is defined or (add_local_key | bool and local_ssh_key.content is defined)
+
+    # =========================================================================
+    # Summary
+    # =========================================================================
     - name: Display completion message
       debug:
         msg:
           - "✅ SSH keys configured for {{ inventory_hostname }}"
           - "Public key has been added to all other nodes in the cluster"
           - "Node-to-node SSH should now work without passwords"
+          - "{{ 'Local SSH key added' if (add_local_key | bool and local_ssh_key.content is defined) else 'Local SSH key not added (use -e add_local_key=true)' }}"

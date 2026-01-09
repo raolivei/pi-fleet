@@ -4,8 +4,8 @@
 
 **Control Plane:**
 
-- Hostname: `eldertree`
-- IP: `192.168.2.86` (node-0)
+- Hostname: `node-1.eldertree.local`
+- IP: `192.168.2.101` (wlan0), `10.0.0.1` (eth0)
 - Network: `192.168.2.0/24`
 
 ## Static IP Configuration
@@ -15,8 +15,9 @@ To ensure cluster stability, configure static IP via router DHCP reservation:
 1. Access router admin panel
 2. Find node MAC addresses in DHCP leases
 3. Create DHCP reservations for:
-   - node-0: `192.168.2.86`
-   - node-1: `192.168.2.85`
+   - node-1: `192.168.2.101` (wlan0)
+   - node-2: `192.168.2.102` (wlan0)
+   - node-3: `192.168.2.103` (wlan0)
 
 ## DNS Setup
 

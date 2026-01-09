@@ -1,229 +1,297 @@
-# Boot from NVMe on Raspberry Pi 5
+# NVMe Boot Setup Guide
 
-Complete guide for configuring Raspberry Pi 5 to boot from NVMe SSD instead of SD card.
+Complete guide for setting up Raspberry Pi 5 to boot from NVMe drive using the `setup-nvme-boot.yml` Ansible playbook.
 
 ## Overview
 
-Raspberry Pi 5 natively supports booting from NVMe drives. This guide shows how to:
-1. Clone your current OS from SD card to NVMe
-2. Configure the Pi to boot from NVMe
-3. Keep SD card as backup boot option
+The `setup-nvme-boot.yml` playbook provides a comprehensive, **idempotent** solution for configuring NVMe boot on Raspberry Pi 5 nodes. It handles:
+
+- Partition creation (GPT, boot, root)
+- Filesystem formatting
+- OS cloning from SD card
+- Emergency mode prevention
+- Boot configuration
+
+## Key Features
+
+### ✅ Idempotency
+
+The playbook is **safe to run multiple times** on working nodes:
+
+- **Skips partition creation** if partitions already exist and are in use
+- **Skips formatting** if partitions are already formatted
+- **Skips cloning** if root partition already has content
+- **Only performs necessary operations**
+
+This makes it safe to re-run the playbook for configuration updates without risking data loss.
+
+### ✅ Emergency Mode Prevention
+
+Automatically applies comprehensive fixes to prevent emergency mode:
+
+- **Clean fstab**: Creates proper fstab with correct NVMe PARTUUIDs (no duplicates, no problematic entries)
+- **Clean cmdline.txt**: Ensures correct root device (`/dev/nvme0n1p2`) and cgroup settings
+- **Root account unlocked**: Unlocks root and sets password to prevent console lock
+- **PAM faillock disabled**: Prevents account lockouts that block emergency mode access
+- **Password expiration disabled**: Prevents account expiration issues
+
+### ✅ Partition Protection
+
+- Detects if partitions are mounted/in use
+- Prevents operations on mounted partitions (unless `force_repartition=true`)
+- Warns before destructive operations
 
 ## Prerequisites
 
-- ✅ Raspberry Pi 5 (NVMe boot is Pi 5 specific)
-- ✅ NVMe SSD installed via M.2 adapter
-- ✅ Current OS running from SD card
-- ✅ NVMe is at least as large as your SD card partitions
+1. **Raspberry Pi 5** with NVMe drive installed
+2. **SD card** with OS installed (for cloning)
+3. **Ansible** configured with SSH access to the node
+4. **Node booted from SD card** (not NVMe yet)
 
-## Current Status
+## Basic Usage
 
-Check your current setup:
+### Standard Setup (New Node)
 
-```bash
-ssh raolivei@eldertree.local
-lsblk
-```
-
-You should see:
-- `/dev/mmcblk0` - SD card (current boot device)
-- `/dev/nvme0n1` - NVMe SSD
-
-## Quick Setup (Automated)
-
-Use the automated script to clone OS and configure boot:
+For a new node that needs NVMe boot setup:
 
 ```bash
-# SSH to eldertree
-ssh raolivei@eldertree.local
+cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet/ansible
 
-# Run setup script
-cd ~/WORKSPACE/raolivei/pi-fleet
-./scripts/storage/setup-nvme-boot.sh
+ansible-playbook playbooks/setup-nvme-boot.yml \
+  --limit node-X \
+  -e "setup_nvme_boot=true" \
+  -e "clone_from_sd=true"
 ```
 
-The script will:
-1. ✅ Check prerequisites
-2. ✅ Stop K3s (if running)
-3. ✅ Create partitions on NVMe (boot + root)
-4. ✅ Clone OS from SD card to NVMe
-5. ✅ Update boot configuration
-6. ✅ Configure fstab for NVMe partitions
+**What this does**:
 
-**⚠️ WARNING**: This will erase all data on the NVMe device!
+1. Checks if already booting from NVMe (skips if yes)
+2. Checks if partitions exist
+3. Creates partitions if they don't exist
+4. Formats partitions if not already formatted
+5. Clones OS from SD card to NVMe
+6. Applies emergency mode prevention fixes
+7. Configures boot settings
 
-## Manual Setup
+### Re-running on Working Node (Idempotent)
 
-If you prefer manual setup or need more control:
-
-### Step 1: Stop Services
+Safe to run on nodes that already have NVMe setup:
 
 ```bash
-# Stop K3s
-sudo systemctl stop k3s
-
-# Unmount NVMe if mounted
-sudo umount /mnt/nvme 2>/dev/null || true
+ansible-playbook playbooks/setup-nvme-boot.yml \
+  --limit node-X \
+  -e "setup_nvme_boot=true"
 ```
 
-### Step 2: Create Partitions on NVMe
+**What happens**:
+
+- Detects existing partitions
+- Detects mounted partitions
+- Skips partition creation (partitions exist and are in use)
+- Skips formatting (partitions already formatted)
+- Skips cloning (root partition has content)
+- Only applies configuration updates if needed
+
+### Force Repartitioning (⚠️ Destructive)
+
+**WARNING**: This will erase all data on NVMe!
+
+Only use if you need to recreate partitions:
 
 ```bash
-# Create GPT partition table
-sudo parted -s /dev/nvme0n1 mklabel gpt
-
-# Create boot partition (512MB, FAT32)
-sudo parted -s /dev/nvme0n1 mkpart primary fat32 1MiB 512MiB
-sudo parted -s /dev/nvme0n1 set 1 esp on  # EFI System Partition flag
-
-# Create root partition (remaining space, ext4)
-sudo parted -s /dev/nvme0n1 mkpart primary ext4 513MiB 100%
-
-# Format partitions
-sudo mkfs.vfat -F 32 -n BOOT /dev/nvme0n1p1
-sudo mkfs.ext4 -F -L rootfs /dev/nvme0n1p2
+ansible-playbook playbooks/setup-nvme-boot.yml \
+  --limit node-X \
+  -e "setup_nvme_boot=true" \
+  -e "force_repartition=true"
 ```
 
-### Step 3: Clone OS from SD Card
+**What this does**:
 
-```bash
-# Clone boot partition
-sudo dd if=/dev/mmcblk0p1 of=/dev/nvme0n1p1 bs=4M status=progress conv=fsync
+1. Unmounts all NVMe partitions
+2. Destroys existing partition table
+3. Creates new partitions
+4. Formats partitions
+5. Clones OS (if `clone_from_sd=true`)
 
-# Clone root partition (this takes 10-30 minutes)
-sudo dd if=/dev/mmcblk0p2 of=/dev/nvme0n1p2 bs=4M status=progress conv=fsync
+## Variables
 
-# Sync to ensure all data is written
-sudo sync
-```
+### Required Variables
 
-### Step 4: Update Boot Configuration
+- `setup_nvme_boot`: Enable NVMe boot setup (default: `false`)
+  ```yaml
+  -e "setup_nvme_boot=true"
+  ```
 
-```bash
-# Mount NVMe root
-sudo mkdir -p /mnt/nvme-root
-sudo mount /dev/nvme0n1p2 /mnt/nvme-root
+### Optional Variables
 
-# Mount NVMe boot
-sudo mkdir -p /mnt/nvme-boot
-sudo mount /dev/nvme0n1p1 /mnt/nvme-boot
+- `clone_from_sd`: Clone OS from SD card (default: `true`)
+  ```yaml
+  -e "clone_from_sd=true"  # Clone OS from SD card
+  -e "clone_from_sd=false"  # Skip cloning (partitions only)
+  ```
 
-# Update fstab
-sudo sed -i.bak "s|/dev/mmcblk0p1|/dev/nvme0n1p1|g" /mnt/nvme-root/etc/fstab
-sudo sed -i.bak "s|/dev/mmcblk0p2|/dev/nvme0n1p2|g" /mnt/nvme-root/etc/fstab
+- `force_repartition`: Force repartitioning (⚠️ **destructive**, default: `false`)
+  ```yaml
+  -e "force_repartition=true"  # Force repartitioning (erases all data)
+  ```
 
-# Update cmdline.txt
-sudo sed -i.bak "s|root=/dev/mmcblk0p2|root=/dev/nvme0n1p2|g" /mnt/nvme-boot/cmdline.txt
+- `target_password`: Root password for emergency mode (from vault or env var)
+  ```yaml
+  -e "target_password=<password>"  # Or use PI_PASSWORD env var
+  ```
 
-# Unmount
-sudo umount /mnt/nvme-boot
-sudo umount /mnt/nvme-root
-```
+- `boot_partition_size`: Boot partition size (default: `1024MiB`)
+  ```yaml
+  -e "boot_partition_size=1024MiB"
+  ```
 
-### Step 5: Reboot
+- `root_partition_size`: Root partition size (default: `30GiB`)
+  ```yaml
+  -e "root_partition_size=30GiB"
+  ```
 
-```bash
-sudo reboot
-```
+- `create_storage_partition`: Create additional storage partition (default: `false`)
+  ```yaml
+  -e "create_storage_partition=true"
+  ```
 
-## Boot Order on Raspberry Pi 5
+## Playbook Behavior
 
-Raspberry Pi 5 automatically tries to boot from NVMe if present. Boot order:
+### Partition Detection
 
-1. **NVMe** (if present and bootable)
-2. **USB** (if present)
-3. **SD Card** (fallback)
+The playbook checks:
 
-The SD card remains as a backup boot option. If NVMe boot fails, the Pi will automatically fall back to SD card.
+1. **Partition count**: How many partitions exist on NVMe
+2. **Partition existence**: Whether specific partitions (p1, p2) exist
+3. **Mount status**: Whether partitions are mounted/in use
+4. **Filesystem status**: Whether partitions are formatted
+
+### Decision Logic
+
+**Partition Creation**:
+- Creates if: partitions don't exist OR `force_repartition=true`
+- Skips if: partitions exist AND are in use AND `force_repartition=false`
+
+**Formatting**:
+- Formats if: partition not formatted OR `force_repartition=true`
+- Skips if: partition already formatted AND `force_repartition=false`
+
+**Cloning**:
+- Clones if: `clone_from_sd=true` AND root partition is empty
+- Skips if: root partition already has content
 
 ## Verification
 
-After reboot, verify you're booting from NVMe:
+### Check Partition Status
 
 ```bash
-# Check root filesystem device
-lsblk
-df -h /
+ansible node-X -i ansible/inventory/hosts.yml \
+  -m shell -a "lsblk | grep nvme" --become
+```
 
-# Root should be on /dev/nvme0n1p2
-mount | grep " / "
+**Expected output**:
+```
+nvme0n1     259:0    0 119.2G  0 disk
+├─nvme0n1p1 259:1    0   511M  0 part /boot/firmware
+└─nvme0n1p2 259:2    0  30.0G  0 part /
+```
 
-# Check boot partition
-mount | grep "/boot/firmware"
-# Should show /dev/nvme0n1p1
+### Check Boot Configuration
+
+```bash
+ansible node-X -i ansible/inventory/hosts.yml \
+  -m shell -a "sudo mount /dev/nvme0n1p1 /mnt/nvme-boot && sudo cat /mnt/nvme-boot/cmdline.txt && sudo umount /mnt/nvme-boot" --become
+```
+
+**Expected output**:
+```
+console=serial0,115200 console=tty1 root=/dev/nvme0n1p2 rootfstype=ext4 rootwait rootdelay=5 cgroup_memory=1 cgroup_enable=memory systemd.unified_cgroup_hierarchy=0 quiet splash
+```
+
+### Check if Booting from NVMe
+
+```bash
+ansible node-X -i ansible/inventory/hosts.yml \
+  -m shell -a "df -h / | tail -1" --become
+```
+
+**Expected output** (after reboot):
+```
+/dev/nvme0n1p2   30G  2.0G   26G   8% /
 ```
 
 ## Troubleshooting
 
-### Pi won't boot from NVMe
+### Partitions Already Exist and Are In Use
 
-1. **Check NVMe is detected**:
+**Error**: `Error: Partition(s) on /dev/nvme0n1 are being used.`
+
+**Solution**: This is expected behavior! The playbook detected that partitions exist and are mounted. This means:
+
+- ✅ The node is already set up correctly
+- ✅ The playbook is working as designed (idempotent)
+- ✅ No action needed - partitions are protected
+
+If you need to recreate partitions, use `force_repartition=true` (⚠️ **WARNING: This will erase all data**).
+
+### Node Boots from SD Card Instead of NVMe
+
+1. **Check cmdline.txt**:
    ```bash
-   # Boot from SD card, then check:
-   lsblk | grep nvme
+   ansible node-X -i ansible/inventory/hosts.yml \
+     -m shell -a "sudo mount /dev/nvme0n1p1 /mnt/nvme-boot && sudo cat /mnt/nvme-boot/cmdline.txt | grep 'root=/dev/nvme0n1p2' && sudo umount /mnt/nvme-boot" --become
    ```
 
-2. **Verify partitions exist**:
+2. **Re-run playbook** (idempotent, safe):
    ```bash
-   sudo fdisk -l /dev/nvme0n1
+   ansible-playbook playbooks/setup-nvme-boot.yml \
+     --limit node-X \
+     -e "setup_nvme_boot=true"
    ```
 
-3. **Check boot partition has files**:
+3. **Remove SD card** and reboot
+
+### Emergency Mode on Boot
+
+If the node boots into emergency mode:
+
+1. **Check fstab**:
    ```bash
-   sudo mount /dev/nvme0n1p1 /mnt
-   ls /mnt
-   sudo umount /mnt
+   ansible node-X -i ansible/inventory/hosts.yml \
+     -m shell -a "sudo cat /etc/fstab" --become
    ```
 
-4. **Verify cmdline.txt**:
+2. **Re-run playbook** to apply emergency mode prevention fixes:
    ```bash
-   sudo mount /dev/nvme0n1p1 /mnt
-   cat /mnt/cmdline.txt
-   sudo umount /mnt
+   ansible-playbook playbooks/setup-nvme-boot.yml \
+     --limit node-X \
+     -e "setup_nvme_boot=true"
    ```
 
-### Boot loops or kernel panics
+The playbook will apply all emergency mode prevention fixes automatically.
 
-- Boot from SD card (remove NVMe or it will try NVMe first)
-- Check logs: `sudo journalctl -b -1` (previous boot)
-- Verify fstab: `cat /etc/fstab`
-- Re-run setup script if needed
+## Best Practices
 
-### K3s not starting after boot
-
-- Check if K3s data directory exists: `ls -la /var/lib/rancher/k3s/`
-- Check K3s logs: `sudo journalctl -u k3s -n 50`
-- Restart K3s: `sudo systemctl restart k3s`
-
-## Performance Benefits
-
-Booting from NVMe provides:
-
-- ✅ **Faster boot times** (2-3x faster than SD card)
-- ✅ **Faster application startup** (especially K3s)
-- ✅ **Better I/O performance** for databases and stateful workloads
-- ✅ **Reduced SD card wear** (SD card becomes backup only)
-- ✅ **More reliable** (NVMe SSDs are more durable than SD cards)
-
-## Reverting to SD Card Boot
-
-If you need to revert to SD card boot:
-
-1. **Remove NVMe** (physically or via software)
-2. **Reboot** - Pi will automatically boot from SD card
-3. **Or configure boot order** (if needed)
-
-The SD card remains fully functional and can boot independently.
-
-## Notes
-
-- **SD Card Backup**: Keep your SD card as a backup. If NVMe fails, you can boot from SD card.
-- **Data Safety**: The cloning process creates an exact copy, so all your data, K3s cluster, and configuration are preserved.
-- **Performance**: After booting from NVMe, you'll notice significantly faster performance, especially for I/O-intensive workloads.
+1. **Always run idempotently**: Don't use `force_repartition=true` unless absolutely necessary
+2. **Verify before force**: Check partition status before forcing repartitioning
+3. **Backup important data**: Before using `force_repartition=true`, ensure you have backups
+4. **Test on non-critical nodes**: Test playbook changes on development nodes first
+5. **Monitor playbook output**: Review what the playbook will do before confirming destructive operations
 
 ## Related Documentation
 
-- [NVMe Storage Setup](NVME_STORAGE_SETUP.md) - Using NVMe for K3s data and storage
-- [OS Installation Guide](OS_INSTALLATION_STEPS.md) - Fresh OS installation
-- [Cluster Setup](../README.md) - Complete cluster setup guide
+- [SETUP_NODE_2_PROMPT.md](SETUP_NODE_2_PROMPT.md) - Complete node setup guide
+- [EMERGENCY_MODE_RECOVERY.md](EMERGENCY_MODE_RECOVERY.md) - Emergency mode troubleshooting
+- [NVME_BOOT_TROUBLESHOOTING.md](NVME_BOOT_TROUBLESHOOTING.md) - Additional troubleshooting
 
+## Summary
+
+The `setup-nvme-boot.yml` playbook provides a safe, idempotent way to configure NVMe boot on Raspberry Pi 5 nodes. It:
+
+- ✅ Protects existing partitions and data
+- ✅ Prevents emergency mode issues
+- ✅ Can be safely run multiple times
+- ✅ Only performs necessary operations
+- ✅ Provides clear warnings for destructive operations
+
+Use it with confidence for both new node setup and configuration updates on existing nodes.
