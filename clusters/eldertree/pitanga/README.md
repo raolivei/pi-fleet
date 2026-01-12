@@ -13,24 +13,44 @@ This namespace provides the foundation for Pitanga LLC's infrastructure, includi
 ## Current Status
 
 - ✅ Namespace created
-- ✅ Website deployed (pitanga-website)
+- ✅ Pitanga website deployed (pitanga-website) at `pitanga.cloud` and `www.pitanga.cloud`
+- ✅ Northwaysignal website deployed (northwaysignal-website) at `northwaysignal.pitanga.cloud`
+- ✅ Cloudflare Tunnel configured and connected (all sites accessible)
 - ✅ DNS documentation for Framer site
 - ✅ Email forwarding setup (Cloudflare Email Routing)
+- ✅ All sites operational and accessible via HTTPS
+
+**Last Updated**: January 12, 2026  
+**Deployment Status**: Complete - See [DEPLOYMENT_SUMMARY.md](DEPLOYMENT_SUMMARY.md) for details
 
 ## Structure
 
-```
+```text
 pitanga/
-├── namespace.yaml              # Kubernetes namespace definition
-├── kustomization.yaml          # Kustomize resources
-├── website-deployment.yaml     # Website deployment
-├── website-service.yaml        # Website service
-├── website-ingress.yaml        # Website ingress (local + public)
-├── image-automation.yaml       # Flux image automation
-├── README.md                   # This file
-├── FRAMER_DNS_SETUP.md         # DNS configuration for Framer site
-├── CLOUDFLARE_EMAIL_SETUP.md   # Cloudflare Email Routing setup
-└── IMPROVMX_SETUP.md           # Legacy email setup (deprecated)
+├── namespace.yaml                          # Kubernetes namespace definition
+├── kustomization.yaml                      # Kustomize resources
+├── ghcr-secret-external.yaml               # GHCR image pull secret (ExternalSecret)
+├── cloudflare-origin-cert-external.yaml    # Cloudflare Origin Certificate (ExternalSecret)
+├── website-deployment.yaml                 # Pitanga website deployment
+├── website-service.yaml                    # Pitanga website service
+├── website-ingress.yaml                    # Pitanga website ingress (local + public)
+├── northwaysignal-deployment.yaml          # Northwaysignal website deployment
+├── northwaysignal-service.yaml             # Northwaysignal website service
+├── northwaysignal-ingress.yaml             # Northwaysignal website ingress (public)
+├── image-automation.yaml                   # Flux image automation
+├── store-cert-in-vault.sh                 # Script to store certificate in Vault
+├── create-ghcr-secret-direct.sh           # Quick script to create GHCR secret
+├── setup-ghcr-secret.sh                    # Interactive GHCR secret setup
+├── README.md                               # This file
+├── DEPLOYMENT_SUMMARY.md                   # Complete deployment summary and status
+├── DEPLOYMENT_CHECKLIST.md                # Step-by-step deployment guide
+├── QUICK_FIX.md                            # Quick troubleshooting guide
+├── MULTI_SITE_SETUP.md                     # Multi-site configuration documentation
+├── CLOUDFLARE_ORIGIN_CERT_SETUP.md        # Cloudflare Origin Certificate setup
+├── CLOUDFLARE_TUNNEL_SETUP.md             # Cloudflare Tunnel configuration guide
+├── FRAMER_DNS_SETUP.md                     # DNS configuration for Framer site
+├── CLOUDFLARE_EMAIL_SETUP.md              # Cloudflare Email Routing setup
+└── IMPROVMX_SETUP.md                       # Legacy email setup (deprecated)
 ```
 
 ## Documentation
@@ -39,14 +59,22 @@ pitanga/
 
 - **[FRAMER_DNS_SETUP.md](FRAMER_DNS_SETUP.md)**: Complete guide for configuring `www.pitanga.cloud` and `pitanga.cloud` to work with Framer
 
+### Website Setup
+
+- **[MULTI_SITE_SETUP.md](MULTI_SITE_SETUP.md)**: Complete guide for multi-site configuration (pitanga.cloud and northwaysignal.pitanga.cloud)
+- **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)**: Step-by-step deployment and verification checklist
+- **[QUICK_FIX.md](QUICK_FIX.md)**: Quick troubleshooting guide for common issues
+
 ### Email Setup
 
 - **[CLOUDFLARE_EMAIL_SETUP.md](CLOUDFLARE_EMAIL_SETUP.md)**: Guide for setting up email forwarding via Cloudflare Email Routing (Recommended)
 - **[IMPROVMX_SETUP.md](IMPROVMX_SETUP.md)**: Legacy guide for ImprovMX (deprecated)
 
-### Website Deployment
+### Website Deployments
 
-The Pitanga website is deployed as a Next.js static site served via nginx:
+This namespace hosts two websites simultaneously:
+
+#### Pitanga Website
 
 - **Image**: `ghcr.io/raolivei/pitanga-website:latest`
 - **Automation**: Managed via Flux Image Automation (semver: `0.1.x`)
@@ -55,9 +83,20 @@ The Pitanga website is deployed as a Next.js static site served via nginx:
 - **Deployment**: Managed via FluxCD GitOps
 - **Source**: [pitanga-website repository](../../../../pitanga-website/)
 
+#### Northwaysignal Website
+
+- **Image**: `ghcr.io/raolivei/northwaysignal-website:latest`
+- **Public Access**: `https://northwaysignal.pitanga.cloud` (Cloudflare Origin Certificate)
+- **Deployment**: Managed via FluxCD GitOps
+- **Source**: [northwaysignal-website repository](../../../../northwaysignal-website/)
+
+See [MULTI_SITE_SETUP.md](MULTI_SITE_SETUP.md) for detailed documentation on the multi-site configuration.
+
 **Prerequisites**:
 
-- Cloudflare Origin Certificate stored as Kubernetes secret: `pitanga-cloudflare-origin-tls`
+- Cloudflare Origin Certificate stored in Vault and synced to Kubernetes secret: `pitanga-cloudflare-origin-tls`
+  - Stored in Vault at: `secret/pitanga/cloudflare-origin-cert`
+  - Synced via ExternalSecret: `cloudflare-origin-cert-external.yaml`
   - See [CLOUDFLARE_ORIGIN_CERT_SETUP.md](CLOUDFLARE_ORIGIN_CERT_SETUP.md) for setup instructions
 - GHCR secret (`ghcr-secret`) configured in namespace for image pulls
   - Managed via External Secrets Operator (syncs from Vault)
@@ -73,6 +112,12 @@ The namespace is managed via FluxCD GitOps. To deploy manually:
 export KUBECONFIG=~/.kube/config-eldertree
 kubectl apply -k .
 ```
+
+**⚠️ Important**: Before deploying, ensure:
+- GHCR secret is created (see [QUICK_FIX.md](QUICK_FIX.md) or run `./create-ghcr-secret-direct.sh`)
+- Cloudflare Origin Certificate is synced from Vault (check ExternalSecret status)
+
+For detailed deployment steps, see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
 
 ### 2. Configure DNS
 
@@ -117,7 +162,8 @@ This namespace follows workspace conventions:
 
 ## Notes
 
-- Website is deployed and running in the cluster
+- Both websites are deployed and running in the cluster simultaneously
 - DNS and email are managed via Cloudflare (external to cluster)
 - Local DNS records are managed by External-DNS via Pi-hole
+- Both sites share the same Cloudflare Origin Certificate
 - Future services can be added as needed

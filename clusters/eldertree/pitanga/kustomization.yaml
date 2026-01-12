@@ -4,10 +4,16 @@ resources:
   - namespace.yaml
   # GHCR secret for pulling images
   - ghcr-secret-external.yaml
-  # Website deployment
+  # Cloudflare Origin Certificate (synced from Vault)
+  - cloudflare-origin-cert-external.yaml
+  # Pitanga website deployment
   - website-deployment.yaml
   - website-service.yaml
   - website-ingress.yaml
+  # Northwaysignal website deployment
+  - northwaysignal-deployment.yaml
+  - northwaysignal-service.yaml
+  - northwaysignal-ingress.yaml
   # Image automation
   - image-automation.yaml
   # Future resources can be added here as needed:

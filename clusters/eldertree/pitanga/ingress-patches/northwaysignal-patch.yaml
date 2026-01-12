@@ -1,0 +1,24 @@
+spec:
+  rules:
+    - host: pitanga.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: northwaysignal-website-service
+                port:
+                  number: 80
+    - host: www.pitanga.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: northwaysignal-website-service
+                port:
+                  number: 80
+
+

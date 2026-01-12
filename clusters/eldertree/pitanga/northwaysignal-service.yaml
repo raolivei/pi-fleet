@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: northwaysignal-website-service
+  namespace: pitanga
+  labels:
+    app: northwaysignal-website
+spec:
+  selector:
+    app: northwaysignal-website
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+      name: http
+  type: ClusterIP

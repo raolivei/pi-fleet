@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: northwaysignal-website
+  namespace: pitanga
+  labels:
+    app: northwaysignal-website
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: northwaysignal-website
+  template:
+    metadata:
+      labels:
+        app: northwaysignal-website
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: website
+          image: ghcr.io/raolivei/northwaysignal-website:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "5000"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+

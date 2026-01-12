@@ -34,6 +34,11 @@ spec:
             capabilities:
               drop:
                 - ALL
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-tmp
+              mountPath: /var/run
           resources:
             requests:
               memory: "64Mi"
@@ -53,5 +58,10 @@ spec:
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 5
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-tmp
+          emptyDir: {}
 
 

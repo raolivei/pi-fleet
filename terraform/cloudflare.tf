@@ -51,6 +51,14 @@ data "cloudflare_zone" "eldertree_xyz" {
   zone_id = var.cloudflare_zone_id
 }
 
+# Data source to get Cloudflare zone for pitanga.cloud
+# Zone ID can be obtained from Cloudflare dashboard or API after adding domain
+# Only created if Cloudflare API token is provided
+data "cloudflare_zone" "pitanga_cloud" {
+  count   = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? 1 : 0
+  zone_id = var.pitanga_cloud_zone_id
+}
+
 # Root domain A record
 resource "cloudflare_record" "eldertree_xyz_root" {
   count           = local.cloudflare_enabled && var.public_ip != "" && var.cloudflare_zone_id != "" ? 1 : 0
@@ -77,11 +85,49 @@ resource "cloudflare_record" "eldertree_xyz_wildcard" {
   comment         = "Wildcard A record for *.eldertree.xyz - managed by Terraform"
 }
 
+# Generate private key for pitanga.cloud Origin Certificate
+resource "tls_private_key" "pitanga_cloud" {
+  count     = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+# Generate CSR for pitanga.cloud Origin Certificate
+resource "tls_cert_request" "pitanga_cloud" {
+  count           = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? 1 : 0
+  private_key_pem = tls_private_key.pitanga_cloud[0].private_key_pem
+
+  subject {
+    common_name  = "pitanga.cloud"
+    organization = "Pitanga Systems LLC"
+  }
+}
+
+# Cloudflare Origin Certificate for pitanga.cloud
+# Creates Origin CA certificate for pitanga.cloud and all subdomains
+# NOTE: Requires API token with "SSL and Certificates:Edit" permission
+# See: ORIGIN_CERT_API_PERMISSIONS.md for permission setup
+resource "cloudflare_origin_ca_certificate" "pitanga_cloud" {
+  count = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? 1 : 0
+
+  # Certificate configuration
+  request_type       = "origin-rsa" # RSA 2048-bit key
+  requested_validity = 5475         # 15 years (maximum)
+  csr                = tls_cert_request.pitanga_cloud[0].cert_request_pem
+
+  # Hostnames covered by this certificate
+  # Using wildcard to cover all subdomains (pitanga.cloud, www.pitanga.cloud, northwaysignal.pitanga.cloud, etc.)
+  hostnames = [
+    "pitanga.cloud",
+    "*.pitanga.cloud"
+  ]
+}
+
 # NOTE: TLS certificates are managed by cert-manager via Helm charts
 # See: clusters/eldertree/core-infrastructure/issuers/
 # 
 # For Cloudflare Origin Certificates (if needed):
-# 1. Create certificate manually via Cloudflare Dashboard
+# 1. Create certificate manually via Cloudflare Dashboard (if API token lacks permissions)
 # 2. Store certificate and key in Vault
 # 3. Use External Secrets Operator to sync to Kubernetes
 # See: clusters/eldertree/swimto/CLOUDFLARE_ORIGIN_CERT_SETUP.md
@@ -137,6 +183,25 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
     ingress_rule {
       hostname = "swimto.eldertree.xyz"
       path     = "/api/*"
+      service  = "http://10.43.23.214:80"
+    }
+
+    # Pitanga website routes
+    ingress_rule {
+      hostname = "pitanga.cloud"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    ingress_rule {
+      hostname = "www.pitanga.cloud"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    ingress_rule {
+      hostname = "northwaysignal.pitanga.cloud"
+      path     = "/"
       service  = "http://10.43.23.214:80"
     }
 
