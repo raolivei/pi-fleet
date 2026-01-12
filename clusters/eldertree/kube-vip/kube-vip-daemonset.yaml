@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-vip
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: kube-vip
+  template:
+    metadata:
+      labels:
+        app: kube-vip
+    spec:
+      hostNetwork: true
+      serviceAccountName: kube-vip
+      containers:
+      - name: kube-vip
+        image: ghcr.io/kube-vip/kube-vip:v0.8.3
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_RAW
+            - SYS_TIME
+        args:
+        - manager
+        - --interface=wlan0
+        - --vip=192.168.2.100
+        - --port=6443
+        - --arp
+        - --leaderElection
+        - --controlplane
+        env:
+        - name: KUBERNETES_SERVICE_HOST
+          value: "10.43.0.1"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "443"
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule

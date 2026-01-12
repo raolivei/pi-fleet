@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-vip
+  namespace: kube-system
+data:
+  vip: "192.168.2.100"
+  interface: "wlan0"
+  services: |
+    - name: kubernetes
+      type: loadbalancer
+      port: 6443
+      backendport: 6443
+      protocol: tcp
+
+

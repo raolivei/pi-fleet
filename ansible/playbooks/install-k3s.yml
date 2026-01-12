@@ -243,7 +243,7 @@
       args:
         creates: /usr/local/bin/k3s
       register: k3s_install
-      when: 
+      when:
         - not (k3s_already_installed | default(false))
         - k3s_role == 'control-plane'
         - is_first_control_plane
@@ -261,7 +261,7 @@
       args:
         creates: /usr/local/bin/k3s
       register: k3s_install
-      when: 
+      when:
         - not (k3s_already_installed | default(false))
         - k3s_role == 'control-plane'
         - not is_first_control_plane
@@ -279,7 +279,7 @@
       args:
         creates: /usr/local/bin/k3s
       register: k3s_install
-      when: 
+      when:
         - not (k3s_already_installed | default(false))
         - k3s_role == 'worker'
 
@@ -594,7 +594,7 @@
         flat: true
       register: token_fetch
       failed_when: false
-      when: 
+      when:
         - not local_token_check.stat.exists
         - remote_token_check.stat.exists | default(false)
         - k3s_role == 'control-plane'
@@ -607,6 +607,100 @@
         path: "{{ playbook_dir }}/../k3s-node-token"
         mode: "0600"
       when: token_fetch.changed | default(false)
+
+    # =========================================================================
+    # Firewall Configuration for HA Control Plane (etcd ports)
+    # =========================================================================
+    - name: Check if UFW is installed
+      command: which ufw
+      register: ufw_installed
+      changed_when: false
+      failed_when: false
+      when: k3s_role == 'control-plane'
+
+    - name: Ensure UFW allows etcd client port (2379)
+      ufw:
+        rule: allow
+        port: "2379"
+        proto: tcp
+        comment: "etcd client"
+      when:
+        - k3s_role == 'control-plane'
+        - ufw_installed.rc == 0
+      register: ufw_etcd_client
+
+    - name: Ensure UFW allows etcd peer port (2380)
+      ufw:
+        rule: allow
+        port: "2380"
+        proto: tcp
+        comment: "etcd peer"
+      when:
+        - k3s_role == 'control-plane'
+        - ufw_installed.rc == 0
+      register: ufw_etcd_peer
+
+    - name: Ensure UFW allows etcd client from cluster network
+      ufw:
+        rule: allow
+        from: "10.0.0.0/8"
+        port: "2379"
+        proto: tcp
+        comment: "etcd client from cluster"
+      when:
+        - k3s_role == 'control-plane'
+        - ufw_installed.rc == 0
+      register: ufw_etcd_client_cluster
+
+    - name: Ensure UFW allows etcd peer from cluster network
+      ufw:
+        rule: allow
+        from: "10.0.0.0/8"
+        port: "2380"
+        proto: tcp
+        comment: "etcd peer from cluster"
+      when:
+        - k3s_role == 'control-plane'
+        - ufw_installed.rc == 0
+      register: ufw_etcd_peer_cluster
+
+    # =========================================================================
+    # Firewall Configuration for k3s Networking (all nodes)
+    # =========================================================================
+    - name: Check if UFW is installed (all nodes)
+      command: which ufw
+      register: ufw_installed_all
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure UFW allows internal network (eth0)
+      ufw:
+        rule: allow
+        from: "10.0.0.0/24"
+        comment: "k3s internal network"
+      when: ufw_installed_all.rc == 0
+
+    - name: Ensure UFW allows pod network
+      ufw:
+        rule: allow
+        from: "10.42.0.0/16"
+        comment: "k3s pod network"
+      when: ufw_installed_all.rc == 0
+
+    - name: Ensure UFW allows service network
+      ufw:
+        rule: allow
+        from: "10.43.0.0/16"
+        comment: "k3s service network"
+      when: ufw_installed_all.rc == 0
+
+    - name: Ensure UFW allows Flannel VXLAN
+      ufw:
+        rule: allow
+        port: "8472"
+        proto: udp
+        comment: "k3s flannel VXLAN"
+      when: ufw_installed_all.rc == 0
 
     # =========================================================================
     # Completion message
