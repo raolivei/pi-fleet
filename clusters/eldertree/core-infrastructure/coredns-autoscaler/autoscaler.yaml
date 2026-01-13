@@ -1,0 +1,94 @@
+---
+# Cluster Proportional Autoscaler for CoreDNS
+# Automatically scales CoreDNS replicas based on cluster size
+# Min 2 replicas for HA, scales up with more nodes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coredns-autoscaler
+  namespace: kube-system
+  labels:
+    app: coredns-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coredns-autoscaler
+  template:
+    metadata:
+      labels:
+        app: coredns-autoscaler
+    spec:
+      serviceAccountName: coredns-autoscaler
+      containers:
+      - name: autoscaler
+        image: registry.k8s.io/cpa/cluster-proportional-autoscaler:v1.8.9
+        command:
+          - /cluster-proportional-autoscaler
+          - --namespace=kube-system
+          - --configmap=coredns-autoscaler-config
+          - --target=deployment/coredns
+          - --logtostderr=true
+          - --v=2
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: coredns-autoscaler
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: coredns-autoscaler
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list", "watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: coredns-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: coredns-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: coredns-autoscaler
+    namespace: kube-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-autoscaler-config
+  namespace: kube-system
+data:
+  # Linear scaling: min 2 replicas, +1 for every 8 nodes
+  # For 3-node cluster: 2 replicas
+  # For 8-node cluster: 3 replicas
+  linear: |
+    {
+      "coresPerReplica": 256,
+      "nodesPerReplica": 8,
+      "min": 2,
+      "max": 10,
+      "preventSinglePointFailure": true
+    }
