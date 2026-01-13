@@ -268,10 +268,3 @@ You have everything you need:
 ---
 
 **Remember:** This is YOUR journey. Make it personal, authentic, and useful for others.
-
-
-
-
-
-
-

@@ -395,6 +395,43 @@ kubectl get nodes
 - NVMe SSD for boot (256GB+ recommended)
 - SD card as backup boot option
 
+## Troubleshooting Runbook
+
+**IMPORTANT**: When encountering issues with the eldertree cluster, **ALWAYS check the runbook first**.
+
+### Runbook Location
+
+- **Public**: https://docs.eldertree.xyz
+- **Local**: https://docs.eldertree.local (within cluster network)
+- **Repository**: https://github.com/raolivei/eldertree-docs
+
+### How to Use the Runbook
+
+1. **Copy the exact error message** from logs or terminal output
+2. **Search the runbook** using VitePress search (press `/` or `Ctrl+K`)
+3. **Review matching issues** - multiple issues may match the same symptom
+4. **Follow the resolution steps** in the matched issue file
+5. **Verify the fix** using the provided verification commands
+
+### Common Issue Categories
+
+| Category | Examples |
+|----------|----------|
+| DNS | CoreDNS failures, Pi-hole issues, DNS timeouts |
+| Cloudflare | Tunnel DNS timeout, HTTP 530, external access |
+| Node | Node unreachable, dual IP, cluster membership |
+| Boot | Boot failures, NVMe boot, emergency mode |
+| Network | Network recovery, connectivity issues |
+| Storage | Vault recovery, Longhorn issues |
+| SSH | Permission denied, locked accounts |
+
+### When No Match Found
+
+If the runbook doesn't have a matching issue:
+1. Troubleshoot using standard Kubernetes debugging
+2. Document the new issue in the runbook for future reference
+3. Add exact error messages to make it searchable
+
 ## Documentation
 
 - `README.md` - Overview and quick start
@@ -406,6 +443,7 @@ kubectl get nodes
 - `docs/NVME_BOOT_SETUP.md` - NVMe boot guide
 - `docs/ADD_WORKER_NODE.md` - Adding worker nodes
 - `docs/RECOVER_LOCKED_ROOT.md` - Root lock recovery
+- **Runbook**: https://docs.eldertree.xyz - Searchable troubleshooting guide
 
 ## Key Principles
 

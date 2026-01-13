@@ -1,0 +1,49 @@
+---
+- name: Enable hairpin mode on cni0 bridge interface
+  hosts: raspberry_pi
+  become: true
+  tasks:
+    - name: Enable hairpin mode on cni0 bridge
+      shell: |
+        if [ -w /sys/devices/virtual/net/cni0/bridge/hairpin_mode ]; then
+          echo 1 > /sys/devices/virtual/net/cni0/bridge/hairpin_mode
+        else
+          # Try with explicit root
+          sudo sh -c 'echo 1 > /sys/devices/virtual/net/cni0/bridge/hairpin_mode' || true
+        fi
+      register: hairpin_result
+      ignore_errors: true
+
+    - name: Verify hairpin mode is enabled
+      shell: cat /sys/devices/virtual/net/cni0/bridge/hairpin_mode
+      register: hairpin_verify
+      changed_when: false
+
+    - name: Display hairpin mode status
+      debug:
+        msg: "Hairpin mode on cni0: {{ hairpin_verify.stdout }}"
+
+    - name: Make hairpin mode persistent via systemd service
+      copy:
+        content: |
+          [Unit]
+          Description=Enable hairpin mode on cni0 bridge
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/sh -c 'echo 1 > /sys/devices/virtual/net/cni0/bridge/hairpin_mode'
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/cni0-hairpin.service
+        mode: "0644"
+
+    - name: Enable and start cni0-hairpin service
+      systemd:
+        name: cni0-hairpin
+        enabled: yes
+        state: started
+        daemon_reload: yes

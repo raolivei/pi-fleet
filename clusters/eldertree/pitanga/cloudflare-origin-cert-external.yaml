@@ -1,0 +1,27 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: pitanga-cloudflare-origin-cert
+  namespace: pitanga
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: pitanga-cloudflare-origin-tls
+    creationPolicy: Owner
+    template:
+      type: kubernetes.io/tls
+      data:
+        tls.crt: "{{ .certificate }}"
+        tls.key: "{{ .privateKey }}"
+  data:
+    - secretKey: certificate
+      remoteRef:
+        key: secret/pitanga/cloudflare-origin-cert
+        property: certificate
+    - secretKey: privateKey
+      remoteRef:
+        key: secret/pitanga/cloudflare-origin-cert
+        property: private-key

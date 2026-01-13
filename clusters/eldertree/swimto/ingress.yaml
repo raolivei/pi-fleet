@@ -28,6 +28,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.middlewares: swimto-redirect-https@kubernetescrd,swimto-api-path-rewrite@kubernetescrd
     cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.local
   labels:
     app: swimto
 spec:
@@ -57,6 +58,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.middlewares: swimto-redirect-https@kubernetescrd
     cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.local
   labels:
     app: swimto
 spec:

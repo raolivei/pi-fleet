@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [K3S-001](https://docs.eldertree.xyz/runbook/issues/node/K3S-001)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # K3s Service Troubleshooting
 
 ## Issue: K3s Service Not Running

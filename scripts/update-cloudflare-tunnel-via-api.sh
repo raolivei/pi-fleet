@@ -52,6 +52,21 @@ CONFIG_JSON=$(cat <<EOF
         "service": "http://${TRAEFIK_IP}:80"
       },
       {
+        "hostname": "pitanga.cloud",
+        "path": "/",
+        "service": "http://${TRAEFIK_IP}:80"
+      },
+      {
+        "hostname": "www.pitanga.cloud",
+        "path": "/",
+        "service": "http://${TRAEFIK_IP}:80"
+      },
+      {
+        "hostname": "northwaysignal.pitanga.cloud",
+        "path": "/",
+        "service": "http://${TRAEFIK_IP}:80"
+      },
+      {
         "service": "http_status:404"
       }
     ]
@@ -77,15 +92,22 @@ if echo "$RESPONSE" | grep -q '"success":true'; then
     echo "Updated ingress rules:"
     echo "  - swimto.eldertree.xyz/ → http://${TRAEFIK_IP}:80"
     echo "  - swimto.eldertree.xyz/api/* → http://${TRAEFIK_IP}:80"
+    echo "  - pitanga.cloud/ → http://${TRAEFIK_IP}:80"
+    echo "  - www.pitanga.cloud/ → http://${TRAEFIK_IP}:80"
+    echo "  - northwaysignal.pitanga.cloud/ → http://${TRAEFIK_IP}:80"
     echo ""
     echo "⏳ Wait 30-60 seconds for the tunnel to reconnect..."
     echo ""
-    echo "Test with: curl -I https://swimto.eldertree.xyz"
+    echo "Test with:"
+    echo "  curl -I https://swimto.eldertree.xyz"
+    echo "  curl -I https://pitanga.cloud"
+    echo "  curl -I https://northwaysignal.pitanga.cloud"
 else
     echo "❌ Error updating tunnel configuration:"
     echo "$RESPONSE" | jq '.' 2>/dev/null || echo "$RESPONSE"
     exit 1
 fi
+
 
 
 

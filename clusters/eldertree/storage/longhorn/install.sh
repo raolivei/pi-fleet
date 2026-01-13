@@ -152,3 +152,5 @@ echo "  kubectl get pods -n longhorn-system"
 echo "  kubectl logs -n longhorn-system -l app=longhorn-manager"
 echo ""
 
+
+

@@ -8,6 +8,9 @@ data:
   05-custom-dns.conf: |
     # Custom DNS rewrites moved to BIND backend for RFC2136 support
     # Only put non-dynamic records here if needed
+    
+    # Redirect blog.eldertree.local to blog.eldertree.xyz (GitHub Pages)
+    cname=blog.eldertree.local,blog.eldertree.xyz
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eldertree-docs
+  labels:
+    app.kubernetes.io/name: eldertree-docs
+    app.kubernetes.io/component: documentation
+
+

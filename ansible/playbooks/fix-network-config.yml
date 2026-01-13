@@ -1,0 +1,118 @@
+---
+# Fix network configuration to prevent dual IP issues
+# This playbook ensures:
+# 1. Only one IP on wlan0 (excluding kube-vip VIP)
+# 2. DHCP is disabled when static IP is configured
+# 3. NetworkManager is configured correctly
+# 4. No duplicate routes
+
+- name: Fix network configuration on all nodes
+  hosts: raspberry_pi
+  become: true
+  vars:
+    node_ips:
+      node-1: "192.168.2.101"
+      node-2: "192.168.2.102"
+      node-3: "192.168.2.103"
+    vip: "192.168.2.100"
+
+  tasks:
+    - name: Get expected IP for this node
+      set_fact:
+        expected_ip: "{{ node_ips[inventory_hostname] }}"
+      when: inventory_hostname in node_ips
+
+    - name: Check current wlan0 IPs
+      shell: ip addr show wlan0 | grep "inet " | grep -v "{{ vip }}" | awk '{print $2}' | cut -d'/' -f1
+      register: current_ips
+      changed_when: false
+      failed_when: false
+
+    - name: Remove extra IPs from wlan0 (excluding VIP and expected IP)
+      shell: |
+        for ip in {{ current_ips.stdout_lines | default([]) | join(' ') }}; do
+          if [ "$ip" != "{{ expected_ip }}" ] && [ "$ip" != "{{ vip }}" ]; then
+            echo "Removing extra IP: $ip"
+            ip addr del "$ip/24" dev wlan0 2>/dev/null || true
+          fi
+        done
+      when:
+        - current_ips.stdout_lines | length > 1
+        - current_ips.stdout_lines is defined
+
+    - name: Ensure expected IP exists on wlan0
+      shell: |
+        if ! ip addr show wlan0 | grep -q "{{ expected_ip }}/24"; then
+          ip addr add {{ expected_ip }}/24 dev wlan0
+        fi
+      when: expected_ip is defined
+
+    - name: Find netplan files with DHCP enabled
+      find:
+        paths: /etc/netplan
+        patterns: "*.yaml"
+      register: netplan_files
+
+    - name: Disable DHCP in netplan files
+      lineinfile:
+        path: "{{ item.path }}"
+        regexp: '^(\s*)dhcp4:\s*true'
+        line: '\1dhcp4: false'
+        backup: yes
+      loop: "{{ netplan_files.files }}"
+      when: netplan_files.files | length > 0
+      notify: apply_netplan
+
+    - name: Check NetworkManager wlan0 connection
+      shell: nmcli -t -f NAME,DEVICE connection show | grep ":wlan0" | cut -d':' -f1 | head -1
+      register: wlan0_connection
+      changed_when: false
+      failed_when: false
+      when: "'nmcli' in ansible_facts.get('cmd', {})"
+
+    - name: Configure NetworkManager for static IP
+      block:
+        - name: Set NetworkManager to manual/static mode
+          shell: |
+            nmcli connection modify "{{ wlan0_connection.stdout }}" \
+              ipv4.method manual \
+              ipv4.addresses "{{ expected_ip }}/24" \
+              ipv4.gateway 192.168.2.1 \
+              ipv4.dns "192.168.2.201 8.8.8.8"
+          when:
+            - wlan0_connection.stdout is defined
+            - wlan0_connection.stdout != ""
+            - expected_ip is defined
+
+        - name: Restart NetworkManager
+          systemd:
+            name: NetworkManager
+            state: restarted
+          when:
+            - wlan0_connection.stdout is defined
+            - wlan0_connection.stdout != ""
+      when:
+        - wlan0_connection.stdout is defined
+        - wlan0_connection.stdout != ""
+        - expected_ip is defined
+
+    - name: Verify final network configuration
+      shell: |
+        echo "=== wlan0 IPs ==="
+        ip addr show wlan0 | grep "inet " || echo "No IPs found"
+        echo ""
+        echo "=== Routing table ==="
+        ip route show | grep wlan0 || echo "No routes found"
+        echo ""
+        echo "=== Netplan DHCP ==="
+        grep -r "dhcp4: true" /etc/netplan/ || echo "No DHCP enabled"
+      register: verification
+      changed_when: false
+
+    - name: Display verification results
+      debug:
+        var: verification.stdout_lines
+
+  handlers:
+    - name: apply_netplan
+      command: netplan apply

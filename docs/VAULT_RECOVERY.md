@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [VAULT-001](https://docs.eldertree.xyz/runbook/issues/storage/VAULT-001)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Vault Recovery Guide
 
 This guide covers how to recover Vault in various failure scenarios.

@@ -33,3 +33,8 @@ variable "cloudflare_account_id" {
   default     = ""
 }
 
+variable "pitanga_cloud_zone_id" {
+  description = "Cloudflare Zone ID for pitanga.cloud. Obtained after adding domain to Cloudflare account."
+  type        = string
+  default     = ""
+}

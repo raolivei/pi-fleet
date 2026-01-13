@@ -29,3 +29,8 @@
 # Or via API: curl -X GET "https://api.cloudflare.com/client/v4/accounts" -H "Authorization: Bearer YOUR_API_TOKEN"
 # cloudflare_account_id = "your-account-id-here"
 
+# Cloudflare Zone ID for pitanga.cloud
+# Obtained after adding domain to Cloudflare account (Add Site)
+# Find in Cloudflare dashboard: Zone Settings > Overview > Zone ID
+# Or use: ./scripts/get-pitanga-zone-id.sh
+# cloudflare_pitanga_cloud_zone_id = "your-pitanga-cloud-zone-id-here"

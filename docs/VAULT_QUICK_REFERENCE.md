@@ -2,37 +2,67 @@
 
 Quick commands for common Vault operations on the eldertree cluster.
 
+**Updated:** January 13, 2026  
+**Mode:** HA with Raft (3 replicas)
+
 ## Setup Environment
 
 ```bash
+# Eldertree is now the default context
+kubectl config use-context eldertree
+
+# Or explicitly
 export KUBECONFIG=~/.kube/config-eldertree
 ```
 
 ## After Raspberry Pi Restart
 
-**Most Common Task:** Unseal Vault after restart
+**Most Common Task:** Unseal all Vault pods after restart
 
 ```bash
 ./scripts/operations/unseal-vault.sh
 ```
 
-You'll be prompted for 3 unseal keys. Enter them when prompted.
+The script automatically reads unseal keys from K8s secret and unseals all 3 pods.
 
 ## Check Vault Status
 
 ```bash
-# Check if Vault is sealed/unsealed
-kubectl exec -n vault vault-0 -- vault status
+# Check all Vault pods
+kubectl get pods -n vault -l component=server
 
-# Quick check
-kubectl get pods -n vault
+# Check specific pod status
+kubectl exec -n vault vault-0 -- vault status
+kubectl exec -n vault vault-1 -- vault status
+kubectl exec -n vault vault-2 -- vault status
+
+# Check HA cluster status
+kubectl exec -n vault vault-0 -- vault operator raft list-peers
+
+# Check which node is leader
+kubectl exec -n vault vault-0 -- vault operator raft autopilot state | head -10
 ```
+
+## HA Failover Information
+
+| Pod | Node | Role |
+|-----|------|------|
+| vault-0 | node-3 | Leader or Standby |
+| vault-1 | node-1 | Leader or Standby |
+| vault-2 | node-2 | Leader or Standby |
+
+**Failure Tolerance:** 1 node (cluster survives any single node failure)
+
+If the leader fails:
+- A standby is automatically promoted within seconds
+- No data loss (Raft replication)
+- External Secrets continue syncing from new leader
 
 ## Backup Secrets
 
 ```bash
 # Backup all secrets to JSON file
-./scripts/backup-vault-secrets.sh > vault-backup-$(date +%Y%m%d).json
+./scripts/operations/backup-vault-secrets.sh > vault-backup-$(date +%Y%m%d).json
 
 # Store the backup securely (contains plaintext secrets!)
 ```
@@ -41,13 +71,13 @@ kubectl get pods -n vault
 
 ```bash
 # Restore from backup
-./scripts/restore-vault-secrets.sh vault-backup-20250115.json
+./scripts/operations/restore-vault-secrets.sh vault-backup-20260113.json
 ```
 
 ## Access Vault UI
 
 ```bash
-# Port forward to Vault UI
+# Port forward to Vault UI (talks to active leader)
 kubectl port-forward -n vault svc/vault 8200:8200
 
 # Open browser: https://localhost:8200
@@ -57,9 +87,12 @@ kubectl port-forward -n vault svc/vault 8200:8200
 ## Working with Secrets
 
 ```bash
-# Login to Vault
+# Login to Vault (use any unsealed pod)
 kubectl exec -n vault vault-0 -- vault login
-# Enter root token
+# Enter root token (stored in K8s secret vault-unseal-keys)
+
+# Get root token from K8s secret
+kubectl get secret vault-unseal-keys -n vault -o jsonpath='{.data.ROOT_TOKEN}' | base64 -d
 
 # List all secrets
 kubectl exec -n vault vault-0 -- vault kv list secret/
@@ -81,82 +114,132 @@ kubectl exec -n vault vault-0 -- vault kv delete secret/path/to/secret
 kubectl get externalsecrets -A
 
 # Check specific ExternalSecret status
-kubectl describe externalsecret grafana-admin -n monitoring
+kubectl describe externalsecret grafana-admin -n observability
 
 # Verify synced Kubernetes secret
-kubectl get secret grafana-admin -n monitoring -o yaml
+kubectl get secret grafana-admin -n observability -o yaml
 ```
 
 ## Troubleshooting
 
-### Vault is Sealed
+### Vault Pods are Sealed
 
 ```bash
-# This is normal after restart
+# Normal after restart - unseal all pods
 ./scripts/operations/unseal-vault.sh
+
+# Manual unseal (if script fails)
+UNSEAL_KEY_1=$(kubectl get secret vault-unseal-keys -n vault -o jsonpath='{.data.UNSEAL_KEY_1}' | base64 -d)
+kubectl exec -n vault vault-0 -- vault operator unseal "$UNSEAL_KEY_1"
+# Repeat with KEY_2 and KEY_3
+```
+
+### Check Raft Cluster Health
+
+```bash
+# List Raft peers
+kubectl exec -n vault vault-0 -- vault operator raft list-peers
+
+# Check autopilot (shows health and failure tolerance)
+kubectl exec -n vault vault-0 -- vault operator raft autopilot state
 ```
 
 ### External Secrets Not Syncing
 
 ```bash
-# 1. Check if Vault is unsealed
-kubectl exec -n vault vault-0 -- vault status
+# 1. Check if all Vault pods are unsealed
+for pod in vault-0 vault-1 vault-2; do
+  echo "=== $pod ==="
+  kubectl exec -n vault $pod -- vault status | grep Sealed
+done
 
-# 2. Check External Secrets Operator
+# 2. Check External Secrets Operator logs
 kubectl logs -n external-secrets deployment/external-secrets
 
 # 3. Verify token secret exists
 kubectl get secret vault-token -n external-secrets
+
+# 4. Restart External Secrets Operator
+kubectl rollout restart deployment -n external-secrets external-secrets
 ```
 
-### Restart External Secrets Operator
+### Leader Election Issues
 
 ```bash
-kubectl rollout restart deployment -n external-secrets
+# Force step-down of current leader (triggers re-election)
+kubectl exec -n vault vault-0 -- vault operator step-down
 ```
 
 ## Important Files
 
-- **Migration Guide:** `docs/VAULT_MIGRATION.md`
-- **Full Documentation:** `VAULT.md`
-- **Scripts Location:** `scripts/`
+- **HA Init Script:** `scripts/operations/init-vault-ha.sh`
+- **Unseal Script:** `scripts/operations/unseal-vault.sh`
+- **Backup Script:** `scripts/operations/backup-vault-secrets.sh`
+- **Restore Script:** `scripts/operations/restore-vault-secrets.sh`
+- **HelmRelease:** `clusters/eldertree/secrets-management/vault/helmrelease.yaml`
 
 ## Security Reminders
 
 ✅ **DO:**
-- Store unseal keys securely (password manager)
+- Unseal keys are stored in K8s secret `vault-unseal-keys` for auto-unseal
+- Also store unseal keys securely offline (password manager)
 - Backup secrets regularly
-- Keep root token secret
-- Unseal Vault after every restart
+- Test failover periodically
 
 ❌ **DON'T:**
 - Commit unseal keys to git
-- Share root token
-- Store backups in plaintext on disk
-- Forget to backup before making changes
+- Delete the `vault-unseal-keys` K8s secret without backup
+- Store backups in plaintext on disk long-term
 
 ## Emergency: Lost Unseal Keys
 
-⚠️ If you lose your unseal keys, you **cannot** recover Vault data. You must:
+⚠️ If you lose your unseal keys AND the K8s secret, you **cannot** recover Vault data.
 
-1. Delete Vault PVC (destroys all secrets):
+**Check K8s secret first:**
+```bash
+kubectl get secret vault-unseal-keys -n vault -o yaml
+```
+
+**If K8s secret exists, extract keys:**
+```bash
+kubectl get secret vault-unseal-keys -n vault -o jsonpath='{.data.UNSEAL_KEY_1}' | base64 -d
+kubectl get secret vault-unseal-keys -n vault -o jsonpath='{.data.ROOT_TOKEN}' | base64 -d
+```
+
+**If all is lost, must re-initialize:**
+
+1. Delete all Vault PVCs:
    ```bash
-   kubectl delete pvc -n vault vault-data-vault-0
+   kubectl delete pvc -n vault --all
    ```
 
-2. Restart Vault pod:
+2. Delete Vault pods:
    ```bash
-   kubectl delete pod -n vault vault-0
+   kubectl delete pods -n vault -l component=server
    ```
 
-3. Re-initialize:
+3. Re-initialize HA cluster:
    ```bash
-   kubectl exec -n vault vault-0 -- vault operator init
+   ./scripts/operations/init-vault-ha.sh
    ```
 
 4. Save new keys securely
 
-5. Re-enter all secrets or restore from backup
+5. Restore secrets from backup
 
-**Prevention:** Always backup unseal keys in multiple secure locations!
+**Prevention:** Backup both K8s secret AND offline storage!
 
+## Initialize New HA Cluster
+
+Only use after fresh install or disaster recovery:
+
+```bash
+./scripts/operations/init-vault-ha.sh
+```
+
+This script:
+1. Initializes vault-0 (generates new unseal keys)
+2. Stores keys in K8s secret
+3. Unseals all 3 pods
+4. Joins all pods to Raft cluster
+5. Enables KV secrets engine

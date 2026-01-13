@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [PIHOLE-001](https://docs.eldertree.xyz/runbook/issues/dns/PIHOLE-001)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Pi-hole DNS Troubleshooting Guide
 
 ## Problem: Pi-hole DNS (192.168.2.201) Not Working on Mac

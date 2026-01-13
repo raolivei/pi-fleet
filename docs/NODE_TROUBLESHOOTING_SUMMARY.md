@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [NODE-004](https://docs.eldertree.xyz/runbook/issues/node/NODE-004)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Node Troubleshooting Summary
 
 ## Issues Identified and Status
@@ -102,5 +112,7 @@ After fixes complete:
 - [Node Troubleshooting Guide](./NODE_TROUBLESHOOTING.md)
 - [Ansible Playbooks](../ansible/README.md)
 - [Network Configuration](./NETWORK_ARCHITECTURE.md)
+
+
 
 
