@@ -3,7 +3,7 @@
   hosts: raspberry_pi
   become: true
   vars:
-    control_plane_node: "node-1.eldertree.local"  # Existing control plane to join
+    control_plane_node: "node-1.eldertree.local" # Existing control plane to join
     control_plane_ip: "192.168.2.101"
     k3s_hostname: "{{ inventory_hostname }}.eldertree.local"
     kubeconfig_path: "~/.kube/config-eldertree"
@@ -229,6 +229,62 @@
       when: inventory_hostname != 'node-1' and k3s_ready.rc != 0
 
     # =========================================================================
+    # Firewall Configuration for HA Control Plane (etcd ports)
+    # =========================================================================
+    - name: Check if UFW is installed
+      command: which ufw
+      register: ufw_installed
+      changed_when: false
+      failed_when: false
+      when: inventory_hostname != 'node-1'
+
+    - name: Ensure UFW allows etcd client port (2379)
+      ufw:
+        rule: allow
+        port: "2379"
+        proto: tcp
+        comment: "etcd client"
+      when:
+        - inventory_hostname != 'node-1'
+        - ufw_installed.rc == 0
+      register: ufw_etcd_client
+
+    - name: Ensure UFW allows etcd peer port (2380)
+      ufw:
+        rule: allow
+        port: "2380"
+        proto: tcp
+        comment: "etcd peer"
+      when:
+        - inventory_hostname != 'node-1'
+        - ufw_installed.rc == 0
+      register: ufw_etcd_peer
+
+    - name: Ensure UFW allows etcd client from cluster network
+      ufw:
+        rule: allow
+        from: "10.0.0.0/8"
+        port: "2379"
+        proto: tcp
+        comment: "etcd client from cluster"
+      when:
+        - inventory_hostname != 'node-1'
+        - ufw_installed.rc == 0
+      register: ufw_etcd_client_cluster
+
+    - name: Ensure UFW allows etcd peer from cluster network
+      ufw:
+        rule: allow
+        from: "10.0.0.0/8"
+        port: "2380"
+        proto: tcp
+        comment: "etcd peer from cluster"
+      when:
+        - inventory_hostname != 'node-1'
+        - ufw_installed.rc == 0
+      register: ufw_etcd_peer_cluster
+
+    # =========================================================================
     # Verify node joined as control plane
     # =========================================================================
     - name: Wait for node to appear in cluster
@@ -277,8 +333,8 @@
           - "✅ Node {{ inventory_hostname }} converted to control plane"
           - "Control Plane: {{ control_plane_check.stdout | default('unknown') }}"
           - "etcd Voter: {{ etcd_check.stdout | default('unknown') }}"
+          - "Firewall Rules: {{ 'Configured' if (ufw_etcd_client.changed | default(false) or ufw_etcd_peer.changed | default(false)) else 'Already configured' if ufw_installed.rc == 0 else 'UFW not installed' }}"
           - ""
           - "Verify with: kubectl get nodes"
+          - "Note: Firewall rules for etcd ports (2379, 2380) have been configured"
       when: inventory_hostname != 'node-1'
-
-

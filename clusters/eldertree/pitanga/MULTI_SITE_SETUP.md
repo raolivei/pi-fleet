@@ -281,4 +281,3 @@ kubectl set image deployment/northwaysignal-website \
 - [Pitanga Namespace README](README.md) - General namespace documentation
 - [Cloudflare Origin Certificate Setup](CLOUDFLARE_ORIGIN_CERT_SETUP.md) - SSL/TLS certificate configuration
 - [Cloudflare Email Setup](CLOUDFLARE_EMAIL_SETUP.md) - Email forwarding configuration
-

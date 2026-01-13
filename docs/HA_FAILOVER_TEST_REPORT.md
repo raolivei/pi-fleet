@@ -6,7 +6,7 @@
 ## Test Setup
 
 - **Cluster:** Eldertree (3-node HA control plane)
-- **Nodes:** 
+- **Nodes:**
   - node-1.eldertree.local (10.0.0.1) - Control plane + etcd
   - node-2.eldertree.local (10.0.0.2) - Control plane + etcd
   - node-3.eldertree.local (10.0.0.3) - Control plane + etcd
@@ -64,6 +64,7 @@ Workloads were properly distributed across the remaining nodes.
 **✅ HA FAILOVER TEST: PASSED**
 
 The cluster successfully:
+
 1. Detected the node failure within 60 seconds
 2. Maintained etcd quorum (2/3 = 66.7% > 50%)
 3. Kept API server accessible from multiple endpoints
@@ -102,6 +103,3 @@ The cluster successfully:
 - [HA Setup Guide](HA_SETUP.md)
 - [Network Architecture](../NETWORK.md)
 - [Troubleshooting Guide](NODE_TROUBLESHOOTING.md)
-
-
-

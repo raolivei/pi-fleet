@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eldertree-docs
+  namespace: eldertree-docs
+  labels:
+    app.kubernetes.io/name: eldertree-docs
+    app.kubernetes.io/component: documentation
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+spec:
+  rules:
+    - host: docs.eldertree.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: eldertree-docs
+                port:
+                  number: 80
+
+

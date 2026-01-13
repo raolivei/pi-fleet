@@ -41,11 +41,13 @@ kubectl exec -n vault $VAULT_POD -- \
 ### In Scripts
 
 **❌ DON'T:**
+
 ```bash
 GITHUB_TOKEN="ghp_YOUR_TOKEN_HERE"  # Hardcoded - never do this!
 ```
 
 **✅ DO:**
+
 ```bash
 # Read from Vault
 GITHUB_TOKEN=$(./scripts/get-vault-secret.sh secret/canopy/ghcr-token token)
@@ -57,11 +59,13 @@ GITHUB_TOKEN="${GITHUB_TOKEN:-$(./scripts/get-vault-secret.sh secret/canopy/ghcr
 ## Common Secret Paths
 
 ### GitHub Container Registry
+
 - **Path**: `secret/canopy/ghcr-token` or `secret/pi-fleet/ghcr-token`
 - **Key**: `token`
 - **Usage**: For pulling/pushing Docker images to GHCR
 
 ### Cloudflare API
+
 - **Path**: `secret/pi-fleet/terraform/cloudflare-api-token`
 - **Key**: `api-token`
 - **Usage**: Terraform DNS management
@@ -71,6 +75,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN:-$(./scripts/get-vault-secret.sh secret/canopy/ghcr
 - **Usage**: External-DNS Cloudflare provider
 
 ### Application Secrets
+
 - **Path**: `secret/{app}/postgres`
 - **Key**: `password`
 - **Usage**: Database passwords
@@ -156,6 +161,7 @@ kubectl create secret docker-registry ghcr-secret \
 ### Step 1: Identify the Secret
 
 Run the audit script:
+
 ```bash
 ./scripts/audit-secrets.sh
 ```
@@ -174,11 +180,13 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/path/to/secret key="valu
 Replace hardcoded values with Vault reads:
 
 **Before:**
+
 ```bash
 GITHUB_TOKEN="ghp_YOUR_TOKEN_HERE"  # Hardcoded - bad!
 ```
 
 **After:**
+
 ```bash
 GITHUB_TOKEN=$(./scripts/get-vault-secret.sh secret/canopy/ghcr-token token)
 ```
@@ -233,4 +241,3 @@ Make sure you're using the root token or have proper Vault policies configured.
 - [Vault Documentation](../VAULT.md)
 - [External Secrets Operator](https://external-secrets.io/)
 - [Secret Audit Script](../scripts/audit-secrets.sh)
-

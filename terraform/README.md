@@ -174,7 +174,11 @@ Terraform manages the Cloudflare Tunnel for `swimto.eldertree.xyz`:
 - `cloudflare_tunnel_name` - Tunnel name
 - `cloudflare_tunnel_cname` - CNAME target for DNS records
 
-### Cloudflare Origin Certificate
+### Cloudflare Origin Certificates
+
+Terraform can create and manage Cloudflare Origin Certificates:
+
+#### swimto.eldertree.xyz
 
 Terraform can generate components for Cloudflare Origin Certificate for `swimto.eldertree.xyz`:
 
@@ -211,6 +215,48 @@ rm cert.pem key.pem
 - `swimto_origin_certificate` - The certificate (PEM format)
 - `swimto_origin_private_key` - The private key (PEM format, sensitive)
 - `swimto_certificate_id` - Cloudflare certificate ID
+
+#### pitanga.cloud
+
+Terraform manages the Cloudflare Origin Certificate for `pitanga.cloud`:
+
+- **Certificate**: Valid for 15 years (5475 days)
+- **Hostnames**: `pitanga.cloud` and `*.pitanga.cloud` (wildcard)
+- **Type**: RSA (2048-bit)
+
+**Prerequisites:**
+
+- `pitanga_cloud_zone_id` variable set in Terraform
+- Cloudflare API token with "SSL and Certificates:Edit" permission
+- See [ORIGIN_CERT_API_PERMISSIONS.md](ORIGIN_CERT_API_PERMISSIONS.md)
+
+**After applying Terraform, store the certificate in Vault:**
+
+```bash
+./scripts/store-pitanga-cert-from-terraform.sh
+```
+
+This stores the certificate in Vault at `secret/pitanga/cloudflare-origin-cert`, which is then synced to Kubernetes via External Secrets Operator.
+
+**Terraform outputs:**
+
+- `pitanga_cloud_origin_certificate` - The certificate (PEM format)
+- `pitanga_cloud_origin_private_key` - The private key (PEM format, sensitive)
+- `pitanga_cloud_certificate_id` - Certificate ID in Cloudflare
+
+**Adding New Hostnames:**
+
+To add new hostnames (e.g., `newservice.pitanga.cloud`), simply update the `hostnames` list in `cloudflare.tf`:
+
+```hcl
+hostnames = [
+  "pitanga.cloud",
+  "*.pitanga.cloud",
+  "newservice.pitanga.cloud"  # Add new hostname here
+]
+```
+
+Then run `terraform apply`. The certificate will be updated automatically.
 
 **Next steps after storing certificate:**
 

@@ -2,26 +2,55 @@
 
 **Quick reference for all services, IPs, URLs, and credentials in the eldertree Kubernetes cluster.**
 
-**Last Updated:** January 9, 2025  
+**Last Updated:** January 13, 2026  
 **Cluster:** eldertree (Raspberry Pi 5 k3s cluster)
 
 ---
 
 ## 📡 Network Infrastructure
 
-### Cluster Nodes
+### Cluster Nodes (3-Node HA Control Plane)
 
-| Node | Hostname | IP (wlan0) | IP (eth0) | Role |
-|------|----------|------------|-----------|------|
-| node-1 | `node-1.eldertree.local` | `192.168.2.101` | `10.0.0.1` | Control Plane + etcd |
-| node-2 | `node-2.eldertree.local` | `192.168.2.102` | `10.0.0.2` | Worker |
-| node-3 | `node-3.eldertree.local` | `192.168.2.103` | `10.0.0.3` | Worker |
+| Node   | Hostname                 | IP (wlan0)      | IP (eth0)  | Role                         |
+| ------ | ------------------------ | --------------- | ---------- | ---------------------------- |
+| node-1 | `node-1.eldertree.local` | `192.168.2.101` | `10.0.0.1` | Control Plane + etcd + Vault |
+| node-2 | `node-2.eldertree.local` | `192.168.2.102` | `10.0.0.2` | Control Plane + etcd + Vault |
+| node-3 | `node-3.eldertree.local` | `192.168.2.103` | `10.0.0.3` | Control Plane + etcd + Vault |
+
+**High Availability:** All 3 nodes are control-plane nodes. The cluster can survive the loss of ANY single node.
+
+- **kube-vip VIP:** `192.168.2.100` (API server failover)
+- **Failure Tolerance:** 1 node (etcd quorum: 2/3)
 
 ### DNS Server
 
 - **Pi-hole DNS:** `192.168.2.201` (MetalLB LoadBalancer)
 - **Router DNS:** Configure router to use `192.168.2.201` as primary DNS
 - **Local Domain:** `*.eldertree.local` (resolves to `192.168.2.201`)
+
+### ⚠️ Wi-Fi Client Isolation Issue
+
+MetalLB LoadBalancer IP (`192.168.2.200`) may not be reachable from Wi-Fi clients due to router AP isolation. **Workarounds:**
+
+1. **NodePort Access** (recommended):
+
+   ```bash
+   # HTTPS via NodePort 32474
+   curl -k https://192.168.2.101:32474 -H 'Host: vault.eldertree.local'
+
+   # HTTP via NodePort 31801
+   curl http://192.168.2.101:31801 -H 'Host: grafana.eldertree.local'
+   ```
+
+2. **Port Forward** (for individual services):
+
+   ```bash
+   kubectl port-forward -n vault svc/vault 8200:8200
+   ```
+
+3. **Disable AP Isolation** on your router (enables direct LoadBalancer IP access)
+
+4. **Use `/etc/hosts`** with NodePort: Run `scripts/add-services-to-hosts.sh`
 
 ### Kubernetes API
 
@@ -33,65 +62,71 @@
 
 ## 🔧 Infrastructure Services
 
-### Vault (Secrets Management)
+### Vault (Secrets Management) - HA Mode
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://vault.eldertree.local` |
-| **Namespace** | `vault` |
-| **Port Forward** | `kubectl port-forward -n vault svc/vault 8200:8200` → `https://localhost:8200` |
-| **Credentials** | Root token stored in password manager (see "Getting Credentials" section) |
-| **Unseal Keys** | 5 keys (need 3 to unseal) - stored securely |
-| **Unseal Script** | `./scripts/operations/unseal-vault.sh` |
-| **Status Check** | `kubectl exec -n vault vault-0 -- vault status` |
+| Property          | Value                                                                          |
+| ----------------- | ------------------------------------------------------------------------------ |
+| **Local URL**     | `https://vault.eldertree.local`                                                |
+| **Namespace**     | `vault`                                                                        |
+| **Mode**          | **HA with Raft** (3 replicas, 1 leader + 2 standbys)                           |
+| **Storage**       | Longhorn (replicated across all nodes)                                         |
+| **Port Forward**  | `kubectl port-forward -n vault svc/vault 8200:8200` → `https://localhost:8200` |
+| **Credentials**   | Root token stored in K8s secret `vault-unseal-keys` and password manager       |
+| **Unseal Keys**   | 5 keys (need 3 to unseal) - stored in K8s secret for auto-unseal               |
+| **Unseal Script** | `./scripts/operations/unseal-vault.sh` (unseals all 3 pods automatically)      |
+| **Init Script**   | `./scripts/operations/init-vault-ha.sh` (for fresh cluster initialization)     |
+| **Status Check**  | `kubectl exec -n vault vault-0 -- vault status`                                |
+| **Raft Peers**    | `kubectl exec -n vault vault-0 -- vault operator raft list-peers`              |
 
-**⚠️ Important:** Vault seals after each restart. Unseal using the script above.
+**HA Failover:** If the leader pod fails, a standby is automatically promoted to leader within seconds.
+
+**⚠️ Important:** After node restarts, run `./scripts/operations/unseal-vault.sh` to unseal all pods.
 
 ### Grafana (Monitoring Dashboards)
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://grafana.eldertree.local` |
-| **Namespace** | `observability` |
-| **Username** | `admin` |
-| **Password** | Stored in Vault: `secret/monitoring/grafana` → `adminPassword` |
-| **How to Get Password** | See "Getting Credentials" section below |
+| Property                | Value                                                          |
+| ----------------------- | -------------------------------------------------------------- |
+| **Local URL**           | `https://grafana.eldertree.local`                              |
+| **Namespace**           | `observability`                                                |
+| **Username**            | `admin`                                                        |
+| **Password**            | Stored in Vault: `secret/monitoring/grafana` → `adminPassword` |
+| **How to Get Password** | See "Getting Credentials" section below                        |
 
 ### Prometheus (Metrics)
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://prometheus.eldertree.local` |
-| **Namespace** | `observability` |
-| **Authentication** | None (internal only) |
+| Property           | Value                                |
+| ------------------ | ------------------------------------ |
+| **Local URL**      | `https://prometheus.eldertree.local` |
+| **Namespace**      | `observability`                      |
+| **Authentication** | None (internal only)                 |
 
 ### Pi-hole (DNS & Ad Blocking)
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://pihole.eldertree.local/admin/` |
-| **DNS IP** | `192.168.2.201` (port 53) |
-| **Namespace** | `pihole` |
-| **Password** | Stored in Vault: `secret/pi-fleet/pihole/webpassword` |
-| **How to Get Password** | See "Getting Credentials" section below |
+| Property                | Value                                                 |
+| ----------------------- | ----------------------------------------------------- |
+| **Local URL**           | `https://pihole.eldertree.local/admin/`               |
+| **DNS IP**              | `192.168.2.201` (port 53)                             |
+| **Namespace**           | `pihole`                                              |
+| **Password**            | Stored in Vault: `secret/pi-fleet/pihole/webpassword` |
+| **How to Get Password** | See "Getting Credentials" section below               |
 
 ### FluxCD (GitOps UI)
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://flux-ui.eldertree.local` (if deployed) |
-| **Namespace** | `flux-system` |
-| **Git Repository** | `https://github.com/raolivei/pi-fleet` |
-| **Branch** | `main` |
-| **Path** | `clusters/eldertree/` |
+| Property           | Value                                           |
+| ------------------ | ----------------------------------------------- |
+| **Local URL**      | `https://flux-ui.eldertree.local` (if deployed) |
+| **Namespace**      | `flux-system`                                   |
+| **Git Repository** | `https://github.com/raolivei/pi-fleet`          |
+| **Branch**         | `main`                                          |
+| **Path**           | `clusters/eldertree/`                           |
 
 ### Eldertree Docs
 
-| Property | Value |
-|----------|-------|
+| Property       | Value                                       |
+| -------------- | ------------------------------------------- |
 | **Public URL** | `https://docs.eldertree.xyz` (GitHub Pages) |
-| **Local URL** | `https://docs.eldertree.local` |
-| **Namespace** | `eldertree-docs` |
+| **Local URL**  | `https://docs.eldertree.local`              |
+| **Namespace**  | `eldertree-docs`                            |
 
 ---
 
@@ -99,46 +134,46 @@
 
 ### Canopy (Personal Finance)
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://canopy.eldertree.local` |
-| **API URL** | `https://canopy.eldertree.local/api` |
-| **Namespace** | `canopy` |
-| **Frontend Port** | 3000 |
-| **API Port** | 8000 |
-| **Database** | PostgreSQL (in cluster) |
-| **Credentials** | Stored in Vault: `secret/canopy/*` |
+| Property          | Value                                |
+| ----------------- | ------------------------------------ |
+| **Local URL**     | `https://canopy.eldertree.local`     |
+| **API URL**       | `https://canopy.eldertree.local/api` |
+| **Namespace**     | `canopy`                             |
+| **Frontend Port** | 3000                                 |
+| **API Port**      | 8000                                 |
+| **Database**      | PostgreSQL (in cluster)              |
+| **Credentials**   | Stored in Vault: `secret/canopy/*`   |
 
 ### SwimTO (Toronto Pool Schedules)
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://swimto.eldertree.local` |
-| **Public URL** | `https://swimto.eldertree.xyz` (via Cloudflare Tunnel) |
-| **API URL** | `https://swimto.eldertree.local/api` or `https://swimto.eldertree.xyz/api` |
-| **Namespace** | `swimto` |
-| **Frontend Port** | 3000 |
-| **API Port** | 8000 |
-| **Database** | PostgreSQL (in cluster) |
-| **Cache** | Redis (in cluster) |
-| **Credentials** | Stored in Vault: `secret/swimto/*` |
+| Property          | Value                                                                      |
+| ----------------- | -------------------------------------------------------------------------- |
+| **Local URL**     | `https://swimto.eldertree.local`                                           |
+| **Public URL**    | `https://swimto.eldertree.xyz` (via Cloudflare Tunnel)                     |
+| **API URL**       | `https://swimto.eldertree.local/api` or `https://swimto.eldertree.xyz/api` |
+| **Namespace**     | `swimto`                                                                   |
+| **Frontend Port** | 3000                                                                       |
+| **API Port**      | 8000                                                                       |
+| **Database**      | PostgreSQL (in cluster)                                                    |
+| **Cache**         | Redis (in cluster)                                                         |
+| **Credentials**   | Stored in Vault: `secret/swimto/*`                                         |
 
 ### Journey (Career Pathfinder)
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://journey.eldertree.local` (if deployed) |
-| **Namespace** | `journey` |
-| **Database** | PostgreSQL (in cluster) |
-| **Credentials** | Stored in Vault: `secret/journey/*` |
+| Property        | Value                                           |
+| --------------- | ----------------------------------------------- |
+| **Local URL**   | `https://journey.eldertree.local` (if deployed) |
+| **Namespace**   | `journey`                                       |
+| **Database**    | PostgreSQL (in cluster)                         |
+| **Credentials** | Stored in Vault: `secret/journey/*`             |
 
 ### NIMA (AI/ML Learning)
 
-| Property | Value |
-|----------|-------|
-| **Local URL** | `https://nima.eldertree.local` (if deployed) |
-| **Namespace** | `nima` |
-| **Credentials** | Stored in Vault: `secret/nima/*` |
+| Property        | Value                                        |
+| --------------- | -------------------------------------------- |
+| **Local URL**   | `https://nima.eldertree.local` (if deployed) |
+| **Namespace**   | `nima`                                       |
+| **Credentials** | Stored in Vault: `secret/nima/*`             |
 
 ---
 
@@ -146,22 +181,22 @@
 
 ### Pitanga Website
 
-| Property | Value |
-|----------|-------|
+| Property        | Value                                                  |
+| --------------- | ------------------------------------------------------ |
 | **Public URLs** | `https://pitanga.cloud`<br>`https://www.pitanga.cloud` |
-| **Local URL** | `https://pitanga.eldertree.local` |
-| **Namespace** | `pitanga` |
-| **TLS** | Cloudflare Origin Certificate |
-| **Access** | Public (via Cloudflare Tunnel) |
+| **Local URL**   | `https://pitanga.eldertree.local`                      |
+| **Namespace**   | `pitanga`                                              |
+| **TLS**         | Cloudflare Origin Certificate                          |
+| **Access**      | Public (via Cloudflare Tunnel)                         |
 
 ### Northwaysignal Website
 
-| Property | Value |
-|----------|-------|
+| Property       | Value                                  |
+| -------------- | -------------------------------------- |
 | **Public URL** | `https://northwaysignal.pitanga.cloud` |
-| **Namespace** | `pitanga` |
-| **TLS** | Cloudflare Origin Certificate |
-| **Access** | Public (via Cloudflare Tunnel) |
+| **Namespace**  | `pitanga`                              |
+| **TLS**        | Cloudflare Origin Certificate          |
+| **Access**     | Public (via Cloudflare Tunnel)         |
 
 ---
 
@@ -170,6 +205,7 @@
 ### Method 1: Vault UI (Recommended)
 
 1. **Port forward to Vault:**
+
    ```bash
    export KUBECONFIG=~/.kube/config-eldertree
    kubectl port-forward -n vault svc/vault 8200:8200

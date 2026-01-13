@@ -113,3 +113,5 @@ echo "  ssh raolivei@192.168.2.102 'sudo journalctl -u k3s-agent -f'"
 echo ""
 
 
+
+

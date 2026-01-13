@@ -7,12 +7,14 @@ The token is active, but Terraform still reports permission error (1016) when cr
 ## What to Check
 
 1. **In Cloudflare Dashboard:**
+
    - Go to: https://dash.cloudflare.com/profile/api-tokens
    - Find: `eldertree-terraform-full`
    - Click `...` → **View** (to see current permissions)
    - Verify **Zone** → **SSL and Certificates** → **Edit** is listed
 
 2. **Permission Scope:**
+
    - Make sure the permission is set for the correct zone (`pitanga.cloud`)
    - Or set it for "All zones" if you want it to work for all domains
 
@@ -27,6 +29,7 @@ If Cloudflare generated a new token value when you edited permissions:
 
 1. **Copy the new token value** from Cloudflare Dashboard
 2. **Update in Vault:**
+
    ```bash
    export KUBECONFIG=~/.kube/config-eldertree
    VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
@@ -46,6 +49,7 @@ If Cloudflare generated a new token value when you edited permissions:
 Sometimes Zone-level permissions don't work for Origin Certificates. Try:
 
 1. **Edit Token:**
+
    - Add **Account** → **SSL and Certificates** → **Edit** (in addition to Zone-level)
    - Or use Account-level instead of Zone-level
 
@@ -61,5 +65,3 @@ If token permissions continue to be an issue, you can create the certificate man
 3. Store in Vault using the script
 
 This is acceptable since Origin Certificates are long-lived (15 years).
-
-

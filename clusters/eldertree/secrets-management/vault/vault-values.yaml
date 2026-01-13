@@ -1,36 +1,76 @@
+# Vault HA Configuration with Raft Integrated Storage
+# Updated: January 13, 2026
+#
+# This configuration runs Vault in HA mode with:
+# - 3 replicas (one per node)
+# - Raft integrated storage (data replicated across nodes)
+# - Longhorn PVCs for each pod
+# - Anti-affinity to spread pods across nodes
+#
+# Unseal keys are stored in K8s secret: vault-unseal-keys
+# Initialize with: ./scripts/operations/init-vault-ha.sh
+# Unseal with: ./scripts/operations/unseal-vault.sh
+
 server:
   dev:
-    enabled: false # Production mode with persistence
-
-  # Enable persistence for secrets
+    enabled: false  # Production mode with persistence
+  
+  # Enable persistence for secrets - each pod gets its own PVC
   dataStorage:
     enabled: true
     size: 10Gi
     storageClass: longhorn
     accessMode: ReadWriteOnce
-
-  # Standalone mode (single-node cluster)
+  
+  # HA mode with Raft integrated storage
   ha:
-    enabled: false
-  standalone:
     enabled: true
-    config: |
-      ui = true
-
-      listener "tcp" {
-        tls_disable = 1
-        address = "[::]:8200"
-        cluster_address = "[::]:8201"
-      }
-
-      storage "file" {
-        path = "/vault/data"
-      }
-
-      # Disable mlock for non-root containers
-      disable_mlock = true
-
-  replicas: 1
+    replicas: 3
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        ui = true
+        
+        listener "tcp" {
+          tls_disable = 1
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+        }
+        
+        storage "raft" {
+          path = "/vault/data"
+          
+          retry_join {
+            leader_api_addr = "http://vault-0.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "http://vault-1.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "http://vault-2.vault-internal:8200"
+          }
+        }
+        
+        service_registration "kubernetes" {}
+        
+        # Disable mlock for non-root containers
+        disable_mlock = true
+  
+  # Disable standalone mode (using HA instead)
+  standalone:
+    enabled: false
+  
+  # Spread pods across nodes for true HA
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: vault
+              component: server
+          topologyKey: kubernetes.io/hostname
+  
   ui:
     enabled: true
     serviceType: ClusterIP
@@ -45,5 +85,6 @@ server:
           - vault.eldertree.local
     annotations:
       cert-manager.io/cluster-issuer: ca-cluster-issuer
+
 injector:
   enabled: true

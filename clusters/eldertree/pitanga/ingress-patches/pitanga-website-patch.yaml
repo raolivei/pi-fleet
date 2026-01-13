@@ -20,4 +20,3 @@ spec:
                 name: pitanga-website-service
                 port:
                   number: 80
-

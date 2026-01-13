@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [NET-003](https://docs.eldertree.xyz/runbook/issues/network/NET-003)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Fix Nodes After Netplan Configuration Issue
 
 ## Current Situation
@@ -143,6 +153,8 @@ Once nodes are reachable:
 
 - [Node IP Assignment](./NODE_IP_ASSIGNMENT.md)
 - [Recover Network Connectivity](./RECOVER_NETWORK_CONNECTIVITY.md)
+
+
 
 
 

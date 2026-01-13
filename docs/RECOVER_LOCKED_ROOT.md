@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [SSH-003](https://docs.eldertree.xyz/runbook/issues/ssh/SSH-003)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Recover Locked Root Account on node-0
 
 ## Problem

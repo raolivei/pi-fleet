@@ -26,19 +26,19 @@ spec:
           image: ghcr.io/raolivei/pitanga-website:latest # {"$imagepolicy": "pitanga:pitanga-website-policy"}
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 80
+            - containerPort: 5000
               name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "5000"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
             capabilities:
               drop:
                 - ALL
-          volumeMounts:
-            - name: nginx-cache
-              mountPath: /var/cache/nginx
-            - name: nginx-tmp
-              mountPath: /var/run
           resources:
             requests:
               memory: "64Mi"
@@ -48,20 +48,13 @@ spec:
               cpu: "100m"
           livenessProbe:
             httpGet:
-              path: /health
-              port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 15
           readinessProbe:
             httpGet:
-              path: /health
-              port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 5
-      volumes:
-        - name: nginx-cache
-          emptyDir: {}
-        - name: nginx-tmp
-          emptyDir: {}
-
-
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10

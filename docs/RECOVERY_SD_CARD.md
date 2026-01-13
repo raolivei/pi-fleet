@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [EMERG-004](https://docs.eldertree.xyz/runbook/issues/boot/EMERG-004)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Universal Recovery SD Card
 
 A universal recovery SD card that can boot any Raspberry Pi in the fleet when the primary NVMe boot fails.

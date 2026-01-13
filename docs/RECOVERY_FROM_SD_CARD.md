@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [EMERG-003](https://docs.eldertree.xyz/runbook/issues/boot/EMERG-003)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Recovery via SD Card Backup
 
 ## Situation

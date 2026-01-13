@@ -240,6 +240,20 @@ resource "cloudflare_record" "blog_eldertree_xyz_github_pages" {
   comment         = "blog.eldertree.xyz - GitHub Pages for pi-fleet-blog - managed by Terraform"
 }
 
+# DNS CNAME record for docs.eldertree.xyz pointing to GitHub Pages
+# This creates the DNS record for the eldertree-docs runbook site
+resource "cloudflare_record" "docs_eldertree_xyz_github_pages" {
+  count           = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "docs"
+  content         = "raolivei.github.io"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy (orange cloud) for automatic HTTPS
+  allow_overwrite = true
+  comment         = "docs.eldertree.xyz - GitHub Pages for eldertree-docs runbook - managed by Terraform"
+}
+
 # Output zone ID for External-DNS integration
 output "cloudflare_zone_id" {
   description = "Cloudflare Zone ID for eldertree.xyz (for External-DNS configuration)"

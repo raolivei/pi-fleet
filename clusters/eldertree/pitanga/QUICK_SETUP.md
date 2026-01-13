@@ -48,6 +48,7 @@ This will prompt you for the API token interactively.
 ## API Token Requirements
 
 Your Cloudflare API token must have:
+
 - **Zone** → **Zone** → **Read**
 - **Zone** → **DNS** → **Edit**
 - **Zone** → **SSL and Certificates** → **Edit** ← **Required for Origin Certificates**
@@ -58,5 +59,3 @@ Your Cloudflare API token must have:
 2. Check secret: `kubectl get secret pitanga-cloudflare-origin-tls -n pitanga`
 3. Set Cloudflare SSL mode to "Full (strict)" in Cloudflare Dashboard
 4. Test: `curl -v https://pitanga.cloud`
-
-

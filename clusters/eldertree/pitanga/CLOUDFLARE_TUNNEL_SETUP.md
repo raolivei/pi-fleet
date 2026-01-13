@@ -9,6 +9,7 @@
 ## Solution: Add Tunnel Ingress Rules
 
 The Cloudflare Tunnel configuration has been updated in Terraform to include routes for:
+
 - `pitanga.cloud`
 - `www.pitanga.cloud`
 - `northwaysignal.pitanga.cloud`
@@ -32,6 +33,7 @@ terraform apply -target=cloudflare_zero_trust_tunnel_cloudflared_config.eldertre
 After applying, verify the tunnel has the new routes:
 
 1. **Check Cloudflare Dashboard**:
+
    - Go to Zero Trust → Networks → Tunnels
    - Click on "eldertree" tunnel
    - Verify routes include:
@@ -40,12 +42,14 @@ After applying, verify the tunnel has the new routes:
      - `northwaysignal.pitanga.cloud`
 
 2. **Check Tunnel Pod Logs**:
+
    ```bash
    export KUBECONFIG=~/.kube/config-eldertree
    kubectl logs -n dns-services -l app=cloudflared --tail=50
    ```
-   
+
    Look for:
+
    - ✅ "Registered tunnel connection" - Tunnel is connected
    - ✅ No errors about routing
 
@@ -74,21 +78,25 @@ After applying, verify the tunnel has the new routes:
 ### If 525 error persists after applying:
 
 1. **Check tunnel pod is running**:
+
    ```bash
    kubectl get pods -n dns-services -l app=cloudflared
    ```
 
 2. **Check tunnel logs for errors**:
+
    ```bash
    kubectl logs -n dns-services -l app=cloudflared --tail=100
    ```
 
 3. **Verify DNS records**:
+
    - Cloudflare Dashboard → DNS → Records
    - `pitanga.cloud` should be proxied (orange cloud)
    - `northwaysignal.pitanga.cloud` should be proxied (orange cloud)
 
 4. **Check Cloudflare SSL/TLS mode**:
+
    - Cloudflare Dashboard → SSL/TLS → Overview
    - Should be set to **Full (strict)** to validate origin certificate
 
@@ -102,4 +110,3 @@ After applying, verify the tunnel has the new routes:
 - Terraform configuration: `pi-fleet/terraform/cloudflare.tf`
 - Tunnel deployment: `pi-fleet/clusters/eldertree/dns-services/cloudflare-tunnel/`
 - Certificate setup: `pi-fleet/clusters/eldertree/pitanga/CLOUDFLARE_ORIGIN_CERT_SETUP.md`
-

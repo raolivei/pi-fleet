@@ -16,6 +16,7 @@ cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet
 ```
 
 This script:
+
 1. Tries to connect to each control plane node in order (node-1, node-2, node-3)
 2. Retrieves the kubeconfig from the first available node
 3. Updates the kubeconfig to use that node's IP
@@ -52,6 +53,7 @@ kubectl apply -f https://raw.githubusercontent.com/kube-vip/kube-vip/main/manife
 ```
 
 **Benefits**:
+
 - Works well with k3s
 - Lightweight
 - Automatic failover
@@ -70,6 +72,7 @@ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.5/confi
 ```
 
 **Benefits**:
+
 - Industry standard
 - More features (BGP, L2)
 - Good for larger clusters
@@ -114,6 +117,7 @@ kubectl get nodes
 After setting up HA kubeconfig, test failover:
 
 1. **Check current endpoint**:
+
    ```bash
    kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'
    ```
@@ -125,4 +129,3 @@ After setting up HA kubeconfig, test failover:
 - [kube-vip Documentation](https://kube-vip.io/)
 - [MetalLB Documentation](https://metallb.universe.tf/)
 - [k3s High Availability](https://docs.k3s.io/installation/ha)
-

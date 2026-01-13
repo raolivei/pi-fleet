@@ -123,3 +123,5 @@ echo "   ansible-playbook playbooks/configure-eth0-static.yml --limit node-1"
 echo ""
 
 
+
+

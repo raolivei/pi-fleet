@@ -20,5 +20,3 @@ spec:
                 name: northwaysignal-website-service
                 port:
                   number: 80
-
-

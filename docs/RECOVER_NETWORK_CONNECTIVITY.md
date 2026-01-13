@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [NET-001](https://docs.eldertree.xyz/runbook/issues/network/NET-001)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Recovering Network Connectivity After Netplan Configuration
 
 If nodes become unreachable after running Ansible playbooks that configure static IPs, follow these recovery steps.
@@ -130,6 +140,8 @@ ansible raspberry_pi -m shell -a "ip addr show eth0 | grep 'inet '"
 
 - [Node IP Assignment](./NODE_IP_ASSIGNMENT.md)
 - [Ansible README](../ansible/README.md)
+
+
 
 
 

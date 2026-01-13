@@ -102,3 +102,4 @@ echo "3. Check secret: kubectl get secret pitanga-cloudflare-origin-tls -n pitan
 echo ""
 
 
+

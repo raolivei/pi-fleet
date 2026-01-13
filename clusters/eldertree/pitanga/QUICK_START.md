@@ -19,12 +19,14 @@
 ### Step 2: Create GHCR Secret
 
 **Option A: Use the script (easiest)**
+
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/pitanga
 ./setup-ghcr-secret.sh YOUR_GITHUB_TOKEN
 ```
 
 **Option B: Manual command**
+
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 
@@ -57,6 +59,7 @@ kubectl get services -n pitanga
 ## Expected Result
 
 After ~30 seconds:
+
 - ✅ Pods status: `Running`
 - ✅ Deployments: `READY 1/1`
 - ✅ Services accessible (HTTP)
@@ -70,6 +73,7 @@ After ~30 seconds:
 ## Troubleshooting
 
 **If pods still fail:**
+
 ```bash
 # Check pod events
 kubectl describe pod -n pitanga -l app=pitanga-website
@@ -82,8 +86,7 @@ kubectl get secret ghcr-secret -n pitanga
 ```
 
 **If image pull still fails:**
+
 - Verify token has `read:packages` permission
 - Check image exists: https://github.com/users/raolivei/packages
 - Verify image is not private (or token has access)
-
-

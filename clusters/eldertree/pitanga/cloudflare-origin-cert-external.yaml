@@ -25,5 +25,3 @@ spec:
       remoteRef:
         key: secret/pitanga/cloudflare-origin-cert
         property: private-key
-
-

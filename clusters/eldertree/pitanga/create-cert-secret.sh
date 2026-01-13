@@ -86,3 +86,4 @@ echo "1. Wait 30-60 seconds for Traefik to reload"
 echo "2. Test: curl -I https://pitanga.cloud"
 echo "3. Verify in Cloudflare Dashboard: SSL/TLS → Overview → Set to 'Full (strict)'"
 
+

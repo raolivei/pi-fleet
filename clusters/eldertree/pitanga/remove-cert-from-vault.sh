@@ -52,3 +52,4 @@ echo "2. Store new certificate: ./scripts/store-pitanga-cert-from-terraform.sh"
 echo "3. The ExternalSecret will automatically sync the new certificate to Kubernetes"
 
 
+

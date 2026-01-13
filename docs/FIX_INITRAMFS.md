@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [BOOT-004](https://docs.eldertree.xyz/runbook/issues/boot/BOOT-004)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Fix Initramfs Boot Issue
 
 ## Problem

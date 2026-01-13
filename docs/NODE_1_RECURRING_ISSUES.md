@@ -1,8 +1,19 @@
+<!-- MIGRATED TO RUNBOOK -->
+
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [NODE-002](https://docs.eldertree.xyz/runbook/issues/node/NODE-002)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
 # Node-1 Recurring Issues - Root Cause Analysis
 
 ## Problem
 
 Node-1 keeps experiencing failures:
+
 - SSH connections closed immediately
 - API server refusing connections
 - Complete node unresponsiveness
@@ -24,12 +35,14 @@ Connection closed by 192.168.2.101 port 22
 ### 1. Hardware Issues (Most Likely)
 
 **Check:**
+
 - **Power supply**: Insufficient or unstable power can cause crashes
 - **SD Card/NVMe**: Failing storage can cause system hangs
 - **Overheating**: Thermal throttling or shutdowns
 - **Network cable**: Faulty cable or switch port
 
 **Diagnosis:**
+
 ```bash
 # If you have physical access:
 # Check temperature
@@ -46,11 +59,13 @@ sudo dmesg | grep -i error
 ### 2. Resource Exhaustion
 
 **Check:**
+
 - **Memory (OOM)**: Out of memory kills processes
 - **Disk space**: Full disk causes system failures
 - **CPU**: 100% CPU can make system unresponsive
 
 **Diagnosis:**
+
 ```bash
 # Check memory usage
 free -h
@@ -68,11 +83,13 @@ journalctl -k | grep -i oom
 ### 3. k3s Service Crashes
 
 **Check:**
+
 - k3s service keeps crashing
 - Systemd restarts failing
 - Resource limits too low
 
 **Diagnosis:**
+
 ```bash
 # Check k3s service status
 sudo systemctl status k3s
@@ -85,11 +102,13 @@ sudo journalctl -u k3s --since "1 hour ago" | grep -i error
 ### 4. Network Configuration Issues
 
 **Check:**
+
 - Network interface going down
 - Routing table corruption
 - Firewall blocking everything
 
 **Diagnosis:**
+
 ```bash
 # Check network interfaces
 ip addr show
@@ -105,11 +124,13 @@ sudo ufw status verbose
 ### 5. System Crashes / Kernel Panics
 
 **Check:**
+
 - Kernel panics
 - System freezes
 - Watchdog timeouts
 
 **Diagnosis:**
+
 ```bash
 # Check for kernel panics
 dmesg | grep -i panic
@@ -198,14 +219,15 @@ dmesg | grep -i error
 1. **Connect keyboard/monitor** to node-1
 2. **Check if system is responsive** (can you see login prompt?)
 3. **Login and check:**
+
    ```bash
    # Check system status
    systemctl status k3s
    systemctl status ssh
-   
+
    # Check network
    ip addr show
-   
+
    # Check resources
    free -h
    df -h
@@ -220,6 +242,7 @@ dmesg | grep -i error
 ### Option 2: Power Cycle
 
 If system is completely unresponsive:
+
 1. **Power off** node-1 (unplug power)
 2. **Wait 10 seconds**
 3. **Power on** node-1
@@ -229,6 +252,7 @@ If system is completely unresponsive:
 ### Option 3: Check from Other Nodes
 
 From node-2 or node-3:
+
 ```bash
 # Ping node-1
 ping -c 3 192.168.2.101
@@ -242,6 +266,7 @@ curl -k https://192.168.2.101:6443/healthz
 ### 1. Set Up Monitoring
 
 Monitor node-1's health:
+
 - CPU usage
 - Memory usage
 - Disk space
@@ -249,6 +274,7 @@ Monitor node-1's health:
 - Network connectivity
 
 **Tools:**
+
 - Prometheus + Node Exporter
 - Grafana dashboards
 - Alertmanager for alerts
@@ -256,6 +282,7 @@ Monitor node-1's health:
 ### 2. Resource Limits
 
 Ensure k3s has proper resource limits:
+
 ```yaml
 # In k3s service file or systemd override
 [Service]
@@ -266,6 +293,7 @@ CPUQuota=200%
 ### 3. Automatic Recovery
 
 Set up systemd service to automatically restart k3s:
+
 ```ini
 [Service]
 Restart=always
@@ -277,6 +305,7 @@ StartLimitBurst=5
 ### 4. Health Checks
 
 Create a health check script that:
+
 - Monitors k3s service
 - Checks network connectivity
 - Verifies API server is responding
@@ -285,6 +314,7 @@ Create a health check script that:
 ### 5. Log Rotation
 
 Prevent disk space issues:
+
 ```bash
 # Configure log rotation
 sudo logrotate -f /etc/logrotate.conf
@@ -295,12 +325,14 @@ sudo logrotate -f /etc/logrotate.conf
 **Why node-2 and node-3 don't have these issues?**
 
 Possible reasons:
+
 1. **Different hardware** (node-1 might have failing component)
 2. **Different workload** (node-1 might be running more pods)
 3. **Different configuration** (node-1 might have misconfiguration)
 4. **Age/wear** (node-1 might be older or more used)
 
 **Action:** Compare node-1 configuration with node-2 and node-3:
+
 ```bash
 # Compare k3s configuration
 diff /etc/rancher/k3s/config.yaml node-1 node-2
@@ -312,11 +344,13 @@ diff /etc/rancher/k3s/config.yaml node-1 node-2
 ## Recommended Actions
 
 1. **Immediate:**
+
    - Power cycle node-1
    - Check hardware (power supply, temperature, storage)
    - Review system logs when accessible
 
 2. **Short-term:**
+
    - Set up monitoring/alerting
    - Configure automatic restarts
    - Set resource limits
@@ -332,5 +366,3 @@ diff /etc/rancher/k3s/config.yaml node-1 node-2
 2. Compare node-1 with node-2/node-3
 3. Set up monitoring to catch issues early
 4. Document any hardware issues found
-
-

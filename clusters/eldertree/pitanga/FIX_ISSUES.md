@@ -121,5 +121,3 @@ kubectl create secret tls pitanga-cloudflare-origin-tls \
   --key=<(echo "$KEY") \
   -n pitanga
 ```
-
-

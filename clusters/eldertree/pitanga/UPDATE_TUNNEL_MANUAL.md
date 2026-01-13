@@ -1,12 +1,15 @@
 # Manual Cloudflare Tunnel Update for pitanga.cloud
 
 ## Issue
+
 The Cloudflare Tunnel configuration needs to be updated to include routes for:
+
 - `pitanga.cloud`
 - `www.pitanga.cloud`
 - `northwaysignal.pitanga.cloud`
 
 ## Current Status
+
 - ✅ Terraform configuration updated (`cloudflare.tf`)
 - ❌ Terraform apply blocked by API token permissions
 - ❌ Direct API update blocked by authentication
@@ -18,18 +21,20 @@ Since the API token doesn't have tunnel permissions, update the tunnel configura
 ### Steps
 
 1. **Go to Cloudflare Dashboard**:
+
    - https://dash.cloudflare.com
    - Zero Trust → Networks → Tunnels
    - Click on `eldertree` tunnel
 
 2. **Edit Tunnel Configuration**:
+
    - Click **Configure** next to the connector
    - Or go to **Configuration** tab
 
 3. **Add Ingress Rules**:
-   
+
    Add these rules (in order, before the catch-all):
-   
+
    ```
    pitanga.cloud → http://10.43.23.214:80
    www.pitanga.cloud → http://10.43.23.214:80
@@ -37,6 +42,7 @@ Since the API token doesn't have tunnel permissions, update the tunnel configura
    ```
 
    **Full configuration should be:**
+
    ```
    1. swimto.eldertree.xyz/ → http://10.43.23.214:80
    2. swimto.eldertree.xyz/api/* → http://10.43.23.214:80
@@ -78,10 +84,10 @@ If you want to use Terraform/API in the future:
 The Traefik ClusterIP is: `10.43.23.214`
 
 To verify:
+
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 kubectl get svc traefik -n kube-system -o jsonpath='{.spec.clusterIP}'
 ```
 
 If it changes, update the tunnel configuration with the new IP.
-

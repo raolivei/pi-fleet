@@ -6,7 +6,7 @@ This guide walks you through setting up the Cloudflare Origin Certificate using 
 
 1. ✅ Domain `pitanga.cloud` added to Cloudflare
 2. ✅ Cloudflare API token in Vault with "SSL and Certificates:Edit" permission
-3. ⚠️  Need to get Zone ID for pitanga.cloud
+3. ⚠️ Need to get Zone ID for pitanga.cloud
 
 ## Step 1: Get Zone ID
 
@@ -67,6 +67,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet/terraform
 ```
 
 Review the output. You should see:
+
 - `cloudflare_origin_ca_certificate.pitanga_cloud` will be created
 - Certificate will include `pitanga.cloud` and `*.pitanga.cloud`
 
@@ -77,6 +78,7 @@ Review the output. You should see:
 ```
 
 This will:
+
 - Create the Origin Certificate in Cloudflare
 - Generate the certificate and private key
 - Make them available via Terraform outputs
@@ -88,6 +90,7 @@ This will:
 ```
 
 This will:
+
 - Retrieve certificate from Terraform output
 - Validate the certificate format
 - Store in Vault at `secret/pitanga/cloudflare-origin-cert`
@@ -134,8 +137,7 @@ Your API token doesn't have "SSL and Certificates:Edit" permission. See Step 3 a
 ## Next Steps
 
 Once the certificate is set up:
+
 - Both `pitanga.cloud` and `northwaysignal.pitanga.cloud` will work (wildcard covers all subdomains)
 - Certificate is valid for 15 years
 - To add more hostnames, update `cloudflare.tf` and run `terraform apply`
-
-

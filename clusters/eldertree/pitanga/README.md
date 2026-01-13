@@ -114,6 +114,7 @@ kubectl apply -k .
 ```
 
 **⚠️ Important**: Before deploying, ensure:
+
 - GHCR secret is created (see [QUICK_FIX.md](QUICK_FIX.md) or run `./create-ghcr-secret-direct.sh`)
 - Cloudflare Origin Certificate is synced from Vault (check ExternalSecret status)
 

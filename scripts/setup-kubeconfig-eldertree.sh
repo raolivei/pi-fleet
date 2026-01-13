@@ -1,6 +1,9 @@
 #!/bin/bash
 # Setup kubeconfig for eldertree cluster for use with Lens
 # This script retrieves the kubeconfig from node-1 and configures it properly
+#
+# NOTE: For HA clusters, use update-kubeconfig-ha.sh instead, which tries
+#       multiple nodes and works even if one node is down.
 
 set -e
 
@@ -88,5 +91,6 @@ echo ""
 echo "=========================================="
 echo "Setup Complete"
 echo "=========================================="
+
 
 

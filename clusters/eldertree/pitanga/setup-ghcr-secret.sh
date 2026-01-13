@@ -77,3 +77,4 @@ echo "🔍 Verify secret:"
 echo "   kubectl get secret ghcr-secret -n $NAMESPACE"
 
 
+

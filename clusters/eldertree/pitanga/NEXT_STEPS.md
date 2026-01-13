@@ -4,7 +4,7 @@
 
 ✅ **Image Published**: `ghcr.io/raolivei/pitanga-website:latest` is now available  
 ✅ **Certificate Created**: Cloudflare Origin Certificate stored in Vault  
-✅ **Build Fixed**: All build issues resolved  
+✅ **Build Fixed**: All build issues resolved
 
 ## Next Steps
 
@@ -13,12 +13,14 @@
 The ExternalSecret is showing `SecretSyncedError` due to Vault connection issues.
 
 **Check Vault connection:**
+
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 kubectl get clustersecretstore vault
 ```
 
 **If Vault is accessible, manually sync:**
+
 ```bash
 # Check ExternalSecret details
 kubectl describe externalsecret pitanga-cloudflare-origin-cert -n pitanga
@@ -28,6 +30,7 @@ kubectl delete externalsecret pitanga-cloudflare-origin-cert -n pitanga
 ```
 
 **Verify certificate in Vault:**
+
 ```bash
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
 kubectl exec -n vault $VAULT_POD -- vault kv get secret/pitanga/cloudflare-origin-cert
@@ -51,12 +54,14 @@ kubectl get kustomizations -n flux-system | grep pitanga
 ```
 
 **If deployments don't exist, apply them:**
+
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet/clusters/eldertree/pitanga
 kubectl apply -k .
 ```
 
 **Or let Flux sync automatically** (if kustomization is configured):
+
 ```bash
 # Force Flux to reconcile
 kubectl annotate kustomization pitanga -n flux-system reconcile.fluxcd.io/requestedAt="$(date +%s)"
@@ -78,6 +83,7 @@ kubectl annotate imagerepository pitanga-website -n pitanga reconcile.fluxcd.io/
 ```
 
 **Or manually update the image:**
+
 ```bash
 kubectl set image deployment/pitanga-website website=ghcr.io/raolivei/pitanga-website:latest -n pitanga
 ```
@@ -101,6 +107,7 @@ curl -vI https://northwaysignal.pitanga.cloud
 ### 5. Verify DNS and Cloudflare
 
 **Check DNS records:**
+
 ```bash
 # Check DNS resolution
 dig pitanga.cloud
@@ -111,6 +118,7 @@ dig northwaysignal.pitanga.cloud
 ```
 
 **Verify Cloudflare SSL/TLS mode:**
+
 - Go to: SSL/TLS → Overview
 - Mode should be: **Full (strict)** ✅
 - This ensures Cloudflare validates the Origin Certificate
@@ -148,22 +156,25 @@ kubectl get ingress -n pitanga
 ### Certificate Not Syncing
 
 1. **Check Vault connection:**
+
    ```bash
    kubectl describe clustersecretstore vault
    ```
 
 2. **Check ExternalSecret events:**
+
    ```bash
    kubectl describe externalsecret pitanga-cloudflare-origin-cert -n pitanga
    ```
 
 3. **Manually sync if needed:**
+
    ```bash
    # Get certificate from Vault
    VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
    CERT=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=certificate secret/pitanga/cloudflare-origin-cert)
    KEY=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=private-key secret/pitanga/cloudflare-origin-cert)
-   
+
    # Create secret manually
    kubectl create secret tls pitanga-cloudflare-origin-tls \
      --cert=<(echo "$CERT") \
@@ -174,12 +185,14 @@ kubectl get ingress -n pitanga
 ### Deployments Not Updating
 
 1. **Check ImagePolicy:**
+
    ```bash
    kubectl get imagepolicy -n pitanga
    kubectl describe imagepolicy pitanga-website-policy -n pitanga
    ```
 
 2. **Force image update:**
+
    ```bash
    kubectl set image deployment/pitanga-website website=ghcr.io/raolivei/pitanga-website:latest -n pitanga
    ```
@@ -192,11 +205,10 @@ kubectl get ingress -n pitanga
 ## Summary
 
 The main tasks are:
+
 1. **Fix certificate sync** (ExternalSecret → Kubernetes secret)
 2. **Deploy/update applications** (if not already deployed)
 3. **Verify HTTPS** (test both domains)
 4. **Monitor** (ensure everything is running)
 
 Once these are complete, both `pitanga.cloud` and `northwaysignal.pitanga.cloud` should be live with HTTPS!
-
-

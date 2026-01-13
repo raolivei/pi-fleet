@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [SSH-002](https://docs.eldertree.xyz/runbook/issues/ssh/SSH-002)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # SSH Service Recovery Guide
 
 ## Problem

@@ -12,5 +12,3 @@ data:
       port: 6443
       backendport: 6443
       protocol: tcp
-
-

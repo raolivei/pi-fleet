@@ -16,20 +16,24 @@ The API token doesn't have "SSL and Certificates:Edit" permission, so the certif
 ### Step 1: Create Certificate in Cloudflare Dashboard
 
 1. **Go to Cloudflare Dashboard:**
+
    - Visit: https://dash.cloudflare.com
    - Select `pitanga.cloud` domain
 
 2. **Navigate to SSL/TLS:**
+
    - Go to **SSL/TLS** → **Origin Server**
    - Click **Create Certificate**
 
 3. **Upload CSR:**
+
    - Select **Upload CSR** option
    - Open `/tmp/pitanga.csr` and copy the entire contents (including BEGIN/END lines)
    - Paste into the CSR field
 
 4. **Configure Certificate:**
-   - **Hostnames**: 
+
+   - **Hostnames**:
      - `pitanga.cloud`
      - `*.pitanga.cloud` (wildcard)
    - **Certificate Validity**: 15 years (maximum)
@@ -95,6 +99,7 @@ kubectl get secret pitanga-cloudflare-origin-tls -n pitanga -o jsonpath='{.data.
 If you want Terraform to create certificates automatically in the future:
 
 1. **Create New API Token:**
+
    - Cloudflare Dashboard → My Profile → API Tokens
    - Create custom token with:
      - **Zone** → **Zone** → **Read**
@@ -103,6 +108,7 @@ If you want Terraform to create certificates automatically in the future:
    - Zone Resources: Include `pitanga.cloud`
 
 2. **Update Token in Vault:**
+
    ```bash
    VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
    kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token='NEW_TOKEN'
@@ -120,5 +126,3 @@ If you want Terraform to create certificates automatically in the future:
 - ⏳ Certificate needs to be created manually in Cloudflare Dashboard
 - ⏳ Certificate needs to be stored in Vault
 - ⏳ ExternalSecret will sync to Kubernetes automatically
-
-

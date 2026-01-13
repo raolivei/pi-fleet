@@ -7,6 +7,7 @@ This document outlines the proper network configuration for Eldertree cluster no
 ## Root Cause of Node-1 Issues
 
 Node-1 experienced recurring network issues due to:
+
 1. **Dual IP Configuration**: Both static IP (192.168.2.101) and DHCP IP (192.168.2.86) on wlan0
 2. **Conflicting Configuration**: netplan had `dhcp4: true` while also configuring a static IP
 3. **NetworkManager Confusion**: NetworkManager tried to use both DHCP and static IP
@@ -16,6 +17,7 @@ Node-1 experienced recurring network issues due to:
 ### For wlan0 (WiFi - Management Network)
 
 **Required Configuration:**
+
 - ✅ **Single static IP** per node:
   - node-1: `192.168.2.101/24`
   - node-2: `192.168.2.102/24`
@@ -26,6 +28,7 @@ Node-1 experienced recurring network issues due to:
 - ✅ **DNS**: `192.168.2.201` (Pi-hole), `8.8.8.8` (fallback)
 
 **What NOT to do:**
+
 - ❌ Don't enable `dhcp4: true` in netplan when using static IP
 - ❌ Don't configure both DHCP and static IP in NetworkManager
 - ❌ Don't manually add multiple IPs to wlan0 (except kube-vip VIP)
@@ -33,6 +36,7 @@ Node-1 experienced recurring network issues due to:
 ### For eth0 (Gigabit Ethernet - Cluster Network)
 
 **Required Configuration:**
+
 - ✅ **Static IP** on isolated subnet:
   - node-1: `10.0.0.1/24`
   - node-2: `10.0.0.2/24`
@@ -50,24 +54,28 @@ The VIP (`192.168.2.100/32`) is automatically assigned by kube-vip to the leader
 Before considering a node's network configuration correct, verify:
 
 1. ✅ **Single IP on wlan0** (excluding VIP)
+
    ```bash
    ip addr show wlan0 | grep "inet " | grep -v "192.168.2.100"
    # Should show only one IP: 192.168.2.10X
    ```
 
 2. ✅ **DHCP disabled in netplan**
+
    ```bash
    sudo grep -r "dhcp4: true" /etc/netplan/
    # Should return nothing
    ```
 
 3. ✅ **NetworkManager configured correctly**
+
    ```bash
    sudo nmcli connection show | grep wlan0
    # Check that method is "manual" not "auto" or "dhcp"
    ```
 
 4. ✅ **No duplicate routes**
+
    ```bash
    ip route show | grep "192.168.2.0/24" | grep wlan0
    # Should show only one route
@@ -91,6 +99,7 @@ cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet
 ```
 
 This script checks:
+
 - Multiple IPs on wlan0 (excluding VIP)
 - DHCP enabled in netplan
 - NetworkManager configuration
@@ -125,6 +134,7 @@ ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/fix-network-co
 ### Monitoring
 
 Consider adding network validation to:
+
 - **Pre-deployment checks** in CI/CD
 - **Post-reboot validation** scripts
 - **Periodic health checks** (cron job)
@@ -134,17 +144,20 @@ Consider adding network validation to:
 ### If Dual IP Detected
 
 1. **Remove extra IP**:
+
    ```bash
    sudo ip addr del <wrong-ip>/24 dev wlan0
    ```
 
 2. **Disable DHCP in netplan**:
+
    ```bash
    sudo sed -i 's/dhcp4: true/dhcp4: false/' /etc/netplan/*.yaml
    sudo netplan apply
    ```
 
 3. **Fix NetworkManager**:
+
    ```bash
    sudo nmcli connection modify <connection-name> ipv4.method manual
    sudo systemctl restart NetworkManager
@@ -168,5 +181,3 @@ Consider adding network validation to:
 - [Node-1 Root Cause Analysis](NODE_1_ROOT_CAUSE.md)
 - [Network Configuration Safety](NETWORK_CONFIGURATION_SAFETY.md)
 - [Network Architecture](NETWORK_ARCHITECTURE.md)
-
-

@@ -44,3 +44,4 @@ echo "3. Re-apply ExternalSecret: kubectl apply -f cloudflare-origin-cert-extern
 echo "   (Or let GitOps/FluxCD sync it automatically)"
 
 
+

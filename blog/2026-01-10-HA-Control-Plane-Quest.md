@@ -563,6 +563,110 @@ See [LONGHORN_FIX_2026-01-12.md](../docs/LONGHORN_FIX_2026-01-12.md) for detaile
 
 ---
 
+## Act X: Vault HA - The Final Piece 🔐
+
+**Date:** January 13, 2026
+
+_[The saga continues with the final piece of true HA]_
+
+After achieving 3-node HA for the control plane and Longhorn storage, we had one remaining single point of failure: **Vault**. Running in standalone mode with 1 replica and local-path storage, if the node hosting Vault failed, all secrets management would go down.
+
+### The Problem
+
+```
+vault-0: Running on node-1 with local-path PVC
+         -> If node-1 dies, Vault dies
+         -> If Vault dies, External Secrets stop syncing
+         -> If External Secrets stop, apps lose their secrets
+```
+
+### The Solution: Vault HA with Raft
+
+We migrated Vault from standalone mode to full HA with:
+
+- **3 replicas** (one per node)
+- **Raft integrated storage** (data replicated across all nodes)
+- **Longhorn PVCs** (each pod has its own replicated storage)
+- **Kubernetes auto-unseal** (unseal keys stored in K8s secret)
+
+### Migration Process
+
+1. **Backup all secrets** using existing backup script
+2. **Update HelmRelease** to enable HA mode:
+
+```yaml
+server:
+  ha:
+    enabled: true
+    replicas: 3
+    raft:
+      enabled: true
+      setNodeId: true
+  dataStorage:
+    storageClass: longhorn  # Replicated storage
+```
+
+3. **Delete old StatefulSet and PVC** (local-path was pinned to node-1)
+4. **Let Flux deploy new HA configuration**
+5. **Initialize new Vault cluster** (generates new unseal keys)
+6. **Unseal all 3 pods**
+7. **Restore secrets from backup**
+8. **Update External Secrets vault-token**
+
+### Failover Test Results 🎯
+
+We deleted vault-0 (the leader) to test failover:
+
+```
+Before: vault-0 = leader, vault-1 = standby, vault-2 = standby
+After:  vault-0 = (deleted), vault-1 = LEADER, vault-2 = standby
+        -> New leader elected in < 15 seconds!
+        -> vault-0 restarted and rejoined as follower
+```
+
+**Results:**
+- ✅ New leader elected automatically (vault-1 took over)
+- ✅ No data loss (Raft replication preserved all secrets)
+- ✅ External Secrets continued syncing from new leader
+- ✅ Cluster returned to healthy state after vault-0 recovery
+- ✅ Failure Tolerance = 1 (can lose 1 node and maintain quorum)
+
+### Final HA Status
+
+| Component | Status | Failure Tolerance |
+|-----------|--------|-------------------|
+| Control Plane | 3-node HA | 1 node |
+| etcd | 3-node quorum | 1 node |
+| kube-vip | VIP failover | 1 node |
+| Longhorn Storage | 3 replicas | 1 node |
+| **Vault** | **3-node HA Raft** | **1 node** |
+
+### Scripts Created
+
+- `scripts/operations/init-vault-ha.sh` - Initialize HA cluster
+- `scripts/operations/unseal-vault.sh` - Updated for multi-pod unsealing
+
+### Related Documentation
+
+- [clusters/eldertree/secrets-management/vault/helmrelease.yaml](../clusters/eldertree/secrets-management/vault/helmrelease.yaml) - HA configuration
+
+---
+
+## 🏆 TRUE HIGH AVAILABILITY ACHIEVED
+
+**Now ANY single node in the eldertree cluster can fail, and EVERYTHING keeps running:**
+
+- ✅ Control plane survives (etcd quorum maintained)
+- ✅ API server accessible (kube-vip failover)
+- ✅ Storage survives (Longhorn replication)
+- ✅ Secrets survive (Vault Raft replication)
+- ✅ Pods reschedule to healthy nodes
+- ✅ External Secrets continue syncing
+
+This is what true high availability looks like. 🎉
+
+---
+
 _End of Episode - Complete Victory Edition! 🎉🏆_
 
 **Final Status:** TRUE HIGH AVAILABILITY ACHIEVED ✅

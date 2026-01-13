@@ -14,18 +14,21 @@
 
 **Problem**: Pods can't pull images - `ghcr-secret` doesn't exist in Kubernetes
 
-**Error**: 
+**Error**:
+
 ```
 Error: ImagePullBackOff
-Failed to pull image "ghcr.io/raolivei/pitanga-website:latest": 
+Failed to pull image "ghcr.io/raolivei/pitanga-website:latest":
 failed to authorize: 401 Unauthorized
 ```
 
 **Root Cause**: ExternalSecret can't sync from Vault because:
+
 - ClusterSecretStore can't connect to Vault (timeout)
 - Token might not exist in Vault at `secret/pitanga/ghcr-token`
 
 **Quick Fix** (Manual secret creation):
+
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 
@@ -43,6 +46,7 @@ kubectl rollout restart deployment/northwaysignal-website -n pitanga
 ```
 
 **Proper Fix** (Store in Vault):
+
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
@@ -58,12 +62,14 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/pitanga/ghcr-token token
 **Problem**: ClusterSecretStore can't validate Vault connection
 
 **Error**:
+
 ```
 Status: ValidationFailed
 Message: unable to validate store: invalid vault credentials: context deadline exceeded
 ```
 
 **Check**:
+
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 
@@ -87,6 +93,7 @@ kubectl exec -n vault $VAULT_POD -- vault status
 **Impact**: HTTPS won't work, but HTTP will (if pods are running)
 
 **Fix**: Once Vault connection is fixed, ExternalSecret will sync automatically. Or create manually:
+
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
@@ -155,5 +162,3 @@ kubectl logs -f deployment/northwaysignal-website -n pitanga
 - ✅ TLS secret exists
 - ✅ Ingress shows TLS configured
 - ✅ HTTPS works: `https://pitanga.cloud` and `https://northwaysignal.pitanga.cloud`
-
-

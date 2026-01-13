@@ -77,10 +77,3 @@ When ready to publish:
 ---
 
 **Last Updated:** 2025-12-30
-
-
-
-
-
-
-

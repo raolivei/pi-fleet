@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [EMERG-002](https://docs.eldertree.xyz/runbook/issues/boot/EMERG-002)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Fix Emergency Mode Without Keyboard
 
 ## Quick Solutions
