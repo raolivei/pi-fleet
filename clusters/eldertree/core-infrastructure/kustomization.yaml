@@ -6,5 +6,6 @@ resources:
   - cert-manager # TLS certificate management using cert-manager
   - issuers # ClusterIssuer resources (self-signed certificates)
   - metallb # MetalLB LoadBalancer for external access
+  - pod-disruption-budgets # PDBs for critical infrastructure components
   - storage-class-nvme.yaml # NVMe/SATA storage class for main node (high-performance)
   - storage-class-sd.yaml # SD card storage class for worker nodes

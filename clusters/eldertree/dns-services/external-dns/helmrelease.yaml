@@ -24,6 +24,15 @@ spec:
   upgrade:
     cleanupOnFail: true
   values:
+    replicaCount: 2
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: external-dns
+            topologyKey: kubernetes.io/hostname
     provider: rfc2136
     env:
       - name: EXTERNAL_DNS_RFC2136_HOST
