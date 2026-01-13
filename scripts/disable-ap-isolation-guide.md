@@ -5,6 +5,7 @@
 AP Isolation (Access Point Isolation) or Client Isolation prevents Wi-Fi clients from communicating with each other at Layer 2 (ARP). This blocks MetalLB LoadBalancer IPs from working properly.
 
 **Current Issue:**
+
 - MetalLB assigns `192.168.2.200` to Traefik
 - ARP responses don't reach your MacBook
 - Services are only accessible via NodePort (32474/31801)
@@ -15,28 +16,42 @@ AP Isolation (Access Point Isolation) or Client Isolation prevents Wi-Fi clients
 
 ## Step-by-Step Guide for Bell GigaHub
 
+**Your Router Info:**
+
+- Model: Giga Hub (Hardware: 5690-000001-000)
+- Firmware: 2.14
+- UI Version: 7.3.28
+- Access URL: `http://192.168.2.1/?c=advancedtools`
+
 ### Step 1: Access Router Admin Interface
 
-1. Open browser: `http://192.168.2.1`
+1. Open browser: `http://192.168.2.1/?c=advancedtools` (or `http://192.168.2.1`)
 2. **Login** with your router admin credentials
    - Default username is often `admin`
    - Password is usually on the router label or set during initial setup
 
 ### Step 2: Navigate to Wireless Settings
 
-The exact path depends on your GigaHub model/firmware version. Try these locations:
+For your Giga Hub with UI 7.3.28, try these locations in order:
 
 #### Option A: Direct Wireless Settings
+
 1. Look for **"Wi-Fi"** or **"Wireless"** in the main menu
 2. Click on your Wi-Fi network (usually 2.4GHz or 5GHz)
 3. Look for **"Advanced Settings"** or **"Advanced"** tab
 
-#### Option B: Advanced Tools (Your URL)
+#### Option B: Advanced Tools (Recommended for Your Router)
+
 1. Navigate to: `http://192.168.2.1/?c=advancedtools`
-2. Look for **"Wireless"** or **"Wi-Fi Settings"** section
-3. Click on your network name
+2. In the left sidebar, look for:
+   - **"Wireless"** or **"Wi-Fi"** section
+   - **"Network"** → **"Wireless"**
+   - **"Advanced"** → **"Wireless"**
+3. Click on your network name (2.4GHz or 5GHz)
+4. Look for **"Advanced Settings"** or **"Security"** tab within the wireless settings
 
 #### Option C: Network Settings
+
 1. Go to **"Network"** or **"Network Settings"**
 2. Click **"Wireless"** or **"Wi-Fi"**
 3. Select your network (2.4GHz or 5GHz)
@@ -44,9 +59,9 @@ The exact path depends on your GigaHub model/firmware version. Try these locatio
 
 ### Step 3: Find AP Isolation Setting
 
-Look for one of these settings (names vary by firmware):
+For **UI 7.3.28 / Firmware 2.14**, look for one of these settings:
 
-- ✅ **"AP Isolation"**
+- ✅ **"AP Isolation"** (most common)
 - ✅ **"Client Isolation"**
 - ✅ **"Wireless Isolation"**
 - ✅ **"Station Isolation"**
@@ -54,10 +69,25 @@ Look for one of these settings (names vary by firmware):
 - ✅ **"Wireless Client Isolation"**
 - ✅ **"Isolate Wireless Clients"**
 
-**Location in settings:**
-- Usually in **"Advanced"** or **"Security"** section
-- May be under **"Wireless Advanced"** or **"Wi-Fi Advanced"**
-- Sometimes in **"Guest Network"** settings (if you're using guest network)
+**Where to look (in order):**
+
+1. **Wireless → [Your Network] → Advanced Settings**
+
+   - Scroll down to find isolation settings
+   - May be under "Security" subsection
+
+2. **Wireless → [Your Network] → Security**
+
+   - Look for isolation toggle/checkbox
+
+3. **Network → Wireless → Advanced**
+
+   - Check both 2.4GHz and 5GHz networks separately
+
+4. **Advanced Tools → Wireless → [Network Name]**
+   - Expand advanced options
+
+**Note:** You may need to check **both 2.4GHz and 5GHz networks** separately if you have both enabled.
 
 ### Step 4: Disable AP Isolation
 
@@ -82,6 +112,7 @@ curl -k https://192.168.2.200 -H 'Host: vault.eldertree.local'
 ```
 
 **Expected Result:**
+
 - ✅ Ping to `192.168.2.200` succeeds
 - ✅ Services accessible via `https://vault.eldertree.local` (without NodePort)
 - ✅ ARP entry shows MAC address (not "incomplete")
@@ -101,6 +132,7 @@ If you can't find AP Isolation setting:
 ### Option 2: Contact Bell Support
 
 Some Bell GigaHub models may not expose this setting in the web UI. Contact Bell support and ask:
+
 - "How do I disable AP Isolation or Client Isolation on my GigaHub?"
 - "I need to allow Wi-Fi clients to communicate with each other"
 
@@ -128,6 +160,7 @@ Run this script to check if AP Isolation is disabled:
 ```
 
 The script will:
+
 1. Clear ARP cache
 2. Ping `192.168.2.200`
 3. Test service access
@@ -148,6 +181,7 @@ The script will:
 ### Router Doesn't Have This Setting
 
 Some routers don't expose AP Isolation in the UI. Options:
+
 - Use NodePort workaround (current solution)
 - Check if router firmware update adds this setting
 - Consider using wired connection (ethernet) for cluster access
