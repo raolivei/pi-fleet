@@ -12,3 +12,5 @@ spec:
   # Using Longhorn for distributed storage with replication
   storageClassName: longhorn
 
+
+

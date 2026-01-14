@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [NODE-001](https://docs.eldertree.xyz/runbook/issues/node/NODE-001)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Node Troubleshooting Guide - eldertree Cluster
 
 ## Current Issues
@@ -189,5 +199,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet
 - [Network Architecture](../docs/NETWORK_ARCHITECTURE.md)
 - [Ansible Playbooks](../ansible/README.md)
 - [Cluster Setup](../pi-fleet-blog/chapters/05-cluster-setup.md)
+
+
 
 

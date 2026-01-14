@@ -1,0 +1,32 @@
+---
+# Public domain Ingress (northwaysignal.pitanga.cloud)
+# Uses Cloudflare Origin Certificate - HTTPS termination handled by Cloudflare
+# Do NOT use redirect-https middleware (causes redirect loops with Cloudflare)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: northwaysignal-website-public
+  namespace: pitanga
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    external-dns.alpha.kubernetes.io/hostname: northwaysignal.pitanga.cloud
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+  labels:
+    app: northwaysignal-website
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - northwaysignal.pitanga.cloud
+      secretName: pitanga-cloudflare-origin-tls
+  rules:
+    - host: northwaysignal.pitanga.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: northwaysignal-website-service
+                port:
+                  number: 80

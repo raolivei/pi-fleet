@@ -5,9 +5,10 @@ metadata:
   namespace: vault
 spec:
   interval: 30m
-  dependsOn:
-    - name: cert-manager-issuers
-      namespace: flux-system
+  # Note: cert-manager-issuers dependency removed - issuers already exist
+  # dependsOn:
+  #   - name: cert-manager-issuers
+  #     namespace: flux-system
   chart:
     spec:
       chart: vault
@@ -22,35 +23,62 @@ spec:
       dev:
         enabled: false  # Production mode with persistence
       
-      # Enable persistence for secrets
+      # Enable persistence for secrets - each pod gets its own PVC
       dataStorage:
         enabled: true
         size: 10Gi
-        storageClass: local-path
+        storageClass: longhorn
         accessMode: ReadWriteOnce
       
-      # Standalone mode (single-node cluster)
+      # HA mode with Raft integrated storage
       ha:
-        enabled: false
-      standalone:
         enabled: true
-        config: |
-          ui = true
-          
-          listener "tcp" {
-            tls_disable = 1
-            address = "[::]:8200"
-            cluster_address = "[::]:8201"
-          }
-          
-          storage "file" {
-            path = "/vault/data"
-          }
-          
-          # Disable mlock for non-root containers
-          disable_mlock = true
+        replicas: 3
+        raft:
+          enabled: true
+          setNodeId: true
+          config: |
+            ui = true
+            
+            listener "tcp" {
+              tls_disable = 1
+              address = "[::]:8200"
+              cluster_address = "[::]:8201"
+            }
+            
+            storage "raft" {
+              path = "/vault/data"
+              
+              retry_join {
+                leader_api_addr = "http://vault-0.vault-internal:8200"
+              }
+              retry_join {
+                leader_api_addr = "http://vault-1.vault-internal:8200"
+              }
+              retry_join {
+                leader_api_addr = "http://vault-2.vault-internal:8200"
+              }
+            }
+            
+            service_registration "kubernetes" {}
+            
+            # Disable mlock for non-root containers
+            disable_mlock = true
       
-      replicas: 1
+      # Disable standalone mode (using HA instead)
+      standalone:
+        enabled: false
+      
+      # Spread pods across nodes for true HA
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: vault
+                  component: server
+              topologyKey: kubernetes.io/hostname
+      
       ui:
         enabled: true
         serviceType: ClusterIP

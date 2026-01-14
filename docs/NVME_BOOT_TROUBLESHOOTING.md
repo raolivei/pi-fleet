@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [BOOT-003](https://docs.eldertree.xyz/runbook/issues/boot/BOOT-003)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # NVMe Boot Troubleshooting Guide
 
 ## Problem: Node Won't Boot from NVMe After Removing SD Card

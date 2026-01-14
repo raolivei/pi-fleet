@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [EMERG-001](https://docs.eldertree.xyz/runbook/issues/boot/EMERG-001)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Emergency Mode Recovery - Root Locked
 
 ## Problem

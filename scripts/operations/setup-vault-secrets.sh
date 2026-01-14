@@ -39,37 +39,53 @@ fi
 echo "✅ Vault is ready"
 echo ""
 
-# Secret categories
-declare -A SECRET_PATHS=(
-    ["1"]="secret/pi-fleet/cloudflare-tunnel/token:token"
-    ["2"]="secret/pi-fleet/terraform/cloudflare-api-token:api-token"
-    ["3"]="secret/pi-fleet/external-dns/cloudflare-api-token:api-token"
-    ["4"]="secret/swimto/database:url"
-    ["5"]="secret/swimto/postgres:password"
-    ["6"]="secret/swimto/redis:url"
-    ["7"]="secret/swimto/app:admin-token,secret-key"
-    ["8"]="secret/swimto/api-keys:openai-api-key,leonardo-api-key"
-    ["9"]="secret/swimto/oauth:google-client-id,google-client-secret"
-    ["10"]="secret/canopy/postgres:password"
-    ["11"]="secret/canopy/app:secret-key"
-    ["12"]="secret/canopy/database:url"
-    ["13"]="secret/journey/postgres:user,password"
-    ["14"]="secret/journey/database:url"
-    ["15"]="secret/monitoring/grafana:adminUser,adminPassword"
-    ["16"]="secret/pi-fleet/pihole/webpassword:password"
-    ["17"]="secret/us-law-severity-map/mapbox:api-key"
-    ["18"]="secret/pi-fleet/flux/git:sshKey"
-    ["19"]="secret/pi-fleet/external-dns/tsig-secret:secret"
-)
+# Function to get secret path and keys by selection number
+get_secret_info() {
+    case "$1" in
+        1)  echo "secret/pi-fleet/cloudflare-tunnel/token:token" ;;
+        2)  echo "secret/pi-fleet/terraform/cloudflare-api-token:api-token" ;;
+        3)  echo "secret/pi-fleet/external-dns/cloudflare-api-token:api-token" ;;
+        4)  echo "secret/swimto/database:url" ;;
+        5)  echo "secret/swimto/postgres:password" ;;
+        6)  echo "secret/swimto/redis:url" ;;
+        7)  echo "secret/swimto/app:admin-token,secret-key" ;;
+        8)  echo "secret/swimto/api-keys:openai-api-key,leonardo-api-key" ;;
+        9)  echo "secret/swimto/oauth:google-client-id,google-client-secret" ;;
+        10) echo "secret/canopy/postgres:password" ;;
+        11) echo "secret/canopy/app:secret-key" ;;
+        12) echo "secret/canopy/database:url" ;;
+        13) echo "secret/journey/postgres:user,password" ;;
+        14) echo "secret/journey/database:url" ;;
+        15) echo "secret/monitoring/grafana:adminUser,adminPassword" ;;
+        16) echo "secret/pi-fleet/pihole/webpassword:password" ;;
+        17) echo "secret/us-law-severity-map/mapbox:api-key" ;;
+        18) echo "secret/pi-fleet/flux/git:sshKey" ;;
+        19) echo "secret/pi-fleet/external-dns/tsig-secret:secret" ;;
+        *)  echo "" ;;
+    esac
+}
 
 echo "Available secrets to configure:"
 echo ""
-for key in $(printf '%s\n' "${!SECRET_PATHS[@]}" | sort -n); do
-    path_key="${SECRET_PATHS[$key]}"
-    path="${path_key%%:*}"
-    keys="${path_key##*:}"
-    echo "  $key) $path ($keys)"
-done
+echo "  1) secret/pi-fleet/cloudflare-tunnel/token (token)"
+echo "  2) secret/pi-fleet/terraform/cloudflare-api-token (api-token)"
+echo "  3) secret/pi-fleet/external-dns/cloudflare-api-token (api-token)"
+echo "  4) secret/swimto/database (url)"
+echo "  5) secret/swimto/postgres (password)"
+echo "  6) secret/swimto/redis (url)"
+echo "  7) secret/swimto/app (admin-token,secret-key)"
+echo "  8) secret/swimto/api-keys (openai-api-key,leonardo-api-key)"
+echo "  9) secret/swimto/oauth (google-client-id,google-client-secret)"
+echo " 10) secret/canopy/postgres (password)"
+echo " 11) secret/canopy/app (secret-key)"
+echo " 12) secret/canopy/database (url)"
+echo " 13) secret/journey/postgres (user,password)"
+echo " 14) secret/journey/database (url)"
+echo " 15) secret/monitoring/grafana (adminUser,adminPassword)"
+echo " 16) secret/pi-fleet/pihole/webpassword (password)"
+echo " 17) secret/us-law-severity-map/mapbox (api-key)"
+echo " 18) secret/pi-fleet/flux/git (sshKey)"
+echo " 19) secret/pi-fleet/external-dns/tsig-secret (secret)"
 echo "  0) Custom path"
 echo ""
 
@@ -86,7 +102,7 @@ if [ "$SELECTION" = "0" ]; then
     SECRET_PATH="$CUSTOM_PATH"
     KEYS="$CUSTOM_KEYS"
 else
-    path_key="${SECRET_PATHS[$SELECTION]}"
+    path_key=$(get_secret_info "$SELECTION")
     if [ -z "$path_key" ]; then
         echo "❌ Invalid selection"
         exit 1
@@ -129,4 +145,3 @@ echo "Verification:"
 echo "  kubectl exec -n vault $VAULT_POD -- vault kv get $SECRET_PATH"
 echo ""
 echo "External Secrets Operator will sync this automatically if configured."
-

@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [BOOT-001](https://docs.eldertree.xyz/runbook/issues/boot/BOOT-001)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Boot Fix Guide - Automatic Boot and Bluetooth
 
 **Note**: This guide is for fixing existing installations. For fresh installs, use the automated setup scripts which configure everything correctly from the start.

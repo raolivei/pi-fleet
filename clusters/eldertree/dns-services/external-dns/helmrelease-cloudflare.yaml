@@ -26,6 +26,15 @@ spec:
   upgrade:
     cleanupOnFail: true
   values:
+    replicaCount: 2
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: external-dns
+            topologyKey: kubernetes.io/hostname
     provider: cloudflare
     env:
       - name: CF_API_TOKEN

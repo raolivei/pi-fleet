@@ -1,0 +1,45 @@
+---
+- name: Fix node hostname to match expected FQDN
+  hosts: raspberry_pi
+  become: true
+  vars:
+    expected_hostname: "{{ inventory_hostname }}.eldertree.local"
+
+  tasks:
+    - name: Get current hostname
+      command: hostname
+      register: current_hostname
+      changed_when: false
+
+    - name: Check if hostname needs to be changed
+      set_fact:
+        hostname_needs_change: "{{ current_hostname.stdout != expected_hostname }}"
+      changed_when: false
+
+    - name: Update /etc/hostname
+      copy:
+        content: "{{ expected_hostname }}"
+        dest: /etc/hostname
+        owner: root
+        group: root
+        mode: "0644"
+      when: hostname_needs_change | default(false)
+
+    - name: Update /etc/hosts with correct hostname
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1.*{{ inventory_hostname }}'
+        line: "127.0.0.1 {{ expected_hostname }} {{ inventory_hostname }}"
+        state: present
+      when: hostname_needs_change | default(false)
+
+    - name: Set hostname immediately
+      command: hostname {{ expected_hostname }}
+      when: hostname_needs_change | default(false)
+
+    - name: Display hostname status
+      debug:
+        msg:
+          - "Current hostname: {{ current_hostname.stdout }}"
+          - "Expected hostname: {{ expected_hostname }}"
+          - "{{ 'Hostname updated - reboot required for k3s to pick up changes' if hostname_needs_change else 'Hostname is correct' }}"

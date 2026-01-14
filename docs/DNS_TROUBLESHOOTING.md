@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [DNS-001](https://docs.eldertree.xyz/runbook/issues/dns/DNS-001)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # DNS Troubleshooting Guide
 
 ## Issue: ExternalDNS Cannot Deploy Due to DNS Resolution Failure

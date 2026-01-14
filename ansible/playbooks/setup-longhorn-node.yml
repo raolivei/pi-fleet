@@ -4,7 +4,7 @@
   become: true
   vars:
     longhorn_mount_point: "/mnt/longhorn"
-    longhorn_device: ""  # Optional: e.g., "/dev/nvme0n1p3" - if empty, uses existing mount or creates directory
+    longhorn_device: "" # Optional: e.g., "/dev/nvme0n1p3" - if empty, uses existing mount or creates directory
     longhorn_fs_type: "ext4"
     longhorn_label: "longhorn"
 
@@ -57,7 +57,7 @@
       file:
         path: "{{ longhorn_mount_point }}"
         state: directory
-        mode: '0755'
+        mode: "0755"
         owner: root
         group: root
       when: not mount_point_stat.stat.exists
@@ -136,7 +136,7 @@
     - name: Check mount point permissions
       file:
         path: "{{ longhorn_mount_point }}"
-        mode: '0755'
+        mode: "0755"
         owner: root
         group: root
 
@@ -158,4 +158,5 @@
           - "  1. Verify node appears in Longhorn UI after joining cluster"
           - "  2. Check disk registration in Longhorn UI: Node → Disk"
           - "  3. Ensure scheduling is enabled for this node"
+
 

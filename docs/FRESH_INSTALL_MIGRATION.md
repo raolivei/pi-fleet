@@ -174,3 +174,5 @@ curl -sfL https://get.k3s.io | K3S_URL=https://node-0.eldertree.local:6443 K3S_T
 
 
 
+
+

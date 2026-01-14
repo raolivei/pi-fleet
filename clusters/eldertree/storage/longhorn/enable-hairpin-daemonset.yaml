@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: enable-hairpin-mode
+  namespace: kube-system
+  labels:
+    app: enable-hairpin-mode
+spec:
+  selector:
+    matchLabels:
+      app: enable-hairpin-mode
+  template:
+    metadata:
+      labels:
+        app: enable-hairpin-mode
+    spec:
+      hostNetwork: true
+      hostPID: true
+      containers:
+        - name: enable-hairpin
+          image: busybox:latest
+          securityContext:
+            privileged: true
+          command:
+            - sh
+            - -c
+            - |
+              # Wait for cni0 bridge to be created
+              echo "Waiting for cni0 bridge to be created..."
+              for i in $(seq 1 60); do
+                if [ -f /sys/devices/virtual/net/cni0/bridge/hairpin_mode ]; then
+                  echo "Found cni0 bridge, enabling hairpin mode..."
+                  echo 1 > /sys/devices/virtual/net/cni0/bridge/hairpin_mode
+                  current=$(cat /sys/devices/virtual/net/cni0/bridge/hairpin_mode)
+                  echo "Hairpin mode enabled on cni0: $current"
+                  break
+                fi
+                echo "Attempt $i: cni0 bridge not found yet, waiting..."
+                sleep 5
+              done
+
+              # Keep container running to maintain the setting
+              # (in case bridge is recreated)
+              while true; do
+                sleep 30
+                if [ -f /sys/devices/virtual/net/cni0/bridge/hairpin_mode ]; then
+                  current=$(cat /sys/devices/virtual/net/cni0/bridge/hairpin_mode)
+                  if [ "$current" != "1" ]; then
+                    echo 1 > /sys/devices/virtual/net/cni0/bridge/hairpin_mode
+                    echo "Re-enabled hairpin mode (was $current)"
+                  fi
+                else
+                  echo "Warning: cni0 bridge not found, will retry..."
+                fi
+              done
+          volumeMounts:
+            - name: sys
+              mountPath: /sys
+      volumes:
+        - name: sys
+          hostPath:
+            path: /sys
+            type: Directory
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule

@@ -1,9 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "pi-hole.fullname" . }}
-  labels:
-    {{- include "pi-hole.labels" . | nindent 4 }}
+  name: {{include "pi-hole.fullname" .}}
+  labels: {{- include "pi-hole.labels" . | nindent 4}}
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.middlewares: default-redirect-https@kubernetescrd
@@ -12,18 +11,16 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - {{ .Values.config.virtualHost }}
+        - {{.Values.config.virtualHost}}
       secretName: pi-hole-tls
   rules:
-    - host: {{ .Values.config.virtualHost }}
+    - host: {{.Values.config.virtualHost}}
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: {{ include "pi-hole.fullname" . }}
+                name: {{include "pi-hole.fullname" .}}
                 port:
                   number: 80
-
-

@@ -1,3 +1,13 @@
+<!-- MIGRATED TO RUNBOOK -->
+> **📚 This document has been migrated to the Eldertree Runbook**
+>
+> For the latest version, see: [NET-002](https://docs.eldertree.xyz/runbook/issues/network/NET-002)
+>
+> The runbook provides searchable troubleshooting guides with improved formatting.
+
+---
+
+
 # Recover Node-1 Network and Hostname
 
 ## Current Issues
