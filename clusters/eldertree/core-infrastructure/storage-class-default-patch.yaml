@@ -1,0 +1,9 @@
+---
+# Patch to ensure only Longhorn is the default storage class
+# local-path (k3s default) should NOT be the default
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"

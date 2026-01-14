@@ -20,6 +20,8 @@ spec:
     remediation:
       retries: 3
   values:
+    controller:
+      replicaCount: 2
     speaker:
       memberlist:
         enabled: true

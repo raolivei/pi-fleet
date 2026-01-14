@@ -10,7 +10,7 @@ spec:
     app: pitanga-website
   ports:
     - port: 80
-      targetPort: 5000
+      targetPort: 80
       name: http
   type: ClusterIP
 

@@ -15,7 +15,7 @@ spec:
         namespace: flux-system
       interval: 12h
   values:
-    replicaCount: 1
+    replicaCount: 2
     resources:
       limits:
         cpu: 200m
