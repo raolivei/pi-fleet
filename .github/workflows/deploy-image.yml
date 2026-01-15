@@ -1,0 +1,155 @@
+name: Deploy Image Tag Update
+
+on:
+  repository_dispatch:
+    types: [deploy-image]
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Project name (e.g., swimto, journey, canopy)"
+        required: true
+        type: string
+      component:
+        description: "Component name (e.g., api, web, frontend)"
+        required: true
+        type: string
+      image_tag:
+        description: "Image tag to deploy (e.g., v0.5.4)"
+        required: true
+        type: string
+
+env:
+  # Use inputs for workflow_dispatch, client_payload for repository_dispatch
+  PROJECT: ${{ github.event.inputs.project || github.event.client_payload.project }}
+  COMPONENT: ${{ github.event.inputs.component || github.event.client_payload.component }}
+  IMAGE_TAG: ${{ github.event.inputs.image_tag || github.event.client_payload.image_tag }}
+
+jobs:
+  validate:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    outputs:
+      deployment_file: ${{ steps.find-file.outputs.deployment_file }}
+      image_name: ${{ steps.find-file.outputs.image_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required inputs
+        run: |
+          if [ -z "${{ env.PROJECT }}" ] || [ -z "${{ env.COMPONENT }}" ] || [ -z "${{ env.IMAGE_TAG }}" ]; then
+            echo "::error::Missing required inputs: project=${{ env.PROJECT }}, component=${{ env.COMPONENT }}, image_tag=${{ env.IMAGE_TAG }}"
+            exit 1
+          fi
+          echo "Deploying ${{ env.PROJECT }}-${{ env.COMPONENT }}:${{ env.IMAGE_TAG }}"
+
+      - name: Find deployment file
+        id: find-file
+        run: |
+          # Map project/component to deployment file
+          PROJECT="${{ env.PROJECT }}"
+          COMPONENT="${{ env.COMPONENT }}"
+          
+          # Construct expected file path
+          DEPLOYMENT_FILE="clusters/eldertree/${PROJECT}/${COMPONENT}-deployment.yaml"
+          
+          # Check if file exists
+          if [ ! -f "$DEPLOYMENT_FILE" ]; then
+            echo "::error::Deployment file not found: $DEPLOYMENT_FILE"
+            exit 1
+          fi
+          
+          # Construct image name
+          IMAGE_NAME="ghcr.io/raolivei/${PROJECT}-${COMPONENT}"
+          
+          echo "deployment_file=$DEPLOYMENT_FILE" >> "$GITHUB_OUTPUT"
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "Found deployment file: $DEPLOYMENT_FILE"
+          echo "Image name: $IMAGE_NAME"
+
+  update-image:
+    name: Update Image Tag
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup yq
+        uses: mikefarah/yq@v4
+
+      - name: Update image tag
+        id: update
+        run: |
+          DEPLOYMENT_FILE="${{ needs.validate.outputs.deployment_file }}"
+          IMAGE_NAME="${{ needs.validate.outputs.image_name }}"
+          NEW_IMAGE="${IMAGE_NAME}:${{ env.IMAGE_TAG }}"
+          
+          echo "Updating $DEPLOYMENT_FILE with image: $NEW_IMAGE"
+          
+          # Get current image for comparison
+          CURRENT_IMAGE=$(yq '.spec.template.spec.containers[0].image' "$DEPLOYMENT_FILE" | head -1)
+          echo "Current image: $CURRENT_IMAGE"
+          
+          if [ "$CURRENT_IMAGE" = "$NEW_IMAGE" ]; then
+            echo "Image tag already up to date, skipping"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Update image tag using yq (preserves YAML structure and comments)
+          # The sed approach is more reliable for preserving Flux markers
+          sed -i "s|image: ${IMAGE_NAME}:[^ ]*|image: ${NEW_IMAGE}|g" "$DEPLOYMENT_FILE"
+          
+          # Verify the change
+          UPDATED_IMAGE=$(grep "image: ${IMAGE_NAME}" "$DEPLOYMENT_FILE" | head -1)
+          echo "Updated to: $UPDATED_IMAGE"
+          
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Create Pull Request
+        if: steps.update.outputs.skip != 'true'
+        id: create-pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(${{ env.PROJECT }}): update ${{ env.COMPONENT }} image to ${{ env.IMAGE_TAG }}"
+          title: "chore(${{ env.PROJECT }}): update ${{ env.COMPONENT }} image to ${{ env.IMAGE_TAG }}"
+          body: |
+            ## Automated Image Update
+            
+            Updates **${{ env.PROJECT }}-${{ env.COMPONENT }}** container image to `${{ env.IMAGE_TAG }}`.
+            
+            | Field | Value |
+            |-------|-------|
+            | Project | `${{ env.PROJECT }}` |
+            | Component | `${{ env.COMPONENT }}` |
+            | New Tag | `${{ env.IMAGE_TAG }}` |
+            | Deployment File | `${{ needs.validate.outputs.deployment_file }}` |
+            
+            ---
+            *Triggered by: ${{ github.event_name }}*
+          branch: deploy/${{ env.PROJECT }}-${{ env.COMPONENT }}-${{ env.IMAGE_TAG }}
+          base: main
+          labels: |
+            ${{ env.PROJECT }}
+            image-update
+            auto-pr
+          delete-branch: true
+
+      - name: Enable Auto-Merge
+        if: steps.update.outputs.skip != 'true' && steps.create-pr.outputs.pull-request-number
+        run: |
+          gh pr merge --auto --squash "${{ steps.create-pr.outputs.pull-request-number }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output PR URL
+        if: steps.update.outputs.skip != 'true'
+        run: |
+          echo "::notice::PR created: ${{ steps.create-pr.outputs.pull-request-url }}"
