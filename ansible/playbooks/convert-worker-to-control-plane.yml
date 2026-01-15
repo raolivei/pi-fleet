@@ -229,7 +229,7 @@
       when: inventory_hostname != 'node-1' and k3s_ready.rc != 0
 
     # =========================================================================
-    # Firewall Configuration for HA Control Plane (etcd ports)
+    # Firewall Configuration for HA Control Plane (API server + etcd ports)
     # =========================================================================
     - name: Check if UFW is installed
       command: which ufw
@@ -237,6 +237,17 @@
       changed_when: false
       failed_when: false
       when: inventory_hostname != 'node-1'
+
+    - name: Ensure UFW allows k3s API server port (6443)
+      ufw:
+        rule: allow
+        port: "6443"
+        proto: tcp
+        comment: "k3s API server"
+      when:
+        - inventory_hostname != 'node-1'
+        - ufw_installed.rc == 0
+      register: ufw_api_server
 
     - name: Ensure UFW allows etcd client port (2379)
       ufw:
