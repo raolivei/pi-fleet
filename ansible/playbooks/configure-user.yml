@@ -1,7 +1,7 @@
 ---
 - name: Configure raolivei user on Raspberry Pi
   hosts: raspberry_pi
-  become: yes
+  become: true
   vars:
     target_user: raolivei
     # Password should be set via Ansible Vault or environment variable
@@ -62,6 +62,69 @@
         mode: "0755"
         state: directory
 
+    # =========================================================================
+    # Configure btop terminal size detection (fixes SSH misalignment)
+    # =========================================================================
+    - name: Create bin directory for user scripts
+      file:
+        path: /home/{{ target_user }}/bin
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0755"
+
+    - name: Ensure ~/bin is in PATH
+      lineinfile:
+        path: /home/{{ target_user }}/.bashrc
+        regexp: '^export PATH=.*\$HOME/bin'
+        line: 'export PATH="$HOME/bin:$PATH"'
+        state: present
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        insertafter: '^# ~/.bashrc'
+
+    - name: Create btop wrapper script to fix terminal size detection
+      copy:
+        dest: /home/{{ target_user }}/bin/btop
+        content: |
+          #!/bin/bash
+          # btop wrapper script to ensure proper terminal size detection
+          # Fixes misalignment issues when accessing via SSH
+          
+          # Detect terminal size and set environment variables
+          if [ -t 0 ]; then
+              # Get terminal size using stty
+              if stty size >/dev/null 2>&1; then
+                  TERM_SIZE=$(stty size)
+                  LINES=$(echo $TERM_SIZE | awk '{print $1}')
+                  COLUMNS=$(echo $TERM_SIZE | awk '{print $2}')
+                  
+                  # Export terminal dimensions
+                  export LINES COLUMNS
+                  
+                  # Force terminal resize to ensure proper detection
+                  stty rows $LINES cols $COLUMNS >/dev/null 2>&1
+              else
+                  # Fallback to tput if stty fails
+                  if command -v tput >/dev/null 2>&1; then
+                      export LINES=$(tput lines)
+                      export COLUMNS=$(tput cols)
+                  fi
+              fi
+              
+              # If still not set, use defaults
+              if [ -z "$LINES" ] || [ -z "$COLUMNS" ]; then
+                  export LINES=${LINES:-24}
+                  export COLUMNS=${COLUMNS:-80}
+              fi
+          fi
+          
+          # Launch btop with proper terminal context
+          exec /usr/bin/btop "$@"
+        mode: "0755"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
     - name: Display user configuration summary
       debug:
         msg:
@@ -69,3 +132,4 @@
           - "Password: [REDACTED]"
           - "Home directory: /home/{{ target_user }}"
           - "Sudo access: Enabled (passwordless)"
+          - "btop wrapper: ~/bin/btop (fixes terminal size detection over SSH)"
