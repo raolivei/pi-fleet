@@ -603,7 +603,7 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "visage_queue_processing_jobs",
+          "expr": "sum(visage_jobs_in_progress)",
           "refId": "A"
         }
       ],
