@@ -168,6 +168,38 @@
         group: "{{ target_user }}"
         mode: "0755"
 
+    - name: Check if btop config already exists
+      stat:
+        path: /home/{{ target_user }}/.config/btop/btop.conf
+      register: btop_config_stat
+      changed_when: false
+
+    - name: Create btop config file with network settings
+      copy:
+        dest: /home/{{ target_user }}/.config/btop/btop.conf
+        content: |
+          # btop configuration for Eldertree cluster
+          # Network graph settings
+          # Note: btop shows download on top half, upload on bottom half
+          # This cannot be reversed, but we can configure scaling and sync
+          
+          # Network interface (auto-detected, but can be overridden)
+          # net_iface = "wlan0"
+          
+          # Auto-scale network graphs based on traffic
+          net_auto = true
+          
+          # Sync download and upload scales for better comparison
+          net_sync = true
+          
+          # Manual scale limits (only used if net_auto = false)
+          # net_download = 100
+          # net_upload = 100
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0644"
+      when: not btop_config_stat.stat.exists
+
     # =========================================================================
     # Summary
     # =========================================================================
