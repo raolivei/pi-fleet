@@ -1,0 +1,133 @@
+# Caddyfile for Eldertree Local Proxy
+# Run with: sudo caddy run --config ~/WORKSPACE/raolivei/pi-fleet/scripts/Caddyfile
+#
+# This proxies *.eldertree.local to the k3s cluster via Traefik NodePort
+# Allows accessing services without specifying port numbers
+
+{
+    # Use local self-signed certs
+    local_certs
+    # Skip OCSP stapling for local certs
+    skip_install_trust
+}
+
+# Grafana
+grafana.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host grafana.eldertree.local
+    }
+}
+
+# Vault
+vault.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host vault.eldertree.local
+    }
+}
+
+# Prometheus
+prometheus.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host prometheus.eldertree.local
+    }
+}
+
+# Visage
+visage.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host visage.eldertree.local
+    }
+}
+
+# MinIO
+minio.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host minio.eldertree.local
+    }
+}
+
+# Canopy
+canopy.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host canopy.eldertree.local
+    }
+}
+
+# SwimTO
+swimto.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host swimto.eldertree.local
+    }
+}
+
+# Journey
+journey.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host journey.eldertree.local
+    }
+}
+
+# Pitanga
+pitanga.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host pitanga.eldertree.local
+    }
+}
+
+# Docs
+docs.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host docs.eldertree.local
+    }
+}
+
+# Flux UI
+flux-ui.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host flux-ui.eldertree.local
+    }
+}
