@@ -1,0 +1,871 @@
+{
+  "title": "Eldertree Cluster Overview",
+  "uid": "eldertree-cluster",
+  "tags": ["eldertree", "cluster", "ha", "overview"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "editable": true,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Cluster Health (3-Node HA)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Nodes Ready",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"})",
+          "legendFormat": "Ready",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": []
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Node 1",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "targets": [
+        {
+          "expr": "kube_node_status_condition{node=\"node-1\", condition=\"Ready\", status=\"true\"}",
+          "legendFormat": "node-1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "options": { "1": { "color": "green", "text": "READY" } } },
+            { "type": "special", "options": { "match": "null", "result": { "color": "red", "text": "DOWN" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Node 2",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "targets": [
+        {
+          "expr": "kube_node_status_condition{node=\"node-2\", condition=\"Ready\", status=\"true\"}",
+          "legendFormat": "node-2",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "options": { "1": { "color": "green", "text": "READY" } } },
+            { "type": "special", "options": { "match": "null", "result": { "color": "red", "text": "DOWN" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Node 3",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "expr": "kube_node_status_condition{node=\"node-3\", condition=\"Ready\", status=\"true\"}",
+          "legendFormat": "node-3",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "options": { "1": { "color": "green", "text": "READY" } } },
+            { "type": "special", "options": { "match": "null", "result": { "color": "red", "text": "DOWN" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Vault HA Status",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"vault\", pod=~\"vault-.*\", phase=\"Running\"})",
+          "legendFormat": "Vault Pods",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "options": { "3": { "color": "green", "text": "HA (3/3)" } } },
+            { "type": "value", "options": { "2": { "color": "yellow", "text": "Degraded (2/3)" } } },
+            { "type": "value", "options": { "1": { "color": "orange", "text": "Critical (1/3)" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "yellow", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Total Pods",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{phase=\"Running\"})",
+          "legendFormat": "Running",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "Resource Overview",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "collapsed": false
+    },
+    {
+      "id": 9,
+      "type": "gauge",
+      "title": "Cluster CPU Usage",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "CPU",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdMarkers": true,
+        "showThresholdLabels": false
+      }
+    },
+    {
+      "id": 10,
+      "type": "gauge",
+      "title": "Cluster Memory Usage",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 6 },
+      "targets": [
+        {
+          "expr": "(1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100",
+          "legendFormat": "Memory",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 11,
+      "type": "gauge",
+      "title": "Root Disk Usage",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "avg((1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100)",
+          "legendFormat": "Disk",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 12,
+      "type": "gauge",
+      "title": "Avg Node Temperature",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 6 },
+      "targets": [
+        {
+          "expr": "avg(node_hwmon_temp_celsius)",
+          "legendFormat": "Temp",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "celsius",
+          "min": 30,
+          "max": 90,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 65 },
+              { "color": "red", "value": 75 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "Namespace Overview",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 },
+      "collapsed": false
+    },
+    {
+      "id": 14,
+      "type": "bargauge",
+      "title": "Pods by Namespace",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 13 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{phase=\"Running\"}) by (namespace)",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        }
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 15,
+      "type": "bargauge",
+      "title": "Memory by Namespace",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 13 },
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{container!=\"\", container!=\"POD\"}) by (namespace)",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        }
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 16,
+      "type": "bargauge",
+      "title": "CPU by Namespace",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 13 },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\", container!=\"POD\"}[5m])) by (namespace) * 100",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        }
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 17,
+      "type": "row",
+      "title": "Storage",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "collapsed": false
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "PVC Usage",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "expr": "kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100",
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "custom": {
+            "displayMode": "color-background"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "namespace" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "persistentvolumeclaim" },
+            "properties": [{ "id": "custom.width", "value": 200 }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Value" }]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true, "endpoint": true, "instance": true, "job": true, "metrics_path": true, "node": true, "service": true },
+            "renameByName": { "Value": "Usage %" }
+          }
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "PVC Usage Over Time",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "targets": [
+        {
+          "expr": "kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100",
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "lineInterpolation": "smooth"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Infrastructure Services",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "Traefik",
+      "gridPos": { "h": 3, "w": 3, "x": 0, "y": 31 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"traefik\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "color": "green", "text": "UP" } } },
+            { "type": "special", "options": { "match": "null", "result": { "color": "red", "text": "DOWN" } } }
+          ],
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Pi-hole",
+      "gridPos": { "h": 3, "w": 3, "x": 3, "y": 31 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"pihole\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "color": "green", "text": "UP" } } },
+            { "type": "special", "options": { "match": "null", "result": { "color": "red", "text": "DOWN" } } }
+          ],
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "Prometheus",
+      "gridPos": { "h": 3, "w": 3, "x": 6, "y": 31 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"observability\", pod=~\".*prometheus-server.*\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "color": "green", "text": "UP" } } },
+            { "type": "special", "options": { "match": "null", "result": { "color": "red", "text": "DOWN" } } }
+          ],
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Grafana",
+      "gridPos": { "h": 3, "w": 3, "x": 9, "y": 31 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"observability\", pod=~\".*grafana.*\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "color": "green", "text": "UP" } } },
+            { "type": "special", "options": { "match": "null", "result": { "color": "red", "text": "DOWN" } } }
+          ],
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 25,
+      "type": "stat",
+      "title": "Flux",
+      "gridPos": { "h": 3, "w": 3, "x": 12, "y": 31 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"flux-system\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 26,
+      "type": "stat",
+      "title": "Cert-Manager",
+      "gridPos": { "h": 3, "w": 3, "x": 15, "y": 31 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"cert-manager\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 27,
+      "type": "stat",
+      "title": "Ext Secrets",
+      "gridPos": { "h": 3, "w": 3, "x": 18, "y": 31 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"external-secrets\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 28,
+      "type": "stat",
+      "title": "Cloudflared",
+      "gridPos": { "h": 3, "w": 3, "x": 21, "y": 31 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"cloudflare-tunnel\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "color": "green", "text": "UP" } } },
+            { "type": "special", "options": { "match": "null", "result": { "color": "red", "text": "DOWN" } } }
+          ],
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 29,
+      "type": "row",
+      "title": "Application Services",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 },
+      "collapsed": false
+    },
+    {
+      "id": 30,
+      "type": "stat",
+      "title": "SwimTO",
+      "gridPos": { "h": 3, "w": 3, "x": 0, "y": 35 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"swimto\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 31,
+      "type": "stat",
+      "title": "Canopy",
+      "gridPos": { "h": 3, "w": 3, "x": 3, "y": 35 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"canopy\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 32,
+      "type": "stat",
+      "title": "Journey",
+      "gridPos": { "h": 3, "w": 3, "x": 6, "y": 35 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"journey\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 33,
+      "type": "stat",
+      "title": "Visage",
+      "gridPos": { "h": 3, "w": 3, "x": 9, "y": 35 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"visage\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "purple" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 34,
+      "type": "stat",
+      "title": "NIMA",
+      "gridPos": { "h": 3, "w": 3, "x": 12, "y": 35 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"nima\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "purple" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 35,
+      "type": "stat",
+      "title": "Pitanga",
+      "gridPos": { "h": 3, "w": 3, "x": 15, "y": 35 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"pitanga\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 36,
+      "type": "stat",
+      "title": "US Law Map",
+      "gridPos": { "h": 3, "w": 3, "x": 18, "y": 35 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"us-law-severity-map\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 37,
+      "type": "stat",
+      "title": "Eldertree Docs",
+      "gridPos": { "h": 3, "w": 3, "x": 21, "y": 35 },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{namespace=\"eldertree-docs\", phase=\"Running\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    }
+  ]
+}

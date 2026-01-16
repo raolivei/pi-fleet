@@ -229,6 +229,9 @@ grafana:
             path: /var/lib/grafana/dashboards/default
   dashboards:
     default:
+      # ===================
+      # KUBERNETES OVERVIEW
+      # ===================
       # Comprehensive Kubernetes cluster monitoring
       k8s-views-global:
         gnetId: 15757
@@ -242,12 +245,7 @@ grafana:
         gnetId: 15759
         revision: 28
         datasource: Prometheus
-      # Detailed cluster metrics
-      k8s-cluster-monitoring:
-        gnetId: 6417
-        revision: 1
-        datasource: Prometheus
-      # API server health
+      # API server health (critical for HA)
       k8s-apiserver:
         gnetId: 12006
         revision: 1
@@ -256,41 +254,6 @@ grafana:
       k8s-persistent-volumes:
         gnetId: 13646
         revision: 2
-        datasource: Prometheus
-      # Node monitoring with enhanced metrics
-      node-exporter-full:
-        gnetId: 1860
-        revision: 37
-        datasource: Prometheus
-      # Traefik monitoring
-      traefik:
-        gnetId: 11462
-        revision: 1
-        datasource: Prometheus
-      # Flux monitoring
-      flux-cluster:
-        gnetId: 15991
-        revision: 1
-        datasource: Prometheus
-      # Pi-hole monitoring
-      pihole:
-        gnetId: 10176
-        revision: 1
-        datasource: Prometheus
-      # Cert-manager monitoring
-      cert-manager:
-        gnetId: 11001
-        revision: 1
-        datasource: Prometheus
-      # External Secrets monitoring
-      external-secrets:
-        gnetId: 15159
-        revision: 1
-        datasource: Prometheus
-      # KEDA monitoring
-      keda:
-        gnetId: 13627
-        revision: 1
         datasource: Prometheus
       # Resource usage by namespace
       k8s-compute-resources-namespace:
@@ -302,6 +265,66 @@ grafana:
         gnetId: 15662
         revision: 1
         datasource: Prometheus
+      # ===================
+      # NODE & HARDWARE
+      # ===================
+      # Node monitoring with enhanced metrics
+      node-exporter-full:
+        gnetId: 1860
+        revision: 37
+        datasource: Prometheus
+      # ===================
+      # NETWORKING & DNS
+      # ===================
+      # Traefik ingress monitoring
+      traefik:
+        gnetId: 11462
+        revision: 1
+        datasource: Prometheus
+      # CoreDNS monitoring (k3s DNS)
+      coredns:
+        gnetId: 14981
+        revision: 2
+        datasource: Prometheus
+      # Pi-hole monitoring
+      pihole:
+        gnetId: 10176
+        revision: 1
+        datasource: Prometheus
+      # ===================
+      # GITOPS & SECRETS
+      # ===================
+      # Flux GitOps monitoring
+      flux-cluster:
+        gnetId: 15991
+        revision: 1
+        datasource: Prometheus
+      # Cert-manager TLS monitoring
+      cert-manager:
+        gnetId: 11001
+        revision: 1
+        datasource: Prometheus
+      # External Secrets (Vault sync)
+      external-secrets:
+        gnetId: 15159
+        revision: 1
+        datasource: Prometheus
+      # ===================
+      # HA CLUSTER HEALTH
+      # ===================
+      # etcd cluster health (critical for HA)
+      etcd:
+        gnetId: 3070
+        revision: 3
+        datasource: Prometheus
+      # Vault HA monitoring
+      vault:
+        gnetId: 12904
+        revision: 2
+        datasource: Prometheus
+      # ===================
+      # DATABASES
+      # ===================
       # PostgreSQL monitoring
       postgresql-database:
         gnetId: 9628
