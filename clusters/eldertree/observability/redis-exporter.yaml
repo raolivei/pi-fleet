@@ -1,0 +1,90 @@
+---
+# Redis Exporter for all Redis instances
+# Exports metrics from swimto, canopy, and visage Redis instances
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-exporter
+  namespace: observability
+  labels:
+    app: redis-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-exporter
+  template:
+    metadata:
+      labels:
+        app: redis-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
+    spec:
+      containers:
+        - name: redis-exporter
+          image: oliver006/redis_exporter:v1.57.0
+          ports:
+            - containerPort: 9121
+              name: metrics
+          env:
+            # Multi-target mode: use /scrape endpoint with target parameter
+            - name: REDIS_EXPORTER_WEB_LISTEN_ADDRESS
+              value: ":9121"
+            - name: REDIS_EXPORTER_LOG_FORMAT
+              value: "json"
+          args:
+            - "--web.listen-address=:9121"
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "25m"
+            limits:
+              memory: "64Mi"
+              cpu: "50m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9121
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9121
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-exporter
+  namespace: observability
+  labels:
+    app: redis-exporter
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
+spec:
+  selector:
+    app: redis-exporter
+  ports:
+    - port: 9121
+      targetPort: 9121
+      name: metrics
+
+---
+# ConfigMap with Redis targets for documentation
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-exporter-targets
+  namespace: observability
+data:
+  targets.yaml: |
+    # Redis instances to monitor (via scrape config relabeling)
+    targets:
+      - swimto-redis.swimto.svc.cluster.local:6379
+      - canopy-redis.canopy.svc.cluster.local:6379
+      - visage-redis.visage.svc.cluster.local:6379

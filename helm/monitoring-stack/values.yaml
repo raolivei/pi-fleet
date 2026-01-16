@@ -9,11 +9,39 @@ global:
 prometheus:
   enabled: true
   alertmanager:
-    enabled: false
+    enabled: true
+    persistentVolume:
+      enabled: true
+      size: 1Gi
+      storageClass: local-path
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      hosts:
+        - alertmanager.eldertree.local
+      tls:
+        - secretName: alertmanager-tls
+          hosts:
+            - alertmanager.eldertree.local
+      annotations:
+        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
   nodeExporter:
     enabled: true
   pushgateway:
-    enabled: false
+    enabled: true
+    persistentVolume:
+      enabled: false
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      hosts:
+        - pushgateway.eldertree.local
+      tls:
+        - secretName: pushgateway-tls
+          hosts:
+            - pushgateway.eldertree.local
+      annotations:
+        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
   kube-state-metrics:
     enabled: true
     fullnameOverride: "monitoring-stack-kube-state-metrics"
@@ -40,11 +68,119 @@ prometheus:
       scrape_interval: 30s
       scrape_timeout: 10s
       evaluation_interval: 30s
-    # Additional scrape configs for Traefik and other services
-    additionalScrapeConfigs: []
+    # Additional scrape configs for exporters and external services
+    additionalScrapeConfigs:
+      # PostgreSQL Exporter
+      - job_name: 'postgres-exporter'
+        static_configs:
+          - targets: ['postgres-exporter.observability.svc.cluster.local:9187']
+        scrape_interval: 30s
+      # Redis Exporter - multi-target mode
+      - job_name: 'redis-exporter'
+        static_configs:
+          - targets:
+              - redis://swimto-redis.swimto.svc.cluster.local:6379
+              - redis://canopy-redis.canopy.svc.cluster.local:6379
+              - redis://visage-redis.visage.svc.cluster.local:6379
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: redis-exporter.observability.svc.cluster.local:9121
+        scrape_interval: 30s
+      # Pushgateway for external services (Mac GPU worker)
+      - job_name: 'pushgateway'
+        honor_labels: true
+        static_configs:
+          - targets: ['observability-monitoring-stack-prometheus-pushgateway.observability.svc.cluster.local:9091']
+        scrape_interval: 15s
     # ServiceMonitor and PodMonitor discovery
     serviceMonitorSelectorNilUsesAll: true
     podMonitorSelectorNilUsesAll: true
+  # Alertmanager configuration
+  serverFiles:
+    alerting_rules.yml:
+      groups:
+        - name: node-alerts
+          rules:
+            - alert: NodeDown
+              expr: up{job="kubernetes-nodes"} == 0
+              for: 2m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Node {{ $labels.instance }} is down"
+                description: "Node {{ $labels.instance }} has been unreachable for more than 2 minutes."
+            - alert: HighCPUUsage
+              expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "High CPU usage on {{ $labels.instance }}"
+                description: "CPU usage is above 85% on {{ $labels.instance }} for more than 5 minutes."
+            - alert: HighMemoryUsage
+              expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "High memory usage on {{ $labels.instance }}"
+                description: "Memory usage is above 90% on {{ $labels.instance }} for more than 5 minutes."
+            - alert: HighNodeTemperature
+              expr: node_hwmon_temp_celsius > 75
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "High temperature on {{ $labels.instance }}"
+                description: "Temperature is above 75°C on {{ $labels.instance }}."
+        - name: kubernetes-alerts
+          rules:
+            - alert: PodCrashLooping
+              expr: increase(kube_pod_container_status_restarts_total[1h]) > 5
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+                description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has restarted more than 5 times in the last hour."
+            - alert: PodNotReady
+              expr: kube_pod_status_ready{condition="true"} == 0
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is not ready"
+                description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been not ready for more than 10 minutes."
+            - alert: DeploymentReplicasMismatch
+              expr: kube_deployment_spec_replicas != kube_deployment_status_replicas_available
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} replica mismatch"
+                description: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has not matched the expected number of replicas for 10 minutes."
+        - name: storage-alerts
+          rules:
+            - alert: PVCAlmostFull
+              expr: (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) > 0.85
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is almost full"
+                description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ printf \"%.0f\" $value }}% full."
+            - alert: DiskSpaceLow
+              expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.15
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Low disk space on {{ $labels.instance }}"
+                description: "Disk space is below 15% on {{ $labels.instance }}."
 
 # Grafana configuration
 grafana:
@@ -165,6 +301,16 @@ grafana:
       k8s-compute-resources-pod:
         gnetId: 15662
         revision: 1
+        datasource: Prometheus
+      # PostgreSQL monitoring
+      postgresql-database:
+        gnetId: 9628
+        revision: 7
+        datasource: Prometheus
+      # Redis monitoring
+      redis:
+        gnetId: 763
+        revision: 6
         datasource: Prometheus
   ingress:
     enabled: true
