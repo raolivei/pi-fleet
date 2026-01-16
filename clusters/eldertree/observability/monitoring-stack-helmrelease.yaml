@@ -22,6 +22,19 @@ spec:
   values:
     prometheus:
       enabled: true
+      pushgateway:
+        enabled: true
+        ingress:
+          enabled: true
+          ingressClassName: traefik
+          hosts:
+            - pushgateway.eldertree.local
+          tls:
+            - secretName: pushgateway-tls
+              hosts:
+                - pushgateway.eldertree.local
+          annotations:
+            cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
       server:
         persistentVolume:
           enabled: true
@@ -38,10 +51,12 @@ spec:
                 - prometheus.eldertree.local
           annotations:
             cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
-        # Additional scrape configs for Pi-hole and other services
+        # Additional scrape configs for services
         additionalScrapeConfigs:
           - key: pihole-scrape.yaml
             name: pihole-scrape-config
+          - key: visage-scrape.yaml
+            name: visage-scrape-config
     grafana:
       enabled: true
       adminPassword: admin

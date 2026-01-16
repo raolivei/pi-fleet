@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: visage-scrape-config
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: visage-scrape-config
+    prometheus-scrape-config: "true"
+data:
+  visage-scrape.yaml: |
+    - job_name: 'visage-api'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+              - visage
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: visage-api;http
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      metrics_path: /metrics
+      scrape_interval: 30s
+    - job_name: 'visage-redis'
+      static_configs:
+        - targets: ['visage-redis.visage.svc.cluster.local:6379']
+          labels:
+            service: visage-redis
+            namespace: visage
