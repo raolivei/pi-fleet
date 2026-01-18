@@ -25,7 +25,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: web
-          image: ghcr.io/raolivei/swimto-web:v0.6.1 # {"$imagepolicy": "swimto:swimto-web-policy"}
+          image: ghcr.io/raolivei/swimto-web:v0.6.2 # {"$imagepolicy": "swimto:swimto-web-policy"}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
