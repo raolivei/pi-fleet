@@ -9,7 +9,7 @@
     pihole_dns_ip: "{{ pihole_dns_ip | default('192.168.2.201') }}"
     configure_hosts_file: "{{ configure_hosts_file | default(true) }}"
     services:
-      - "node-0.eldertree.local"
+      - "node-1.eldertree.local"
       - "node-1.eldertree.local"
       - "eldertree"
       - "canopy.eldertree.local"
@@ -64,7 +64,7 @@
           become: true
           become_user: root
           loop:
-            - { hostname: "node-0.eldertree.local", ip: "{{ node_0_ip }}" }
+            - { hostname: "node-1.eldertree.local", ip: "{{ node_0_ip }}" }
             - { hostname: "node-1.eldertree.local", ip: "{{ node_1_ip }}" }
           register: node_hosts_updated
 

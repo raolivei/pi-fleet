@@ -86,4 +86,4 @@ expect {
 send "exit\r"
 expect eof
 
-puts "\n✓ SD card fixed! You can now remove it from node-0 and put it back in node-1."
+puts "\n✓ SD card fixed! You can now remove it from node-1 and put it back in node-1."

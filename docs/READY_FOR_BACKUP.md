@@ -2,9 +2,9 @@
 
 ## ✅ Current Working Configuration
 
-### node-0 (eldertree)
+### node-1 (eldertree)
 
-- **Hostname**: `eldertree` / `node-0`
+- **Hostname**: `eldertree` / `node-1`
 - **wlan0 IP**: `192.168.2.86` (internet access)
 - **eth0 IP**: `10.0.0.1/24` (gigabit connection)
 - **Internet**: ✅ Working
@@ -38,7 +38,7 @@
 
 **Current Backup:**
 
-- Source: node-0 `/mnt/nvme` (95GB)
+- Source: node-1 `/mnt/nvme` (95GB)
 - Destination: node-1 `/mnt/nvme-backup/eldertree-backup`
 - Connection: eth0 (10.0.0.1 → 10.0.0.2) via gigabit switch
 - Speed: ~110 MB/s
@@ -76,12 +76,12 @@ tail -f /tmp/eldertree-backup.log
 
 ## Verification Checklist
 
-Once node-0 is online:
+Once node-1 is online:
 
-- [ ] node-0 SSH access works
-- [ ] node-0 internet connectivity works
-- [ ] Get node-0 eth0 MAC address
+- [ ] node-1 SSH access works
+- [ ] node-1 internet connectivity works
+- [ ] Get node-1 eth0 MAC address
 - [ ] Configure router DHCP reservations
 - [ ] Verify node-to-node connectivity (ping between 192.168.2.83 and 192.168.2.85)
-- [ ] Check node-0 NVMe data size: `du -sh /mnt/nvme`
+- [ ] Check node-1 NVMe data size: `du -sh /mnt/nvme`
 - [ ] Start backup process

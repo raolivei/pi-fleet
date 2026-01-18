@@ -2,11 +2,11 @@
 
 ## Status: ✅ Both Nodes Configured
 
-Both **node-0** and **node-1** have been configured to boot from NVMe while preserving all existing data, including Kubernetes (K3s) data.
+Both **node-1** and **node-1** have been configured to boot from NVMe while preserving all existing data, including Kubernetes (K3s) data.
 
 ## Configuration Summary
 
-### ✅ node-0 (192.168.2.86)
+### ✅ node-1 (192.168.2.86)
 - **Boot configuration**: Updated to use `/dev/nvme0n1p2`
 - **K3s data**: Preserved at `/var/lib/rancher/k3s`
 - **Status**: Ready to boot from NVMe
@@ -35,9 +35,9 @@ Both **node-0** and **node-1** have been configured to boot from NVMe while pres
 
 ### Reboot Both Nodes
 
-**node-0:**
+**node-1:**
 ```bash
-ssh raolivei@node-0.local
+ssh raolivei@node-1.local
 sudo reboot
 ```
 

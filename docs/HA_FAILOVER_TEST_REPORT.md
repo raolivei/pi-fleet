@@ -55,7 +55,7 @@ Workloads were properly distributed across the remaining nodes.
 - **Quorum Status:** ✅ Maintained (66.7% > 50%)
 - **etcd Health:** All remaining members "started"
 - **Member List:**
-  - node-1 (node-0.eldertree.local-823f516b): started
+  - node-1 (node-1.eldertree.local-823f516b): started
   - node-2 (node-2.eldertree.local-1314ebe6): started
   - node-3 (node-3.eldertree.local-ddcfb0dc): started (but node offline)
 

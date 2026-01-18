@@ -44,10 +44,10 @@ sudo systemctl restart ssh
 
 ## After Restore
 
-Once SSH is working again, you can SSH to node-0 and restore it there too:
+Once SSH is working again, you can SSH to node-1 and restore it there too:
 
 ```bash
-ssh raolivei@node-0
+ssh raolivei@node-1
 # Run the same restore commands
 ```
 

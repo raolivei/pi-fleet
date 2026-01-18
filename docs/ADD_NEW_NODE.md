@@ -85,7 +85,7 @@ ansible-playbook ansible/playbooks/setup-system.yml \
 ```
 
 **IP Assignment Reference:**
-- node-0: `192.168.2.86` (eldertree.local)
+- node-1: `192.168.2.86` (eldertree.local)
 - node-1: `192.168.2.85`
 - node-2: `192.168.2.87` (next available)
 - node-3: `192.168.2.88` (future)
@@ -105,7 +105,7 @@ ansible node-2.eldertree.local -i ansible/inventory/hosts.yml \
 
 ### 3.1 Add Gigabit IP to eth0
 
-Configure eth0 with cluster IP using NetworkManager (matching node-0 and node-1):
+Configure eth0 with cluster IP using NetworkManager (matching node-1 and node-1):
 
 ```bash
 # Connect to node
@@ -119,7 +119,7 @@ ansible node-2.eldertree.local -i ansible/inventory/hosts.yml \
 ```
 
 **Gigabit IP Assignment:**
-- node-0: `10.0.0.1`
+- node-1: `10.0.0.1`
 - node-1: `10.0.0.2`
 - node-2: `10.0.0.3`
 - node-3: `10.0.0.4` (future)
@@ -148,7 +148,7 @@ all:
   children:
     raspberry_pi:
       hosts:
-        node-0:
+        node-1:
           ansible_host: 192.168.2.86
           ansible_user: raolivei
           ansible_ssh_private_key_file: ~/.ssh/id_ed25519_raolivei
@@ -193,7 +193,7 @@ kubectl run ssh-key-setup-node2 \
 **Note:** This requires the node to already be in the cluster. If node-2 isn't in the cluster yet, you'll need to:
 1. Use physical access to add the key manually, OR
 2. Use password authentication temporarily, OR
-3. Copy the key from node-0/node-1
+3. Copy the key from node-1/node-1
 
 **Alternative: Manual SSH Key Setup (if node not in cluster yet)**
 
@@ -225,8 +225,8 @@ ansible node-2 -i ansible/inventory/hosts.yml -m ping
 ### 5.1 Get k3s Token from Control Plane
 
 ```bash
-# On node-0 (control plane)
-ansible node-0 -i ansible/inventory/hosts.yml \
+# On node-1 (control plane)
+ansible node-1 -i ansible/inventory/hosts.yml \
   -m shell -a "sudo cat /var/lib/rancher/k3s/server/node-token" \
   --become
 ```
@@ -243,7 +243,7 @@ ansible-playbook ansible/playbooks/install-k3s.yml \
   --limit node-2 \
   -e "k3s_mode=agent" \
   -e "k3s_token=<token-from-step-5.1>" \
-  -e "k3s_server_url=https://node-0.eldertree.local:6443" \
+  -e "k3s_server_url=https://node-1.eldertree.local:6443" \
   --become
 ```
 
@@ -253,7 +253,7 @@ Or use the worker-specific playbook if available:
 ansible-playbook ansible/playbooks/install-k3s-worker.yml \
   --limit node-2 \
   -e "k3s_token=<token-from-step-5.1>" \
-  -e "k3s_server_url=https://node-0.eldertree.local:6443" \
+  -e "k3s_server_url=https://node-1.eldertree.local:6443" \
   --become
 ```
 
@@ -390,14 +390,14 @@ ansible node-2 -i ansible/inventory/hosts.yml \
 export KUBECONFIG=~/.kube/config-eldertree
 
 # Get a pod IP from another node
-kubectl get pods -A -o wide | grep node-0 | head -1
+kubectl get pods -A -o wide | grep node-1 | head -1
 
 # Test from node-2 pod
 kubectl run test-pod-node2 \
   --image=busybox \
   --restart=Never \
   --overrides='{"spec":{"nodeName":"node-2.eldertree.local"}}' \
-  --rm -i -- sh -c "ping -c 3 <pod-ip-from-node-0>"
+  --rm -i -- sh -c "ping -c 3 <pod-ip-from-node-1>"
 ```
 
 ## Troubleshooting
@@ -430,27 +430,27 @@ Common issues:
 2. Verify connectivity to control plane:
    ```bash
    ansible node-2 -i ansible/inventory/hosts.yml \
-     -m shell -a "ping -c 2 node-0.eldertree.local && curl -k https://node-0.eldertree.local:6443" \
+     -m shell -a "ping -c 2 node-1.eldertree.local && curl -k https://node-1.eldertree.local:6443" \
      --become
    ```
 
 3. Check DNS resolution:
    ```bash
    ansible node-2 -i ansible/inventory/hosts.yml \
-     -m shell -a "nslookup node-0.eldertree.local" \
+     -m shell -a "nslookup node-1.eldertree.local" \
      --become
    ```
 
 ## IP Address Reference
 
 ### Management Network (wlan0)
-- node-0: `192.168.2.86` (eldertree.local)
+- node-1: `192.168.2.86` (eldertree.local)
 - node-1: `192.168.2.85`
 - node-2: `192.168.2.87`
 - node-3: `192.168.2.88` (future)
 
 ### Gigabit Cluster Network (eth0)
-- node-0: `10.0.0.1`
+- node-1: `10.0.0.1`
 - node-1: `10.0.0.2`
 - node-2: `10.0.0.3`
 - node-3: `10.0.0.4` (future)

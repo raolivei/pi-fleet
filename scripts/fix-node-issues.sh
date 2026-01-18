@@ -1,6 +1,6 @@
 #!/bin/bash
-# Fix node-0 and node-1 issues
-# 1. Remove unreachable node-0 from cluster
+# Fix node-1 and node-1 issues
+# 1. Remove unreachable node-1 from cluster
 # 2. Fix IP conflicts
 # 3. Verify node-1 configuration
 
@@ -26,21 +26,21 @@ echo "Current status:"
 kubectl get nodes
 echo ""
 
-# Step 1: Remove node-0 if it's unreachable
-echo "Step 1: Checking node-0 status..."
+# Step 1: Remove node-1 if it's unreachable
+echo "Step 1: Checking node-1 status..."
 if ! ping -c 1 -W 2 192.168.2.100 > /dev/null 2>&1; then
-    echo "  ⚠️  node-0 (192.168.2.100) is unreachable"
-    read -p "  Remove node-0 from cluster? (y/N): " -n 1 -r
+    echo "  ⚠️  node-1 (192.168.2.100) is unreachable"
+    read -p "  Remove node-1 from cluster? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "  Removing node-0 from cluster..."
-        kubectl delete node node-0.eldertree.local 2>&1 || echo "    (Node may already be removed or in use)"
-        echo "  ✅ node-0 removal attempted"
+        echo "  Removing node-1 from cluster..."
+        kubectl delete node node-1.eldertree.local 2>&1 || echo "    (Node may already be removed or in use)"
+        echo "  ✅ node-1 removal attempted"
     else
-        echo "  ⏭️  Skipping node-0 removal"
+        echo "  ⏭️  Skipping node-1 removal"
     fi
 else
-    echo "  ✅ node-0 is reachable, skipping removal"
+    echo "  ✅ node-1 is reachable, skipping removal"
 fi
 echo ""
 
@@ -57,11 +57,11 @@ if ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o StrictHostKeyChecking=no "raolivei@1
     echo "    eth0:  ${NODE1_ETH0:-not found}"
     echo "    wlan0: ${NODE1_WLAN0:-not found}"
     
-    # Check if node-1 has the correct IP (should be 10.0.0.1 for eth0, but node-0 also has this)
-    # According to docs, node-1 should have 10.0.0.1, but if node-0 exists, there's a conflict
+    # Check if node-1 has the correct IP (should be 10.0.0.1 for eth0, but node-1 also has this)
+    # According to docs, node-1 should have 10.0.0.1, but if node-1 exists, there's a conflict
     if [ "$NODE1_ETH0" = "10.0.0.1" ]; then
-        echo "  ⚠️  node-1 has IP 10.0.0.1 (same as node-0)"
-        echo "  This is correct if node-0 is removed, but verify network configuration"
+        echo "  ⚠️  node-1 has IP 10.0.0.1 (same as node-1)"
+        echo "  This is correct if node-1 is removed, but verify network configuration"
     fi
 else
     echo "  ❌ Cannot access node-1"
@@ -108,9 +108,9 @@ echo "=========================================="
 echo ""
 echo "Next steps if issues persist:"
 echo ""
-echo "1. If node-0 should be removed:"
-echo "   kubectl delete node node-0.eldertree.local"
-echo "   kubectl drain node-0.eldertree.local --ignore-daemonsets --delete-emptydir-data"
+echo "1. If node-1 should be removed:"
+echo "   kubectl delete node node-1.eldertree.local"
+echo "   kubectl drain node-1.eldertree.local --ignore-daemonsets --delete-emptydir-data"
 echo ""
 echo "2. If node-1 IP needs to be changed:"
 echo "   - SSH to node-1: ssh raolivei@192.168.2.101"

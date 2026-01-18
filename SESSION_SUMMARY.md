@@ -13,7 +13,7 @@ Setting up node-2 in the eldertree k3s cluster and improving the Ansible playboo
 **Solution**:
 
 - Renamed input variable to `k3s_token_override` to avoid recursion
-- Token retrieval from node-0 sets `k3s_token_retrieved` fact
+- Token retrieval from node-1 sets `k3s_token_retrieved` fact
 - New play determines final token (`k3s_token_final`) from override or retrieved value
 - Passes `k3s_token_final` to `install-k3s-worker.yml`
 
@@ -87,7 +87,7 @@ ansible-playbook playbooks/setup-new-node.yml --limit node-2 \
 ## Current Inventory State
 
 ```yaml
-node-0: 192.168.2.86 (wlan0), 10.0.0.1 (eth0)
+node-1: 192.168.2.86 (wlan0), 10.0.0.1 (eth0)
 node-1: 192.168.2.85 (wlan0), 10.0.0.2 (eth0)
 node-2: 192.168.2.84 (wlan0), 10.0.0.3 (eth0)
 ```
@@ -96,13 +96,13 @@ node-2: 192.168.2.84 (wlan0), 10.0.0.3 (eth0)
 
 ### wlan0 (Management Network)
 
-- Base IP: `192.168.2.86` (node-0)
+- Base IP: `192.168.2.86` (node-1)
 - Pattern: Descending (86, 85, 84, 83...)
 - Calculation: `base_ip - (number_of_existing_nodes)`
 
 ### eth0 (Gigabit Network)
 
-- Base IP: `10.0.0.1` (node-0)
+- Base IP: `10.0.0.1` (node-1)
 - Pattern: Ascending (1, 2, 3, 4...)
 - Calculation: `max(existing_eth0_ips) + 1`
 
@@ -139,7 +139,7 @@ node-2: 192.168.2.84 (wlan0), 10.0.0.3 (eth0)
 ## Important Notes
 
 - The playbook now automatically calculates IPs based on existing nodes in inventory
-- k3s token is automatically retrieved from node-0 if not provided
+- k3s token is automatically retrieved from node-1 if not provided
 - All changes are committed and pushed to branch: `fix/pi-hole-servicelb-annotation`
 - The playbook is idempotent and can be run multiple times safely
 

@@ -10,15 +10,15 @@
 3. ✅ **Backed up cluster state** - Full backup created in `backups/ha-migration-20260108/`
 4. ✅ **Updated Ansible playbooks for HA** - `install-k3s.yml` now supports HA control plane installation
 5. ✅ **Created conversion playbook** - `convert-worker-to-control-plane.yml` for automated conversion
-6. ✅ **Fixed node-1 hostname** - Updated from node-0 to node-1.eldertree.local
+6. ✅ **Fixed node-1 hostname** - Updated from node-1 to node-1.eldertree.local
 
 ## Current Issues
 
 ### Node-1 Configuration
 
-- Node-1's k3s config.yaml still references `node-0.eldertree.local` in TLS SANs
+- Node-1's k3s config.yaml still references `node-1.eldertree.local` in TLS SANs
 - Node-1 was restarted during config update - may need to wait for full recovery
-- Old "node-0" entry may still exist in cluster
+- Old "node-1" entry may still exist in cluster
 
 ### Node-2 Conversion
 
@@ -30,7 +30,7 @@
 ## Next Steps
 
 1. **Wait for node-1 to fully recover** after restart
-2. **Fix node-1's k3s config.yaml** to remove node-0 references:
+2. **Fix node-1's k3s config.yaml** to remove node-1 references:
    ```yaml
    bind-address: 10.0.0.1
    advertise-address: 10.0.0.1
@@ -38,7 +38,7 @@
      - 10.0.0.1
      - node-1.eldertree.local
    ```
-3. **Remove old node-0 entry** from cluster: `kubectl delete node node-0`
+3. **Remove old node-1 entry** from cluster: `kubectl delete node node-1`
 4. **Complete node-2 conversion** using Ansible playbook once node-1 is stable
 5. **Convert node-3** to control plane
 6. **Update kubeconfig** for multiple API endpoints
@@ -79,9 +79,9 @@ tls-san:
 EOF
 sudo systemctl restart k3s"
 
-# 3. Remove old node-0
+# 3. Remove old node-1
 export KUBECONFIG=~/.kube/config-eldertree
-kubectl delete node node-0
+kubectl delete node node-1
 
 # 4. Convert node-2
 cd ansible

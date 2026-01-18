@@ -24,7 +24,7 @@
    - ✅ K3s is running (PID 8571)
    - ✅ Port 6443 is listening (IPv6: `:::6443`)
    - ✅ Cluster is accessible via kubectl
-   - ✅ Node is Ready: `node-0 Ready control-plane,etcd,master`
+   - ✅ Node is Ready: `node-1 Ready control-plane,etcd,master`
 
 ### Connection Issues
 
@@ -58,16 +58,16 @@ K3s depends on:
 
 ```bash
 # Check service status
-ssh raolivei@node-0.eldertree.local "sudo systemctl status k3s"
+ssh raolivei@node-1.eldertree.local "sudo systemctl status k3s"
 
 # Check if running
-ssh raolivei@node-0.eldertree.local "sudo systemctl is-active k3s"
+ssh raolivei@node-1.eldertree.local "sudo systemctl is-active k3s"
 
 # Check if enabled (starts on boot)
-ssh raolivei@node-0.eldertree.local "sudo systemctl is-enabled k3s"
+ssh raolivei@node-1.eldertree.local "sudo systemctl is-enabled k3s"
 
 # Check port
-ssh raolivei@node-0.eldertree.local "sudo ss -tlnp | grep 6443"
+ssh raolivei@node-1.eldertree.local "sudo ss -tlnp | grep 6443"
 
 # Test connection
 export KUBECONFIG=~/.kube/config-eldertree
@@ -80,13 +80,13 @@ To ensure K3s starts on boot and stays running:
 
 ```bash
 # Enable service (if not already)
-ssh raolivei@node-0.eldertree.local "sudo systemctl enable k3s"
+ssh raolivei@node-1.eldertree.local "sudo systemctl enable k3s"
 
 # Start service
-ssh raolivei@node-0.eldertree.local "sudo systemctl start k3s"
+ssh raolivei@node-1.eldertree.local "sudo systemctl start k3s"
 
 # Verify
-ssh raolivei@node-0.eldertree.local "sudo systemctl status k3s"
+ssh raolivei@node-1.eldertree.local "sudo systemctl status k3s"
 ```
 
 ### Troubleshooting
@@ -95,29 +95,29 @@ If K3s stops again:
 
 1. **Check logs**:
    ```bash
-   ssh raolivei@node-0.eldertree.local "sudo journalctl -u k3s -n 100"
+   ssh raolivei@node-1.eldertree.local "sudo journalctl -u k3s -n 100"
    ```
 
 2. **Check for errors**:
    ```bash
-   ssh raolivei@node-0.eldertree.local "sudo journalctl -u k3s --since '1 hour ago' | grep -i error"
+   ssh raolivei@node-1.eldertree.local "sudo journalctl -u k3s --since '1 hour ago' | grep -i error"
    ```
 
 3. **Restart service**:
    ```bash
-   ssh raolivei@node-0.eldertree.local "sudo systemctl restart k3s"
+   ssh raolivei@node-1.eldertree.local "sudo systemctl restart k3s"
    ```
 
 4. **Check dependencies**:
    ```bash
-   ssh raolivei@node-0.eldertree.local "sudo systemctl list-dependencies k3s.service"
+   ssh raolivei@node-1.eldertree.local "sudo systemctl list-dependencies k3s.service"
    ```
 
 ### Current Cluster Status
 
 ```
 NAME     STATUS   ROLES                       AGE    VERSION
-node-0   Ready    control-plane,etcd,master   3d3h   v1.33.6+k3s1
+node-1   Ready    control-plane,etcd,master   3d3h   v1.33.6+k3s1
 ```
 
 Cluster is healthy and accessible.

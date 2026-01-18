@@ -44,17 +44,17 @@ sudo tee -a "$HOSTS_FILE" > /dev/null << EOF
 $MARKER_START
 # Services proxied by Caddy to k3s cluster (NodePort 32474)
 # Run: sudo caddy run --config $CADDYFILE
+# Only includes DEPLOYED services (as of 2026-01-16)
 127.0.0.1  grafana.eldertree.local
 127.0.0.1  vault.eldertree.local
 127.0.0.1  prometheus.eldertree.local
 127.0.0.1  visage.eldertree.local
 127.0.0.1  minio.eldertree.local
-127.0.0.1  canopy.eldertree.local
 127.0.0.1  swimto.eldertree.local
-127.0.0.1  journey.eldertree.local
 127.0.0.1  pitanga.eldertree.local
-127.0.0.1  docs.eldertree.local
 127.0.0.1  flux-ui.eldertree.local
+127.0.0.1  pushgateway.eldertree.local
+127.0.0.1  pihole.eldertree.local
 
 # Node IPs (direct access)
 192.168.2.101  node-1.eldertree.local

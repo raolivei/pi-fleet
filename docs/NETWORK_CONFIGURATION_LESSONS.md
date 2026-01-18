@@ -55,9 +55,9 @@ When configuring network interfaces, **ALWAYS**:
    ```
 
 4. **Match working configuration exactly**:
-   - If node-0 works, check its exact configuration:
+   - If node-1 works, check its exact configuration:
      ```bash
-     # On node-0
+     # On node-1
      sudo ls -la /etc/NetworkManager/system-connections/eth0*
      sudo cat /etc/NetworkManager/system-connections/eth0
      sudo cat /etc/NetworkManager/NetworkManager.conf
@@ -73,7 +73,7 @@ When configuring network interfaces, **ALWAYS**:
 - Both can coexist, but conflicts can cause unpredictable behavior
 - **Best practice**: Use one method consistently per interface
 
-**Current Pattern (node-0, node-1)**:
+**Current Pattern (node-1, node-1)**:
 - **wlan0**: Managed by NetworkManager via netplan file (`90-NM-*.yaml`)
 - **eth0**: Managed by NetworkManager via `nmcli` connection (no netplan file)
 

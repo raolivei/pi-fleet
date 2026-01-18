@@ -94,9 +94,9 @@ proc configure_node {node_ip node_name} {
     return 0
 }
 
-# Configure node-0
-if {[configure_node $node0_ip "node-0"] != 0} {
-    puts "ERROR: Failed to configure node-0"
+# Configure node-1
+if {[configure_node $node0_ip "node-1"] != 0} {
+    puts "ERROR: Failed to configure node-1"
     exit 1
 }
 

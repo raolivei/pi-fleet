@@ -1,5 +1,5 @@
 #!/bin/bash
-# Remote fix script - runs on your Mac, connects to node-0 to fix SD card
+# Remote fix script - runs on your Mac, connects to node-1 to fix SD card
 # Usage: ./fix-sd-card-remote-exec.sh
 
 set -e
@@ -7,10 +7,10 @@ set -e
 NODE0_IP="192.168.2.86"
 NODE0_USER="raolivei"
 
-echo "=== SD Card Fix via node-0 ==="
+echo "=== SD Card Fix via node-1 ==="
 echo ""
 echo "This script will:"
-echo "  1. Connect to node-0 ($NODE0_IP)"
+echo "  1. Connect to node-1 ($NODE0_IP)"
 echo "  2. Find the USB device with SD card"
 echo "  3. Mount and fix fstab"
 echo "  4. Unmount safely"
@@ -95,7 +95,7 @@ REMOTEEOF
 )
 
 # Execute on remote
-echo "Connecting to node-0..."
+echo "Connecting to node-1..."
 if [ -n "$SSHPASS_CMD" ]; then
     echo "$REMOTE_SCRIPT" | $SSHPASS_CMD ssh -o StrictHostKeyChecking=no "$NODE0_USER@$NODE0_IP" "bash -s"
 else
@@ -104,7 +104,7 @@ fi
 
 echo ""
 echo "✓ SD card fixed! You can now:"
-echo "  1. Remove SD card from node-0 USB port"
+echo "  1. Remove SD card from node-1 USB port"
 echo "  2. Put it back in node-1"
 echo "  3. Boot node-1 - it should work now"
 

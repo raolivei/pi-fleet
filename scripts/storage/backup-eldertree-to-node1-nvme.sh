@@ -7,10 +7,10 @@ set -e
 
 # Network configuration
 # wlan0 IPs (for SSH access):
-#   node-0 (eldertree): 192.168.2.86
+#   node-1 (eldertree): 192.168.2.86
 #   node-1: 192.168.2.85
 # eth0 IPs (for direct gigabit connection via isolated switch):
-#   node-0 eth0: 10.0.0.1
+#   node-1 eth0: 10.0.0.1
 #   node-1 eth0: 10.0.0.2
 ELDERTREE_WLAN="${ELDERTREE_WLAN_IP:-192.168.2.86}"
 NODE1_WLAN="${NODE1_WLAN_IP:-192.168.2.85}"
@@ -31,10 +31,10 @@ BACKUP_DIR="/mnt/backup-nvme/eldertree-nvme-backup-$(date +%Y%m%d-%H%M%S)"
 
 echo "=== Direct Backup: eldertree → node-1 NVMe ==="
 echo ""
-echo "Source: node-0 eth0 ($ELDERTREE):/mnt/nvme"
+echo "Source: node-1 eth0 ($ELDERTREE):/mnt/nvme"
 echo "Destination: node-1 eth0 ($NODE1):$BACKUP_DIR"
 echo "Connection: Direct gigabit switch (isolated network 10.0.0.0/24)"
-echo "SSH access: node-0 wlan0 ($ELDERTREE_WLAN), node-1 wlan0 ($NODE1_WLAN)"
+echo "SSH access: node-1 wlan0 ($ELDERTREE_WLAN), node-1 wlan0 ($NODE1_WLAN)"
 echo ""
 
 # Check eldertree data (using wlan0 for SSH access)
@@ -98,7 +98,7 @@ sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@$NODE1_WLAN "
 eldertree NVMe Data Backup
 ==========================
 Date: $(date)
-Source: node-0 eth0 ($ELDERTREE):/mnt/nvme
+Source: node-1 eth0 ($ELDERTREE):/mnt/nvme
 Destination: node-1 eth0 ($NODE1):$BACKUP_DIR
 Connection: Direct gigabit switch (isolated 10.0.0.0/24 network)
 Original size: $DATA_SIZE

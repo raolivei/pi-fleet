@@ -16,7 +16,7 @@ The eldertree cluster uses a simple, efficient network architecture optimized fo
 
 **Node IP Assignment:**
 
-- **node-0**: 192.168.2.80 (control plane)
+- **node-1**: 192.168.2.80 (control plane)
 - **node-1**: 192.168.2.81 (worker)
 - **Future nodes**: 192.168.2.8N (where N is node number)
 
@@ -57,7 +57,7 @@ See [Node IP Assignment](./NODE_IP_ASSIGNMENT.md) for details.
 
 **Configuration:**
 
-- Server running on control plane (node-0)
+- Server running on control plane (node-1)
 - Clients connect via WireGuard app
 - VPN network: 10.8.0.0/24 (typical)
 
@@ -107,7 +107,7 @@ See [Node IP Assignment](./NODE_IP_ASSIGNMENT.md) for details.
 ### Pod-to-Pod Communication
 
 ```
-Pod on node-0 → Flannel VXLAN → Pod on node-1
+Pod on node-1 → Flannel VXLAN → Pod on node-1
 ```
 
 ### Service Access

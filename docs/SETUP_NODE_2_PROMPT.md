@@ -6,7 +6,7 @@ This is a complete prompt for setting up a new Raspberry Pi node (node-2) in the
 
 ### Current Cluster State
 
-- **node-0**: Control plane node at `192.168.2.86` (gigabit: `10.0.0.1`)
+- **node-1**: Control plane node at `192.168.2.86` (gigabit: `10.0.0.1`)
 - **node-1**: Worker node at `192.168.2.85` (gigabit: `10.0.0.2`)
 - **node-2**: New node to be added (currently booted from SD card with hostname "node-x")
 
@@ -218,7 +218,7 @@ Configure eth0 with the gigabit IP using NetworkManager (NOT netplan):
 ```bash
 cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet
 
-# Configure eth0 via NetworkManager (matches node-0 pattern)
+# Configure eth0 via NetworkManager (matches node-1 pattern)
 ansible node-2 -i ansible/inventory/hosts.yml \
   -m shell -a "sudo nmcli connection add type ethernet ifname eth0 con-name eth0 ipv4.method manual ipv4.addresses 10.0.0.3/24 ipv4.gateway '' autoconnect yes 2>&1 || sudo nmcli connection modify eth0 ipv4.method manual ipv4.addresses 10.0.0.3/24 ipv4.gateway '' && sudo nmcli connection up eth0" --become
 
@@ -251,15 +251,15 @@ ansible node-2 -i ansible/inventory/hosts.yml \
 
 ### Step 6: Get k3s Token from Control Plane
 
-Get the k3s node token from the control plane (node-0):
+Get the k3s node token from the control plane (node-1):
 
 ```bash
 cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet/ansible
 
-# Get token from node-0
-K3S_TOKEN=$(ansible node-0 -i inventory/hosts.yml \
+# Get token from node-1
+K3S_TOKEN=$(ansible node-1 -i inventory/hosts.yml \
   -m shell -a "sudo cat /var/lib/rancher/k3s/server/node-token" \
-  --become | grep -v "node-0" | tail -1)
+  --become | grep -v "node-1" | tail -1)
 
 echo "K3S_TOKEN: $K3S_TOKEN"
 # Save this token - you'll need it in Step 7
@@ -278,14 +278,14 @@ cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet/ansible
 ansible-playbook playbooks/install-k3s-worker.yml \
   --limit node-2 \
   -e "k3s_token=$K3S_TOKEN" \
-  -e "k3s_server_url=https://node-0.eldertree.local:6443"
+  -e "k3s_server_url=https://node-1.eldertree.local:6443"
 ```
 
 **What this does**:
 
 - Configures cgroup settings (may require reboot)
 - Installs k3s-agent
-- Connects to control plane at `node-0.eldertree.local:6443`
+- Connects to control plane at `node-1.eldertree.local:6443`
 - Starts k3s-agent service
 
 **Note**: If cgroup configuration is updated, the playbook will automatically reboot the node and wait for it to come back online.
@@ -357,7 +357,7 @@ ansible-playbook playbooks/setup-terminal-monitoring.yml \
 **What this does**:
 
 - Generates SSH key for node-2
-- Adds public key to all other nodes (node-0, node-1)
+- Adds public key to all other nodes (node-1, node-1)
 - Installs btop, neofetch, tmux
 - Configures login banner with system info
 
@@ -465,7 +465,7 @@ kubectl get nodes -o wide
 
 # Expected output:
 # NAME                      STATUS   ROLES                       AGE   VERSION   INTERNAL-IP   EXTERNAL-IP
-# node-0.eldertree.local    Ready    control-plane,etcd,master   5d    v1.33.5+k3s1   10.0.0.1   <none>
+# node-1.eldertree.local    Ready    control-plane,etcd,master   5d    v1.33.5+k3s1   10.0.0.1   <none>
 # node-1.eldertree.local    Ready    <none>                      2d    v1.33.5+k3s1   10.0.0.2   <none>
 # node-2.eldertree.local    Ready    <none>                      5m    v1.33.5+k3s1   10.0.0.3   <none>
 
@@ -501,14 +501,14 @@ ansible-playbook playbooks/setup-system.yml --limit node-2
 
 **Management IPs (wlan0)**:
 
-- node-0: `192.168.2.86`
+- node-1: `192.168.2.86`
 - node-1: `192.168.2.85`
 - node-2: `192.168.2.84`
 - Pattern: `192.168.2.8(6-N)` where N is node number
 
 **Gigabit IPs (eth0)**:
 
-- node-0: `10.0.0.1`
+- node-1: `10.0.0.1`
 - node-1: `10.0.0.2`
 - node-2: `10.0.0.3`
 - Pattern: `10.0.0.N` where N is node number
@@ -528,10 +528,10 @@ ansible-playbook playbooks/setup-system.yml --limit node-2
 ### Getting k3s Token
 
 ```bash
-# From node-0 (control plane)
-ansible node-0 -i ansible/inventory/hosts.yml \
+# From node-1 (control plane)
+ansible node-1 -i ansible/inventory/hosts.yml \
   -m shell -a "sudo cat /var/lib/rancher/k3s/server/node-token" \
-  --become | grep -v "node-0" | tail -1
+  --become | grep -v "node-1" | tail -1
 ```
 
 ### Verification Commands
@@ -624,11 +624,11 @@ kubectl describe node node-2.eldertree.local
    # Should show no results (or only wlan0 references)
    ```
 
-3. **Match node-0's exact configuration**:
+3. **Match node-1's exact configuration**:
 
    ```bash
-   # On node-0
-   ansible node-0 -i ansible/inventory/hosts.yml \
+   # On node-1
+   ansible node-1 -i ansible/inventory/hosts.yml \
      -m shell -a "sudo cat /etc/NetworkManager/system-connections/eth0" --become
    # Replicate exact same configuration on node-2
    ```
@@ -658,7 +658,7 @@ kubectl describe node node-2.eldertree.local
 
    ```bash
    ansible node-2 -i ansible/inventory/hosts.yml \
-     -m shell -a "ping -c 2 10.0.0.1 && ping -c 2 node-0.eldertree.local" --become
+     -m shell -a "ping -c 2 10.0.0.1 && ping -c 2 node-1.eldertree.local" --become
    ```
 
 4. Re-run gigabit configuration:
@@ -690,8 +690,8 @@ kubectl describe node node-2.eldertree.local
 3. Verify token is correct:
 
    ```bash
-   # Get token from node-0 again
-   ansible node-0 -i ansible/inventory/hosts.yml \
+   # Get token from node-1 again
+   ansible node-1 -i ansible/inventory/hosts.yml \
      -m shell -a "sudo cat /var/lib/rancher/k3s/server/node-token" --become
    ```
 
@@ -701,7 +701,7 @@ kubectl describe node node-2.eldertree.local
    ansible-playbook playbooks/install-k3s-worker.yml \
      --limit node-2 \
      -e "k3s_token=<NEW_TOKEN>" \
-     -e "k3s_server_url=https://node-0.eldertree.local:6443"
+     -e "k3s_server_url=https://node-1.eldertree.local:6443"
    ```
 
 ## Related Documentation
@@ -721,7 +721,7 @@ When setting up node-2:
 - [ ] Step 3: Configure system (hostname + management IP)
 - [ ] Step 4: Fix NVMe boot configuration (if NVMe exists)
 - [ ] Step 5: Configure gigabit network (eth0)
-- [ ] Step 6: Get k3s token from node-0
+- [ ] Step 6: Get k3s token from node-1
 - [ ] Step 7: Install k3s worker
 - [ ] Step 8: Configure k3s for gigabit network
 - [ ] Step 9: Setup SSH keys and terminal monitoring
@@ -735,5 +735,5 @@ When setting up node-2:
 - **NetworkManager**: Both wlan0 and eth0 are managed by NetworkManager (not netplan for eth0)
 - **Boot Order**: SD card takes precedence over NVMe - remove SD card before final reboot
 - **IP Persistence**: Always verify network configuration persists after reboot
-- **k3s Token**: Token is required for worker node join - get it from node-0
+- **k3s Token**: Token is required for worker node join - get it from node-1
 - **Gigabit Network**: k3s uses eth0 (10.0.0.x) for cluster traffic, wlan0 (192.168.2.x) for management

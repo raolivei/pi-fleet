@@ -1,7 +1,7 @@
 ---
 # Master playbook for setting up all Raspberry Pi nodes
 # This playbook runs on all nodes in the raspberry_pi group:
-# - node-0 (control plane)
+# - node-1 (control plane)
 # - node-1 (worker)
 #
 # What it does:
@@ -10,16 +10,16 @@
 # 3. SSH key configuration
 #
 # Note: k3s installation is separate:
-# - Control plane (node-0): use install-k3s.yml or setup-eldertree.yml
+# - Control plane (node-1): use install-k3s.yml or setup-eldertree.yml
 # - Worker nodes (node-1): use install-k3s-worker.yml
 
 - name: System Configuration
   import_playbook: setup-system.yml
   vars:
     target_user: raolivei
-    # Hostname defaults to inventory_hostname (node-0, node-1)
+    # Hostname defaults to inventory_hostname (node-1, node-1)
     # static_ip defaults to empty (DHCP) - override for nodes that need static IP
-    # Example: ansible-playbook playbooks/setup-all-nodes.yml --limit node-0 -e static_ip=192.168.2.86
+    # Example: ansible-playbook playbooks/setup-all-nodes.yml --limit node-1 -e static_ip=192.168.2.86
 
 - name: Setup Terminal Monitoring
   import_playbook: setup-terminal-monitoring.yml
@@ -45,5 +45,5 @@
           - "You can now SSH to {{ inventory_hostname }} and run 'btop' for monitoring"
           - ""
           - "Next steps:"
-          - "  - For control plane (node-0): Run install-k3s.yml or setup-eldertree.yml"
+          - "  - For control plane (node-1): Run install-k3s.yml or setup-eldertree.yml"
           - "  - For worker nodes (node-1): Run install-k3s-worker.yml with k3s_token"

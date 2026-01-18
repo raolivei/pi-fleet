@@ -6,7 +6,7 @@ This guide walks you through migrating nodes from old names/IPs to new ones.
 
 **Old → New:**
 
-- `node-0` → `node-1` (192.168.2.86 → 192.168.2.101)
+- `node-1` → `node-1` (192.168.2.86 → 192.168.2.101)
 - `node-1` → `node-2` (192.168.2.85 → 192.168.2.102)
 - `node-2` → `node-3` (192.168.2.84 → 192.168.2.103)
 
@@ -25,7 +25,7 @@ This guide walks you through migrating nodes from old names/IPs to new ones.
 
 ```bash
 # Verify nodes are accessible with old IPs
-ping -c 2 192.168.2.86  # node-0 (old)
+ping -c 2 192.168.2.86  # node-1 (old)
 ping -c 2 192.168.2.85  # node-1 (old)
 ping -c 2 192.168.2.84  # node-2 (old)
 
@@ -40,7 +40,7 @@ kubectl --kubeconfig ~/.kube/config-eldertree get nodes
 1. Access router admin panel (usually `192.168.2.1`)
 2. Navigate to **DHCP Reservations** or **Static IP Assignments**
 3. Update reservations:
-   - MAC of old `node-0` → `192.168.2.101` (new `node-1`)
+   - MAC of old `node-1` → `192.168.2.101` (new `node-1`)
    - MAC of old `node-1` → `192.168.2.102` (new `node-2`)
    - MAC of old `node-2` → `192.168.2.103` (new `node-3`)
 4. Save and apply changes
@@ -72,14 +72,14 @@ ansible-playbook \
 
 **IMPORTANT:** Reboot nodes one at a time, starting with the control plane!
 
-#### 4.1: Reboot Control Plane (node-0 → node-1)
+#### 4.1: Reboot Control Plane (node-1 → node-1)
 
 ```bash
 # Reboot control plane
 ansible-playbook \
   -i ansible/inventory/hosts-migration-temp.yml \
   ansible/playbooks/migrate-node-names-and-ips.yml \
-  --limit node-0 \
+  --limit node-1 \
   -e "reboot=true"
 
 # Or manually:
@@ -96,8 +96,8 @@ ssh raolivei@192.168.2.101 "hostname"  # Should show: node-1.eldertree.local
 ```bash
 # Remove old host keys
 ssh-keygen -R 192.168.2.86
-ssh-keygen -R node-0.eldertree.local
-ssh-keygen -R node-0
+ssh-keygen -R node-1.eldertree.local
+ssh-keygen -R node-1
 
 # Test SSH with new IP
 ssh raolivei@192.168.2.101

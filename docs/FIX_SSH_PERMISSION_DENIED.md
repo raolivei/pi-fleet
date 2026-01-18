@@ -8,7 +8,7 @@
 ---
 
 
-# Fix SSH Permission Denied on node-0
+# Fix SSH Permission Denied on node-1
 
 ## Problem
 
@@ -83,7 +83,7 @@ sudo systemctl status ssh
 From your Mac:
 ```bash
 # Use PI_PASSWORD
-sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@node-0.local
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@node-1.local
 ```
 
 ## Solution: If You Can Access via Another User
@@ -92,16 +92,16 @@ If you can SSH as another user (e.g., `debian` or `pi`):
 
 ```bash
 # SSH as that user
-ssh debian@node-0.local
+ssh debian@node-1.local
 # or
-ssh pi@node-0.local
+ssh pi@node-1.local
 
 # Then run the commands from Step 2-4 above with sudo
 ```
 
 ## Quick Fix Script
 
-If you have physical access, run this script on node-0 (make sure `PI_PASSWORD` is set):
+If you have physical access, run this script on node-1 (make sure `PI_PASSWORD` is set):
 
 ```bash
 #!/bin/bash
@@ -117,7 +117,7 @@ sudo usermod -aG sudo raolivei
 # Restart SSH
 sudo systemctl restart ssh
 
-echo "✅ SSH fixed! Try: ssh raolivei@node-0.local"
+echo "✅ SSH fixed! Try: ssh raolivei@node-1.local"
 ```
 
 ## Verification
@@ -138,7 +138,7 @@ sudo systemctl status ssh
 # Should show: active (running)
 
 # Test SSH from Mac using PI_PASSWORD
-sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@node-0.local "hostname"
+sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@node-1.local "hostname"
 ```
 
 ## Prevention
@@ -154,4 +154,4 @@ When setting up fresh installs:
 After fixing SSH:
 1. ✅ Test SSH connection
 2. ✅ Run system setup playbook
-3. ✅ Continue with node-0 configuration
+3. ✅ Continue with node-1 configuration

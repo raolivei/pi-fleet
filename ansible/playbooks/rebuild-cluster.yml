@@ -1,8 +1,8 @@
 ---
 # Rebuild eldertree cluster from scratch
 # This playbook:
-# 1. Sets up system on both nodes (node-0 and node-1)
-# 2. Installs k3s control plane on node-0
+# 1. Sets up system on both nodes (node-1 and node-1)
+# 2. Installs k3s control plane on node-1
 # 3. Installs k3s worker on node-1
 #
 # Usage:
@@ -13,7 +13,7 @@
   vars:
     target_user: raolivei
     # Static IP configuration:
-    # Pattern: node-0 = 192.168.2.80, node-1 = 192.168.2.81, node-2 = 192.168.2.82, etc.
+    # Pattern: node-1 = 192.168.2.80, node-1 = 192.168.2.81, node-2 = 192.168.2.82, etc.
     # Formula: 192.168.2.80 + node_number
     # Set to "" to use DHCP
     static_ip_override: "{{ ('192.168.2.' + (80 + (inventory_hostname | regex_replace('node-', '') | int) | string)) if inventory_hostname | regex_search('^node-\\d+$') else '' }}"
@@ -25,15 +25,15 @@
   vars:
     target_user: raolivei
 
-- name: Install k3s Control Plane (node-0)
+- name: Install k3s Control Plane (node-1)
   import_playbook: install-k3s.yml
   vars:
-    k3s_hostname: "node-0.eldertree.local" # Full FQDN for TLS SAN
+    k3s_hostname: "node-1.eldertree.local" # Full FQDN for TLS SAN
     kubeconfig_path: "~/.kube/config-eldertree"
-  when: inventory_hostname == "node-0"
+  when: inventory_hostname == "node-1"
 
 - name: Get k3s token from control plane
-  hosts: node-0
+  hosts: node-1
   tasks:
     - name: Get k3s node token
       slurp:
@@ -54,8 +54,8 @@
 - name: Install k3s Worker (node-1)
   import_playbook: install-k3s-worker.yml
   vars:
-    k3s_token: "{{ hostvars['node-0']['k3s_node_token'] | default(hostvars['localhost']['k3s_node_token'] | default('')) }}"
-    k3s_server_url: "https://node-0.eldertree.local:6443" # Full FQDN
+    k3s_token: "{{ hostvars['node-1']['k3s_node_token'] | default(hostvars['localhost']['k3s_node_token'] | default('')) }}"
+    k3s_server_url: "https://node-1.eldertree.local:6443" # Full FQDN
   when: inventory_hostname == "node-1"
 
 - name: Cluster Rebuild Summary and Cleanup
@@ -98,7 +98,7 @@
           - ""
           - "System Setup: ✅ Complete on all nodes"
           - "Terminal Monitoring: ✅ Installed (btop, tmux, neofetch)"
-          - "k3s Control Plane: ✅ Installed on node-0.eldertree.local"
+          - "k3s Control Plane: ✅ Installed on node-1.eldertree.local"
           - "k3s Worker: ✅ Installed on node-1.eldertree.local"
           - "Diagnostic Files: ✅ Cleaned up"
           - ""
@@ -108,8 +108,8 @@
           - "  3. Bootstrap FluxCD: ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true"
           - ""
           - "Access nodes:"
-          - "  ssh raolivei@node-0        # Short name"
-          - "  ssh raolivei@node-0.eldertree.local  # Full FQDN"
+          - "  ssh raolivei@node-1        # Short name"
+          - "  ssh raolivei@node-1.eldertree.local  # Full FQDN"
           - "  ssh raolivei@node-1        # Short name"
           - "  ssh raolivei@node-1.eldertree.local  # Full FQDN"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

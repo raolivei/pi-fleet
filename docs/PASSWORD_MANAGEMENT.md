@@ -43,7 +43,7 @@ Most playbooks now look for `PI_PASSWORD` if a vault password isn't provided:
 export PI_PASSWORD='your_secure_password'
 
 # Run the playbook
-ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-0
+ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-1
 ```
 
 ## Security Best Practices

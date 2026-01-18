@@ -1,8 +1,8 @@
-# Fresh Install Guide for node-0 (eldertree)
+# Fresh Install Guide for node-1 (eldertree)
 
 ## Overview
 
-This guide covers setting up node-0 (eldertree) from a fresh OS installation. This is the recommended approach when:
+This guide covers setting up node-1 (eldertree) from a fresh OS installation. This is the recommended approach when:
 - System is stuck in emergency mode
 - Root account is locked
 - fstab has problematic mount entries
@@ -11,7 +11,7 @@ This guide covers setting up node-0 (eldertree) from a fresh OS installation. Th
 ## Prerequisites
 
 - ✅ Fresh OS installed on SD card (Debian Bookworm/Trixie)
-- ✅ SD card inserted in node-0
+- ✅ SD card inserted in node-1
 - ✅ Node-0 powered on and booted
 - ✅ SSH access available (default password or configured)
 - ✅ `PI_PASSWORD` environment variable set: `export PI_PASSWORD='your_password'`
@@ -29,8 +29,8 @@ Use Raspberry Pi Imager:
    - Password: **Set to a secure password** (remember to export it as `PI_PASSWORD`)
    - Configure WiFi (optional, or use Ethernet)
 5. **Write** to SD card
-6. **Insert SD card** into node-0
-7. **Power on** node-0
+6. **Insert SD card** into node-1
+7. **Power on** node-1
 
 ## Step 2: Find IP Address
 
@@ -45,10 +45,10 @@ Or check router DHCP leases for the new device.
 
 ```bash
 # Remove old SSH host key (if exists)
-ssh-keygen -R node-0.local
+ssh-keygen -R node-1.local
 ssh-keygen -R 192.168.2.86
 
-# SSH to node-0 using PI_PASSWORD
+# SSH to node-1 using PI_PASSWORD
 sshpass -p "$PI_PASSWORD" ssh -o StrictHostKeyChecking=no raolivei@192.168.2.86
 ```
 
@@ -62,8 +62,8 @@ cd ~/WORKSPACE/raolivei/pi-fleet/ansible
 # Run complete system setup (DHCP - safe, network unchanged)
 ansible-playbook -i inventory/hosts.yml \
   playbooks/setup-system.yml \
-  --limit node-0 \
-  -e "node_hostname=node-0" \
+  --limit node-1 \
+  -e "node_hostname=node-1" \
   -e "backup_device=" \
   --ask-pass
 ```
@@ -72,7 +72,7 @@ ansible-playbook -i inventory/hosts.yml \
 
 This playbook will:
 - ✅ Create `raolivei` user (if not exists)
-- ✅ Set hostname to `node-0`
+- ✅ Set hostname to `node-1`
 - ✅ Configure network (static IP: 192.168.2.86)
 - ✅ Install essential packages (btop, sshpass, etc.)
 - ✅ Configure SSH
@@ -87,7 +87,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet/ansible
 # Setup SSH keys for node-to-node communication
 ansible-playbook -i inventory/hosts.yml \
   playbooks/setup-ssh-keys.yml \
-  --limit node-0
+  --limit node-1
 ```
 
 ## Step 6: Configure eth0 (Isolated Switch)
@@ -100,7 +100,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet/ansible
 # Configure eth0 with isolated subnet (10.0.0.1/24)
 ansible-playbook -i inventory/hosts.yml \
   playbooks/configure-eth0-static.yml \
-  --limit node-0 \
+  --limit node-1 \
   -e "eth0_ip=10.0.0.1"
 ```
 
@@ -112,7 +112,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet/ansible
 # Install K3s as control plane
 ansible-playbook -i inventory/hosts.yml \
   playbooks/install-k3s-server.yml \
-  --limit node-0
+  --limit node-1
 ```
 
 ## Step 8: Setup Terminal Monitoring (Optional)
@@ -123,18 +123,18 @@ cd ~/WORKSPACE/raolivei/pi-fleet/ansible
 # Install btop, neofetch, tmux
 ansible-playbook -i inventory/hosts.yml \
   playbooks/setup-terminal-monitoring.yml \
-  --limit node-0
+  --limit node-1
 ```
 
 ## Step 9: Verify Setup
 
 ```bash
-# SSH to node-0
+# SSH to node-1
 ssh raolivei@192.168.2.86
 
 # Check hostname
 hostname
-# Should show: node-0
+# Should show: node-1
 
 # Check IP
 ip addr show
@@ -146,7 +146,7 @@ sudo passwd -S root
 
 # Check K3s
 sudo kubectl get nodes
-# Should show: node-0
+# Should show: node-1
 
 # Check btop
 which btop
@@ -164,7 +164,7 @@ cd ~/WORKSPACE/raolivei/pi-fleet/ansible
 # Then setup NVMe boot with storage partition
 ansible-playbook -i inventory/hosts.yml \
   playbooks/setup-nvme-boot.yml \
-  --limit node-0 \
+  --limit node-1 \
   -e setup_nvme_boot=true \
   -e clone_from_sd=true \
   -e create_storage_partition=true \
@@ -182,24 +182,24 @@ cd ~/WORKSPACE/raolivei/pi-fleet/ansible
 
 # 1. System setup
 ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml \
-  --limit node-0 -e "node_hostname=node-0" -e "node_ip=192.168.2.86" \
+  --limit node-1 -e "node_hostname=node-1" -e "node_ip=192.168.2.86" \
   -e "backup_device=" --ask-pass
 
 # 2. SSH keys
 ansible-playbook -i inventory/hosts.yml playbooks/setup-ssh-keys.yml \
-  --limit node-0
+  --limit node-1
 
 # 3. eth0 (if using isolated switch)
 ansible-playbook -i inventory/hosts.yml playbooks/configure-eth0-static.yml \
-  --limit node-0 -e "eth0_ip=10.0.0.1"
+  --limit node-1 -e "eth0_ip=10.0.0.1"
 
 # 4. K3s server
 ansible-playbook -i inventory/hosts.yml playbooks/install-k3s-server.yml \
-  --limit node-0
+  --limit node-1
 
 # 5. Terminal monitoring
 ansible-playbook -i inventory/hosts.yml playbooks/setup-terminal-monitoring.yml \
-  --limit node-0
+  --limit node-1
 ```
 
 ## Troubleshooting
@@ -208,7 +208,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-terminal-monitoring.yml 
 
 ```bash
 # Remove old host keys
-ssh-keygen -R node-0.local
+ssh-keygen -R node-1.local
 ssh-keygen -R 192.168.2.86
 
 # Try with PI_PASSWORD
@@ -221,27 +221,27 @@ The `setup-system.yml` playbook should prevent this, but if it happens:
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/fix-root-lock.yml --limit node-0
+ansible-playbook -i inventory/hosts.yml playbooks/fix-root-lock.yml --limit node-1
 ```
 
 ### Network Issues
 
-If node-0 doesn't get the expected IP:
+If node-1 doesn't get the expected IP:
 
 ```bash
 # Check current IP
-ssh raolivei@node-0.local "ip addr show"
+ssh raolivei@node-1.local "ip addr show"
 
 # Re-run network setup
 ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml \
-  --limit node-0 -e "node_hostname=node-0" -e "node_ip=192.168.2.86"
+  --limit node-1 -e "node_hostname=node-1" -e "node_ip=192.168.2.86"
 ```
 
 ## Next Steps
 
 After fresh install:
 1. ✅ Verify all services are running
-2. ✅ Test node-to-node communication (node-0 ↔ node-1)
+2. ✅ Test node-to-node communication (node-1 ↔ node-1)
 3. ✅ Configure NVMe boot (when ready)
 4. ✅ Restore K3s workloads (if needed)
 

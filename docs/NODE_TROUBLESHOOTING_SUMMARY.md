@@ -12,9 +12,9 @@
 
 ## Issues Identified and Status
 
-### ✅ Issue 1: node-0 NotReady - RESOLVED
+### ✅ Issue 1: node-1 NotReady - RESOLVED
 - **Status:** Removed from cluster
-- **Action Taken:** Deleted node-0.eldertree.local from cluster
+- **Action Taken:** Deleted node-1.eldertree.local from cluster
 - **Note:** Node may still appear in `kubectl get nodes` until cache clears, but it's been removed
 
 ### ⚠️ Issue 2: node-2 NotReady - IN PROGRESS
@@ -34,7 +34,7 @@
 
 ```
 NAME                     STATUS     ROLES                       AGE     VERSION
-node-0.eldertree.local   NotReady   control-plane,etcd,master   14d     v1.33.6+k3s1  [REMOVED]
+node-1.eldertree.local   NotReady   control-plane,etcd,master   14d     v1.33.6+k3s1  [REMOVED]
 node-1.eldertree.local   Ready      control-plane,etcd,master   12d     v1.33.6+k3s1  [ACTIVE]
 node-2.eldertree.local   NotReady   <none>                      7d20h   v1.33.6+k3s1  [FIXING]
 node-3.eldertree.local   Ready      <none>                      4d19h   v1.33.6+k3s1  [ACTIVE]
@@ -70,10 +70,10 @@ node-3.eldertree.local   Ready      <none>                      4d19h   v1.33.6+
    kubectl get nodes node-2.eldertree.local -w
    ```
 
-3. **Verify node-0 removal (may take a few minutes):**
+3. **Verify node-1 removal (may take a few minutes):**
    ```bash
    kubectl get nodes
-   # node-0 should disappear after cache clears
+   # node-1 should disappear after cache clears
    ```
 
 ### Verification Commands
@@ -105,7 +105,7 @@ After fixes complete:
 - ✅ node-1: Ready (control-plane)
 - ✅ node-2: Ready (worker) 
 - ✅ node-3: Ready (worker)
-- ❌ node-0: Removed (no longer in cluster)
+- ❌ node-1: Removed (no longer in cluster)
 
 ## Related Documentation
 

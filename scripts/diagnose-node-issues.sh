@@ -1,5 +1,5 @@
 #!/bin/bash
-# Diagnose node-0 and node-1 NotReady issues
+# Diagnose node-1 and node-1 NotReady issues
 # Identifies IP conflicts, network issues, and configuration problems
 
 set -e
@@ -27,7 +27,7 @@ echo ""
 
 echo "2. Node Conditions:"
 echo "------------------"
-for node in node-0.eldertree.local node-1.eldertree.local; do
+for node in node-1.eldertree.local node-1.eldertree.local; do
     echo ""
     echo "=== $node ==="
     kubectl describe node "$node" 2>&1 | grep -A 10 "Conditions:" || echo "  Cannot describe node"
@@ -69,8 +69,8 @@ echo ""
 
 echo "6. Pods on Problem Nodes:"
 echo "-------------------------"
-echo "Pods on node-0:"
-kubectl get pods -A -o wide --field-selector spec.nodeName=node-0.eldertree.local 2>&1 | head -10 || echo "  No pods or node not found"
+echo "Pods on node-1:"
+kubectl get pods -A -o wide --field-selector spec.nodeName=node-1.eldertree.local 2>&1 | head -10 || echo "  No pods or node not found"
 echo ""
 echo "Pods on node-1:"
 kubectl get pods -A -o wide --field-selector spec.nodeName=node-1.eldertree.local 2>&1 | head -10 || echo "  No pods or node not found"
@@ -105,7 +105,7 @@ fi
 
 # Check for unreachable nodes
 if ! ping -c 1 -W 2 192.168.2.100 > /dev/null 2>&1; then
-    echo "  ❌ node-0 (192.168.2.100) is unreachable"
+    echo "  ❌ node-1 (192.168.2.100) is unreachable"
     echo ""
     echo "  Possible causes:"
     echo "    - Node is powered off"
@@ -114,9 +114,9 @@ if ! ping -c 1 -W 2 192.168.2.100 > /dev/null 2>&1; then
     echo "    - Firewall blocking"
     echo ""
     echo "  Fix options:"
-    echo "    1. Power on node-0 and check network"
-    echo "    2. Remove node-0 from cluster if no longer in use:"
-    echo "       kubectl delete node node-0.eldertree.local"
+    echo "    1. Power on node-1 and check network"
+    echo "    2. Remove node-1 from cluster if no longer in use:"
+    echo "       kubectl delete node node-1.eldertree.local"
 fi
 
 # Check for NotReady nodes

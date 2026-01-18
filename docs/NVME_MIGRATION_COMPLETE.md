@@ -4,11 +4,11 @@
 
 **Date Completed**: December 21, 2024
 
-✅ **node-0**: Successfully migrated to 128GB NVMe, booting from NVMe  
+✅ **node-1**: Successfully migrated to 128GB NVMe, booting from NVMe  
 ✅ **node-1**: Successfully migrated to 128GB NVMe, booting from NVMe  
 ✅ **PoE+ HAT**: Configured on both nodes  
 ✅ **Ansible**: Configured with SSH key authentication  
-✅ **Hostnames**: node-0 and node-1 configured correctly
+✅ **Hostnames**: node-1 and node-1 configured correctly
 
 ## Hardware Configuration
 
@@ -26,8 +26,8 @@ Both nodes are configured to boot from NVMe with:
 
 - **cmdline.txt**: `root=/dev/nvme0n1p2 rootfstype=ext4 rootwait rootdelay=5`
 - **fstab**: Uses UUIDs for reliability:
-  - Boot: `UUID=F587-071F` (node-0) / `UUID=F587-071F` (node-1)
-  - Root: `UUID=4c4ea1b9-76db-4866-83fa-6b2b360e69e8` (node-0) / `UUID=217e1313-602b-475c-b5c0-7cd0a829ea49` (node-1)
+  - Boot: `UUID=F587-071F` (node-1) / `UUID=F587-071F` (node-1)
+  - Root: `UUID=4c4ea1b9-76db-4866-83fa-6b2b360e69e8` (node-1) / `UUID=217e1313-602b-475c-b5c0-7cd0a829ea49` (node-1)
 - **rootdelay=5**: Added to give NVMe time to initialize before mounting root
 
 ### PoE+ Configuration
@@ -45,9 +45,9 @@ Location: `/boot/firmware/config.txt`
 
 ### Network Configuration
 
-- **node-0**: 192.168.2.86 (control plane)
+- **node-1**: 192.168.2.86 (control plane)
 - **node-1**: 192.168.2.85 (worker)
-- **Hostnames**: node-0.eldertree.local, node-1.eldertree.local
+- **Hostnames**: node-1.eldertree.local, node-1.eldertree.local
 
 ### Ansible Configuration
 
@@ -62,7 +62,7 @@ Location: `/boot/firmware/config.txt`
 
 ```bash
 # Verify booting from NVMe
-ssh raolivei@node-0.eldertree.local "df -h / | tail -1"
+ssh raolivei@node-1.eldertree.local "df -h / | tail -1"
 # Should show: /dev/nvme0n1p2
 
 ssh raolivei@node-1.eldertree.local "df -h / | tail -1"

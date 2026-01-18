@@ -4,7 +4,7 @@
 set -e
 
 NODE_IP="${1:-192.168.2.86}"
-NODE_NAME="${2:-node-0}"
+NODE_NAME="${2:-node-1}"
 KUBECONFIG_PATH="${HOME}/.kube/config-eldertree"
 
 echo "=== K3s Connectivity Diagnostic ==="

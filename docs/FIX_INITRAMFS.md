@@ -28,7 +28,7 @@ cat /sys/class/net/wlan0/address
 ```
 
 **Node identification:**
-- `192.168.2.86` or `10.0.0.1` = **node-0**
+- `192.168.2.86` or `10.0.0.1` = **node-1**
 - `192.168.2.85` or `10.0.0.2` = **node-1**
 - `192.168.2.84` or `10.0.0.3` = **node-2** (already recovered)
 

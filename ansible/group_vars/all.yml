@@ -27,7 +27,7 @@ eldertree_node_1_ip: "{{ node_1_ip }}"
 eldertree_node_2_ip: "{{ node_2_ip }}"
 
 # k3s Configuration
-k3s_server_url: "https://node-0:6443"
+k3s_server_url: "https://node-1:6443"
 k3s_server_ip: "{{ node_0_ip }}"
 
 # Backup Configuration

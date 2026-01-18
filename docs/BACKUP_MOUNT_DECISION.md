@@ -37,12 +37,12 @@ The `setup-system.yml` playbook now:
 
 **Default (no backup mount):**
 ```bash
-ansible-playbook playbooks/setup-system.yml --limit node-0
+ansible-playbook playbooks/setup-system.yml --limit node-1
 ```
 
 **With backup mount (if you have permanent USB drive):**
 ```bash
-ansible-playbook playbooks/setup-system.yml --limit node-0 -e enable_backup_mount=true
+ansible-playbook playbooks/setup-system.yml --limit node-1 -e enable_backup_mount=true
 ```
 
 ## Fixing Existing Nodes

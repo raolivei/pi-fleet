@@ -56,10 +56,10 @@ sudo umount /dev/nvme0n1p2  # root partition
 
 ```bash
 # Copy script to node if needed
-scp pi-fleet/scripts/storage/secure-erase-old-nvme.sh node-0:~/
+scp pi-fleet/scripts/storage/secure-erase-old-nvme.sh node-1:~/
 
 # SSH to node
-ssh node-0
+ssh node-1
 
 # Run secure erase
 sudo ./secure-erase-old-nvme.sh /dev/nvme0n1

@@ -2,7 +2,7 @@
 
 ## Current Status
 
-✅ **node-0**: Pre-migration backup completed
+✅ **node-1**: Pre-migration backup completed
 - Backup location: `/mnt/sd-backup/nvme-migration-backup-*`
 - K3s data and configs backed up to SD card
 
@@ -10,9 +10,9 @@
 
 ## Migration Order
 
-**Recommended**: Migrate node-1 (worker) first, then node-0 (control plane) to maintain cluster availability.
+**Recommended**: Migrate node-1 (worker) first, then node-1 (control plane) to maintain cluster availability.
 
-**Alternative**: If node-1 is already down/NotReady, you can migrate node-0 first.
+**Alternative**: If node-1 is already down/NotReady, you can migrate node-1 first.
 
 ## After Hardware Replacement
 
@@ -26,7 +26,7 @@ After replacing the HAT and NVMe hardware:
 ### Step 2: Verify Boot from SD Card
 
 ```bash
-ssh node-0  # or ssh to the node
+ssh node-1  # or ssh to the node
 df -h /  # Should show /dev/mmcblk0p2 (SD card)
 lsblk | grep nvme  # Should show new 128GB NVMe
 ```
@@ -44,7 +44,7 @@ cd ~
 Then run:
 
 ```bash
-sudo ./migrate-nvme-hat.sh node-0
+sudo ./migrate-nvme-hat.sh node-1
 # or
 sudo ./migrate-nvme-hat.sh node-1
 ```
@@ -67,8 +67,8 @@ sudo reboot
 After reboot:
 
 ```bash
-ssh node-0  # or node-1
-./verify-nvme-migration.sh node-0  # or node-1
+ssh node-1  # or node-1
+./verify-nvme-migration.sh node-1  # or node-1
 ```
 
 Check:
@@ -136,10 +136,10 @@ After migration is complete and verified on both nodes, you can securely erase t
 
 ```bash
 # Copy erase script if needed
-scp pi-fleet/scripts/storage/secure-erase-old-nvme.sh node-0:~/
+scp pi-fleet/scripts/storage/secure-erase-old-nvme.sh node-1:~/
 
 # SSH to node
-ssh node-0
+ssh node-1
 
 # Run secure erase (replace device path if needed)
 sudo ./secure-erase-old-nvme.sh /dev/nvme0n1

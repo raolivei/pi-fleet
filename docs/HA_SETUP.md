@@ -63,10 +63,10 @@ sudo ufw allow 8472/udp comment 'k3s flannel VXLAN'
 
 **Steps**:
 
-1. **Get the k3s token from node-0**:
+1. **Get the k3s token from node-1**:
 
    ```bash
-   ssh raolivei@node-0 "sudo cat /var/lib/rancher/k3s/server/node-token"
+   ssh raolivei@node-1 "sudo cat /var/lib/rancher/k3s/server/node-token"
    ```
 
 2. **Convert node-1 to control plane**:
@@ -89,7 +89,7 @@ sudo ufw allow 8472/udp comment 'k3s flannel VXLAN'
    ```bash
    export KUBECONFIG=~/.kube/config-eldertree
    kubectl get nodes
-   # Should show both node-0 and node-1 as control-plane
+   # Should show both node-1 and node-1 as control-plane
    ```
 
 ### Option 2: True HA with 3 Control Plane Nodes (Recommended)
@@ -120,7 +120,7 @@ To properly support adding additional control plane nodes, we should create a pl
   become: true
   vars:
     k3s_token: "" # Required - from first control plane
-    k3s_server_url: "https://node-0:6443" # First control plane
+    k3s_server_url: "https://node-1:6443" # First control plane
     k3s_hostname: "{{ inventory_hostname }}"
 
   tasks:
@@ -212,7 +212,7 @@ kubectl get pods -n kube-system | grep etcd
 Since you have a single control plane, ensure you have:
 
 - ✅ Regular backups of etcd (k3s stores cluster state here)
-- ✅ Backups of node-0 configuration
+- ✅ Backups of node-1 configuration
 - ✅ Documentation of how to restore
 
 See: [BACKUP_STRATEGY.md](BACKUP_STRATEGY.md)

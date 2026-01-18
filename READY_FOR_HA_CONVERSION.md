@@ -14,8 +14,8 @@ ssh raolivei@192.168.2.101 "sudo systemctl status k3s"
 export KUBECONFIG=~/.kube/config-eldertree
 kubectl get nodes
 
-# 3. Remove old node-0 if it exists
-kubectl delete node node-0 2>&1 || echo "Node-0 already removed"
+# 3. Remove old node-1 if it exists
+kubectl delete node node-1 2>&1 || echo "Node-0 already removed"
 
 # 4. Convert node-2 to control plane
 cd ansible

@@ -75,7 +75,7 @@
             },
             "targets": [
                 {
-                    "expr": "visage_training_progress_percent",
+                    "expr": "visage_training_progress_percent{job=~\"visage.*|pushgateway\"}",
                     "refId": "A"
                 }
             ],
@@ -148,7 +148,7 @@
             },
             "targets": [
                 {
-                    "expr": "visage_training_loss",
+                    "expr": "visage_training_loss{job=~\"visage.*|pushgateway\"}",
                     "legendFormat": "Loss",
                     "refId": "A"
                 }
@@ -197,7 +197,7 @@
             },
             "targets": [
                 {
-                    "expr": "visage_training_step",
+                    "expr": "visage_training_step{job=~\"visage.*|pushgateway\"}",
                     "refId": "A"
                 }
             ],
@@ -245,7 +245,7 @@
             },
             "targets": [
                 {
-                    "expr": "visage_training_total_steps",
+                    "expr": "visage_training_total_steps{job=~\"visage.*|pushgateway\"}",
                     "refId": "A"
                 }
             ],
@@ -294,7 +294,7 @@
             },
             "targets": [
                 {
-                    "expr": "visage_training_eta_seconds",
+                    "expr": "visage_training_eta_seconds{job=~\"visage.*|pushgateway\"}",
                     "refId": "A"
                 }
             ],
@@ -342,7 +342,7 @@
             },
             "targets": [
                 {
-                    "expr": "visage_training_epoch",
+                    "expr": "visage_training_epoch{job=~\"visage.*|pushgateway\"}",
                     "refId": "A"
                 }
             ],
@@ -427,7 +427,7 @@
             },
             "targets": [
                 {
-                    "expr": "rate(visage_training_step_duration_seconds_sum[5m]) / rate(visage_training_step_duration_seconds_count[5m])",
+                    "expr": "rate(visage_training_step_duration_seconds_sum{job=~"visage.*|pushgateway"}[5m]) / rate(visage_training_step_duration_seconds_count{job=~"visage.*|pushgateway"}[5m])",
                     "legendFormat": "Avg Step Time",
                     "refId": "A"
                 }
@@ -497,7 +497,7 @@
             },
             "targets": [
                 {
-                    "expr": "visage_training_learning_rate",
+                    "expr": "visage_training_learning_rate{job=~\"visage.*|pushgateway\"}",
                     "legendFormat": "Learning Rate",
                     "refId": "A"
                 }
@@ -559,7 +559,7 @@
             },
             "targets": [
                 {
-                    "expr": "sum(visage_images_generated_total)",
+                    "expr": "sum(visage_images_generated_total{job=~"visage.*|pushgateway"})",
                     "refId": "A"
                 }
             ],
@@ -607,7 +607,7 @@
             },
             "targets": [
                 {
-                    "expr": "sum(visage_images_filtered_total)",
+                    "expr": "sum(visage_images_filtered_total{job=~"visage.*|pushgateway"})",
                     "refId": "A"
                 }
             ],
@@ -781,7 +781,7 @@
             },
             "targets": [
                 {
-                    "expr": "sum(visage_queue_pending_jobs)",
+                    "expr": "sum(visage_queue_pending_jobs{job=~"visage.*|pushgateway"})",
                     "refId": "A"
                 }
             ],
@@ -829,7 +829,7 @@
             },
             "targets": [
                 {
-                    "expr": "visage_queue_processing_jobs",
+                    "expr": "visage_queue_processing_jobs{job=~\"visage.*|pushgateway\"}",
                     "refId": "A"
                 }
             ],

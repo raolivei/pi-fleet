@@ -58,12 +58,12 @@ The `/dev/sdb1 /mnt/backup` mount was added by `setup-system.yml` as a "prepared
 
 **Default (no backup mount - recommended):**
 ```bash
-ansible-playbook playbooks/setup-system.yml --limit node-0
+ansible-playbook playbooks/setup-system.yml --limit node-1
 ```
 
 **With backup mount (only if you have permanent USB drive):**
 ```bash
-ansible-playbook playbooks/setup-system.yml --limit node-0 -e enable_backup_mount=true
+ansible-playbook playbooks/setup-system.yml --limit node-1 -e enable_backup_mount=true
 ```
 
 ## Fixing Existing Nodes

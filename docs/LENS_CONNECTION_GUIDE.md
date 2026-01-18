@@ -63,7 +63,7 @@ After connecting, verify the connection:
 
 1. **Check cluster status** - Should show "Connected" or green indicator
 2. **View nodes** - You should see:
-   - `node-0.eldertree.local` (control-plane)
+   - `node-1.eldertree.local` (control-plane)
    - `node-1.eldertree.local` (control-plane)
    - `node-2.eldertree.local` (worker)
    - `node-3.eldertree.local` (worker)

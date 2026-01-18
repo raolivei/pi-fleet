@@ -28,7 +28,7 @@ The K3s service was **disabled**, meaning it doesn't start automatically on boot
 **Enable and start K3s service:**
 
 ```bash
-ssh raolivei@node-0.local
+ssh raolivei@node-1.local
 sudo systemctl enable k3s
 sudo systemctl start k3s
 sudo systemctl status k3s
@@ -137,7 +137,7 @@ sudo systemctl enable k3s
 ```bash
 sudo reboot
 # After reboot
-ssh raolivei@node-0.local
+ssh raolivei@node-1.local
 sudo systemctl status k3s
 ```
 

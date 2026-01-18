@@ -1,7 +1,7 @@
 #!/bin/bash
 # Restore K3s cluster data from SD card backup
 # Usage: ./restore-k3s-from-backup.sh <node-name>
-# Example: ./restore-k3s-from-backup.sh node-0
+# Example: ./restore-k3s-from-backup.sh node-1
 
 set -e
 
@@ -16,7 +16,7 @@ NODE_NAME="${1:-}"
 if [ -z "$NODE_NAME" ]; then
     echo -e "${RED}❌ Error: Node name required${NC}"
     echo "Usage: $0 <node-name>"
-    echo "Example: $0 node-0"
+    echo "Example: $0 node-1"
     exit 1
 fi
 
@@ -24,7 +24,7 @@ echo -e "${BLUE}=== Restore K3s from Backup for $NODE_NAME ===${NC}"
 echo ""
 
 # Detect node role
-if [ "$NODE_NAME" = "node-0" ]; then
+if [ "$NODE_NAME" = "node-1" ]; then
     NODE_ROLE="control-plane"
     K3S_SERVICE="k3s"
 elif [ "$NODE_NAME" = "node-1" ]; then

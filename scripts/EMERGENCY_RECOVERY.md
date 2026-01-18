@@ -2,7 +2,7 @@
 
 ## Current Situation
 
-All 3 nodes (node-0, node-1, node-2) are stuck after reboot.
+All 3 nodes (node-1, node-1, node-2) are stuck after reboot.
 
 ## ⚠️ IMPORTANT: Recovery via SD Card
 
@@ -22,27 +22,27 @@ Since nodes are stuck during boot, **it's not possible to apply fixes via Ansibl
 
 ```bash
 cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet
-./scripts/recover-node-from-sd.sh node-0
+./scripts/recover-node-from-sd.sh node-1
 ```
 
 ### 3. Test
 
 ```bash
 cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet/ansible
-ansible node-0 -i inventory/hosts.yml -m reboot --become
+ansible node-1 -i inventory/hosts.yml -m reboot --become
 # Wait 2 minutes
-ansible node-0 -i inventory/hosts.yml -m ping
+ansible node-1 -i inventory/hosts.yml -m ping
 ```
 
 ### 4. Repeat for next node
 
-- **node-0 first** (control plane - most critical)
+- **node-1 first** (control plane - most critical)
 - **node-1 next** (worker)
 - **node-2 last** (worker)
 
 ## Recovery Order
 
-1. **node-0** - Control plane, most critical
+1. **node-1** - Control plane, most critical
 2. **node-1** - Worker
 3. **node-2** - Worker
 
@@ -69,9 +69,9 @@ export KUBECONFIG=~/.kube/config-eldertree
 kubectl get nodes
 
 # 4. Test reboot (one node at a time)
-ansible node-0 -i inventory/hosts.yml -m reboot --become
+ansible node-1 -i inventory/hosts.yml -m reboot --become
 # Wait 2 minutes
-ansible node-0 -i inventory/hosts.yml -m ping
+ansible node-1 -i inventory/hosts.yml -m ping
 ```
 
 ## Future Prevention

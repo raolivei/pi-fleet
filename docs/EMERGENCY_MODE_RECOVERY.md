@@ -118,7 +118,7 @@ The `setup-system.yml` playbook automatically adds `nofail` to backup mounts:
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-0
+ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-1
 ```
 
 ### 3. Unlock Root After Setup
@@ -126,7 +126,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-
 Run the root unlock playbook after any system changes (requires `PI_PASSWORD` environment variable):
 
 ```bash
-ansible-playbook -i inventory/hosts.yml playbooks/fix-root-lock.yml --limit node-0
+ansible-playbook -i inventory/hosts.yml playbooks/fix-root-lock.yml --limit node-1
 ```
 
 ## Common fstab Issues

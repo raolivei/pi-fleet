@@ -6,7 +6,7 @@ This guide covers the complete process for adding a new Raspberry Pi node to the
 
 ## Overview
 
-When adding a new node to the eldertree cluster, follow this pattern (established with node-0 and node-1):
+When adding a new node to the eldertree cluster, follow this pattern (established with node-1 and node-1):
 
 - **Management IP**: On `wlan0` via NetworkManager/DHCP (e.g., `192.168.2.85`)
 - **Gigabit IP**: On `eth0` via NetworkManager (e.g., `10.0.0.2`)
@@ -90,14 +90,14 @@ ansible-playbook playbooks/setup-system.yml \
 
 ### Step 4: Configure Network (Gigabit IP on eth0)
 
-**Pattern**: Match node-0's configuration - eth0 gets gigabit IP via NetworkManager, wlan0 handles management.
+**Pattern**: Match node-1's configuration - eth0 gets gigabit IP via NetworkManager, wlan0 handles management.
 
 **Using Ansible** (on running node):
 
 ```bash
 cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet
 
-# Configure eth0 via NetworkManager (matches node-0 pattern)
+# Configure eth0 via NetworkManager (matches node-1 pattern)
 ansible node-X -i ansible/inventory/hosts.yml \
   -m shell -a "sudo nmcli connection add type ethernet ifname eth0 con-name eth0 ipv4.method manual ipv4.addresses 10.0.0.X/24 ipv4.gateway '' autoconnect yes 2>&1 || sudo nmcli connection modify eth0 ipv4.method manual ipv4.addresses 10.0.0.X/24 ipv4.gateway '' && sudo nmcli connection up eth0" --become
 
@@ -127,7 +127,7 @@ ansible node-X -i ansible/inventory/hosts.yml \
 
 **Why this pattern?**:
 - Both interfaces managed by NetworkManager (consistent)
-- Matches node-0's working configuration exactly
+- Matches node-1's working configuration exactly
 - No netplan files needed for eth0
 - Keeps management and cluster networking separate
 
@@ -139,13 +139,13 @@ ansible node-X -i ansible/inventory/hosts.yml \
 cd /Users/roliveira/WORKSPACE/raolivei/pi-fleet/ansible
 
 # Get k3s token from control plane
-K3S_TOKEN=$(ansible node-0 -i inventory/hosts.yml -m shell -a "sudo cat /var/lib/rancher/k3s/server/node-token" --become | grep -v "node-0" | tail -1)
+K3S_TOKEN=$(ansible node-1 -i inventory/hosts.yml -m shell -a "sudo cat /var/lib/rancher/k3s/server/node-token" --become | grep -v "node-1" | tail -1)
 
 # Install k3s worker
 ansible-playbook playbooks/install-k3s-worker.yml \
   --limit node-X \
   -e "k3s_token=$K3S_TOKEN" \
-  -e "k3s_server_url=https://node-0.eldertree.local:6443"
+  -e "k3s_server_url=https://node-1.eldertree.local:6443"
 ```
 
 **What it does**:
@@ -238,20 +238,20 @@ kubectl get nodes -o wide
 Should show:
 ```
 NAME                      STATUS   ROLES                       AGE   VERSION   INTERNAL-IP   EXTERNAL-IP
-node-0.eldertree.local    Ready    control-plane,etcd,master   5d    v1.33.5+k3s1   10.0.0.1   <none>
+node-1.eldertree.local    Ready    control-plane,etcd,master   5d    v1.33.5+k3s1   10.0.0.1   <none>
 node-X.eldertree.local    Ready    <none>                      5m    v1.33.5+k3s1   10.0.0.X   <none>
 ```
 
 ## IP Address Assignment
 
 ### Management IPs (wlan0)
-- **node-0**: `192.168.2.86`
+- **node-1**: `192.168.2.86`
 - **node-1**: `192.168.2.85`
 - **node-2**: `192.168.2.84` (example)
 - **node-3**: `192.168.2.83` (example)
 
 ### Gigabit IPs (eth0)
-- **node-0**: `10.0.0.1`
+- **node-1**: `10.0.0.1`
 - **node-1**: `10.0.0.2`
 - **node-2**: `10.0.0.3` (example)
 - **node-3**: `10.0.0.4` (example)
@@ -350,9 +350,9 @@ node-X.eldertree.local    Ready    <none>                      5m    v1.33.5+k3s
    # Check if keyfile plugin is reading netplan files
    ```
 
-4. **Match node-0's exact configuration**:
+4. **Match node-1's exact configuration**:
    ```bash
-   # On node-0
+   # On node-1
    sudo ls -la /etc/NetworkManager/system-connections/eth0*
    sudo cat /etc/NetworkManager/system-connections/eth0
    # Replicate exact same configuration on new node
@@ -379,7 +379,7 @@ node-X.eldertree.local    Ready    <none>                      5m    v1.33.5+k3s
 3. Test connectivity to control plane:
    ```bash
    ping -c 2 10.0.0.1  # Control plane gigabit IP
-   ping -c 2 node-0.eldertree.local
+   ping -c 2 node-1.eldertree.local
    ```
 
 4. Re-run gigabit configuration:

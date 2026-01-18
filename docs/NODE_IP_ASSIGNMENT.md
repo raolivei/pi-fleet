@@ -4,7 +4,7 @@
 
 The eldertree cluster uses a consistent IP assignment pattern for all nodes:
 
-- **node-0**: `192.168.2.80`
+- **node-1**: `192.168.2.80`
 - **node-1**: `192.168.2.81`
 - **node-2**: `192.168.2.82` (future)
 - **node-3**: `192.168.2.83` (future)
@@ -17,7 +17,7 @@ IP = 192.168.2.80 + node_number
 ```
 
 Example:
-- node-0 → 192.168.2.80 (80 + 0)
+- node-1 → 192.168.2.80 (80 + 0)
 - node-1 → 192.168.2.81 (80 + 1)
 - node-5 → 192.168.2.85 (80 + 5)
 
@@ -34,7 +34,7 @@ ansible-playbook playbooks/rebuild-cluster.yml
 # Manual override if needed
 ansible-playbook playbooks/setup-system.yml \
   -e static_ip_override=192.168.2.80 \
-  --limit node-0
+  --limit node-1
 ```
 
 ### Inventory File
@@ -42,7 +42,7 @@ ansible-playbook playbooks/setup-system.yml \
 The inventory (`ansible/inventory/hosts.yml`) uses IP addresses for initial connection:
 
 ```yaml
-node-0:
+node-1:
   ansible_host: 192.168.2.80  # Static IP
 node-1:
   ansible_host: 192.168.2.81  # Static IP
@@ -61,7 +61,7 @@ network:
     eth0:
       dhcp4: no
       addresses:
-        - 192.168.2.80/24  # node-0
+        - 192.168.2.80/24  # node-1
       gateway4: 192.168.2.1
       nameservers:
         addresses: [192.168.2.1, 8.8.8.8]
@@ -71,10 +71,10 @@ network:
 
 **CRITICAL**: Hostnames MUST use FQDN format:
 
-- ✅ `node-0.eldertree.local` (correct)
+- ✅ `node-1.eldertree.local` (correct)
 - ✅ `node-1.eldertree.local` (correct)
 - ❌ `eldertree` (WRONG - causes cluster conflicts)
-- ❌ `node-0` (WRONG - not FQDN)
+- ❌ `node-1` (WRONG - not FQDN)
 
 The playbooks enforce this with validation checks to prevent accidental misconfiguration.
 
@@ -110,7 +110,7 @@ If you need to use DHCP instead of static IPs:
 ```bash
 ansible-playbook playbooks/setup-system.yml \
   -e static_ip_override="" \
-  --limit node-0
+  --limit node-1
 ```
 
 **Note**: DHCP is not recommended for production as IPs may change, breaking k3s cluster connectivity.

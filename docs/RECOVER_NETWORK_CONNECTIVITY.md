@@ -42,11 +42,11 @@ The playbook applied Netplan configuration with incorrect or conflicting static 
 
 4. **Set correct IP** based on node number:
 
-   - **node-0**: `192.168.2.80`
+   - **node-1**: `192.168.2.80`
    - **node-1**: `192.168.2.81`
    - **node-2**: `192.168.2.82` (future)
 
-   Example for node-0:
+   Example for node-1:
 
    ```yaml
    network:
@@ -132,7 +132,7 @@ ansible raspberry_pi -m shell -a "hostname"
 ansible raspberry_pi -m shell -a "ip addr show eth0 | grep 'inet '"
 
 # Expected output:
-# node-0: inet 192.168.2.80/24
+# node-1: inet 192.168.2.80/24
 # node-1: inet 192.168.2.81/24
 ```
 

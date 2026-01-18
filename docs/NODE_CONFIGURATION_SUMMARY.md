@@ -4,13 +4,13 @@
 
 ### ✅ 1. SSH Keys Configured
 
-- **node-0** (192.168.2.86): SSH key configured
+- **node-1** (192.168.2.86): SSH key configured
 - **node-1** (192.168.2.85): SSH key configured
 
 You can now SSH to both nodes without password:
 
 ```bash
-ssh raolivei@node-0.local
+ssh raolivei@node-1.local
 ssh raolivei@node-1.local
 ```
 
@@ -26,7 +26,7 @@ This is the hardware default behavior - SD card is always tried first, then NVMe
 
 **Current Status:**
 
-- **node-0**: Booting from SD card, NVMe available
+- **node-1**: Booting from SD card, NVMe available
 - **node-1**: Booting from SD card, NVMe available (needs boot setup)
 
 ### 🔄 3. NVMe Boot Setup on node-1
@@ -122,11 +122,11 @@ The Raspberry Pi 5 firmware automatically tries boot devices in this order:
 
 ```bash
 # Test SSH connection
-ssh raolivei@node-0.local
+ssh raolivei@node-1.local
 ssh raolivei@node-1.local
 
 # If password still required, check authorized_keys
-ssh raolivei@node-0.local "cat ~/.ssh/authorized_keys"
+ssh raolivei@node-1.local "cat ~/.ssh/authorized_keys"
 ```
 
 ### Boot Order Issues

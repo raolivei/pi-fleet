@@ -12,7 +12,7 @@ all:
         poe_hat_enabled: true
       hosts:
         # OLD names with OLD IPs - these are what the nodes currently have
-        node-0:
+        node-1:
           ansible_host: 192.168.2.86
         node-1:
           ansible_host: 192.168.2.85

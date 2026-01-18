@@ -44,16 +44,16 @@ ansible-playbook playbooks/fix-boot-reliability.yml
 ### Fix specific node:
 
 ```bash
-ansible-playbook playbooks/fix-boot-reliability.yml --limit node-0
+ansible-playbook playbooks/fix-boot-reliability.yml --limit node-1
 ```
 
 ### After fixing:
 
 ```bash
 # Reboot the node
-ansible-playbook playbooks/fix-boot-reliability.yml --limit node-0 -e "reboot=true"
+ansible-playbook playbooks/fix-boot-reliability.yml --limit node-1 -e "reboot=true"
 # Or manually:
-ssh raolivei@node-0 "sudo reboot"
+ssh raolivei@node-1 "sudo reboot"
 ```
 
 ## When to use

@@ -659,7 +659,7 @@
           debug:
             msg:
               - "✅ Hostname updated in cloned filesystem"
-              - "  - Old hostname: node-0 (from SD card)"
+              - "  - Old hostname: node-1 (from SD card)"
               - "  - New hostname: {{ target_hostname }}"
       when: target_hostname is defined and target_hostname != ""
 

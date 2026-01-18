@@ -12,7 +12,7 @@
 
 ## Problem
 
-After running `setup-all-nodes.yml`, SSH service failed on both nodes. You cannot SSH into node-0 or node-1.
+After running `setup-all-nodes.yml`, SSH service failed on both nodes. You cannot SSH into node-1 or node-1.
 
 ## Root Cause
 
@@ -24,7 +24,7 @@ The SSH configuration was modified, and the SSH service failed to restart. The `
 
 If you have physical access to the nodes:
 
-1. **Connect a keyboard and monitor** to node-0 (or node-1)
+1. **Connect a keyboard and monitor** to node-1 (or node-1)
 
 2. **Login** as `raolivei` (or root if needed)
 
@@ -113,7 +113,7 @@ Once SSH is working again:
 
 1. **Verify SSH works**:
    ```bash
-   ssh raolivei@node-0
+   ssh raolivei@node-1
    ssh raolivei@node-1
    ```
 

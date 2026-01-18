@@ -319,7 +319,7 @@
         "showThresholdMarkers": true
       },
       "targets": [
-        { "expr": "visage_training_progress_percent", "refId": "A" }
+        { "expr": "visage_training_progress_percent{job=~\"visage.*|pushgateway\"}", "refId": "A" }
       ],
       "title": "Training Progress",
       "type": "gauge"
@@ -380,7 +380,7 @@
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
-        { "expr": "visage_training_loss", "legendFormat": "Loss", "refId": "A" }
+        { "expr": "visage_training_loss{job=~\"visage.*|pushgateway\"}", "legendFormat": "Loss", "refId": "A" }
       ],
       "title": "Training Loss",
       "type": "timeseries"

@@ -3,15 +3,15 @@
 #
 # This proxies *.eldertree.local to the k3s cluster via Traefik NodePort
 # Allows accessing services without specifying port numbers
+#
+# Only includes DEPLOYED services (as of 2026-01-16)
 
 {
     # Use local self-signed certs
     local_certs
-    # Skip OCSP stapling for local certs
-    skip_install_trust
 }
 
-# Grafana
+# Grafana (observability)
 grafana.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
@@ -22,7 +22,7 @@ grafana.eldertree.local {
     }
 }
 
-# Vault
+# Vault (secrets management)
 vault.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
@@ -33,7 +33,7 @@ vault.eldertree.local {
     }
 }
 
-# Prometheus
+# Prometheus (metrics)
 prometheus.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
@@ -44,7 +44,7 @@ prometheus.eldertree.local {
     }
 }
 
-# Visage
+# Visage (photo management)
 visage.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
@@ -55,7 +55,7 @@ visage.eldertree.local {
     }
 }
 
-# MinIO
+# MinIO (object storage for Visage)
 minio.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
@@ -66,18 +66,7 @@ minio.eldertree.local {
     }
 }
 
-# Canopy
-canopy.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.101:32474 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host canopy.eldertree.local
-    }
-}
-
-# SwimTO
+# SwimTO (Toronto pool schedules)
 swimto.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
@@ -88,18 +77,7 @@ swimto.eldertree.local {
     }
 }
 
-# Journey
-journey.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.101:32474 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host journey.eldertree.local
-    }
-}
-
-# Pitanga
+# Pitanga (website)
 pitanga.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
@@ -110,18 +88,7 @@ pitanga.eldertree.local {
     }
 }
 
-# Docs
-docs.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.101:32474 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host docs.eldertree.local
-    }
-}
-
-# Flux UI
+# Flux UI (GitOps dashboard)
 flux-ui.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
@@ -129,5 +96,27 @@ flux-ui.eldertree.local {
             tls_insecure_skip_verify
         }
         header_up Host flux-ui.eldertree.local
+    }
+}
+
+# Pushgateway (metrics push endpoint)
+pushgateway.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host pushgateway.eldertree.local
+    }
+}
+
+# Pi-hole (DNS admin - may not work via ingress)
+pihole.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host pihole.eldertree.local
     }
 }

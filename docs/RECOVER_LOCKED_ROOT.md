@@ -8,11 +8,11 @@
 ---
 
 
-# Recover Locked Root Account on node-0
+# Recover Locked Root Account on node-1
 
 ## Problem
 
-After reboot, node-0 shows:
+After reboot, node-1 shows:
 ```
 cannot open access to console, the root account is locked, see sulogin(8) man page for more details
 ```
@@ -27,17 +27,17 @@ The easiest recovery method is to boot from the SD card (which should still have
 
 ### Step 1: Remove NVMe Temporarily
 
-1. **Power off node-0**
+1. **Power off node-1**
 2. **Remove NVMe drive** (to force SD card boot)
-3. **Power on node-0**
+3. **Power on node-1**
 4. **Wait for boot** (2-3 minutes)
 
 ### Step 2: SSH and Fix Root Account
 
-Once node-0 boots from SD card:
+Once node-1 boots from SD card:
 
 ```bash
-# SSH to node-0 using PI_PASSWORD
+# SSH to node-1 using PI_PASSWORD
 sshpass -p "$PI_PASSWORD" ssh raolivei@192.168.2.86
 
 # Unlock root account
@@ -53,9 +53,9 @@ sudo passwd -S root
 
 ### Step 3: Reinstall NVMe and Continue
 
-1. **Power off node-0**
+1. **Power off node-1**
 2. **Reinstall NVMe drive**
-3. **Power on node-0**
+3. **Power on node-1**
 4. **Continue with NVMe boot setup**
 
 ## Alternative: Physical Console Access
@@ -90,7 +90,7 @@ After switching boot devices, run the Ansible playbook (requires `PI_PASSWORD` e
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/fix-root-lock.yml --limit node-0
+ansible-playbook -i inventory/hosts.yml playbooks/fix-root-lock.yml --limit node-1
 ```
 
 This will automatically:
@@ -122,7 +122,7 @@ The `setup-system.yml` playbook has been updated to prevent root lock on boot de
 
 ```bash
 cd ~/WORKSPACE/raolivei/pi-fleet/ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-0
+ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-1
 ```
 
 ## Next Steps
@@ -130,4 +130,4 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-
 After recovering:
 1. ✅ Verify SSH access works
 2. ✅ Continue with NVMe boot setup
-3. ✅ Complete node-0 configuration
+3. ✅ Complete node-1 configuration

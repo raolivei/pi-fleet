@@ -117,9 +117,9 @@ ansible-playbook playbooks/setup-new-node.yml \
 **Note**: 
 - Replace `node-3` with your target node (e.g., `node-2`, `node-4`)
 - IP addresses follow the pattern:
-  - wlan0: `192.168.2.XX` where XX = 86 - node_number (node-0=86, node-1=85, node-2=84, node-3=83)
-  - eth0: `10.0.0.N` where N = node_number (node-0=1, node-1=2, node-2=3, node-3=4)
-- `k3s_token` is optional - the playbook will retrieve it from node-0 automatically if omitted
+  - wlan0: `192.168.2.XX` where XX = 86 - node_number (node-1=86, node-1=85, node-2=84, node-3=83)
+  - eth0: `10.0.0.N` where N = node_number (node-1=1, node-1=2, node-2=3, node-3=4)
+- `k3s_token` is optional - the playbook will retrieve it from node-1 automatically if omitted
 
 This single playbook handles:
 
@@ -221,12 +221,12 @@ ansible-playbook playbooks/setup-new-node.yml --limit node-3 \
 **IP Address Pattern:**
 - wlan0: `192.168.2.XX` where XX = 86 - node_number
 - eth0: `10.0.0.N` where N = node_number
-- `k3s_token` is optional (retrieved from node-0 automatically)
+- `k3s_token` is optional (retrieved from node-1 automatically)
 
 **For control plane setup:**
 
 ```bash
-ansible-playbook playbooks/install-k3s.yml --limit node-0
+ansible-playbook playbooks/install-k3s.yml --limit node-1
 ```
 
 **For bulk node configuration:**

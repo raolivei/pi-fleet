@@ -80,9 +80,9 @@ ansible-playbook playbooks/setup-new-node.yml \
 ```
 
 **IP Address Pattern:**
-- wlan0: `192.168.2.XX` where XX = 86 - node_number (node-0=86, node-1=85, node-2=84, node-3=83)
-- eth0: `10.0.0.N` where N = node_number (node-0=1, node-1=2, node-2=3, node-3=4)
-- `k3s_token` is optional - the playbook will retrieve it from node-0 automatically if omitted
+- wlan0: `192.168.2.XX` where XX = 86 - node_number (node-1=86, node-1=85, node-2=84, node-3=83)
+- eth0: `10.0.0.N` where N = node_number (node-1=1, node-1=2, node-2=3, node-3=4)
+- `k3s_token` is optional - the playbook will retrieve it from node-1 automatically if omitted
 
 The master playbook handles:
 1. System configuration (hostname, network, packages, SSH, firewall)
@@ -94,7 +94,7 @@ The master playbook handles:
 7. Terminal monitoring tools (btop, tmux, neofetch)
 8. Longhorn prerequisites (open-iscsi)
 
-**Quick Reference**: The pattern established with node-0 and node-1:
+**Quick Reference**: The pattern established with node-1 and node-1:
 - **Management IP**: On `wlan0` via NetworkManager/DHCP (e.g., `192.168.2.85`)
 - **Gigabit IP**: On `eth0` via NetworkManager (e.g., `10.0.0.2`)
 - **Boot**: From NVMe (SD card removed after setup)
@@ -104,20 +104,20 @@ The master playbook handles:
 
 The inventory file (`inventory/hosts.yml`) defines the Raspberry Pi hosts:
 
-- **node-0**: Control plane node (192.168.2.86)
+- **node-1**: Control plane node (192.168.2.86)
 - **node-1**: Worker node (192.168.2.85)
 
 ### IP Assignment Pattern
 
 **CRITICAL**: All nodes use a consistent IP pattern:
 - **Management IPs** (wlan0):
-  - node-0 = `192.168.2.86`
+  - node-1 = `192.168.2.86`
   - node-1 = `192.168.2.85`
   - node-2 = `192.168.2.84` (future)
   - node-N = `192.168.2.8(6-N)` (where N is the node number)
 
 - **Gigabit IPs** (eth0):
-  - node-0 = `10.0.0.1`
+  - node-1 = `10.0.0.1`
   - node-1 = `10.0.0.2`
   - node-2 = `10.0.0.3` (future)
   - node-N = `10.0.0.N` (where N is the node number)
@@ -131,7 +131,7 @@ To add new hosts, edit `inventory/hosts.yml`:
 ```yaml
 raspberry_pi:
   hosts:
-    node-0:
+    node-1:
       ansible_host: 192.168.2.80  # 192.168.2.80 + 0
       ansible_user: raolivei
     node-1:
@@ -183,7 +183,7 @@ Complete system setup playbook that configures:
 
 - **User Management**: Verifies `raolivei` user exists (created via Raspberry Pi Imager)
 - **Hostname**: Automatically converts generic "node-x" hostname from SD card to proper FQDN (`node-X.eldertree.local`) - **CRITICAL**: Never use just "eldertree"
-- **Network**: Configures static IP based on node number (node-0 = 192.168.2.80, node-1 = 192.168.2.81, etc.)
+- **Network**: Configures static IP based on node number (node-1 = 192.168.2.80, node-1 = 192.168.2.81, etc.)
 - **Bluetooth**: Enables and starts Bluetooth service
 - **Backup Mount**: Configures `/mnt/backup` with `nofail` option
 - **SSH**: Ensures SSH service is running (keys configured via Raspberry Pi Imager)
@@ -197,9 +197,9 @@ Complete system setup playbook that configures:
 cd ansible
 
 # Option 1: Use helper script (recommended)
-./setup-node-0.sh  # For node-0
+./setup-node-1.sh  # For node-1
 # Or manually:
-ansible-playbook playbooks/setup-system.yml --limit node-0 --ask-pass --ask-become-pass -e "static_ip_override=192.168.2.80"
+ansible-playbook playbooks/setup-system.yml --limit node-1 --ask-pass --ask-become-pass -e "static_ip_override=192.168.2.80"
 
 # Option 2: Run on all nodes
 ansible-playbook playbooks/setup-system.yml
@@ -223,7 +223,7 @@ ansible-playbook playbooks/setup-system.yml --ask-pass --ask-become-pass
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/setup-system.yml --limit node-0 --ask-pass --ask-become-pass
+ansible-playbook playbooks/setup-system.yml --limit node-1 --ask-pass --ask-become-pass
 ```
 
 **Dry run (check mode)**:
@@ -236,7 +236,7 @@ ansible-playbook playbooks/setup-system.yml --check
 
 ```yaml
 # CRITICAL: Hostname MUST be FQDN (node-X.eldertree.local), never just "eldertree"
-hostname_override: "node-0.eldertree.local"  # Defaults to inventory_hostname + '.eldertree.local'
+hostname_override: "node-1.eldertree.local"  # Defaults to inventory_hostname + '.eldertree.local'
 static_ip_override: "192.168.2.80"  # Auto-calculated: 192.168.2.80 + node_number, set to "" for DHCP
 backup_device: "/dev/sdb1"
 backup_mount: "/mnt/backup"
@@ -267,7 +267,7 @@ ansible-playbook playbooks/install-k3s.yml --ask-pass --ask-become-pass
 ```yaml
 k3s_version: "" # Empty for latest, or specify like "v1.28.5+k3s1"
 k3s_token: "" # Auto-generated if empty
-k3s_hostname: "node-0.eldertree.local" # Hostname for TLS SAN (must be FQDN)
+k3s_hostname: "node-1.eldertree.local" # Hostname for TLS SAN (must be FQDN)
 kubeconfig_path: "~/.kube/config-eldertree" # Local path to save kubeconfig
 k3s_install_k9s: true # Install k9s CLI tool
 ```
@@ -356,7 +356,7 @@ All variables from `setup-system.yml` plus:
 
 ### Setup All Nodes (`playbooks/setup-all-nodes.yml`) - **Recommended for All Nodes**
 
-Master playbook that configures all nodes in the `raspberry_pi` group (node-0, node-1, eldertree, etc.) with:
+Master playbook that configures all nodes in the `raspberry_pi` group (node-1, node-1, eldertree, etc.) with:
 
 - System packages (htop, vim, curl, git, etc.)
 - Terminal monitoring tools (btop, tmux, neofetch)
@@ -377,11 +377,11 @@ cd ansible
 ansible-playbook playbooks/setup-all-nodes.yml
 
 # Run on specific node(s)
-ansible-playbook playbooks/setup-all-nodes.yml --limit node-0
-ansible-playbook playbooks/setup-all-nodes.yml --limit node-0,node-1
+ansible-playbook playbooks/setup-all-nodes.yml --limit node-1
+ansible-playbook playbooks/setup-all-nodes.yml --limit node-1,node-1
 
 # Override hostname or static IP for specific node
-ansible-playbook playbooks/setup-all-nodes.yml --limit node-0 -e static_ip=192.168.2.86
+ansible-playbook playbooks/setup-all-nodes.yml --limit node-1 -e static_ip=192.168.2.86
 ```
 
 **After installation**:
@@ -425,7 +425,7 @@ ansible-playbook playbooks/setup-terminal-monitoring.yml --ask-pass --ask-become
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/setup-terminal-monitoring.yml --limit node-0 --ask-pass --ask-become-pass
+ansible-playbook playbooks/setup-terminal-monitoring.yml --limit node-1 --ask-pass --ask-become-pass
 ```
 
 **After installation**:
@@ -516,7 +516,7 @@ ansible-playbook playbooks/configure-user.yml
 **To target specific host**:
 
 ```bash
-ansible-playbook playbooks/configure-user.yml --limit node-0
+ansible-playbook playbooks/configure-user.yml --limit node-1
 ```
 
 **Dry run (check mode)**:
@@ -629,29 +629,29 @@ The script is idempotent and can be run multiple times safely.
 
 If you prefer manual control:
 
-**For all nodes (node-0, node-1)**:
+**For all nodes (node-1, node-1)**:
 
 ```bash
 # 1. Setup all nodes (system packages, btop, SSH keys)
 cd ansible
 ansible-playbook playbooks/setup-all-nodes.yml
 
-# 2. Install k3s control plane (on node-0 only)
-ansible-playbook playbooks/install-k3s.yml --limit node-0
+# 2. Install k3s control plane (on node-1 only)
+ansible-playbook playbooks/install-k3s.yml --limit node-1
 
 # 3. Install k3s worker nodes (on node-1)
 # First get the token from control plane:
-# ssh raolivei@node-0 "sudo cat /var/lib/rancher/k3s/server/node-token"
+# ssh raolivei@node-1 "sudo cat /var/lib/rancher/k3s/server/node-token"
 ansible-playbook playbooks/install-k3s-worker.yml \
   --limit node-1 \
   -e k3s_token=YOUR_TOKEN_HERE \
-  -e k3s_server_url=https://node-0:6443
+  -e k3s_server_url=https://node-1:6443
 
 # 4. Bootstrap FluxCD (optional, on control plane)
 ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true
 ```
 
-**For control plane only (node-0)**:
+**For control plane only (node-1)**:
 
 ```bash
 # 1. System configuration
@@ -692,8 +692,8 @@ ansible-playbook playbooks/configure-user.yml --check
 # Verbose output
 ansible-playbook playbooks/configure-user.yml -vv
 
-# Run only on node-0
-ansible-playbook playbooks/configure-user.yml --limit node-0
+# Run only on node-1
+ansible-playbook playbooks/configure-user.yml --limit node-1
 
 # Run with custom password
 ansible-playbook playbooks/configure-user.yml \

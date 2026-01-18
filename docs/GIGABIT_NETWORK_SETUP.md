@@ -21,7 +21,7 @@ This is the **working solution** for configuring gigabit Ethernet (eth0) for dir
 
 ### Network Configuration
 
-**node-0 (eldertree):**
+**node-1 (eldertree):**
 - `wlan0`: `192.168.2.86/24` (primary, default route via `192.168.2.1` for internet)
 - `eth0`: `10.0.0.1/24` (static IP, no gateway, for direct gigabit connection)
 
@@ -38,7 +38,7 @@ This is the **working solution** for configuring gigabit Ethernet (eth0) for dir
 
 ## Implementation
 
-### Step 1: Configure node-0 eth0
+### Step 1: Configure node-1 eth0
 
 ```bash
 ssh raolivei@192.168.2.86
@@ -89,11 +89,11 @@ sudo netplan apply
 ip addr show eth0 | grep "inet "
 
 # Should show:
-# node-0: inet 10.0.0.1/24
+# node-1: inet 10.0.0.1/24
 # node-1: inet 10.0.0.2/24
 
 # Test connectivity via eth0
-ping -c 2 -I eth0 10.0.0.2  # From node-0
+ping -c 2 -I eth0 10.0.0.2  # From node-1
 ping -c 2 -I eth0 10.0.0.1  # From node-1
 
 # Verify internet still works
@@ -122,7 +122,7 @@ ip addr show eth0 | grep "inet "
 ip route show default
 
 # Test node-to-node connectivity via eth0
-ping -c 2 -I eth0 10.0.0.2  # From node-0
+ping -c 2 -I eth0 10.0.0.2  # From node-1
 ping -c 2 -I eth0 10.0.0.1  # From node-1
 
 # Verify internet still works

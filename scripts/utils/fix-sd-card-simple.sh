@@ -1,10 +1,10 @@
 #!/bin/bash
-# Simple one-liner commands to fix SD card on node-0
+# Simple one-liner commands to fix SD card on node-1
 # Copy and paste these commands one by one
 
 echo "=== SD Card Fix Commands ==="
 echo ""
-echo "SSH to node-0 and run these commands:"
+echo "SSH to node-1 and run these commands:"
 echo ""
 echo "# 1. Find USB device:"
 echo "lsblk | grep -E 'sd|mmc'"
@@ -23,6 +23,6 @@ echo ""
 echo "# 5. Unmount:"
 echo "sudo umount /mnt/sd-root"
 echo ""
-echo "Or run the automated script on node-0:"
+echo "Or run the automated script on node-1:"
 echo "  ./fix-sd-card-on-pi.sh"
 

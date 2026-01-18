@@ -2,7 +2,7 @@
 
 ## Current Status
 
-✅ Script is ready on node-0: `~/setup-nvme-boot.sh`
+✅ Script is ready on node-1: `~/setup-nvme-boot.sh`
 
 ## What the Script Does
 
@@ -23,11 +23,11 @@
 ## Run the Setup
 
 ```bash
-# SSH to node-0 (control plane)
+# SSH to node-1 (control plane)
 # Use SSH key authentication (recommended):
 ssh raolivei@192.168.2.86
 # Or use hostname if DNS is configured:
-# ssh raolivei@node-0.eldertree.local
+# ssh raolivei@node-1.eldertree.local
 
 # If password authentication is required:
 # sshpass -p 'YOUR_PASSWORD' ssh raolivei@192.168.2.86

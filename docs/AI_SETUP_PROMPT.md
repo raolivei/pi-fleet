@@ -20,7 +20,7 @@ Set up a production-ready single-node K3s cluster on a Raspberry Pi with:
 - Raspberry Pi 5 (8GB, ARM64)
 - Debian 12 Bookworm
 - Single-node cluster (workers can be added later)
-- Hostname: node-0.eldertree.local
+- Hostname: node-1.eldertree.local
 - IP: 192.168.2.83
 
 **Repository Structure:**

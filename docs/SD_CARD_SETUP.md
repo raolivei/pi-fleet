@@ -37,7 +37,7 @@ The password `Control01!` is intentionally different from the main cluster passw
    # or
    ping -c 1 192.168.2.85  # node-1
    # or
-   ping -c 1 192.168.2.86  # node-0
+   ping -c 1 192.168.2.86  # node-1
    ```
 
 ## Step 3: Apply Boot Reliability Fixes

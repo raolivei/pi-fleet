@@ -62,7 +62,7 @@ diskutil eject /dev/diskX
 3. **Wait for boot** (1-2 minutes)
 4. **SSH to node**:
    ```bash
-   ssh raolivei@node-0.eldertree.local
+   ssh raolivei@node-1.eldertree.local
    # or
    ssh raolivei@192.168.2.86
    ```
@@ -82,11 +82,11 @@ lsblk | grep nvme
 
 ```bash
 # Copy scripts to node
-scp pi-fleet/scripts/storage/migrate-nvme-hat.sh node-0:~/
-scp pi-fleet/scripts/storage/verify-nvme-migration.sh node-0:~/
+scp pi-fleet/scripts/storage/migrate-nvme-hat.sh node-1:~/
+scp pi-fleet/scripts/storage/verify-nvme-migration.sh node-1:~/
 
 # Or clone pi-fleet repo on the node
-ssh node-0
+ssh node-1
 git clone <pi-fleet-repo-url>
 cd pi-fleet/scripts/storage
 chmod +x *.sh
@@ -96,10 +96,10 @@ chmod +x *.sh
 
 ```bash
 # SSH to node
-ssh node-0
+ssh node-1
 
 # Run migration script
-sudo ./migrate-nvme-hat.sh node-0
+sudo ./migrate-nvme-hat.sh node-1
 ```
 
 The script will:
@@ -117,9 +117,9 @@ The script will:
 sudo reboot
 
 # After reboot, verify
-ssh node-0
+ssh node-1
 df -h /  # Should show /dev/nvme0n1p2
-./verify-nvme-migration.sh node-0
+./verify-nvme-migration.sh node-1
 ```
 
 ## Step 7: Install K3s (if needed)
@@ -127,15 +127,15 @@ df -h /  # Should show /dev/nvme0n1p2
 After migration, if you need to set up K3s:
 
 ```bash
-# For control plane (node-0)
+# For control plane (node-1)
 curl -sfL https://get.k3s.io | sh -
 
 # For worker (node-1)
-# Get token from node-0:
-ssh node-0 "sudo cat /var/lib/rancher/k3s/server/node-token"
+# Get token from node-1:
+ssh node-1 "sudo cat /var/lib/rancher/k3s/server/node-token"
 
 # On node-1:
-curl -sfL https://get.k3s.io | K3S_URL=https://node-0.eldertree.local:6443 K3S_TOKEN=<token> sh -
+curl -sfL https://get.k3s.io | K3S_URL=https://node-1.eldertree.local:6443 K3S_TOKEN=<token> sh -
 ```
 
 ## Troubleshooting

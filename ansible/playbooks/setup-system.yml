@@ -23,7 +23,7 @@
     # Can be overridden via -e hostname=node-X.eldertree.local
     hostname: "{{ hostname_override | default(inventory_hostname + '.eldertree.local') }}"
     # Static IP configuration
-    # Pattern: node-0 = 192.168.2.80, node-1 = 192.168.2.81, node-2 = 192.168.2.82, etc.
+    # Pattern: node-1 = 192.168.2.80, node-1 = 192.168.2.81, node-2 = 192.168.2.82, etc.
     # Set to empty string "" to use DHCP
     static_ip: "{{ static_ip_override | default('') }}"
     static_netmask: "255.255.255.0"
@@ -66,7 +66,7 @@
           CRITICAL ERROR: Hostname must be in FQDN format (node-X.eldertree.local), not just "eldertree"!
           Current hostname value: {{ hostname }}
           This is a safety check to prevent cluster naming conflicts.
-          Use: -e hostname=node-0.eldertree.local (or let it default from inventory_hostname)
+          Use: -e hostname=node-1.eldertree.local (or let it default from inventory_hostname)
       when: hostname == "eldertree" or (hostname is defined and hostname != "" and ".eldertree.local" not in hostname)
 
   tasks:
@@ -142,7 +142,7 @@
     # Hostname Configuration
     # =========================================================================
     # CRITICAL: Always use FQDN format (node-X.eldertree.local)
-    # Short hostname is derived from inventory_hostname (node-0, node-1, etc.)
+    # Short hostname is derived from inventory_hostname (node-1, node-1, etc.)
     - name: Get current hostname
       command: hostname
       register: current_hostname_check

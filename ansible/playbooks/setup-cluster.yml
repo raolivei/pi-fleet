@@ -7,7 +7,7 @@
 #   ansible-playbook playbooks/setup-cluster.yml -e bootstrap_flux_var=true
 #
 # Note: DNS entries should be configured manually:
-#   sudo sh -c 'echo "192.168.2.86  node-0.eldertree.local" >> /etc/hosts'
+#   sudo sh -c 'echo "192.168.2.86  node-1.eldertree.local" >> /etc/hosts'
 #   sudo sh -c 'echo "192.168.2.85  node-1.eldertree.local" >> /etc/hosts'
 
 - name: Configure DNS (so hostnames resolve)
@@ -20,7 +20,7 @@
   tasks:
     - name: Check if hostnames resolve (both full FQDN and short names)
       shell: |
-        getent hosts node-0.eldertree.local node-1.eldertree.local node-0 node-1 2>/dev/null || echo "not_resolved"
+        getent hosts node-1.eldertree.local node-1.eldertree.local node-1 node-1 2>/dev/null || echo "not_resolved"
       register: dns_resolve_check
       changed_when: false
       failed_when: false
@@ -35,12 +35,12 @@
           SED_INPLACE="sed -i"
         fi
         
-        # Add node-0 with both full FQDN and short name
-        if ! grep -q "node-0.eldertree.local" /etc/hosts 2>/dev/null; then
-          echo "{{ node_0_ip }}  node-0.eldertree.local node-0" | tee -a /etc/hosts
-        elif ! grep -qE "{{ node_0_ip }}.*node-0[^.]" /etc/hosts 2>/dev/null; then
+        # Add node-1 with both full FQDN and short name
+        if ! grep -q "node-1.eldertree.local" /etc/hosts 2>/dev/null; then
+          echo "{{ node_0_ip }}  node-1.eldertree.local node-1" | tee -a /etc/hosts
+        elif ! grep -qE "{{ node_0_ip }}.*node-1[^.]" /etc/hosts 2>/dev/null; then
           # Update existing entry to include short name
-          $SED_INPLACE "s|{{ node_0_ip }}.*node-0.eldertree.local|{{ node_0_ip }}  node-0.eldertree.local node-0|" /etc/hosts
+          $SED_INPLACE "s|{{ node_0_ip }}.*node-1.eldertree.local|{{ node_0_ip }}  node-1.eldertree.local node-1|" /etc/hosts
         fi
         
         # Add node-1 with both full FQDN and short name
@@ -58,7 +58,7 @@
 
     - name: Verify DNS resolution (both full FQDN and short names)
       shell: |
-        getent hosts node-0.eldertree.local node-1.eldertree.local node-0 node-1 2>/dev/null || echo "still_not_resolved"
+        getent hosts node-1.eldertree.local node-1.eldertree.local node-1 node-1 2>/dev/null || echo "still_not_resolved"
       register: dns_verify
       changed_when: false
       failed_when: false
@@ -67,15 +67,15 @@
       debug:
         msg:
           - "DNS: {{ '✅ Configured' if 'still_not_resolved' not in dns_verify.stdout else '⚠️  Manual setup required' }}"
-          - "{{ 'Run manually: sudo sh -c \"echo \\\"{{ node_0_ip }}  node-0.eldertree.local node-0\\\" >> /etc/hosts && echo \\\"{{ node_1_ip }}  node-1.eldertree.local node-1\\\" >> /etc/hosts\"' if 'still_not_resolved' in dns_verify.stdout else '' }}"
+          - "{{ 'Run manually: sudo sh -c \"echo \\\"{{ node_0_ip }}  node-1.eldertree.local node-1\\\" >> /etc/hosts && echo \\\"{{ node_1_ip }}  node-1.eldertree.local node-1\\\" >> /etc/hosts\"' if 'still_not_resolved' in dns_verify.stdout else '' }}"
           - "{{ 'Or run with: ansible-playbook playbooks/setup-cluster.yml --ask-become-pass' if 'still_not_resolved' in dns_verify.stdout else '' }}"
 
 - name: System Setup on All Nodes
   import_playbook: setup-system.yml
   vars:
     target_user: raolivei
-    # Full hostname will be set to node-0.eldertree.local or node-1.eldertree.local
-    # Short name (node-0, node-1) is automatically derived from inventory_hostname
+    # Full hostname will be set to node-1.eldertree.local or node-1.eldertree.local
+    # Short name (node-1, node-1) is automatically derived from inventory_hostname
     static_ip: "" # Use DHCP by default
     backup_device: "/dev/sdb1"
     backup_mount: "/mnt/backup"
@@ -85,15 +85,15 @@
   vars:
     target_user: raolivei
 
-- name: Install k3s Control Plane (node-0)
+- name: Install k3s Control Plane (node-1)
   import_playbook: install-k3s.yml
   vars:
-    k3s_hostname: "node-0.eldertree.local" # Full FQDN for TLS SAN
+    k3s_hostname: "node-1.eldertree.local" # Full FQDN for TLS SAN
     kubeconfig_path: "~/.kube/config-eldertree"
-  when: inventory_hostname == "node-0"
+  when: inventory_hostname == "node-1"
 
 - name: Get k3s token from control plane
-  hosts: node-0
+  hosts: node-1
   tasks:
     - name: Get k3s node token
       slurp:
@@ -114,8 +114,8 @@
 - name: Install k3s Worker (node-1)
   import_playbook: install-k3s-worker.yml
   vars:
-    k3s_token: "{{ hostvars['node-0']['k3s_node_token'] | default(hostvars['localhost']['k3s_node_token'] | default('')) }}"
-    k3s_server_url: "https://node-0.eldertree.local:6443" # Full FQDN
+    k3s_token: "{{ hostvars['node-1']['k3s_node_token'] | default(hostvars['localhost']['k3s_node_token'] | default('')) }}"
+    k3s_server_url: "https://node-1.eldertree.local:6443" # Full FQDN
   when: inventory_hostname == "node-1"
 
 - name: Bootstrap FluxCD (optional)
@@ -142,10 +142,10 @@
           - "✅ Cluster Setup Complete!"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           - ""
-          - "DNS: ✅ Configured (node-0.eldertree.local, node-1.eldertree.local)"
+          - "DNS: ✅ Configured (node-1.eldertree.local, node-1.eldertree.local)"
           - "System Setup: ✅ Complete on all nodes"
           - "Terminal Monitoring: ✅ Installed (btop, tmux, neofetch)"
-          - "k3s Control Plane: ✅ Installed on node-0"
+          - "k3s Control Plane: ✅ Installed on node-1"
           - "k3s Worker: ✅ Installed on node-1"
           - "FluxCD: {{ '✅ Bootstrapped' if bootstrap_flux_var | default(false) | bool else '⏭️  Skipped (run with -e bootstrap_flux_var=true)' }}"
           - ""
@@ -155,8 +155,8 @@
           - "  3. Bootstrap FluxCD: ansible-playbook playbooks/bootstrap-flux.yml -e bootstrap_flux=true"
           - ""
           - "Access nodes (both work):"
-          - "  ssh raolivei@node-0        # Short name"
-          - "  ssh raolivei@node-0.eldertree.local  # Full FQDN"
+          - "  ssh raolivei@node-1        # Short name"
+          - "  ssh raolivei@node-1.eldertree.local  # Full FQDN"
           - "  ssh raolivei@node-1        # Short name"
           - "  ssh raolivei@node-1.eldertree.local  # Full FQDN"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

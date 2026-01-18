@@ -48,7 +48,7 @@ ExecStart=/usr/local/bin/k3s \
 - Literal backslashes being passed as arguments to k3s
 - Systemd not parsing the command correctly
 
-**Correct format** (matching node-0):
+**Correct format** (matching node-1):
 ```ini
 ExecStart=/usr/local/bin/k3s \
     agent \
@@ -86,7 +86,7 @@ Flannel detects interfaces in a specific order. If the public-ip annotation is w
 
 ### Step 1: Fix Service File Format
 
-**Critical**: The service file must match node-0's exact format.
+**Critical**: The service file must match node-1's exact format.
 
 ```bash
 # On the node, create correct service file
@@ -128,7 +128,7 @@ EOF
 - Flags wrapped in single quotes: `'--node-ip=10.0.0.2'`
 - Only continuation lines have backslashes
 - Last flag line has NO trailing backslash
-- Use tabs for indentation (matching node-0)
+- Use tabs for indentation (matching node-1)
 
 ### Step 2: Verify Service File is Parsed Correctly
 

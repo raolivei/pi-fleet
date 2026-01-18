@@ -20,8 +20,8 @@ Previously, the `setup-system.yml` playbook would automatically configure static
 ```bash
 # This will NOT configure static IP - network stays on DHCP
 ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml \
-  --limit node-0 \
-  -e "node_hostname=node-0" \
+  --limit node-1 \
+  -e "node_hostname=node-1" \
   -e "node_ip=192.168.2.86"
 ```
 
@@ -37,8 +37,8 @@ You must pass **both** flags:
 ```bash
 # This WILL configure static IP
 ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml \
-  --limit node-0 \
-  -e "node_hostname=node-0" \
+  --limit node-1 \
+  -e "node_hostname=node-1" \
   -e "configure_static_ip=true" \
   -e "static_ip=192.168.2.86"
 ```
@@ -87,15 +87,15 @@ sudo netplan apply
 ### Safe Setup (DHCP)
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml \
-  --limit node-0 \
-  -e "node_hostname=node-0"
+  --limit node-1 \
+  -e "node_hostname=node-1"
 ```
 
 ### Static IP Setup (Explicit)
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml \
-  --limit node-0 \
-  -e "node_hostname=node-0" \
+  --limit node-1 \
+  -e "node_hostname=node-1" \
   -e "configure_static_ip=true" \
   -e "static_ip=192.168.2.86"
 ```

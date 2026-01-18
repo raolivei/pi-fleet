@@ -107,7 +107,7 @@ EOF
 }
 
 # Configure nodes
-configure_node "node-0" "$NODE_0_IP" "true"
+configure_node "node-1" "$NODE_0_IP" "true"
 configure_node "node-1" "$NODE_1_IP" "false"
 
 echo -e "\n${GREEN}✅ Configuration complete!${NC}"

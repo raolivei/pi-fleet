@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fix SD card fstab when SD card is plugged into another Pi via USB
-# Run this on node-0 (or any Pi) with the SD card plugged in via USB
+# Run this on node-1 (or any Pi) with the SD card plugged in via USB
 
 set -e
 

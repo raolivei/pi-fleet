@@ -8,7 +8,7 @@ The setup process for node-1 established the standard pattern for all nodes:
 
 1. **NVMe Boot Configuration**: Fixed `cmdline.txt` to boot from NVMe root partition
 2. **System Configuration**: Set hostname and management IP via `setup-system.yml`
-3. **Network Configuration**: Configured eth0 with gigabit IP only (matching node-0 pattern)
+3. **Network Configuration**: Configured eth0 with gigabit IP only (matching node-1 pattern)
 4. **k3s Worker Setup**: Installed and configured k3s-agent
 5. **Gigabit Network**: Configured k3s to use gigabit IP and interface
 

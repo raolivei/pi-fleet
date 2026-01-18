@@ -75,7 +75,7 @@ ssh raolivei@node-1.local "sudo mkdir -p /mnt/backup-nvme && sudo mount /dev/nvm
 ```bash
 cd pi-fleet/ansible
 
-# Get k3s token from node-0
+# Get k3s token from node-1
 K3S_TOKEN=$(ssh raolivei@192.168.2.86 "sudo cat /var/lib/rancher/k3s/server/node-token")
 
 # Install k3s worker
@@ -145,7 +145,7 @@ After setup, verify:
 - [ ] eth0 configured (if using isolated switch: 10.0.0.X/24, or via DHCP if connected to router)
 - [ ] Internet connectivity works
 - [ ] k3s worker joined cluster (if applicable)
-- [ ] Can ping node-0 from node-1
+- [ ] Can ping node-1 from node-1
 
 ## Troubleshooting
 
@@ -173,6 +173,6 @@ echo '/dev/nvme0n1p3 /mnt/backup-nvme ext4 defaults 0 2' | sudo tee -a /etc/fsta
 ### k3s Worker Not Joining
 
 1. Check token is correct
-2. Check node-0 is accessible
+2. Check node-1 is accessible
 3. Check firewall rules
 4. Check k3s logs: `sudo journalctl -u k3s-agent -f`
