@@ -48,7 +48,7 @@ variable "pitanga_cloud_zone_id" {
 # For local development:
 #   kubectl port-forward vault-0 8200:8200 -n vault
 #   export TF_VAR_vault_address="http://127.0.0.1:8200"
-#   export TF_VAR_vault_token=\$(kubectl get secret vault-to-n external-secrets -o jsonpath='{.data.token}' | base64 -d)
+#   export TF_VAR_vault_token=$(kubectl get secret vault-token -n external-secrets -o jsonpath='{.data.token}' | base64 -d)
 # =============================================================================
 
 variable "vault_address" {
@@ -74,12 +74,6 @@ variable "skip_vault_resources" {
   description = "Skip Vault resource management. Set to true when Vault is not accessible (e.g., CI environments)."
   type        = bool
   default     = false
-}
-
-variable "kubernetes_host" {
-  description = "Kubernetes API server URL for Vault Kubernetes auth method. Use https://kubernetes.default.svc for in-cluster."
-  type        = string
-  default     = "https://kubernetes.default.svc"
 }
 
 variable "vault_projects" {
