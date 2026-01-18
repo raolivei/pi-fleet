@@ -339,4 +339,5 @@ output "vault_project_tokens" {
 output "vault_enabled" {
   description = "Whether Vault resources are managed by Terraform"
   value       = local.vault_enabled
+  sensitive   = true
 }
