@@ -25,5 +25,13 @@ spec:
     speaker:
       memberlist:
         enabled: true
+      # Required for L2 mode to add VIP addresses to network interfaces
+      securityContext:
+        capabilities:
+          add:
+            - NET_RAW
+            - NET_ADMIN
+          drop:
+            - ALL
 
 
