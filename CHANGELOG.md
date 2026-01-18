@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.3.4] - 2026-01-18
+
+### Fixed
+
+- **MetalLB VIP not responding** - Fixed L2Advertisement to use `wlan0` interface
+  - MetalLB speakers were not announcing VIPs on the physical network
+  - Added `interfaces: [wlan0]` to L2Advertisement config
+  - VIP 192.168.2.200 now correctly responds via Traefik ingress
+  - All `*.eldertree.local` services accessible via VIP
+
+### Changed
+
+- **MetalLB HelmRelease** - Updated speaker security context
+  - Added `NET_ADMIN` capability for L2 interface binding (note: not actually needed, keeping for reference)
+  - Speakers now properly announce on `wlan0` interface
+
+### Added
+
+- **WireGuard HA Plan Update** (Issue #49)
+  - Updated with new cluster topology (nodes 101-103)
+  - Added MetalLB VIP strategy (192.168.2.202 for WireGuard)
+  - DaemonSet deployment approach with shared keys
+  - Helm chart structure for WireGuard deployment
+
+### Documentation
+
+- Updated `NETWORK.md` with current cluster topology
+- Added VIP table and k3s network information
+- Updated `/etc/hosts` examples with correct VIP
+
 ## [1.3.3] - 2026-01-18
 
 ### Added

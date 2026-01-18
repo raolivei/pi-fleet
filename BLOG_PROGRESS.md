@@ -192,7 +192,7 @@ Use this as a template for other chapters!
 
 ---
 
-**Last Updated:** 2025-12-30  
+**Last Updated:** 2026-01-18  
 **Status:** Introduction + 3 chapters complete, 12 chapters remaining  
 **Progress:** ~27% complete (Introduction + 3/15 chapters)
 
@@ -209,3 +209,31 @@ Use this as a template for other chapters!
 2. Chapter 4: Kubernetes Choice (use existing rationale)
 3. Chapter 7: Vault (use VAULT_DEPLOYMENT_SUCCESS.md)
 4. Chapter 9: Monitoring (use features-and-decisions.md)
+
+## Recent Updates (January 2026)
+
+### MetalLB VIP Fix
+
+- Fixed MetalLB L2Advertisement to use `wlan0` interface
+- VIP 192.168.2.200 now works for all cluster services
+- Documented in NETWORK.md and CHANGELOG.md
+
+### WireGuard HA Plan
+
+- Updated Issue #49 with new cluster topology (nodes 101-103)
+- Proposed DaemonSet + MetalLB LoadBalancer approach
+- VIP 192.168.2.202 reserved for WireGuard service
+
+### Visage HA Planning
+
+- Created 5 GitHub issues for full HA deployment
+- PostgreSQL: CloudNativePG with 3 replicas
+- Redis: Sentinel with automatic failover
+- MinIO: Distributed mode or Longhorn RWX
+- API/Web: Multi-replica with pod anti-affinity
+
+**Blog Content Ideas from Recent Work:**
+
+- Chapter on MetalLB L2 mode and VIP troubleshooting
+- Chapter on hybrid GPU worker architecture (Mac + k8s)
+- Chapter on AI/ML workloads on Raspberry Pi cluster

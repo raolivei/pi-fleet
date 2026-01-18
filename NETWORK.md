@@ -1,12 +1,29 @@
 # Network Configuration
 
-## Current Setup
+## Current Setup (January 2026)
 
-**Control Plane:**
+**Cluster Nodes:**
 
-- Hostname: `node-1.eldertree.local`
-- IP: `192.168.2.101` (wlan0), `10.0.0.1` (eth0)
-- Network: `192.168.2.0/24`
+| Node   | Hostname                  | wlan0 IP       | eth0 IP   |
+|--------|---------------------------|----------------|-----------|
+| node-1 | node-1.eldertree.local    | 192.168.2.101  | 10.0.0.1  |
+| node-2 | node-2.eldertree.local    | 192.168.2.102  | 10.0.0.2  |
+| node-3 | node-3.eldertree.local    | 192.168.2.103  | 10.0.0.3  |
+
+**MetalLB Virtual IPs (L2 Mode):**
+
+| VIP            | Service          | Description          |
+|----------------|------------------|----------------------|
+| 192.168.2.200  | Traefik Ingress  | HTTPS ingress for all services |
+| 192.168.2.201  | Pi-hole          | DNS server           |
+
+**k3s Internal Networks:**
+
+| Network        | CIDR            | Description          |
+|----------------|-----------------|----------------------|
+| Pod Network    | 10.42.0.0/16    | Container IPs        |
+| Service Network| 10.43.0.0/16    | ClusterIP services   |
+| Internal       | 10.0.0.0/24     | Node eth0 (internal) |
 
 ## Static IP Configuration
 
@@ -67,12 +84,24 @@ dig canopy.eldertree.local
 Add to `/etc/hosts` on all machines:
 
 ```
-192.168.2.201  grafana.eldertree.local
-192.168.2.201  prometheus.eldertree.local
-192.168.2.201  canopy.eldertree.local
-192.168.2.201  pihole.eldertree.local
-192.168.2.201  vault.eldertree.local
+# ElderTree k8s Cluster VIP (Traefik Ingress)
+192.168.2.200  grafana.eldertree.local
+192.168.2.200  prometheus.eldertree.local
+192.168.2.200  vault.eldertree.local
+192.168.2.200  canopy.eldertree.local
+192.168.2.200  visage.eldertree.local
+192.168.2.200  minio.eldertree.local
+192.168.2.200  swimto.eldertree.local
+192.168.2.200  pitanga.eldertree.local
+192.168.2.200  pushgateway.eldertree.local
+
+# Cluster Nodes
+192.168.2.101  node-1.eldertree.local
+192.168.2.102  node-2.eldertree.local
+192.168.2.103  node-3.eldertree.local
 ```
+
+> **Note:** Pi-hole (192.168.2.201) handles DNS. Use /etc/hosts only as fallback.
 
 ## Service Domains
 
