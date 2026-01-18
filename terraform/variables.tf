@@ -38,3 +38,92 @@ variable "pitanga_cloud_zone_id" {
   type        = string
   default     = ""
 }
+
+# =============================================================================
+# Vault Configuration Variables
+# =============================================================================
+# These variables configure the Vault provider for managing secrets,
+# policies, auth methods, and secrets engines.
+#
+# For local development:
+#   kubectl port-forward vault-0 8200:8200 -n vault
+#   export TF_VAR_vault_address="http://127.0.0.1:8200"
+#   export TF_VAR_vault_token=\$(kubectl get secret vault-to-n external-secrets -o jsonpath='{.data.token}' | base64 -d)
+# =============================================================================
+
+variable "vault_address" {
+  description = "Vault server address. Use http://127.0.0.1:8200 with port-forward or Vault ingress URL."
+  type        = string
+  default     = "http://127.0.0.1:8200"
+}
+
+variable "vault_token" {
+  description = "Vault authentication token (root token or token with sufficient permissions). Stored in external-secrets namespace."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "vault_skip_tls_verify" {
+  description = "Skip TLS verification for Vault connection. Set to true for self-signed certificates."
+  type        = bool
+  default     = true
+}
+
+variable "skip_vault_resources" {
+  description = "Skip Vault resource management. Set to true when Vault is not accessible (e.g., CI environments)."
+  type        = bool
+  default     = false
+}
+
+variable "kubernetes_host" {
+  description = "Kubernetes API server URL for Vault Kubernetes auth method. Use https://kubernetes.default.svc for in-cluster."
+  type        = string
+  default     = "https://kubernetes.default.svc"
+}
+
+variable "vault_projects" {
+  description = "List of projects that need Vault policies and secrets engines"
+  type = list(object({
+    name        = string
+    description = string
+    paths       = list(string)
+  }))
+  default = [
+    {
+      name        = "canopy"
+      description = "Canopy personal finance tracker"
+      paths       = ["secret/data/canopy/*", "secret/metadata/canopy/*"]
+    },
+    {
+      name        = "swimto"
+      description = "SwimTO pool finder application"
+      paths       = ["secret/data/swimto/*", "secret/metadata/swimto/*"]
+    },
+    {
+      name        = "journey"
+      description = "Journey fitness tracking application"
+      paths       = ["secret/data/journey/*", "secret/metadata/journey/*"]
+    },
+    {
+      name        = "nima"
+      description = "Nima AI assistant"
+      paths       = ["secret/data/nima/*", "secret/metadata/nima/*"]
+    },
+    {
+      name        = "us-law-severity-map"
+      description = "US Law Severity Map visualization"
+      paths       = ["secret/data/us-law-severity-map/*", "secret/metadata/us-law-severity-map/*"]
+    },
+    {
+      name        = "monitoring"
+      description = "Monitoring stack (Prometheus, Grafana)"
+      paths       = ["secret/data/monitoring/*", "secret/metadata/monitoring/*"]
+    },
+    {
+      name        = "ollie"
+      description = "Ollie task automation"
+      paths       = ["secret/data/ollie/*", "secret/metadata/ollie/*"]
+    }
+  ]
+}

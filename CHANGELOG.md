@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.3.3] - 2026-01-18
+
+### Added
+
+- **Terraform Vault Provider Configuration** (Issue #23):
+  - Added HashiCorp Vault provider (~> 4.0) to Terraform
+  - Created `vault.tf` for declarative Vault configuration management
+  - Manages Vault policies, Kubernetes auth method, and service tokens via Terraform
+  - Project-specific policies for canopy, swimto, journey, nima, us-law-severity-map, monitoring, ollie
+  - Infrastructure policy for pi-fleet, pihole, flux, external-dns, terraform, cloudflare-tunnel, pitanga
+  - ESO read-only policy for External Secrets Operator
+  - Kubernetes auth roles bound to project namespaces
+  - Service tokens for External Secrets Operator integration
+- **Vault Configuration Variables**:
+  - `vault_address`: Vault server URL (default: http://127.0.0.1:8200)
+  - `vault_token`: Authentication token (sensitive)
+  - `vault_skip_tls_verify`: Skip TLS verification flag
+  - `skip_vault_resources`: Skip Vault management in CI
+  - `kubernetes_host`: Kubernetes API URL for auth method
+  - `vault_projects`: Configurable list of projects with policies
+- Updated `terraform.tfvars.example` with Vault configuration examples
+- Updated `terraform/README.md` with comprehensive Vault documentation
+
+### Changed
+
+- GitHub Actions workflow now sets `skip_vault_resources=true` for CI (Vault not accessible in CI)
+- Remote state persisted in Terraform Cloud (organization: eldertree, workspace: pi-fleet-terraform)
+
+### Deprecated
+
+- Shell script `scripts/operations/setup-vault-policies.sh` - use Terraform for Vault configuration
+
 ## [1.3.2] - 2026-01-07
 
 ### Added

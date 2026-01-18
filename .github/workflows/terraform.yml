@@ -252,6 +252,7 @@ jobs:
             grep -E "^  \~\/- (resource|data)" plan-output.txt | head -20 || echo "  (none or couldn't parse)"
             echo ""
             echo "Note: Plan may show k3s resources being destroyed - this is expected when skip_k3s_resources=true"
+            echo "Note: Plan may show Vault resources being destroyed - this is expected when skip_vault_resources=true"
             echo "⚠️  If you see Cloudflare resources being CREATED, the state migration may have failed!"
             exit 0
           else
@@ -337,6 +338,7 @@ jobs:
           TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
           TF_VAR_public_ip: ${{ secrets.PUBLIC_IP || '' }}
           TF_VAR_skip_k3s_resources: "true"
+          TF_VAR_skip_vault_resources: "true"
           TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
           TF_VAR_pi_user: ${{ secrets.PI_USER || '' }}
 
@@ -361,5 +363,6 @@ jobs:
           TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
           TF_VAR_public_ip: ${{ secrets.PUBLIC_IP || '' }}
           TF_VAR_skip_k3s_resources: "true"
+          TF_VAR_skip_vault_resources: "true"
           TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
           TF_VAR_pi_user: ${{ secrets.PI_USER || '' }}

@@ -2,11 +2,21 @@
 
 **NOTE**: k3s installation is handled by Ansible (`ansible/playbooks/install-k3s.yml`), not Terraform.
 
-Terraform is used only for Cloudflare infrastructure provisioning:
+Terraform manages infrastructure and configuration for the eldertree cluster:
 
-- DNS records (A, CNAME)
-- Cloudflare Tunnel creation and ingress configuration
-- **Note**: TLS certificates are managed by cert-manager via Helm charts, not Terraform
+- **Cloudflare**: DNS records (A, CNAME), Tunnels, Origin Certificates
+- **Vault**: Policies, Auth Methods, Secrets Engines (declarative security configuration)
+- **Note**: TLS certificates for services are managed by cert-manager via Helm charts
+
+## Remote State
+
+Terraform state is stored in **Terraform Cloud** for persistence and collaboration:
+
+- **Organization**: `eldertree`
+- **Workspace**: `pi-fleet-terraform`
+- **URL**: https://app.terraform.io/app/eldertree/workspaces/pi-fleet-terraform
+
+This ensures state is preserved across CI runs and local development.
 
 ## Cluster Name
 
@@ -16,7 +26,7 @@ The cluster is named **eldertree** (matching the control plane hostname).
 
 ```bash
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with Cloudflare credentials
+# Edit terraform.tfvars with credentials
 
 terraform init
 terraform plan
@@ -28,6 +38,7 @@ terraform apply
 - k3s must be installed first (use Ansible: `ansible-playbook ansible/playbooks/install-k3s.yml`)
 - Cloudflare account with domain `eldertree.xyz` added
 - Cloudflare API token with appropriate permissions
+- Vault deployed and unsealed (for Vault resources)
 
 ## Cleanup
 
@@ -277,3 +288,136 @@ The `public_ip` variable should point to your public IP address. Options:
 - **Zone ID not found**: Ensure domain is added to Cloudflare and nameservers are changed at Porkbun
 - **API token errors**: Verify token has correct permissions (Zone:Read, DNS:Edit)
 - **DNS not resolving**: Wait for nameserver propagation (can take 24-48 hours)
+
+---
+
+## Vault Configuration (Issue #23)
+
+Terraform manages Vault configuration declaratively, replacing the shell script at `scripts/operations/setup-vault-policies.sh`.
+
+### What's Managed
+
+- **KV Secrets Engine v2**: Enabled at `secret/` path
+- **Project Policies**: Per-project access control (canopy, swimto, journey, nima, etc.)
+- **Infrastructure Policy**: Access to `secret/pi-fleet/*` and legacy paths
+- **ESO Read-Only Policy**: For External Secrets Operator
+- **Kubernetes Auth Method**: Pod authentication via ServiceAccounts
+- **Kubernetes Auth Roles**: Per-project roles bound to namespaces
+- **Service Tokens**: For External Secrets Operator (stored in `external-secrets` namespace)
+
+### Prerequisites
+
+1. **Vault must be deployed and unsealed**:
+   ```bash
+   kubectl get pods -n vault
+   kubectl exec -n vault vault-0 -- vault status
+   ```
+
+2. **Port-forward for local development**:
+   ```bash
+   kubectl port-forward vault-0 8200:8200 -n vault
+   ```
+
+3. **Get Vault token**:
+   ```bash
+   export TF_VAR_vault_token=$(kubectl get secret vault-token -n external-secrets -o jsonpath='{.data.token}' | base64 -d)
+   ```
+
+### Configuration
+
+Set Vault variables via environment or terraform.tfvars:
+
+```bash
+# Environment variables (recommended for sensitive values)
+export TF_VAR_vault_address="http://127.0.0.1:8200"
+export TF_VAR_vault_token="hvs.xxxxx"
+export TF_VAR_skip_vault_resources="false"
+```
+
+Or in terraform.tfvars:
+
+```hcl
+vault_address = "http://127.0.0.1:8200"
+# vault_token = "" # Use TF_VAR_vault_token instead
+skip_vault_resources = false
+```
+
+### Applying Vault Resources
+
+```bash
+# Apply only Vault resources
+terraform apply -target=vault_policy.project_policy -target=vault_policy.infrastructure_policy
+
+# Or apply all resources
+terraform apply
+```
+
+### Importing Existing Resources
+
+If Vault policies already exist from the shell script, import them:
+
+```bash
+# Import existing policies
+terraform import 'vault_policy.project_policy["canopy"]' canopy-policy
+terraform import 'vault_policy.project_policy["swimto"]' swimto-policy
+terraform import vault_policy.infrastructure_policy[0] infrastructure-policy
+terraform import vault_policy.eso_readonly_policy[0] eso-readonly-policy
+
+# Import Kubernetes auth backend
+terraform import vault_auth_backend.kubernetes[0] kubernetes
+```
+
+### CI/CD Behavior
+
+In GitHub Actions, Vault resources are **skipped** (`skip_vault_resources=true`) because:
+
+1. CI doesn't have direct access to Vault
+2. Vault configuration requires authentication tokens
+3. These resources are typically managed locally or via GitOps
+
+To manage Vault via CI, you would need to:
+1. Expose Vault via ingress
+2. Store VAULT_TOKEN in GitHub Secrets
+3. Set `skip_vault_resources=false` in the workflow
+
+### Migration from Shell Script
+
+The shell script at `scripts/operations/setup-vault-policies.sh` is now deprecated.
+Terraform provides the same functionality with benefits:
+
+| Feature | Shell Script | Terraform |
+|---------|-------------|-----------|
+| Declarative | ❌ | ✅ |
+| State tracking | ❌ | ✅ |
+| Drift detection | ❌ | ✅ |
+| Rollback | ❌ | ✅ |
+| Reproducible | ⚠️ | ✅ |
+| Version control | ✅ | ✅ |
+
+### Outputs
+
+After applying, Terraform provides these outputs:
+
+```bash
+terraform output vault_policies        # List of created policies
+terraform output vault_kubernetes_auth_roles  # List of K8s auth roles
+terraform output vault_enabled         # Whether Vault is managed
+terraform output -json vault_project_tokens  # Service tokens (sensitive)
+```
+
+### Disaster Recovery
+
+State is stored in Terraform Cloud. To recover:
+
+1. Ensure Terraform Cloud access (TF_API_TOKEN)
+2. Run `terraform init` to connect to remote state
+3. Verify state: `terraform state list | grep vault`
+4. Re-apply if needed: `terraform apply`
+
+If Vault is completely reset:
+
+```bash
+# Skip imports, just apply fresh
+terraform apply -target=vault_mount.kv_v2
+terraform apply  # Apply all Vault resources
+```

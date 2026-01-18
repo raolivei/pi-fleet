@@ -34,3 +34,35 @@
 # Find in Cloudflare dashboard: Zone Settings > Overview > Zone ID
 # Or use: ./scripts/get-pitanga-zone-id.sh
 # cloudflare_pitanga_cloud_zone_id = "your-pitanga-cloud-zone-id-here"
+
+# =============================================================================
+# Vault Configuration
+# =============================================================================
+# Vault is used for secrets management in the eldertree cluster.
+# These variables configure Terraform's Vault provider to manage policies,
+# auth methods, and secrets engines declaratively.
+#
+# Prerequisites:
+# 1. Vault must be deployed and unsealed in the cluster
+# 2. For local development: kubectl port-forward vault-0 8200:8200 -n vault
+#
+# Get the token:
+#   kubectl get secret vault-token -n external-secrets -o jsonpath='{.data.token}' | base64 -d
+
+# Vault server address
+# Use http://127.0.0.1:8200 with port-forward for local development
+# vault_address = "http://127.0.0.1:8200"
+
+# Vault authentication token (sensitive - do not commit!)
+# Best practice: Use environment variable TF_VAR_vault_token
+# vault_token = ""
+
+# Skip TLS verification (set to true for self-signed certificates)
+# vault_skip_tls_verify = true
+
+# Skip Vault resource management (useful in CI where Vault is not accessible)
+# skip_vault_resources = false
+
+# Kubernetes API server URL for Vault auth method
+# Use https://kubernetes.default.svc when running in-cluster
+# kubernetes_host = "https://kubernetes.default.svc"
