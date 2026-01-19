@@ -24,6 +24,10 @@ env:
   COMPONENT: ${{ github.event.inputs.component || github.event.client_payload.component }}
   IMAGE_TAG: ${{ github.event.inputs.image_tag || github.event.client_payload.image_tag }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # Do not cancel deployments in progress
+
 jobs:
   validate:
     name: Validate Inputs
@@ -49,19 +53,19 @@ jobs:
           # Map project/component to deployment file
           PROJECT="${{ env.PROJECT }}"
           COMPONENT="${{ env.COMPONENT }}"
-          
+
           # Construct expected file path
           DEPLOYMENT_FILE="clusters/eldertree/${PROJECT}/${COMPONENT}-deployment.yaml"
-          
+
           # Check if file exists
           if [ ! -f "$DEPLOYMENT_FILE" ]; then
             echo "::error::Deployment file not found: $DEPLOYMENT_FILE"
             exit 1
           fi
-          
+
           # Construct image name
           IMAGE_NAME="ghcr.io/raolivei/${PROJECT}-${COMPONENT}"
-          
+
           echo "deployment_file=$DEPLOYMENT_FILE" >> "$GITHUB_OUTPUT"
           echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
           echo "Found deployment file: $DEPLOYMENT_FILE"
@@ -89,27 +93,27 @@ jobs:
           DEPLOYMENT_FILE="${{ needs.validate.outputs.deployment_file }}"
           IMAGE_NAME="${{ needs.validate.outputs.image_name }}"
           NEW_IMAGE="${IMAGE_NAME}:${{ env.IMAGE_TAG }}"
-          
+
           echo "Updating $DEPLOYMENT_FILE with image: $NEW_IMAGE"
-          
+
           # Get current image for comparison
           CURRENT_IMAGE=$(yq '.spec.template.spec.containers[0].image' "$DEPLOYMENT_FILE" | head -1)
           echo "Current image: $CURRENT_IMAGE"
-          
+
           if [ "$CURRENT_IMAGE" = "$NEW_IMAGE" ]; then
             echo "Image tag already up to date, skipping"
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          
+
           # Update image tag using yq (preserves YAML structure and comments)
           # The sed approach is more reliable for preserving Flux markers
           sed -i "s|image: ${IMAGE_NAME}:[^ ]*|image: ${NEW_IMAGE}|g" "$DEPLOYMENT_FILE"
-          
+
           # Verify the change
           UPDATED_IMAGE=$(grep "image: ${IMAGE_NAME}" "$DEPLOYMENT_FILE" | head -1)
           echo "Updated to: $UPDATED_IMAGE"
-          
+
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
@@ -122,16 +126,16 @@ jobs:
           title: "chore(${{ env.PROJECT }}): update ${{ env.COMPONENT }} image to ${{ env.IMAGE_TAG }}"
           body: |
             ## Automated Image Update
-            
+
             Updates **${{ env.PROJECT }}-${{ env.COMPONENT }}** container image to `${{ env.IMAGE_TAG }}`.
-            
+
             | Field | Value |
             |-------|-------|
             | Project | `${{ env.PROJECT }}` |
             | Component | `${{ env.COMPONENT }}` |
             | New Tag | `${{ env.IMAGE_TAG }}` |
             | Deployment File | `${{ needs.validate.outputs.deployment_file }}` |
-            
+
             ---
             *Triggered by: ${{ github.event_name }}*
           branch: deploy/${{ env.PROJECT }}-${{ env.COMPONENT }}-${{ env.IMAGE_TAG }}

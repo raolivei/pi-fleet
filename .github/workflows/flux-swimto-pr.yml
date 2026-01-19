@@ -5,6 +5,10 @@ on:
     branches:
       - flux/swimto-image-updates
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   create-pr:
     runs-on: ubuntu-latest
