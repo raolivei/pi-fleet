@@ -2,7 +2,7 @@
 
 **Quick reference for all services, IPs, URLs, and credentials in the eldertree Kubernetes cluster.**
 
-**Last Updated:** January 13, 2026  
+**Last Updated:** January 19, 2026  
 **Cluster:** eldertree (Raspberry Pi 5 k3s cluster)
 
 ---
@@ -24,22 +24,31 @@
 
 ### DNS Server
 
-- **Pi-hole DNS:** `192.168.2.201` (MetalLB LoadBalancer)
+- **Pi-hole DNS:** `192.168.2.201` (kube-vip LoadBalancer)
 - **Router DNS:** Configure router to use `192.168.2.201` as primary DNS
-- **Local Domain:** `*.eldertree.local` (resolves to `192.168.2.201`)
+- **Local Domain:** `*.eldertree.local` resolves to `192.168.2.200` (Traefik ingress)
 
-### ⚠️ Wi-Fi Client Isolation Issue
+### LoadBalancer Access
 
-MetalLB LoadBalancer IP (`192.168.2.200`) may not be reachable from Wi-Fi clients due to router AP isolation. **Workarounds:**
+kube-vip handles both control plane VIP (192.168.2.100) and service LoadBalancer IPs.
+This replaced MetalLB and provides reliable ARP-based IP assignment that works with all routers.
 
-1. **NodePort Access** (recommended):
+**Direct LoadBalancer Access:**
+
+```bash
+# Traefik ingress
+curl -k https://192.168.2.200 -H 'Host: vault.eldertree.local'
+
+# Pi-hole DNS
+dig @192.168.2.201 grafana.eldertree.local
+```
+
+**Alternative Access Methods:**
+
+1. **NodePort** (if LoadBalancer not working):
 
    ```bash
-   # HTTPS via NodePort 32474
    curl -k https://192.168.2.101:32474 -H 'Host: vault.eldertree.local'
-
-   # HTTP via NodePort 31801
-   curl http://192.168.2.101:31801 -H 'Host: grafana.eldertree.local'
    ```
 
 2. **Port Forward** (for individual services):
@@ -47,10 +56,6 @@ MetalLB LoadBalancer IP (`192.168.2.200`) may not be reachable from Wi-Fi client
    ```bash
    kubectl port-forward -n vault svc/vault 8200:8200
    ```
-
-3. **Disable AP Isolation** on your router (enables direct LoadBalancer IP access)
-
-4. **Use `/etc/hosts`** with NodePort: Run `scripts/add-services-to-hosts.sh`
 
 ### Kubernetes API
 

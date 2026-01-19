@@ -10,12 +10,16 @@
 | node-2 | node-2.eldertree.local    | 192.168.2.102  | 10.0.0.2  |
 | node-3 | node-3.eldertree.local    | 192.168.2.103  | 10.0.0.3  |
 
-**MetalLB Virtual IPs (L2 Mode):**
+**kube-vip Virtual IPs (ARP Mode):**
 
-| VIP            | Service          | Description          |
-|----------------|------------------|----------------------|
-| 192.168.2.200  | Traefik Ingress  | HTTPS ingress for all services |
-| 192.168.2.201  | Pi-hole          | DNS server           |
+kube-vip handles both the HA control plane VIP and LoadBalancer service VIPs.
+This replaces MetalLB and provides reliable ARP-based IP assignment.
+
+| VIP            | Service           | Description                    |
+|----------------|-------------------|--------------------------------|
+| 192.168.2.100  | K8s API Server    | HA control plane VIP           |
+| 192.168.2.200  | Traefik Ingress   | HTTPS ingress for all services |
+| 192.168.2.201  | Pi-hole           | DNS server                     |
 
 **k3s Internal Networks:**
 
@@ -40,12 +44,12 @@ To ensure cluster stability, configure static IP via router DHCP reservation:
 
 ### Pi-hole as Network DNS Server (Recommended)
 
-Pi-hole is configured as a LoadBalancer service (MetalLB) on port 53, making it available as your network-wide DNS server.
+Pi-hole is configured as a LoadBalancer service (kube-vip) on port 53, making it available as your network-wide DNS server.
 
 **How it works:**
 
-- MetalLB assigns a virtual IP (`192.168.2.201`) to the Pi-hole service.
-- Pi-hole is configured to resolve `*.eldertree.local` to this virtual IP.
+- kube-vip assigns a virtual IP (`192.168.2.201`) to the Pi-hole service.
+- Pi-hole is configured to resolve `*.eldertree.local` to the Traefik VIP.
 - All cluster services are accessible via their `*.eldertree.local` hostnames.
 - **Router DNS Configuration**: Set your router's DNS server to `192.168.2.201` so all devices on your network automatically use Pi-hole.
 
