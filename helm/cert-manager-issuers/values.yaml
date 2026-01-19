@@ -1,5 +1,10 @@
 # Default values for cert-manager-issuers
 
+# Disable the cert-manager subchart dependency
+# We use the existing cert-manager installation in the cert-manager namespace
+cert-manager:
+  enabled: false
+
 # Self-signed ClusterIssuer
 selfSigned:
   enabled: true

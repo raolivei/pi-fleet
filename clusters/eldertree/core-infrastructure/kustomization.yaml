@@ -6,7 +6,7 @@ resources:
   - cert-manager # TLS certificate management using cert-manager
   - coredns-autoscaler # Auto-scales CoreDNS for HA (min 2 replicas)
   - issuers # ClusterIssuer resources (self-signed certificates)
-  - metallb # MetalLB LoadBalancer for external access
+  # MetalLB removed - kube-vip now handles LoadBalancer services
   - pod-disruption-budgets # PDBs for critical infrastructure components
   - storage-class-default-patch.yaml # Ensure local-path is NOT default (Longhorn is)
   - storage-class-nvme.yaml # NVMe/SATA storage class for main node (high-performance)

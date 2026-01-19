@@ -32,6 +32,10 @@ spec:
             - --arp
             - --leaderElection
             - --controlplane
+            # Enable LoadBalancer service support (replaces MetalLB)
+            - --services
+            - --servicesInterface=wlan0
+            - --servicesElection
           env:
             - name: KUBERNETES_SERVICE_HOST
               value: "10.43.0.1"

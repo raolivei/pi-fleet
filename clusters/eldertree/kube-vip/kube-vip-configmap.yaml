@@ -7,6 +7,7 @@ data:
   vip: "192.168.2.100"
   interface: "wlan0"
   enableControlPlane: "true"
-  enableServices: "false"
+  # Enable LoadBalancer service support (replaces MetalLB)
+  enableServices: "true"
   arp: "true"
   leaderElection: "true"

@@ -5,14 +5,13 @@ metadata:
   labels:
     {{- include "pi-hole.labels" . | nindent 4 }}
   annotations:
-    # CRITICAL: Disable K3s built-in ServiceLB (Klipper) since we use MetalLB
+    # CRITICAL: Disable K3s built-in ServiceLB (Klipper) since we use kube-vip
     # Without this, k3s will create svclb DaemonSet pods that conflict with port 53
     # This annotation MUST be present to prevent port conflicts and scheduling issues
     # Using both annotation formats for maximum compatibility
     svc.k3s.cattle.io/loadbalancer-proxy: "false"
     service.beta.kubernetes.io/k3s-lb: "false"
-    # MetalLB annotation if needed
-    # metallb.universe.tf/address-pool: default
+    # kube-vip reads loadBalancerIP from spec.loadBalancerIP
 spec:
   type: {{ .Values.service.type }}
   {{- if and (eq .Values.service.type "LoadBalancer") .Values.service.loadBalancerIP }}
@@ -20,7 +19,7 @@ spec:
   {{- end }}
   # Use Cluster policy for DNS to allow traffic from any node
   # Cluster policy allows traffic from any node, which is required for
-  # proper DNS response routing in MetalLB LoadBalancer setup with multiple nodes
+  # proper DNS response routing in kube-vip LoadBalancer setup with multiple nodes
   # Local policy was too restrictive and caused DNS queries to timeout
   externalTrafficPolicy: Cluster
   ports:
