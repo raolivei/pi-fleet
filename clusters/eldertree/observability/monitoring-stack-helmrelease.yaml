@@ -36,6 +36,8 @@ spec:
           annotations:
             cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
       server:
+        # Reduce retention to 7 days (was 15d) to save disk space on node-3
+        retention: "7d"
         persistentVolume:
           enabled: true
           size: 8Gi

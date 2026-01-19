@@ -121,3 +121,9 @@ variable "vault_projects" {
     }
   ]
 }
+
+variable "kubernetes_host" {
+  description = "Kubernetes API server address for Vault Kubernetes auth backend configuration."
+  type        = string
+  default     = "https://kubernetes.default.svc"
+}
