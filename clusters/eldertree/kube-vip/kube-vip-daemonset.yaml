@@ -34,7 +34,7 @@ spec:
             - --controlplane
             # Enable LoadBalancer service support (replaces MetalLB)
             - --services
-            - --servicesInterface=wlan0
+            - --serviceInterface=wlan0
             - --servicesElection
           env:
             - name: KUBERNETES_SERVICE_HOST
