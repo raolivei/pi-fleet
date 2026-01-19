@@ -24,17 +24,7 @@ spec:
     matchLabels:
       app: cloudflared
 ---
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: metallb-controller
-  namespace: metallb-system
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: controller
----
+# MetalLB PDB removed - kube-vip now handles LoadBalancer services
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
