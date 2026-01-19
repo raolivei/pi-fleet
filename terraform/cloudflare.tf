@@ -254,6 +254,49 @@ resource "cloudflare_record" "docs_eldertree_xyz_github_pages" {
   comment         = "docs.eldertree.xyz - GitHub Pages for eldertree-docs runbook - managed by Terraform"
 }
 
+# =============================================================================
+# pitanga.cloud DNS Records - Point to Cloudflare Tunnel
+# =============================================================================
+
+# DNS CNAME record for pitanga.cloud (root domain)
+resource "cloudflare_record" "pitanga_cloud_root" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.pitanga_cloud_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.pitanga_cloud[0].id
+  name            = "@"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy for automatic HTTPS
+  allow_overwrite = true
+  comment         = "pitanga.cloud - Pitanga Systems website via Cloudflare Tunnel - managed by Terraform"
+}
+
+# DNS CNAME record for www.pitanga.cloud
+resource "cloudflare_record" "pitanga_cloud_www" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.pitanga_cloud_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.pitanga_cloud[0].id
+  name            = "www"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy for automatic HTTPS
+  allow_overwrite = true
+  comment         = "www.pitanga.cloud - Pitanga Systems website via Cloudflare Tunnel - managed by Terraform"
+}
+
+# DNS CNAME record for northwaysignal.pitanga.cloud
+resource "cloudflare_record" "pitanga_cloud_northwaysignal" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.pitanga_cloud_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.pitanga_cloud[0].id
+  name            = "northwaysignal"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy for automatic HTTPS
+  allow_overwrite = true
+  comment         = "northwaysignal.pitanga.cloud - NorthwaySignal website via Cloudflare Tunnel - managed by Terraform"
+}
+
 # Output zone ID for External-DNS integration
 output "cloudflare_zone_id" {
   description = "Cloudflare Zone ID for eldertree.xyz (for External-DNS configuration)"
