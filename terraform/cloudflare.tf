@@ -59,6 +59,14 @@ data "cloudflare_zone" "pitanga_cloud" {
   zone_id = var.pitanga_cloud_zone_id
 }
 
+# Data source to get Cloudflare zone for swimto.app
+# Zone ID can be obtained from Cloudflare dashboard or API after adding domain
+# Only created if Cloudflare API token is provided
+data "cloudflare_zone" "swimto_app" {
+  count   = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? 1 : 0
+  zone_id = var.swimto_app_zone_id
+}
+
 # Root domain A record
 resource "cloudflare_record" "eldertree_xyz_root" {
   count           = local.cloudflare_enabled && var.public_ip != "" && var.cloudflare_zone_id != "" ? 1 : 0
@@ -120,6 +128,47 @@ resource "cloudflare_origin_ca_certificate" "pitanga_cloud" {
   hostnames = [
     "pitanga.cloud",
     "*.pitanga.cloud"
+  ]
+}
+
+# =============================================================================
+# swimto.app Origin Certificate
+# =============================================================================
+
+# Generate private key for swimto.app Origin Certificate
+resource "tls_private_key" "swimto_app" {
+  count     = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+# Generate CSR for swimto.app Origin Certificate
+resource "tls_cert_request" "swimto_app" {
+  count           = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? 1 : 0
+  private_key_pem = tls_private_key.swimto_app[0].private_key_pem
+
+  subject {
+    common_name  = "swimto.app"
+    organization = "SwimTO"
+  }
+}
+
+# Cloudflare Origin Certificate for swimto.app
+# Creates Origin CA certificate for swimto.app and all subdomains
+# NOTE: Requires API token with "SSL and Certificates:Edit" permission
+resource "cloudflare_origin_ca_certificate" "swimto_app" {
+  count = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? 1 : 0
+
+  # Certificate configuration
+  request_type       = "origin-rsa" # RSA 2048-bit key
+  requested_validity = 5475         # 15 years (maximum)
+  csr                = tls_cert_request.swimto_app[0].cert_request_pem
+
+  # Hostnames covered by this certificate
+  # Using wildcard to cover all subdomains (swimto.app, www.swimto.app, api.swimto.app, etc.)
+  hostnames = [
+    "swimto.app",
+    "*.swimto.app"
   ]
 }
 
@@ -201,6 +250,31 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
 
     ingress_rule {
       hostname = "northwaysignal.pitanga.cloud"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    # swimto.app routes
+    ingress_rule {
+      hostname = "swimto.app"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    ingress_rule {
+      hostname = "swimto.app"
+      path     = "/api/*"
+      service  = "http://10.43.23.214:80"
+    }
+
+    ingress_rule {
+      hostname = "www.swimto.app"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    ingress_rule {
+      hostname = "api.swimto.app"
       path     = "/"
       service  = "http://10.43.23.214:80"
     }
@@ -297,6 +371,49 @@ resource "cloudflare_record" "pitanga_cloud_northwaysignal" {
   comment         = "northwaysignal.pitanga.cloud - NorthwaySignal website via Cloudflare Tunnel - managed by Terraform"
 }
 
+# =============================================================================
+# swimto.app DNS Records - Point to Cloudflare Tunnel
+# =============================================================================
+
+# DNS CNAME record for swimto.app (root domain)
+resource "cloudflare_record" "swimto_app_root" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.swimto_app_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.swimto_app[0].id
+  name            = "@"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy for automatic HTTPS
+  allow_overwrite = true
+  comment         = "swimto.app - SwimTO via Cloudflare Tunnel - managed by Terraform"
+}
+
+# DNS CNAME record for www.swimto.app
+resource "cloudflare_record" "swimto_app_www" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.swimto_app_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.swimto_app[0].id
+  name            = "www"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy for automatic HTTPS
+  allow_overwrite = true
+  comment         = "www.swimto.app - SwimTO via Cloudflare Tunnel - managed by Terraform"
+}
+
+# DNS CNAME record for api.swimto.app
+resource "cloudflare_record" "swimto_app_api" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.swimto_app_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.swimto_app[0].id
+  name            = "api"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy for automatic HTTPS
+  allow_overwrite = true
+  comment         = "api.swimto.app - SwimTO API via Cloudflare Tunnel - managed by Terraform"
+}
+
 # Output zone ID for External-DNS integration
 output "cloudflare_zone_id" {
   description = "Cloudflare Zone ID for eldertree.xyz (for External-DNS configuration)"
@@ -323,6 +440,22 @@ output "cloudflare_tunnel_token" {
 output "cloudflare_tunnel_cname" {
   description = "CNAME target for tunnel DNS records"
   value       = var.cloudflare_api_token != "" && var.cloudflare_account_id != "" ? "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com" : null
+}
+
+# =============================================================================
+# swimto.app Origin Certificate Outputs
+# =============================================================================
+
+output "swimto_app_origin_cert" {
+  description = "Origin certificate for swimto.app - use with kubectl create secret tls"
+  value       = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? cloudflare_origin_ca_certificate.swimto_app[0].certificate : null
+  sensitive   = true
+}
+
+output "swimto_app_origin_key" {
+  description = "Private key for swimto.app origin certificate"
+  value       = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? tls_private_key.swimto_app[0].private_key_pem : null
+  sensitive   = true
 }
 
 # NOTE: TLS certificate outputs removed - certificates are managed by cert-manager via Helm

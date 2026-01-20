@@ -39,6 +39,12 @@ variable "pitanga_cloud_zone_id" {
   default     = ""
 }
 
+variable "swimto_app_zone_id" {
+  description = "Cloudflare Zone ID for swimto.app. Obtained after adding domain to Cloudflare account."
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # Vault Configuration Variables
 # =============================================================================

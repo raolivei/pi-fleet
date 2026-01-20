@@ -283,6 +283,7 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 - `secret/pi-fleet/terraform/cloudflare-api-token` - Cloudflare API token
 - `secret/pi-fleet/cloudflare-tunnel/token` - Cloudflare Tunnel token
 - `secret/pi-fleet/flux/git` - Flux Git SSH private key
+- `secret/pi-fleet/tailscale` - Tailscale auth key for subnet routers
 
 ### Monitoring
 
@@ -310,7 +311,34 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 
 ## 🌍 Remote Access
 
-### Cloudflare Tunnel
+### Tailscale VPN (Recommended for Full Access)
+
+Tailscale provides secure VPN access from anywhere with automatic HA failover.
+
+| Node   | Tailscale IP     | Advertised Subnets                                     |
+|--------|------------------|--------------------------------------------------------|
+| node-1 | 100.86.241.124   | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16            |
+| node-2 | 100.116.185.57   | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16            |
+| node-3 | 100.104.30.105   | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16            |
+
+**Features:**
+- ✅ Full network access (LAN, pods, services)
+- ✅ kubectl access from anywhere
+- ✅ SSH to nodes from anywhere
+- ✅ Automatic failover (~15 seconds)
+- ✅ No port forwarding required
+
+**Client Setup:**
+1. Install Tailscale: https://tailscale.com/download
+2. Login with same account used for cluster
+3. Enable **"Accept Routes"** in Tailscale preferences
+4. Access services via LAN IPs (192.168.2.x) or Tailscale IPs (100.x.x.x)
+
+**Auth Key:** Stored in Vault at `secret/pi-fleet/tailscale`
+
+**Ansible Playbook:** `ansible/playbooks/install-tailscale.yml`
+
+### Cloudflare Tunnel (Public Services)
 
 Public services are accessible via Cloudflare Tunnel:
 

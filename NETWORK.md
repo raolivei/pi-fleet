@@ -128,11 +128,39 @@ Access services via HTTPS (accept self-signed certificate warnings):
 
 ## Remote Access
 
+### Tailscale VPN (Recommended)
+
+Tailscale provides secure, zero-config VPN access with automatic HA failover. All 3 nodes are configured as subnet routers.
+
+**Tailscale IPs (100.x.x.x network):**
+
+| Node   | Tailscale IP     | Status        |
+|--------|------------------|---------------|
+| node-1 | 100.86.241.124   | Subnet Router |
+| node-2 | 100.116.185.57   | Subnet Router |
+| node-3 | 100.104.30.105   | Subnet Router |
+
+**Advertised Subnets:**
+- `192.168.2.0/24` - Home LAN
+- `10.42.0.0/16` - Kubernetes pod network
+- `10.43.0.0/16` - Kubernetes service network
+
+**Client Setup:**
+
+1. Install Tailscale on your device (Mac/iOS/Android/Windows/Linux)
+2. Login with same Tailscale account
+3. Enable "Accept Routes" in Tailscale settings
+4. Access cluster via LAN IPs (192.168.2.x) from anywhere
+
+**Automatic Failover:** If a node goes down, Tailscale automatically routes traffic through another subnet router (~15 seconds).
+
+**Auth Key:** Stored in Vault at `secret/pi-fleet/tailscale`
+
+**Ansible Playbook:** `ansible/playbooks/install-tailscale.yml`
+
 ### Cloudflare Tunnel
 
-For secure remote access to your cluster services, use Cloudflare Tunnel. See `clusters/eldertree/dns-services/cloudflare-tunnel/README.md` for setup instructions.
-
-**Note:** WireGuard VPN is disabled. Use Cloudflare Tunnel for remote access instead.
+For public-facing services, Cloudflare Tunnel provides secure access without port forwarding. See `clusters/eldertree/dns-services/cloudflare-tunnel/README.md` for setup instructions.
 
 ## Troubleshooting DNS
 

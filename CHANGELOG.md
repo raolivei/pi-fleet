@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.6] - 2026-01-20
+
+### Added
+
+- **Tailscale VPN with HA subnet routing**
+  - All 3 nodes configured as subnet routers for automatic failover
+  - Advertised subnets: 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16
+  - Node Tailscale IPs: node-1 (100.86.241.124), node-2 (100.116.185.57), node-3 (100.104.30.105)
+  - Auth key stored in Vault at `secret/pi-fleet/tailscale`
+  - New Ansible playbook: `ansible/playbooks/install-tailscale.yml`
+  - Full network access (kubectl, SSH) from anywhere without port forwarding
+
+### Documentation
+
+- Added `docs/TAILSCALE.md` - Complete Tailscale setup and troubleshooting guide
+- Updated `NETWORK.md` - Added Tailscale section under Remote Access
+- Updated `SERVICES_REFERENCE.md` - Added Tailscale IPs and client setup instructions
+
 ## [1.3.5] - 2026-01-20
 
 ### Changed

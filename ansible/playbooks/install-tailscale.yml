@@ -1,0 +1,129 @@
+---
+# Install and configure Tailscale as HA subnet router on all nodes
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/install-tailscale.yml -e "tailscale_auth_key=tskey-..."
+#
+# This playbook:
+# 1. Installs Tailscale on all nodes
+# 2. Authenticates each node with the provided auth key
+# 3. Advertises subnet routes for LAN and Kubernetes networks
+# 4. Enables IP forwarding for subnet routing
+#
+# After running, all 3 nodes will be subnet routers with automatic failover.
+
+- name: Install and Configure Tailscale HA Subnet Routing
+  hosts: raspberry_pi
+  become: true
+  vars:
+    # Subnets to advertise (LAN + k8s pod/service networks)
+    advertise_routes: "192.168.2.0/24,10.42.0.0/16,10.43.0.0/16"
+
+  tasks:
+    - name: Validate auth key is provided
+      ansible.builtin.fail:
+        msg: "tailscale_auth_key must be provided via -e 'tailscale_auth_key=tskey-...'"
+      when: tailscale_auth_key is not defined or tailscale_auth_key == ""
+
+    - name: Check if Tailscale is already installed
+      ansible.builtin.stat:
+        path: /usr/bin/tailscale
+      register: tailscale_installed
+
+    - name: Install Tailscale
+      when: not tailscale_installed.stat.exists
+      block:
+        - name: Add Tailscale GPG key
+          ansible.builtin.shell: |
+            curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+          args:
+            creates: /usr/share/keyrings/tailscale-archive-keyring.gpg
+
+        - name: Add Tailscale repository
+          ansible.builtin.shell: |
+            curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
+          args:
+            creates: /etc/apt/sources.list.d/tailscale.list
+
+        - name: Update apt cache
+          ansible.builtin.apt:
+            update_cache: true
+
+        - name: Install tailscale package
+          ansible.builtin.apt:
+            name: tailscale
+            state: present
+
+    - name: Enable and start tailscaled service
+      ansible.builtin.systemd:
+        name: tailscaled
+        enabled: true
+        state: started
+
+    - name: Enable IP forwarding (required for subnet routing)
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: "1"
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - net.ipv4.ip_forward
+        - net.ipv6.conf.all.forwarding
+
+    - name: Check current Tailscale status
+      ansible.builtin.command: tailscale status --json
+      register: tailscale_status
+      changed_when: false
+      failed_when: false
+
+    - name: Parse Tailscale status
+      ansible.builtin.set_fact:
+        ts_logged_in: "{{ (tailscale_status.stdout | from_json).BackendState == 'Running' }}"
+      when: tailscale_status.rc == 0 and tailscale_status.stdout != ""
+      ignore_errors: true
+
+    - name: Set default logged in status
+      ansible.builtin.set_fact:
+        ts_logged_in: false
+      when: ts_logged_in is not defined
+
+    - name: Authenticate and configure Tailscale as subnet router
+      ansible.builtin.command: >
+        tailscale up
+        --auth-key={{ tailscale_auth_key }}
+        --advertise-routes={{ advertise_routes }}
+        --accept-routes
+        --hostname={{ inventory_hostname }}
+      when: not ts_logged_in
+      register: tailscale_up
+      changed_when: "'Success' in tailscale_up.stdout or tailscale_up.rc == 0"
+
+    - name: Update Tailscale configuration if already logged in
+      ansible.builtin.command: >
+        tailscale set
+        --advertise-routes={{ advertise_routes }}
+        --accept-routes
+      when: ts_logged_in
+      register: tailscale_set
+      changed_when: tailscale_set.rc == 0
+
+    - name: Get Tailscale IP
+      ansible.builtin.command: tailscale ip -4
+      register: tailscale_ip
+      changed_when: false
+
+    - name: Display Tailscale status
+      ansible.builtin.debug:
+        msg: |
+          Node: {{ inventory_hostname }}
+          Tailscale IP: {{ tailscale_ip.stdout }}
+          Advertised Routes: {{ advertise_routes }}
+          Status: Connected as subnet router
+
+    - name: Verify subnet routes are advertised
+      ansible.builtin.command: tailscale status
+      register: final_status
+      changed_when: false
+
+    - name: Show final status
+      ansible.builtin.debug:
+        var: final_status.stdout_lines
