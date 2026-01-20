@@ -51,8 +51,8 @@ wireguard:
     - "192.168.1.0/24"  # Change to your LAN subnet
 
 service:
-  # Your Pi's IP or MetalLB IP
-  loadBalancerIP: "192.168.1.100"
+  # kube-vip LoadBalancer IP (from 192.168.2.200/28 range)
+  loadBalancerIP: "192.168.2.202"
 
 env:
   # Your public IP or domain
@@ -159,12 +159,12 @@ Update the client config with the server public key from step 5.
 
 ### 8. Configure Router Port Forwarding
 
-Forward UDP port 51820 to your Pi or the MetalLB service IP:
+Forward UDP port 51820 to the kube-vip LoadBalancer IP:
 
 - **External Port**: 51820
 - **Internal Port**: 51820
 - **Protocol**: UDP
-- **Internal IP**: Your Pi's IP or MetalLB LoadBalancer IP
+- **Internal IP**: kube-vip LoadBalancer IP (192.168.2.202)
 
 Get the LoadBalancer IP:
 
@@ -286,15 +286,17 @@ ssh pi@<node-ip> "lsmod | grep wireguard"
 ### No LoadBalancer IP Assigned
 
 ```bash
-# Check MetalLB configuration
-kubectl get ipaddresspool -n metallb-system
-kubectl get l2advertisement -n metallb-system
+# Check kube-vip pods
+kubectl get pods -n kube-system -l app=kube-vip
+
+# Check kube-vip logs
+kubectl logs -n kube-system -l app=kube-vip --tail=50
 
 # Check service events
 kubectl describe svc -n wireguard wireguard
 
-# Manually assign IP
-kubectl patch svc wireguard -n wireguard -p '{"spec":{"loadBalancerIP":"192.168.1.100"}}'
+# Manually assign IP (use IP from 192.168.2.200/28 range)
+kubectl patch svc wireguard -n wireguard -p '{"spec":{"loadBalancerIP":"192.168.2.202"}}'
 ```
 
 ### DNS Not Working

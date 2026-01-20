@@ -212,16 +212,18 @@ Use this as a template for other chapters!
 
 ## Recent Updates (January 2026)
 
-### MetalLB VIP Fix
+### kube-vip LoadBalancer Migration (Jan 20)
 
-- Fixed MetalLB L2Advertisement to use `wlan0` interface
-- VIP 192.168.2.200 now works for all cluster services
-- Documented in NETWORK.md and CHANGELOG.md
+- **Replaced MetalLB with kube-vip** for LoadBalancer services
+- kube-vip now handles both control plane HA (192.168.2.100) and service VIPs
+- Traefik: 192.168.2.200, Pi-hole: 192.168.2.201
+- Eliminated userspace ARP issues with Bell Giga Hub router
+- Removed ~8 pods worth of MetalLB resources
 
 ### WireGuard HA Plan
 
 - Updated Issue #49 with new cluster topology (nodes 101-103)
-- Proposed DaemonSet + MetalLB LoadBalancer approach
+- Proposed DaemonSet + kube-vip LoadBalancer approach
 - VIP 192.168.2.202 reserved for WireGuard service
 
 ### Visage HA Planning
@@ -234,6 +236,7 @@ Use this as a template for other chapters!
 
 **Blog Content Ideas from Recent Work:**
 
-- Chapter on MetalLB L2 mode and VIP troubleshooting
+- Chapter on kube-vip for both control plane HA and LoadBalancer services
+- Chapter on migrating from MetalLB to kube-vip (why and how)
 - Chapter on hybrid GPU worker architecture (Mac + k8s)
 - Chapter on AI/ML workloads on Raspberry Pi cluster

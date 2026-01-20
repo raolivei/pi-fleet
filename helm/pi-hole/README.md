@@ -8,11 +8,11 @@ Helm chart for deploying Pi-hole DNS server with ad-blocking capabilities in Kub
 
 This chart is configured to prevent common port conflicts:
 
-1. **hostNetwork is explicitly disabled**: The deployment template sets `hostNetwork: false` to prevent port 53 conflicts on the host. This allows MetalLB LoadBalancer to work properly.
+1. **hostNetwork is explicitly disabled**: The deployment template sets `hostNetwork: false` to prevent port 53 conflicts on the host. This allows kube-vip LoadBalancer to work properly.
 
 2. **k3s ServiceLB is disabled**: The service includes the annotation `svc.k3s.cattle.io/loadbalancer-proxy: "false"` to prevent k3s from creating `svclb-pi-hole` DaemonSet pods that would conflict with port 53.
 
-3. **MetalLB LoadBalancer**: The service uses MetalLB for external access, which routes traffic through the LoadBalancer service without requiring host network access.
+3. **kube-vip LoadBalancer**: The service uses kube-vip for external access (192.168.2.201), which routes traffic through the LoadBalancer service without requiring host network access.
 
 ### Common Issues and Solutions
 
@@ -64,7 +64,7 @@ If Pi-hole pods are stuck in `Pending` with errors about port conflicts:
 
 ### Service Type
 
-The default service type is `LoadBalancer` with MetalLB. To use NodePort instead:
+The default service type is `LoadBalancer` with kube-vip. To use NodePort instead:
 
 ```yaml
 service:
@@ -84,5 +84,5 @@ config:
 ## Resources
 
 - [Pi-hole Documentation](https://docs.pi-hole.net/)
-- [MetalLB Documentation](https://metallb.universe.tf/)
+- [kube-vip Documentation](https://kube-vip.io/)
 

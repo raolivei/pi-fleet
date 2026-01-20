@@ -11,7 +11,7 @@ Access Grafana at `https://grafana.eldertree.local` (or `:32474` NodePort for Wi
 | Alertmanager | `https://alertmanager.eldertree.local`     | Alert routing |
 | Pushgateway  | `https://pushgateway.eldertree.local`      | External worker metrics |
 
-> **Note:** MetalLB LoadBalancer IPs may not be reachable from Wi-Fi. Use NodePort `:32474` if needed.
+> **Note:** kube-vip LoadBalancer IPs (192.168.2.200-210) are directly accessible from Wi-Fi clients.
 
 ---
 

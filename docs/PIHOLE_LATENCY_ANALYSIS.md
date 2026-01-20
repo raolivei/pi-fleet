@@ -52,7 +52,7 @@ Client → Pi-hole (192.168.2.201) → Upstream DNS (8.8.8.8, 1.1.1.1)
 2. **Network Path** (~20-30ms)
 
    - LoadBalancer IP (192.168.2.201) adds network hop
-   - MetalLB routing overhead
+   - kube-vip routing overhead
    - Pod network namespace
 
 3. **Resource Constraints** (minimal impact)

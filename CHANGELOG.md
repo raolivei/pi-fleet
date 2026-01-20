@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.3.5] - 2026-01-20
+
+### Changed
+
+- **Replaced MetalLB with kube-vip for LoadBalancer services**
+  - kube-vip now provides both control plane HA and service LoadBalancer
+  - VIPs bind directly to `wlan0` interface (kernel handles ARP)
+  - Eliminates userspace ARP issues with Bell Giga Hub router
+  - Traefik: 192.168.2.200, Pi-hole: 192.168.2.201
+  - kube-vip services IP range: 192.168.2.200/28
+
+### Removed
+
+- **MetalLB** - Fully removed from cluster
+  - HelmRelease, HelmRepository, IPAddressPool, L2Advertisement deleted
+  - Namespace `metallb-system` removed
+  - PodDisruptionBudget for metallb-controller removed
+  - Saves ~8 pods worth of resources
+
+### Fixed
+
+- **Duplicate cert-manager installation** - Disabled cert-manager subchart in `cert-manager-issuers`
+  - Only one cert-manager instance now runs in the cluster
+
+### Documentation
+
+- Updated NETWORK.md with kube-vip LoadBalancer documentation
+- Updated SERVICES_REFERENCE.md with new access methods
+- Removed Wi-Fi client isolation workarounds (no longer needed)
+
 ## [1.3.4] - 2026-01-18
 
 ### Fixed
@@ -20,7 +50,7 @@
 
 - **WireGuard HA Plan Update** (Issue #49)
   - Updated with new cluster topology (nodes 101-103)
-  - Added MetalLB VIP strategy (192.168.2.202 for WireGuard)
+  - Added kube-vip VIP strategy (192.168.2.202 for WireGuard)
   - DaemonSet deployment approach with shared keys
   - Helm chart structure for WireGuard deployment
 
