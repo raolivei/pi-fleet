@@ -334,9 +334,24 @@ Tailscale provides secure VPN access from anywhere with automatic HA failover.
 3. Enable **"Accept Routes"** in Tailscale preferences
 4. Access services via LAN IPs (192.168.2.x) or Tailscale IPs (100.x.x.x)
 
+**kubeconfig for Remote Access:**
+
+| Location | kubeconfig | API Server |
+|----------|-----------|------------|
+| Home (LAN) | `~/.kube/config-eldertree` | 192.168.2.100:6443 |
+| Remote | `~/.kube/config-eldertree-remote` | 100.86.241.124:6443 |
+
+```bash
+# When remote (mobile, travel, etc.)
+export KUBECONFIG=~/.kube/config-eldertree-remote
+kubectl get nodes
+```
+
 **Auth Key:** Stored in Vault at `secret/pi-fleet/tailscale`
 
 **Ansible Playbook:** `ansible/playbooks/install-tailscale.yml`
+
+**Full Documentation:** See `docs/TAILSCALE.md`
 
 ### Cloudflare Tunnel (Public Services)
 

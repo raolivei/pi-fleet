@@ -11,12 +11,13 @@
   - Auth key stored in Vault at `secret/pi-fleet/tailscale`
   - New Ansible playbook: `ansible/playbooks/install-tailscale.yml`
   - Full network access (kubectl, SSH) from anywhere without port forwarding
+  - Remote kubeconfig: `~/.kube/config-eldertree-remote` for access outside home network
 
 ### Documentation
 
-- Added `docs/TAILSCALE.md` - Complete Tailscale setup and troubleshooting guide
-- Updated `NETWORK.md` - Added Tailscale section under Remote Access
-- Updated `SERVICES_REFERENCE.md` - Added Tailscale IPs and client setup instructions
+- Added `docs/TAILSCALE.md` - Complete Tailscale setup, remote access, and troubleshooting guide
+- Updated `NETWORK.md` - Added Tailscale section with remote kubectl instructions
+- Updated `SERVICES_REFERENCE.md` - Added Tailscale IPs, client setup, and kubeconfig reference
 
 ## [1.3.5] - 2026-01-20
 

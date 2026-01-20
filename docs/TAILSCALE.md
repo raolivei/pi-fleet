@@ -58,10 +58,10 @@ tailscale status
 # Check Tailscale status
 tailscale status
 
-# Ping cluster nodes via LAN IPs (through VPN)
-ping 192.168.2.101
-ping 192.168.2.102
-ping 192.168.2.103
+# Ping cluster nodes via Tailscale IPs (always works)
+ping 100.86.241.124   # node-1
+ping 100.116.185.57   # node-2
+ping 100.104.30.105   # node-3
 
 # Access Kubernetes API
 export KUBECONFIG=~/.kube/config-eldertree
@@ -74,6 +74,74 @@ ssh raolivei@192.168.2.101
 curl -k https://vault.eldertree.local
 curl -k https://grafana.eldertree.local
 ```
+
+## Remote Access (Outside Home Network)
+
+When accessing the cluster from outside your home network (mobile LTE, coffee shop, etc.), use the Tailscale direct IPs instead of LAN IPs.
+
+### kubeconfig for Remote Access
+
+A separate kubeconfig is available for remote access:
+
+| Location | kubeconfig | API Server |
+|----------|-----------|------------|
+| Home (LAN) | `~/.kube/config-eldertree` | 192.168.2.100:6443 |
+| Remote | `~/.kube/config-eldertree-remote` | 100.86.241.124:6443 |
+
+**Usage:**
+
+```bash
+# When at home
+export KUBECONFIG=~/.kube/config-eldertree
+kubectl get nodes
+
+# When remote (mobile, travel, etc.)
+export KUBECONFIG=~/.kube/config-eldertree-remote
+kubectl get nodes
+```
+
+### SSH from Remote
+
+Use Tailscale IPs for SSH when remote:
+
+```bash
+# Via Tailscale IPs (works from anywhere)
+ssh raolivei@100.86.241.124  # node-1
+ssh raolivei@100.116.185.57  # node-2
+ssh raolivei@100.104.30.105  # node-3
+```
+
+### Create Remote kubeconfig (if needed)
+
+If `~/.kube/config-eldertree-remote` doesn't exist:
+
+```bash
+CLIENT_CERT=$(grep client-certificate-data ~/.kube/config-eldertree | awk '{print $2}')
+CLIENT_KEY=$(grep client-key-data ~/.kube/config-eldertree | awk '{print $2}')
+
+cat > ~/.kube/config-eldertree-remote << EOF
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    insecure-skip-tls-verify: true
+    server: https://100.86.241.124:6443
+  name: eldertree-remote
+contexts:
+- context:
+    cluster: eldertree-remote
+    user: eldertree-admin
+  name: eldertree-remote
+current-context: eldertree-remote
+users:
+- name: eldertree-admin
+  user:
+    client-certificate-data: ${CLIENT_CERT}
+    client-key-data: ${CLIENT_KEY}
+EOF
+```
+
+> **Note:** Uses `insecure-skip-tls-verify` because the cluster TLS cert doesn't include Tailscale IPs.
 
 ## Administration
 

@@ -154,9 +154,21 @@ Tailscale provides secure, zero-config VPN access with automatic HA failover. Al
 
 **Automatic Failover:** If a node goes down, Tailscale automatically routes traffic through another subnet router (~15 seconds).
 
+**Remote kubectl Access:**
+
+```bash
+# When at home (LAN)
+export KUBECONFIG=~/.kube/config-eldertree
+
+# When remote (mobile LTE, travel, etc.)
+export KUBECONFIG=~/.kube/config-eldertree-remote
+```
+
 **Auth Key:** Stored in Vault at `secret/pi-fleet/tailscale`
 
 **Ansible Playbook:** `ansible/playbooks/install-tailscale.yml`
+
+**Full Documentation:** See `docs/TAILSCALE.md`
 
 ### Cloudflare Tunnel
 
