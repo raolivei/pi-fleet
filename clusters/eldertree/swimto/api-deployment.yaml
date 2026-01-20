@@ -25,7 +25,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: api
-          image: ghcr.io/raolivei/swimto-api:v0.7.2 # {"$imagepolicy": "swimto:swimto-api-policy"}
+          image: ghcr.io/raolivei/swimto-api:v0.7.3 # {"$imagepolicy": "swimto:swimto-api-policy"}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
