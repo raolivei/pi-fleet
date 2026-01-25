@@ -9,15 +9,17 @@ K3s cluster on Raspberry Pi, managed with Ansible and Terraform.
 - Raspberry Pi 5 (8GB, ARM64)
 - Debian 12 Bookworm
 
-## Fleet Naming
+## Cluster Nodes
 
-**Control Plane:**
+The eldertree cluster consists of 3 identical Raspberry Pi 5 nodes in a fully HA configuration:
 
-- **eldertree** - Main control plane node (192.168.2.83)
+| Node | WiFi IP | Gigabit IP | Role |
+|------|---------|------------|------|
+| node-1 | 192.168.2.101 | 10.0.0.1 | control-plane, etcd, master |
+| node-2 | 192.168.2.102 | 10.0.0.2 | control-plane, etcd, master |
+| node-3 | 192.168.2.103 | 10.0.0.3 | control-plane, etcd, master |
 
-**Worker Nodes:**
-
-- **fleet-worker-01**, **fleet-worker-02**, etc. (future)
+**kube-vip VIP**: 192.168.2.100 (HA API server access)
 
 ## Quick Start
 
@@ -115,11 +117,12 @@ See [helm/README.md](helm/README.md) for details.
 
 **Current State:**
 
-- Single-node K3s cluster (eldertree)
-- K3s v1.33.5+k3s1, Helm v4.0.0
+- 3-node HA K3s cluster (node-1, node-2, node-3)
+- K3s v1.33.6+k3s1 / v1.34.3+k3s1
 - Flux GitOps, cert-manager, Pi-hole DNS
 - Monitoring: Prometheus + Grafana
-- Storage: local-path-provisioner
+- Storage: Longhorn (distributed)
+- Secrets: HashiCorp Vault (HA)
 
 **Deployed Applications:**
 

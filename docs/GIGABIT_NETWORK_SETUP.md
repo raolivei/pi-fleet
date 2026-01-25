@@ -6,9 +6,10 @@ This is the **working solution** for configuring gigabit Ethernet (eth0) for dir
 
 ## Problem Statement
 
-- **Switch is isolated** - Not connected to router, only connects the two Pis
-- **Goal**: Configure `eth0` on both nodes for gigabit node-to-node communication
+- **Switch is isolated** - Not connected to router, only connects the three Pis
+- **Goal**: Configure `eth0` on all nodes for gigabit node-to-node communication
 - **Constraint**: Must not break existing internet connectivity (via wlan0)
+- **k3s**: Should prefer gigabit network for all internal communication
 
 ## ✅ Solution: Separate Subnet for Isolated Switch
 
@@ -18,16 +19,21 @@ This is the **working solution** for configuring gigabit Ethernet (eth0) for dir
 2. **No gateway on eth0** - Preserves wlan0 default route for internet
 3. **No DNS on eth0** - System uses wlan0 DNS
 4. **Static IPs on isolated network** - Safe because switch isn't connected to router
+5. **k3s node-ip** - Configure k3s to use gigabit IPs for internal communication
 
 ### Network Configuration
 
-**node-1 (eldertree):**
-- `wlan0`: `192.168.2.86/24` (primary, default route via `192.168.2.1` for internet)
-- `eth0`: `10.0.0.1/24` (static IP, no gateway, for direct gigabit connection)
-
 **node-1:**
-- `wlan0`: `192.168.2.85/24` (primary, default route for internet)
-- `eth0`: `10.0.0.2/24` (static IP, no gateway, for direct gigabit connection)
+- `wlan0`: `192.168.2.101/24` (management, default route via `192.168.2.1`)
+- `eth0`: `10.0.0.1/24` (k8s primary, no gateway)
+
+**node-2:**
+- `wlan0`: `192.168.2.102/24` (management, default route via `192.168.2.1`)
+- `eth0`: `10.0.0.2/24` (k8s primary, no gateway)
+
+**node-3:**
+- `wlan0`: `192.168.2.103/24` (management, default route via `192.168.2.1`)
+- `eth0`: `10.0.0.3/24` (k8s primary, no gateway)
 
 ### Key Principles
 

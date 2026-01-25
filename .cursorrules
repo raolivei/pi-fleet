@@ -9,7 +9,7 @@ K3s cluster management on Raspberry Pi using Ansible for system configuration, T
 ```
 pi-fleet/
 ├── ansible/              # Ansible playbooks for system configuration
-│   ├── inventory/        # Host inventory (node-0, node-1, etc.)
+│   ├── inventory/        # Host inventory (node-1, node-2, etc.)
 │   ├── playbooks/       # System setup, K3s install, NVMe boot, etc.
 │   └── group_vars/      # Centralized variables (network, IPs, etc.)
 ├── terraform/            # Infrastructure as code (Cloudflare, etc.)
@@ -24,13 +24,14 @@ pi-fleet/
 
 ### Node Naming Convention
 
-- **Control Plane**: `node-0` (also known as `eldertree`)
-- **Worker Nodes**: `node-1`, `node-2`, `node-3`, etc. (sequential)
-- **IP Assignment**: Sequential IPs from `group_vars/all.yml`
-  - `node-0`: 192.168.2.86
-  - `node-1`: 192.168.2.85
-  - `node-2`: 192.168.2.87
-  - etc.
+- **All nodes are HA control-plane servers** (identical hardware, fully HA)
+- **Node names**: `node-1`, `node-2`, `node-3`
+- **Troubleshooting**: `node-x` - Generic hostname on backup SD card for recovery
+- **IP Assignment** (from `inventory/hosts.yml` and `group_vars/all.yml`):
+  - `node-1`: 192.168.2.101 (WiFi) / 10.0.0.1 (Gigabit)
+  - `node-2`: 192.168.2.102 (WiFi) / 10.0.0.2 (Gigabit)
+  - `node-3`: 192.168.2.103 (WiFi) / 10.0.0.3 (Gigabit)
+  - `kube-vip VIP`: 192.168.2.100 (HA API server access)
 
 ### Network Configuration Safety
 
@@ -39,7 +40,7 @@ pi-fleet/
 1. **DHCP by Default**: `setup-system.yml` uses DHCP by default (safer)
 2. **Static IP is Opt-In**: Only configure static IP if explicitly requested:
    ```bash
-   -e "configure_static_ip=true" -e "static_ip=192.168.2.86"
+   -e "configure_static_ip=true" -e "static_ip=192.168.2.101"
    ```
 3. **Preserve wlan0 DHCP**: When configuring static IP on eth0, always ensure wlan0 maintains DHCP for internet connectivity
 4. **Isolated Switch Setup**: For gigabit eth0 connections on isolated switches, use separate subnet (10.0.0.0/24) without gateway/DNS
@@ -174,7 +175,7 @@ Always install these packages via `setup-system.yml`:
 **ALWAYS** use variables from `group_vars/all.yml`:
 
 - Network config: `network_base`, `network_gateway`, `network_dns`
-- Node IPs: `node_0_ip`, `node_1_ip`, etc.
+- Node IPs: `node_1_ip`, `node_2_ip`, etc.
 - k3s config: `k3s_server_url`, `k3s_server_ip`
 
 **NEVER** hardcode IPs, hostnames, or network settings in playbooks.
@@ -343,7 +344,7 @@ git push origin main
 
 ```bash
 cd ansible
-ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-0
+ansible-playbook -i inventory/hosts.yml playbooks/setup-system.yml --limit node-1
 ```
 
 ### Kubernetes Access
@@ -366,13 +367,13 @@ kubectl get nodes
 - **NEVER** use plain `ssh` commands
 - **ALWAYS** use `sshpass -p 'PASSWORD' ssh` format
 - Password stored in inventory `ansible_ssh_pass`
-- Example: `sshpass -p 'password' ssh raolivei@192.168.2.86 "command"`
+- Example: `sshpass -p 'password' ssh raolivei@192.168.2.101 "command"`
 
 ## Important Notes
 
 ### Cluster Naming
 
-- Control plane: `node-0` (also `eldertree`)
+- Control plane: `node-1` (also `eldertree`)
 - Workers: `node-1`, `node-2`, `node-3`, etc.
 
 ### Secrets Management

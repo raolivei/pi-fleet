@@ -2,25 +2,34 @@
 
 ## Overview
 
-The eldertree cluster uses a simple, efficient network architecture optimized for a 2-node Raspberry Pi cluster on the same LAN.
+The eldertree cluster is a 3-node fully HA Raspberry Pi cluster using a dual-network architecture:
+- **WiFi (192.168.2.x)**: Management and external access
+- **Gigabit Ethernet (10.0.0.x)**: Primary network for k8s and node-to-node communication
 
 ## Network Layers
 
 ### 1. Physical Network Layer
 
-**LAN Configuration:**
+**WiFi Network (wlan0) - Management:**
 
 - **Network**: 192.168.2.0/24
 - **Gateway**: 192.168.2.1
 - **DNS**: 192.168.2.1, 8.8.8.8
 
+**Gigabit Network (eth0) - Primary for k8s:**
+
+- **Network**: 10.0.0.0/24 (isolated switch)
+- **No gateway** - dedicated for cluster traffic only
+
 **Node IP Assignment:**
 
-- **node-1**: 192.168.2.80 (control plane)
-- **node-1**: 192.168.2.81 (worker)
-- **Future nodes**: 192.168.2.8N (where N is node number)
+| Node | WiFi (wlan0) | Gigabit (eth0) | Role |
+|------|--------------|----------------|------|
+| node-1 | 192.168.2.101 | 10.0.0.1 | control-plane, etcd |
+| node-2 | 192.168.2.102 | 10.0.0.2 | control-plane, etcd |
+| node-3 | 192.168.2.103 | 10.0.0.3 | control-plane, etcd |
 
-See [Node IP Assignment](./NODE_IP_ASSIGNMENT.md) for details.
+**kube-vip VIP**: 192.168.2.100 (HA API server access)
 
 ### 2. Kubernetes Pod Network (Flannel)
 
@@ -152,8 +161,9 @@ Internet → Cloudflare Tunnel → Cluster Services (if configured)
 **Same LAN:**
 
 - Continue using Flannel
-- Assign IPs: 192.168.2.82, 192.168.2.83, etc.
-- No overlay network changes needed
+- Assign WiFi IPs: 192.168.2.104, 192.168.2.105, etc.
+- Assign Gigabit IPs: 10.0.0.4, 10.0.0.5, etc.
+- Configure k3s with `--node-ip` pointing to gigabit network
 
 **Different Networks:**
 
@@ -163,9 +173,10 @@ Internet → Cloudflare Tunnel → Cluster Services (if configured)
 
 ### Scaling Considerations
 
-**Current (2 nodes):**
+**Current (3 nodes, HA):**
 
 - Flannel is perfect
+- etcd has quorum (3 nodes)
 - No performance concerns
 
 **Future (5+ nodes):**
