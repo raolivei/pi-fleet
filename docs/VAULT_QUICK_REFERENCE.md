@@ -235,9 +235,7 @@ Only use after fresh install or disaster recovery:
 
 ```bash
 ./scripts/operations/init-vault-ha.sh
-```
-
-This script:
+```This script:
 1. Initializes vault-0 (generates new unseal keys)
 2. Stores keys in K8s secret
 3. Unseals all 3 pods

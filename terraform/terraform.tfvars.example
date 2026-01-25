@@ -55,9 +55,7 @@
 
 # Vault authentication token (sensitive - do not commit!)
 # Best practice: Use environment variable TF_VAR_vault_token
-# vault_token = ""
-
-# Skip TLS verification (set to true for self-signed certificates)
+# vault_token = ""# Skip TLS verification (set to true for self-signed certificates)
 # vault_skip_tls_verify = true
 
 # Skip Vault resource management (useful in CI where Vault is not accessible)
