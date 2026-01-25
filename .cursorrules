@@ -1,5 +1,45 @@
 # Pi Fleet - Cursor Rules
 
+## Git Workflow (IMPORTANT - Follow Always)
+
+**NEVER commit directly to `main`**. Always use feature branches and PRs.
+
+### Before Making Changes
+
+```bash
+git checkout main
+git pull
+git checkout -b <type>/<description>  # e.g., feat/add-monitoring, fix/dns-config, docs/update-readme
+```
+
+### Branch Prefixes
+
+| Prefix | Purpose |
+|--------|---------|
+| `feat/` | New features |
+| `fix/` | Bug fixes |
+| `docs/` | Documentation |
+| `chore/` | Maintenance |
+| `infra/` | Infrastructure |
+
+### Commit and Push
+
+```bash
+git add <files>
+git commit -m "<type>: <description>"
+git push -u origin HEAD
+```
+
+### Create PR
+
+```bash
+gh pr create --title "<type>: <description>" --body "## Summary\n- Change 1\n- Change 2"
+```
+
+See `CONTRIBUTING.md` for full workflow details.
+
+---
+
 ## Project Overview
 
 K3s cluster management on Raspberry Pi using Ansible for system configuration, Terraform for infrastructure, and FluxCD for GitOps.
