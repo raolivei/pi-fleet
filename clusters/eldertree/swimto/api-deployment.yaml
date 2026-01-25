@@ -57,18 +57,6 @@ spec:
                 secretKeyRef:
                   name: swimto-secrets
                   key: SECRET_KEY
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: swimto-secrets
-                  key: OPENAI_API_KEY
-                  optional: true
-            - name: LEONARDO_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: swimto-secrets
-                  key: LEONARDO_API_KEY
-                  optional: true
             - name: GOOGLE_CLIENT_ID
               valueFrom:
                 secretKeyRef:
