@@ -4,20 +4,28 @@
 
 ### Added
 
-- **Tailscale VPN with HA subnet routing**
-  - All 3 nodes configured as subnet routers for automatic failover
-  - Advertised subnets: 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16
-  - Node Tailscale IPs: node-1 (100.86.241.124), node-2 (100.116.185.57), node-3 (100.104.30.105)
-  - Auth key stored in Vault at `secret/pi-fleet/tailscale`
-  - New Ansible playbook: `ansible/playbooks/install-tailscale.yml`
-  - Full network access (kubectl, SSH) from anywhere without port forwarding
-  - Remote kubeconfig: `~/.kube/config-eldertree-remote` for access outside home network
+- **Security Update Playbook** (`ansible/playbooks/security-update.yml`)
+  - Rolling updates - one node at a time to maintain cluster availability
+  - Full OS upgrade with `apt dist-upgrade`
+  - Raspberry Pi EEPROM firmware updates
+  - k3s upgrade to latest stable version
+  - Kubernetes drain/uncordon for graceful workload migration
+  - Pre-flight checks (disk space, node health)
+  - Safe reboot with connectivity verification
+  - Post-update cluster health verification
 
-### Documentation
+### Usage
 
-- Added `docs/TAILSCALE.md` - Complete Tailscale setup, remote access, and troubleshooting guide
-- Updated `NETWORK.md` - Added Tailscale section with remote kubectl instructions
-- Updated `SERVICES_REFERENCE.md` - Added Tailscale IPs, client setup, and kubeconfig reference
+```bash
+# Full rolling update (all nodes)
+ansible-playbook playbooks/security-update.yml
+
+# Single node only
+ansible-playbook playbooks/security-update.yml --limit node-3
+
+# Skip k3s upgrade
+ansible-playbook playbooks/security-update.yml -e skip_k3s_upgrade=true
+```
 
 ## [1.3.5] - 2026-01-20
 
