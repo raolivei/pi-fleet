@@ -19,7 +19,8 @@
 - [Chapter 12: Storage and Persistence](#chapter-12-storage-and-persistence)
 - [Chapter 13: Remote Access and Security](#chapter-13-remote-access-and-security)
 - [Chapter 14: Troubleshooting and Lessons Learned](#chapter-14-troubleshooting-and-lessons-learned)
-- [Chapter 15: Future Plans and Scaling](#chapter-15-future-plans-and-scaling)
+- [Chapter 15: The Great HA Migration - January 2026](#chapter-15-the-great-ha-migration---january-2026)
+- [Chapter 16: Future Plans and Scaling](#chapter-16-future-plans-and-scaling)
 - [Appendix: Reference Materials](#appendix-reference-materials)
 
 ---
@@ -34,11 +35,16 @@
 
 **Current Status:**
 
-- **Control Plane:** eldertree (192.168.2.83)
-- **Hardware:** Raspberry Pi 5 (8GB, ARM64)
+- **Cluster:** 3-node fully HA control plane
+- **Nodes:** node-1, node-2, node-3 (all identical Raspberry Pi 5, 8GB)
+- **WiFi Network:** 192.168.2.101-103 (management)
+- **Gigabit Network:** 10.0.0.1-3 (k8s primary communication)
+- **kube-vip VIP:** 192.168.2.100 (HA API server)
 - **OS:** Debian 12 Bookworm
-- **Kubernetes:** K3s v1.33.5+k3s1
-- **Status:** ✅ Production-ready, hosting multiple services
+- **Kubernetes:** K3s v1.33.6+k3s1 / v1.34.3+k3s1
+- **Storage:** Longhorn (distributed)
+- **Secrets:** HashiCorp Vault (HA mode)
+- **Status:** ✅ Production-ready, fully HA
 
 **The Journey in Numbers:**
 
@@ -1688,23 +1694,327 @@ This blog represents months of learning, troubleshooting, and iteration. Each co
 
 ---
 
-## Chapter 15: Future Plans and Scaling
+## Chapter 15: The Great HA Migration - January 2026
+
+> This chapter documents the major cluster recovery and migration to a fully HA 3-node cluster on January 24, 2026. What started as a routine "check cluster health" request turned into a full day of troubleshooting, network reconfiguration, and ultimately achieving the goal of a true high-availability setup.
+
+### The Starting Point
+
+The cluster had evolved from a single node to three Raspberry Pi 5 nodes, but the configuration had accumulated technical debt:
+
+- **Inconsistent IPs:** Some nodes were on the old 192.168.2.8x range, others on 192.168.2.10x
+- **Network confusion:** Tailscale VPN was interfering with k3s CNI routing
+- **HA not fully realized:** Nodes were configured to join node-1 directly, not via a VIP
+- **NVMe boot issues:** Several nodes had hostname and network misconfigurations on their NVMe partitions
+
+### The Goals
+
+1. **True HA:** All 3 nodes as identical control-plane servers with kube-vip VIP
+2. **Dual Network:** WiFi (192.168.2.x) for management, Gigabit (10.0.0.x) for k8s traffic
+3. **Simplified Networking:** Remove Tailscale dependency
+4. **Complete Documentation:** Update all docs to reflect correct IPs
+
+### The Journey
+
+#### Phase 1: Discovery and Diagnosis
+
+The first challenge was simply reaching the nodes. SSH connections were failing, k3s services weren't starting, and the cluster was essentially offline.
+
+**Key diagnostic commands:**
+
+```bash
+# Check what's actually responding
+ping 192.168.2.101
+ping 192.168.2.102
+ping 192.168.2.103
+
+# SSH with verbose output to diagnose
+ssh -v raolivei@192.168.2.101
+
+# Check k3s status
+systemctl status k3s
+```
+
+**Findings:**
+- Nodes had mixed configurations from previous setup attempts
+- Some NVMe partitions had wrong hostnames
+- Network configs pointed to non-existent IPs
+- Tailscale was creating routing conflicts
+
+#### Phase 2: NVMe Partition Recovery
+
+Since the NVMe partitions were misconfigured, I used a backup SD card to boot each node and fix the NVMe configuration without modifying the SD card itself.
+
+**The process for each node:**
+
+```bash
+# Boot from SD card, mount NVMe
+sudo mount /dev/nvme0n1p2 /mnt/nvme
+
+# Fix hostname
+echo "node-X.eldertree.local" | sudo tee /mnt/nvme/etc/hostname
+
+# Fix /etc/hosts
+sudo tee -a /mnt/nvme/etc/hosts << 'EOF'
+# Eldertree cluster nodes (gigabit network - primary for k8s)
+10.0.0.1 node-1 node-1.eldertree.local
+10.0.0.2 node-2 node-2.eldertree.local
+10.0.0.3 node-3 node-3.eldertree.local
+
+# WiFi network aliases
+192.168.2.101 node-1-wifi
+192.168.2.102 node-2-wifi
+192.168.2.103 node-3-wifi
+EOF
+
+# Fix NetworkManager WiFi config
+sudo tee /mnt/nvme/etc/NetworkManager/system-connections/homebase.nmconnection << 'EOF'
+[connection]
+id=homebase
+type=wifi
+interface-name=wlan0
+
+[wifi]
+mode=infrastructure
+ssid=homebase
+
+[wifi-security]
+auth-alg=open
+key-mgmt=wpa-psk
+psk=<wifi-password>
+
+[ipv4]
+method=manual
+addresses=192.168.2.10X/24
+gateway=192.168.2.1
+dns=192.168.2.1;8.8.8.8;
+EOF
+sudo chmod 600 /mnt/nvme/etc/NetworkManager/system-connections/homebase.nmconnection
+```
+
+**Node-1 SSH Recovery:**
+
+Node-1 had a particularly stubborn issue - SSH would connect but immediately drop. The fix was to regenerate SSH host keys on the NVMe partition:
+
+```bash
+sudo rm /mnt/nvme/etc/ssh/ssh_host_*
+sudo chroot /mnt/nvme ssh-keygen -A
+```
+
+#### Phase 3: Disabling Tailscale
+
+Tailscale was causing one-way connectivity issues. Node-3 could ping my Mac, but my Mac couldn't ping node-3. This is a classic symptom of Tailscale's routing taking precedence over local network routes.
+
+**The fix:**
+
+```bash
+# On each node
+sudo systemctl stop tailscaled
+sudo systemctl disable tailscaled
+```
+
+**Immediate result:** Full bidirectional connectivity restored on all nodes.
+
+**Lesson learned:** For a home lab cluster where all nodes are on the same LAN, Tailscale adds unnecessary complexity. It's great for remote access, but interferes with local k8s networking.
+
+#### Phase 4: k3s HA Configuration
+
+The biggest challenge was getting k3s to properly form an HA cluster. The key insight was that **all nodes must join via the VIP**, not directly to node-1.
+
+**Node-1 (cluster initiator):**
+
+```yaml
+# /etc/rancher/k3s/config.yaml
+node-ip: 10.0.0.1
+bind-address: 10.0.0.1
+advertise-address: 10.0.0.1
+tls-san:
+  - 192.168.2.100  # kube-vip VIP
+  - 192.168.2.101  # node-1 WiFi
+  - 10.0.0.1       # node-1 gigabit
+  - node-1.eldertree.local
+```
+
+```bash
+# /etc/systemd/system/k3s.service (ExecStart)
+/usr/local/bin/k3s server \
+    --cluster-init \
+    --flannel-iface=eth0 \
+    --disable servicelb \
+    --disable-network-policy \
+    --write-kubeconfig-mode=644
+```
+
+**Node-2 and Node-3 (join via VIP):**
+
+```yaml
+# /etc/rancher/k3s/config.yaml
+node-ip: 10.0.0.X
+bind-address: 10.0.0.X
+advertise-address: 10.0.0.X
+tls-san:
+  - 192.168.2.100
+  - 192.168.2.10X
+  - 10.0.0.X
+  - node-X.eldertree.local
+```
+
+```bash
+# /etc/systemd/system/k3s.service (ExecStart) - CRITICAL: use VIP!
+/usr/local/bin/k3s server \
+    --server https://192.168.2.100:6443 \  # Join via VIP, not node-1!
+    --flannel-iface=eth0 \
+    --disable servicelb \
+    --disable-network-policy \
+    --write-kubeconfig-mode=644
+```
+
+**The Override.conf Trap:**
+
+Node-1 had a hidden `/etc/systemd/system/k3s.service.d/override.conf` that was overriding the main service configuration with wrong values. This caused `kubectl` to fail with "connection refused to 0.0.0.0:6443".
+
+```bash
+# The fix
+sudo rm /etc/systemd/system/k3s.service.d/override.conf
+sudo systemctl daemon-reload
+sudo systemctl restart k3s
+```
+
+**Lesson learned:** Always check for systemd override files when services behave unexpectedly!
+
+#### Phase 5: SSH Key Distribution
+
+With the cluster healthy, I needed to enable passwordless SSH between all nodes (for maintenance) and from my Mac.
+
+```bash
+# Run the Ansible playbook
+cd ~/WORKSPACE/raolivei/pi-fleet/ansible
+ansible-playbook playbooks/setup-ssh-keys.yml -i inventory/hosts.yml
+```
+
+This generates SSH keys on each node and distributes authorized_keys to all nodes.
+
+#### Phase 6: Vault Unsealing
+
+With the cluster stable, Vault needed to be unsealed. Since we're running Vault in HA mode with 3 pods, only 2 of 3 need to be running for quorum.
+
+```bash
+# Unseal each Vault pod (need 3 of 5 keys)
+for pod in vault-1 vault-2; do
+  kubectl exec -n vault $pod -- vault operator unseal <key1>
+  kubectl exec -n vault $pod -- vault operator unseal <key2>
+  kubectl exec -n vault $pod -- vault operator unseal <key3>
+done
+```
+
+**Note:** vault-0 has a Longhorn volume attachment issue, but with 2/3 pods running, Vault is fully operational.
+
+### Final State
+
+After a full day of work, the cluster achieved true HA:
+
+| Node | WiFi IP | Gigabit IP | Status | Role |
+|------|---------|------------|--------|------|
+| node-1 | 192.168.2.101 | 10.0.0.1 | Ready | control-plane, etcd |
+| node-2 | 192.168.2.102 | 10.0.0.2 | Ready | control-plane, etcd |
+| node-3 | 192.168.2.103 | 10.0.0.3 | Ready | control-plane, etcd |
+
+**kube-vip VIP:** 192.168.2.100 - This is the single entry point for the k8s API server.
+
+**Key achievements:**
+- ✅ All 3 nodes identical and interchangeable
+- ✅ k8s traffic flows over gigabit network (10.0.0.x)
+- ✅ WiFi network for management access
+- ✅ No Tailscale dependency
+- ✅ SSH works from all nodes to all nodes
+- ✅ Vault running in HA mode
+- ✅ All configurations persisted in Ansible
+
+### Lessons Learned
+
+**1. VIP is essential for true HA**
+
+Without kube-vip providing a virtual IP, losing node-1 would break the cluster. Now any node can fail and the VIP moves to a healthy node.
+
+**2. Dual networks simplify things**
+
+- Gigabit (10.0.0.x): High-speed, isolated, dedicated to k8s
+- WiFi (192.168.2.x): Management, external access, backup
+
+**3. Tailscale and k8s don't mix well on the same LAN**
+
+Tailscale's routing can interfere with Flannel CNI. For local clusters, keep it simple.
+
+**4. Check for override.conf files**
+
+Systemd override files can silently break services. Always check `/etc/systemd/system/<service>.d/`.
+
+**5. NVMe recovery via SD card works**
+
+Having a bootable SD card backup is invaluable for fixing NVMe configurations without physical access.
+
+**6. Document everything in Ansible**
+
+All the fixes were eventually codified in `ansible/group_vars/all.yml`:
+
+```yaml
+# Network Configuration
+node_1_ip: "192.168.2.101"
+node_2_ip: "192.168.2.102"
+node_3_ip: "192.168.2.103"
+kube_vip_ip: "192.168.2.100"
+
+# Gigabit Network
+node_1_eth0_ip: "10.0.0.1"
+node_2_eth0_ip: "10.0.0.2"
+node_3_eth0_ip: "10.0.0.3"
+
+# k3s uses gigabit for internal communication
+k3s_node_ip_node_1: "{{ node_1_eth0_ip }}"
+k3s_flannel_iface: "eth0"
+
+# Services to disable
+disabled_services:
+  - tailscaled
+```
+
+### The Value of HA
+
+Why go through all this trouble? Because now:
+
+- **Any single node can fail** and the cluster continues operating
+- **etcd has quorum** with 3 nodes (can tolerate 1 failure)
+- **kube-vip moves the VIP** automatically to healthy nodes
+- **Longhorn replicates storage** across nodes
+- **Vault runs in HA** with automatic leader election
+
+This is a production-grade setup on consumer hardware. The cluster went from "hope node-1 doesn't fail" to "resilient to any single point of failure."
+
+---
+
+## Chapter 16: Future Plans and Scaling
+
+### Completed Goals (as of January 2026)
+
+- [x] **3-node HA cluster** - All nodes are identical control-plane servers
+- [x] **kube-vip for HA API** - VIP at 192.168.2.100
+- [x] **Dual network architecture** - Gigabit for k8s, WiFi for management
+- [x] **Longhorn distributed storage** - Data replicated across nodes
+- [x] **Vault in HA mode** - Secrets management with redundancy
 
 ### Short-term Goals
 
-- [ ] Add worker nodes (fleet-worker-01, fleet-worker-02)
-- [ ] Implement high availability
+- [ ] Fix Longhorn volume issue on vault-0
+- [ ] Add automated Vault unsealing (or document the manual process better)
+- [ ] Improve monitoring dashboards for HA cluster
 - [ ] Add more applications
-- [ ] Improve monitoring and alerting
-- [ ] Enhance backup strategy
 
 ### Long-term Vision
 
-- [ ] Multi-node cluster
-- [ ] High availability setup
-- [ ] Advanced storage (Longhorn)
-- [ ] Enhanced security
-- [ ] Disaster recovery plan
+- [ ] Automated backup to external storage
+- [ ] Disaster recovery plan and testing
+- [ ] Consider dedicated worker nodes for heavy workloads
+- [ ] Enhanced security (network policies, pod security)
 
 ### Scaling Considerations
 
@@ -1804,9 +2114,9 @@ When ready to publish:
 
 ---
 
-**Last Updated:** [Date]
-**Cluster Status:** ✅ Production
-**Version:** [Current version]
+**Last Updated:** January 24, 2026
+**Cluster Status:** ✅ Production (3-node HA)
+**Version:** K3s v1.33.6+k3s1 / v1.34.3+k3s1
 
 ---
 
