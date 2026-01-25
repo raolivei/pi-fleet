@@ -3,15 +3,19 @@
   hosts: localhost
   connection: local
   vars:
-    node_0_ip: "{{ node_0_ip | default('192.168.2.86') }}"
-    node_1_ip: "{{ node_1_ip | default('192.168.2.85') }}"
-    eldertree_ip: "{{ eldertree_ip | default(node_0_ip) }}"
+    # Node IPs (WiFi network - management)
+    node_1_ip: "{{ node_1_ip | default('192.168.2.101') }}"
+    node_2_ip: "{{ node_2_ip | default('192.168.2.102') }}"
+    node_3_ip: "{{ node_3_ip | default('192.168.2.103') }}"
+    # kube-vip VIP for HA API server
+    kube_vip_ip: "{{ kube_vip_ip | default('192.168.2.100') }}"
+    # Pi-hole LoadBalancer IP
     pihole_dns_ip: "{{ pihole_dns_ip | default('192.168.2.201') }}"
     configure_hosts_file: "{{ configure_hosts_file | default(true) }}"
     services:
       - "node-1.eldertree.local"
-      - "node-1.eldertree.local"
-      - "eldertree"
+      - "node-2.eldertree.local"
+      - "node-3.eldertree.local"
       - "canopy.eldertree.local"
       - "grafana.eldertree.local"
       - "prometheus.eldertree.local"
@@ -64,15 +68,17 @@
           become: true
           become_user: root
           loop:
-            - { hostname: "node-1.eldertree.local", ip: "{{ node_0_ip }}" }
-            - { hostname: "node-1.eldertree.local", ip: "{{ node_1_ip }}" }
+            - { hostname: "node-1.eldertree.local node-1", ip: "{{ node_1_ip }}" }
+            - { hostname: "node-2.eldertree.local node-2", ip: "{{ node_2_ip }}" }
+            - { hostname: "node-3.eldertree.local node-3", ip: "{{ node_3_ip }}" }
+            - { hostname: "eldertree.local eldertree", ip: "{{ kube_vip_ip }}" }
           register: node_hosts_updated
 
         - name: Add service DNS entries to /etc/hosts
           lineinfile:
             path: /etc/hosts
-            regexp: "^{{ eldertree_ip }}\\s+{{ item }}"
-            line: "{{ eldertree_ip }}  {{ item }}"
+            regexp: "^{{ kube_vip_ip }}\\s+{{ item }}"
+            line: "{{ kube_vip_ip }}  {{ item }}"
             state: present
             backup: true
           become: true

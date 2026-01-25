@@ -1,6 +1,7 @@
 ---
 # Network Configuration Variables for Eldertree Cluster
 # These variables are used across all playbooks to avoid hardcoding
+# Updated: 2026-01-24 - Fixed IP mappings to correct 192.168.2.10x range
 
 # Network Base Configuration
 network_base: "192.168.2"
@@ -10,32 +11,45 @@ network_dns:
   - "192.168.2.1"
   - "8.8.8.8"
 
-# Node IP Assignments (Sequential)
-# Control Plane
-node_0_ip: "192.168.2.86"
-eldertree_ip: "{{ node_0_ip }}" # Legacy alias
+# WiFi Network Configuration (192.168.2.0/24)
+# Used for external access and management
+wifi_ssid: "homebase"
+wifi_psk: "homebase.io"
 
-# Worker Nodes (Sequential)
-node_1_ip: "192.168.2.85"
-node_2_ip: "192.168.2.86"
-node_3_ip: "192.168.2.87"
-node_4_ip: "192.168.2.88"
-node_5_ip: "192.168.2.89"
+# Node IP Assignments (WiFi - 192.168.2.10x range)
+# All nodes are identical HA control-plane servers
+node_1_ip: "192.168.2.101"
+node_2_ip: "192.168.2.102"
+node_3_ip: "192.168.2.103"
 
-# Legacy aliases for backward compatibility
-eldertree_node_1_ip: "{{ node_1_ip }}"
-eldertree_node_2_ip: "{{ node_2_ip }}"
+# kube-vip Virtual IP (for HA API server access)
+kube_vip_ip: "192.168.2.100"
 
 # k3s Configuration
-k3s_server_url: "https://node-1:6443"
-k3s_server_ip: "{{ node_0_ip }}"
+k3s_version: "v1.33.6+k3s1"
+k3s_server_url: "https://{{ kube_vip_ip }}:6443"
+k3s_cluster_init_node: "node-1"
+
+# Gigabit Network Configuration (10.0.0.0/24 - Isolated Switch)
+# Primary network for all k8s and node-to-node communication
+gigabit_network_base: "10.0.0"
+gigabit_network_netmask: "24"
+node_1_eth0_ip: "10.0.0.1"
+node_2_eth0_ip: "10.0.0.2"
+node_3_eth0_ip: "10.0.0.3"
+
+# k3s should prefer gigabit network for all internal communication
+k3s_node_ip_node_1: "{{ node_1_eth0_ip }}"
+k3s_node_ip_node_2: "{{ node_2_eth0_ip }}"
+k3s_node_ip_node_3: "{{ node_3_eth0_ip }}"
+
+# Flannel interface for CNI (use gigabit)
+k3s_flannel_iface: "eth0"
+
+# Services to disable on all nodes
+# Tailscale was causing routing conflicts with k3s CNI
+disabled_services:
+  - tailscaled
 
 # Backup Configuration
 backup_mount_default: "/mnt/backup"
-
-# Gigabit Network Configuration (Isolated Switch - 10.0.0.0/24)
-# Used for direct node-to-node communication via isolated gigabit switch
-gigabit_network_base: "10.0.0"
-gigabit_network_netmask: "24"
-node_0_eth0_ip: "10.0.0.1"
-node_1_eth0_ip: "10.0.0.2"
