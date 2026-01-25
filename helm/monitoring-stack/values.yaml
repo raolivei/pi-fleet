@@ -18,7 +18,10 @@ prometheus:
       enabled: true
       ingressClassName: traefik
       hosts:
-        - alertmanager.eldertree.local
+        - host: alertmanager.eldertree.local
+          paths:
+            - path: /
+              pathType: Prefix
       tls:
         - secretName: alertmanager-tls
           hosts:
