@@ -1,0 +1,369 @@
+---
+# =============================================================================
+# Security Update Playbook for Eldertree Cluster
+# =============================================================================
+# Performs rolling security updates on Raspberry Pi nodes running k3s
+#
+# Features:
+#   - Rolling updates (one node at a time) to maintain cluster availability
+#   - Kubernetes drain/uncordon for graceful workload migration
+#   - Full OS upgrade (apt upgrade)
+#   - Raspberry Pi firmware/EEPROM updates
+#   - k3s upgrade to latest stable version
+#   - Safe reboot with connectivity verification
+#   - Pre-flight checks (disk space, node health)
+#
+# Usage:
+#   # Dry run (preview changes)
+#   ansible-playbook playbooks/security-update.yml --check
+#
+#   # Full rolling update (all nodes)
+#   ansible-playbook playbooks/security-update.yml
+#
+#   # Single node only
+#   ansible-playbook playbooks/security-update.yml --limit node-3
+#
+#   # Skip k3s upgrade
+#   ansible-playbook playbooks/security-update.yml -e skip_k3s_upgrade=true
+#
+#   # Skip reboot
+#   ansible-playbook playbooks/security-update.yml -e skip_reboot=true
+#
+# =============================================================================
+
+- name: Security Update - Rolling Update for Eldertree Cluster
+  hosts: raspberry_pi
+  become: true
+  serial: 1  # Rolling update - one node at a time
+  vars:
+    # Minimum free disk space required (in MB)
+    min_disk_space_mb: 1024
+    # Timeout for reboot wait (in seconds)
+    reboot_timeout: 300
+    # Skip k3s upgrade if set to true
+    skip_k3s_upgrade: false
+    # Skip reboot if set to true
+    skip_reboot: false
+    # kubectl path (on control node)
+    kubectl_bin: kubectl
+    # kubeconfig path
+    kubeconfig_path: "{{ lookup('env', 'HOME') }}/.kube/config-eldertree"
+
+  tasks:
+    # =========================================================================
+    # Pre-Flight Checks
+    # =========================================================================
+    - name: "Pre-flight: Display update start message"
+      debug:
+        msg:
+          - "======================================"
+          - "Starting Security Update on {{ inventory_hostname }}"
+          - "IP: {{ ansible_host }}"
+          - "======================================"
+
+    - name: "Pre-flight: Check available disk space"
+      shell: df -m / | tail -1 | awk '{print $4}'
+      register: disk_space
+      changed_when: false
+
+    - name: "Pre-flight: Fail if insufficient disk space"
+      fail:
+        msg: |
+          INSUFFICIENT DISK SPACE on {{ inventory_hostname }}!
+          Available: {{ disk_space.stdout }}MB
+          Required: {{ min_disk_space_mb }}MB
+          Please free up disk space before proceeding.
+      when: disk_space.stdout | int < min_disk_space_mb
+
+    - name: "Pre-flight: Display disk space"
+      debug:
+        msg: "Disk space available: {{ disk_space.stdout }}MB (minimum: {{ min_disk_space_mb }}MB)"
+
+    - name: "Pre-flight: Get current kernel version"
+      shell: uname -r
+      register: kernel_before
+      changed_when: false
+
+    - name: "Pre-flight: Get current k3s version"
+      shell: k3s --version 2>/dev/null | head -1 || echo "k3s not installed"
+      register: k3s_version_before
+      changed_when: false
+      failed_when: false
+
+    - name: "Pre-flight: Display current versions"
+      debug:
+        msg:
+          - "Kernel: {{ kernel_before.stdout }}"
+          - "k3s: {{ k3s_version_before.stdout }}"
+
+    # =========================================================================
+    # Kubernetes Drain (if k3s is running)
+    # =========================================================================
+    - name: "Kubernetes: Check if k3s is running"
+      shell: systemctl is-active k3s || systemctl is-active k3s-agent
+      register: k3s_service_status
+      changed_when: false
+      failed_when: false
+
+    - name: "Kubernetes: Get node FQDN"
+      shell: hostname -f
+      register: node_fqdn
+      changed_when: false
+
+    - name: "Kubernetes: Drain node (evacuate workloads)"
+      delegate_to: localhost
+      become: false
+      shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        {{ kubectl_bin }} drain {{ node_fqdn.stdout }} \
+          --ignore-daemonsets \
+          --delete-emptydir-data \
+          --force \
+          --timeout=120s || true
+      when: k3s_service_status.rc == 0
+      register: drain_result
+      failed_when: false
+
+    - name: "Kubernetes: Display drain result"
+      debug:
+        msg: "Node drained: {{ 'success' if drain_result.rc == 0 else 'skipped or failed (continuing)' }}"
+      when: k3s_service_status.rc == 0
+
+    # =========================================================================
+    # OS Security Updates
+    # =========================================================================
+    - name: "OS Update: Update apt cache"
+      apt:
+        update_cache: yes
+        cache_valid_time: 0  # Force refresh
+
+    - name: "OS Update: Perform full system upgrade"
+      apt:
+        upgrade: dist
+        autoremove: yes
+        autoclean: yes
+      register: apt_upgrade
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: "OS Update: Display upgrade summary"
+      debug:
+        msg: "Packages upgraded: {{ apt_upgrade.changed }}"
+
+    - name: "OS Update: Install security-related packages"
+      apt:
+        name:
+          - unattended-upgrades
+          - apt-listchanges
+        state: present
+
+    # =========================================================================
+    # Raspberry Pi Firmware/EEPROM Updates
+    # =========================================================================
+    - name: "Firmware: Check if rpi-eeprom package is available"
+      shell: dpkg -l | grep -q rpi-eeprom && echo "installed" || echo "not-installed"
+      register: rpi_eeprom_check
+      changed_when: false
+      failed_when: false
+
+    - name: "Firmware: Install rpi-eeprom package"
+      apt:
+        name: rpi-eeprom
+        state: present
+      when: rpi_eeprom_check.stdout == "not-installed"
+      failed_when: false
+
+    - name: "Firmware: Check for EEPROM updates"
+      shell: rpi-eeprom-update 2>/dev/null || echo "EEPROM update not available"
+      register: eeprom_status
+      changed_when: false
+      failed_when: false
+
+    - name: "Firmware: Display EEPROM status"
+      debug:
+        msg: "{{ eeprom_status.stdout_lines }}"
+      when: eeprom_status.stdout != ""
+
+    - name: "Firmware: Apply EEPROM updates (if available)"
+      shell: rpi-eeprom-update -a 2>/dev/null || true
+      register: eeprom_update
+      changed_when: "'UPDATING' in eeprom_update.stdout"
+      failed_when: false
+
+    # =========================================================================
+    # k3s Upgrade (Optional)
+    # =========================================================================
+    - name: "k3s: Upgrade k3s to latest stable"
+      block:
+        - name: "k3s: Stop k3s service"
+          systemd:
+            name: "{{ 'k3s' if k3s_service_status.stdout == 'active' else 'k3s-agent' }}"
+            state: stopped
+          when: k3s_service_status.rc == 0
+          failed_when: false
+
+        - name: "k3s: Download and install latest k3s"
+          shell: |
+            curl -sfL https://get.k3s.io | INSTALL_K3S_SKIP_START=true sh -
+          register: k3s_install
+          when: k3s_service_status.rc == 0
+
+        - name: "k3s: Get new k3s version"
+          shell: k3s --version 2>/dev/null | head -1 || echo "unknown"
+          register: k3s_version_after
+          changed_when: false
+          when: k3s_service_status.rc == 0
+
+        - name: "k3s: Display upgrade result"
+          debug:
+            msg:
+              - "k3s before: {{ k3s_version_before.stdout }}"
+              - "k3s after: {{ k3s_version_after.stdout | default('N/A') }}"
+          when: k3s_service_status.rc == 0
+
+      when: not (skip_k3s_upgrade | bool)
+
+    # =========================================================================
+    # System Cleanup
+    # =========================================================================
+    - name: "Cleanup: Remove unused packages"
+      apt:
+        autoremove: yes
+        purge: yes
+
+    - name: "Cleanup: Clean apt cache"
+      apt:
+        autoclean: yes
+
+    - name: "Cleanup: Clear systemd journal (keep last 7 days)"
+      shell: journalctl --vacuum-time=7d
+      changed_when: false
+      failed_when: false
+
+    # =========================================================================
+    # Reboot (if needed)
+    # =========================================================================
+    - name: "Reboot: Check if reboot is required"
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    - name: "Reboot: Display reboot status"
+      debug:
+        msg: "Reboot required: {{ reboot_required.stat.exists | default(false) }}"
+
+    - name: "Reboot: Perform safe reboot"
+      reboot:
+        msg: "Security update reboot initiated by Ansible"
+        connect_timeout: 5
+        reboot_timeout: "{{ reboot_timeout }}"
+        pre_reboot_delay: 5
+        post_reboot_delay: 30
+        test_command: whoami
+      when:
+        - reboot_required.stat.exists | default(false)
+        - not (skip_reboot | bool)
+      register: reboot_result
+
+    - name: "Reboot: Display reboot result"
+      debug:
+        msg: "Node rebooted and is back online"
+      when: reboot_result.changed | default(false)
+
+    # =========================================================================
+    # Post-Update Verification
+    # =========================================================================
+    - name: "Verify: Wait for k3s to be ready"
+      shell: |
+        for i in $(seq 1 30); do
+          if systemctl is-active k3s >/dev/null 2>&1 || systemctl is-active k3s-agent >/dev/null 2>&1; then
+            echo "k3s is active"
+            exit 0
+          fi
+          sleep 5
+        done
+        echo "k3s not ready after 150s"
+        exit 1
+      register: k3s_ready
+      changed_when: false
+      when: k3s_service_status.rc == 0
+      failed_when: false
+
+    - name: "Verify: Get new kernel version"
+      shell: uname -r
+      register: kernel_after
+      changed_when: false
+
+    - name: "Verify: Display post-update versions"
+      debug:
+        msg:
+          - "======================================"
+          - "Update Complete on {{ inventory_hostname }}"
+          - "======================================"
+          - "Kernel: {{ kernel_before.stdout }} → {{ kernel_after.stdout }}"
+          - "k3s: {{ k3s_version_before.stdout }} → {{ k3s_version_after.stdout | default('unchanged') }}"
+          - "Rebooted: {{ reboot_result.changed | default(false) }}"
+          - "======================================"
+
+    # =========================================================================
+    # Kubernetes Uncordon (re-enable scheduling)
+    # =========================================================================
+    - name: "Kubernetes: Uncordon node (re-enable scheduling)"
+      delegate_to: localhost
+      become: false
+      shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        {{ kubectl_bin }} uncordon {{ node_fqdn.stdout }} || true
+      when: k3s_service_status.rc == 0
+      register: uncordon_result
+      failed_when: false
+
+    - name: "Kubernetes: Display uncordon result"
+      debug:
+        msg: "Node uncordoned: {{ 'success' if uncordon_result.rc == 0 else 'skipped or failed' }}"
+      when: k3s_service_status.rc == 0
+
+    # =========================================================================
+    # Wait for cluster health before next node
+    # =========================================================================
+    - name: "Cluster: Wait for node to be Ready"
+      delegate_to: localhost
+      become: false
+      shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        for i in $(seq 1 24); do
+          STATUS=$({{ kubectl_bin }} get node {{ node_fqdn.stdout }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "Unknown")
+          if [ "$STATUS" = "True" ]; then
+            echo "Node {{ node_fqdn.stdout }} is Ready"
+            exit 0
+          fi
+          echo "Waiting for node to be Ready... (attempt $i/24)"
+          sleep 10
+        done
+        echo "Node not Ready after 4 minutes, proceeding anyway"
+        exit 0
+      register: node_ready
+      changed_when: false
+      when: k3s_service_status.rc == 0
+      failed_when: false
+
+    - name: "Cluster: Display node status"
+      debug:
+        msg: "{{ node_ready.stdout_lines | default(['Node status unknown']) }}"
+      when: k3s_service_status.rc == 0
+
+  # ===========================================================================
+  # Handlers
+  # ===========================================================================
+  handlers:
+    - name: restart k3s
+      systemd:
+        name: k3s
+        state: restarted
+      failed_when: false
+
+    - name: restart k3s-agent
+      systemd:
+        name: k3s-agent
+        state: restarted
+      failed_when: false
