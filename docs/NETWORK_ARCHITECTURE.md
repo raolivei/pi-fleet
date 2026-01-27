@@ -31,6 +31,36 @@ The eldertree cluster is a 3-node fully HA Raspberry Pi cluster using a dual-net
 
 **kube-vip VIP**: 192.168.2.100 (HA API server access)
 
+### 1.1 k3s API Server Binding Configuration
+
+**Critical Configuration** for kube-vip to work:
+
+The k3s API server must bind to `0.0.0.0` (all interfaces) for the VIP to function properly.
+
+**Why this matters:**
+
+- kube-vip provides a floating VIP (192.168.2.100) on the WiFi network
+- The API server `node-ip` and `advertise-address` are set to gigabit IPs (10.0.0.x)
+- If `bind-address` is set to a specific IP (e.g., `10.0.0.1`), the API server only listens on that interface
+- Traffic from the WiFi VIP cannot reach the API server because it's not listening on wlan0
+
+**Correct `/etc/rancher/k3s/config.yaml`:**
+
+```yaml
+node-ip: 10.0.0.X           # Gigabit network for internal comms
+bind-address: 0.0.0.0       # CRITICAL: Listen on ALL interfaces
+advertise-address: 10.0.0.X # Advertise gigabit IP to other nodes
+tls-san:
+  - 192.168.2.100           # VIP
+  - 192.168.2.10X           # WiFi IP
+  - 10.0.0.X                # Gigabit IP
+  - node-X.eldertree.local  # Hostname
+```
+
+**Ansible Playbook:** `ansible/playbooks/configure-k3s-gigabit.yml`
+
+**Variable:** `k3s_bind_address` in `ansible/group_vars/all.yml`
+
 ### 2. Kubernetes Pod Network (Flannel)
 
 **CNI Plugin**: Flannel (default with k3s)

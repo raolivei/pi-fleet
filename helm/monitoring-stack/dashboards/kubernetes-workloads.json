@@ -1,0 +1,305 @@
+{
+  "title": "Kubernetes Workloads",
+  "uid": "kubernetes-workloads",
+  "tags": ["eldertree", "kubernetes", "workloads", "deployments"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "editable": true,
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "type": "query",
+        "datasource": { "type": "prometheus" },
+        "query": "label_values(kube_namespace_created, namespace)",
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "📦 DEPLOYMENTS",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Total Deployments",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "targets": [
+        { "expr": "count(kube_deployment_created{namespace=~\"$namespace\"})", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } } },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Healthy",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "targets": [
+        { "expr": "count(kube_deployment_status_replicas_available{namespace=~\"$namespace\"} == kube_deployment_spec_replicas{namespace=~\"$namespace\"})", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } } },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Degraded",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "targets": [
+        { "expr": "count(kube_deployment_status_replicas_available{namespace=~\"$namespace\"} < kube_deployment_spec_replicas{namespace=~\"$namespace\"}) or vector(0)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Deployment Status",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "expr": "kube_deployment_spec_replicas{namespace=~\"$namespace\"}",
+          "legendFormat": "{{namespace}}/{{deployment}}",
+          "refId": "desired",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "kube_deployment_status_replicas_available{namespace=~\"$namespace\"}",
+          "legendFormat": "{{namespace}}/{{deployment}}",
+          "refId": "available",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "kube_deployment_status_replicas_unavailable{namespace=~\"$namespace\"}",
+          "legendFormat": "{{namespace}}/{{deployment}}",
+          "refId": "unavailable",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value #desired" }, "properties": [{ "id": "displayName", "value": "Desired" }] },
+          { "matcher": { "id": "byName", "options": "Value #available" }, "properties": [{ "id": "displayName", "value": "Available" }, { "id": "custom.displayMode", "value": "color-background-solid" }, { "id": "thresholds", "value": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } }] },
+          { "matcher": { "id": "byName", "options": "Value #unavailable" }, "properties": [{ "id": "displayName", "value": "Unavailable" }, { "id": "custom.displayMode", "value": "color-background-solid" }, { "id": "thresholds", "value": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } }] }
+        ]
+      },
+      "transformations": [
+        { "id": "merge" },
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "endpoint": true, "service": true } } }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "row",
+      "title": "🔄 STATEFULSETS",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "StatefulSet Status",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "expr": "kube_statefulset_replicas{namespace=~\"$namespace\"}",
+          "refId": "desired",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "kube_statefulset_status_replicas_ready{namespace=~\"$namespace\"}",
+          "refId": "ready",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value #desired" }, "properties": [{ "id": "displayName", "value": "Desired" }] },
+          { "matcher": { "id": "byName", "options": "Value #ready" }, "properties": [{ "id": "displayName", "value": "Ready" }, { "id": "custom.displayMode", "value": "color-background-solid" }, { "id": "thresholds", "value": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } }] }
+        ]
+      },
+      "transformations": [
+        { "id": "merge" },
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "endpoint": true, "service": true } } }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "📊 RESOURCE REQUESTS vs USAGE",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "collapsed": false
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "CPU: Requests vs Actual Usage by Namespace",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "targets": [
+        { "expr": "sum by(namespace) (kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\"})", "legendFormat": "{{namespace}} requests", "refId": "A" },
+        { "expr": "sum by(namespace) (rate(container_cpu_usage_seconds_total{container!=\"\", container!=\"POD\", namespace=~\"$namespace\"}[5m]))", "legendFormat": "{{namespace}} usage", "refId": "B" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byRegexp", "options": "/requests/" }, "properties": [{ "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } }] }
+        ]
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right" } }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Memory: Requests vs Actual Usage by Namespace",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "targets": [
+        { "expr": "sum by(namespace) (kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\"})", "legendFormat": "{{namespace}} requests", "refId": "A" },
+        { "expr": "sum by(namespace) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\", namespace=~\"$namespace\"})", "legendFormat": "{{namespace}} usage", "refId": "B" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byRegexp", "options": "/requests/" }, "properties": [{ "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } }] }
+        ]
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right" } }
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "⚠️ CONTAINER HEALTH",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+      "collapsed": false
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Container Restarts",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 26 },
+      "targets": [
+        { "expr": "sum by(namespace, pod) (increase(kube_pod_container_status_restarts_total{namespace=~\"$namespace\"}[1h])) > 0", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "bars", "fillOpacity": 80 },
+          "thresholds": { "steps": [{ "color": "yellow", "value": null }, { "color": "red", "value": 5 }] }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 13,
+      "type": "table",
+      "title": "Container Status",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 26 },
+      "targets": [
+        {
+          "expr": "kube_pod_container_status_waiting_reason{namespace=~\"$namespace\"}",
+          "refId": "waiting",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "kube_pod_container_status_terminated_reason{namespace=~\"$namespace\"}",
+          "refId": "terminated",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "merge" },
+        { "id": "filterByValue", "options": { "filters": [{ "fieldName": "Value", "config": { "id": "greater", "options": { "value": 0 } } }], "type": "include", "match": "any" } },
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "endpoint": true, "service": true, "uid": true, "Value": true } } }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "row",
+      "title": "⏰ JOBS & CRONJOBS",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "collapsed": false
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "Active Jobs",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 33 },
+      "targets": [
+        { "expr": "sum(kube_job_status_active{namespace=~\"$namespace\"}) or vector(0)", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } } },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "Succeeded (24h)",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 33 },
+      "targets": [
+        { "expr": "count(kube_job_status_succeeded{namespace=~\"$namespace\"} == 1 and kube_job_status_completion_time{namespace=~\"$namespace\"} > (time() - 86400)) or vector(0)", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } } },
+      "options": { "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 17,
+      "type": "stat",
+      "title": "Failed (24h)",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 33 },
+      "targets": [
+        { "expr": "count(kube_job_status_failed{namespace=~\"$namespace\"} == 1 and kube_job_status_completion_time{namespace=~\"$namespace\"} > (time() - 86400)) or vector(0)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "CronJob Schedule",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 33 },
+      "targets": [
+        {
+          "expr": "kube_cronjob_next_schedule_time{namespace=~\"$namespace\"} - time()",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Next Run In" }] }
+        ]
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "endpoint": true, "service": true } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Value", "desc": false }] } }
+      ]
+    }
+  ]
+}

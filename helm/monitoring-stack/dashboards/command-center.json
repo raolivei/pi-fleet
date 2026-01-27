@@ -1,0 +1,593 @@
+{
+  "title": "Eldertree Command Center",
+  "uid": "eldertree-command-center",
+  "tags": ["eldertree", "overview", "sre", "featured"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "editable": true,
+  "time": { "from": "now-1h", "to": "now" },
+  "annotations": {
+    "list": [
+      {
+        "name": "Pod Restarts",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "enable": true,
+        "expr": "changes(kube_pod_container_status_restarts_total[5m]) > 0",
+        "iconColor": "red",
+        "titleFormat": "Pod Restart",
+        "textFormat": "{{ $labels.namespace }}/{{ $labels.pod }}"
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": { "text": "Prometheus", "value": "Prometheus" }
+      },
+      {
+        "name": "namespace",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "query": "label_values(kube_pod_info, namespace)",
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "🚨 CLUSTER STATUS",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Cluster Health",
+      "description": "Overall cluster health based on node status",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"}) / count(kube_node_info) * 100",
+          "legendFormat": "Health",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 66 },
+              { "color": "green", "value": 100 }
+            ]
+          },
+          "mappings": [
+            { "type": "range", "options": { "from": 100, "to": 100, "result": { "text": "HEALTHY", "color": "green" } } },
+            { "type": "range", "options": { "from": 66, "to": 99, "result": { "text": "DEGRADED", "color": "yellow" } } },
+            { "type": "range", "options": { "from": 0, "to": 65, "result": { "text": "CRITICAL", "color": "red" } } }
+          ]
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "textMode": "value" }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Nodes",
+      "gridPos": { "h": 4, "w": 3, "x": 4, "y": 1 },
+      "targets": [
+        {
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"})",
+          "legendFormat": "Ready",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 2 }, { "color": "green", "value": 3 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Pods Running",
+      "gridPos": { "h": 4, "w": 3, "x": 7, "y": 1 },
+      "targets": [
+        { "expr": "sum(kube_pod_status_phase{phase=\"Running\"})", "legendFormat": "Running", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Pods Pending",
+      "gridPos": { "h": 4, "w": 3, "x": 10, "y": 1 },
+      "targets": [
+        { "expr": "sum(kube_pod_status_phase{phase=\"Pending\"}) or vector(0)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Failed Pods",
+      "gridPos": { "h": 4, "w": 3, "x": 13, "y": 1 },
+      "targets": [
+        { "expr": "sum(kube_pod_status_phase{phase=\"Failed\"}) or vector(0)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Restarts (1h)",
+      "gridPos": { "h": 4, "w": 3, "x": 16, "y": 1 },
+      "targets": [
+        { "expr": "sum(increase(kube_pod_container_status_restarts_total[1h]))", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 20 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "area" }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Max Temp",
+      "gridPos": { "h": 4, "w": 2, "x": 19, "y": 1 },
+      "targets": [
+        { "expr": "max(node_hwmon_temp_celsius)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 65 }, { "color": "red", "value": 75 }] }
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Vault",
+      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 1 },
+      "targets": [
+        { "expr": "sum(kube_pod_status_phase{namespace=\"vault\", pod=~\"vault-[0-9]+\", phase=\"Running\"})", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "3": { "text": "HA 3/3", "color": "green" } } },
+            { "type": "value", "options": { "2": { "text": "HA 2/3", "color": "green" } } },
+            { "type": "value", "options": { "1": { "text": "Single", "color": "yellow" } } },
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" } } }
+          ],
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 2 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "📊 RESOURCE UTILIZATION",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "type": "gauge",
+      "title": "Cluster CPU",
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 6 },
+      "targets": [
+        { "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 85 }] }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "gauge",
+      "title": "Cluster Memory",
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 6 },
+      "targets": [
+        { "expr": "(1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 75 }, { "color": "red", "value": 90 }] }
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "gauge",
+      "title": "Avg Disk Used",
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 6 },
+      "targets": [
+        { "expr": "avg((1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 85 }] }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "CPU by Node",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 6 },
+      "targets": [
+        { "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{instance}}", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2 } }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Memory by Node",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 6 },
+      "targets": [
+        { "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "legendFormat": "{{instance}}", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2 } }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 16,
+      "type": "row",
+      "title": "🌡️ NODE HEALTH",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "collapsed": false
+    },
+    {
+      "id": 17,
+      "type": "table",
+      "title": "Node Status",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "kube_node_status_condition{condition=\"Ready\", status=\"true\"}",
+          "legendFormat": "{{node}}",
+          "refId": "ready",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "node_hwmon_temp_celsius",
+          "legendFormat": "{{instance}}",
+          "refId": "temp",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "{{instance}}",
+          "refId": "cpu",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "{{instance}}",
+          "refId": "mem",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "displayMode": "color-background-solid" }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value #ready" }, "properties": [
+            { "id": "displayName", "value": "Status" },
+            { "id": "mappings", "value": [{ "type": "value", "options": { "1": { "text": "✓ Ready", "color": "green" } } }] }
+          ]},
+          { "matcher": { "id": "byName", "options": "Value #temp" }, "properties": [
+            { "id": "displayName", "value": "Temp" },
+            { "id": "unit", "value": "celsius" },
+            { "id": "thresholds", "value": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 65 }, { "color": "red", "value": 75 }] } }
+          ]},
+          { "matcher": { "id": "byName", "options": "Value #cpu" }, "properties": [
+            { "id": "displayName", "value": "CPU %" },
+            { "id": "unit", "value": "percent" },
+            { "id": "thresholds", "value": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 85 }] } }
+          ]},
+          { "matcher": { "id": "byName", "options": "Value #mem" }, "properties": [
+            { "id": "displayName", "value": "Mem %" },
+            { "id": "unit", "value": "percent" },
+            { "id": "thresholds", "value": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 75 }, { "color": "red", "value": 90 }] } }
+          ]}
+        ]
+      },
+      "transformations": [
+        { "id": "merge" },
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "chip": true, "condition": true, "job": true, "sensor": true, "status": true } } }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Node Temperatures",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "node_hwmon_temp_celsius", "legendFormat": "{{instance}}", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 65 }, { "color": "red", "value": 75 }] }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right" } }
+    },
+    {
+      "id": 19,
+      "type": "row",
+      "title": "🌐 NETWORK & TRAFFIC",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false
+    },
+    {
+      "id": 20,
+      "type": "stat",
+      "title": "Traefik Req/s",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 19 },
+      "targets": [
+        { "expr": "sum(rate(traefik_entrypoint_requests_total[5m]))", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "decimals": 1, "color": { "mode": "fixed", "fixedColor": "blue" } } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "HTTP Errors",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 19 },
+      "targets": [
+        { "expr": "sum(rate(traefik_entrypoint_requests_total{code=~\"5..\"}[5m])) or vector(0)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps", "decimals": 2,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.1 }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "area" }
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Network I/O",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 19 },
+      "targets": [
+        { "expr": "sum(rate(node_network_receive_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*\"}[5m]))", "legendFormat": "Received", "refId": "A" },
+        { "expr": "sum(rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*\"}[5m]))", "legendFormat": "Transmitted", "refId": "B" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 20 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Requests by Service (Top 10)",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 19 },
+      "targets": [
+        { "expr": "topk(10, sum by(service) (rate(traefik_service_requests_total[5m])))", "legendFormat": "{{service}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "bars", "fillOpacity": 80 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 24,
+      "type": "row",
+      "title": "💾 STORAGE",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "collapsed": false
+    },
+    {
+      "id": 25,
+      "type": "bargauge",
+      "title": "PVC Usage",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        { "expr": "kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100", "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 85 }] }
+        }
+      },
+      "options": { "displayMode": "lcd", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 26,
+      "type": "bargauge",
+      "title": "Root Disk by Node",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 24 },
+      "targets": [
+        { "expr": "(1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100", "legendFormat": "{{instance}}", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 85 }] }
+        }
+      },
+      "options": { "displayMode": "lcd", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 27,
+      "type": "row",
+      "title": "📦 TOP RESOURCE CONSUMERS",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "collapsed": false
+    },
+    {
+      "id": 28,
+      "type": "table",
+      "title": "Top 15 Memory Consumers",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+      "targets": [
+        {
+          "expr": "topk(15, sum by(namespace, pod) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\"}))",
+          "legendFormat": "{{namespace}}/{{pod}}",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Memory" }] }
+        ]
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Value", "desc": true }] } }
+      ],
+      "options": { "showHeader": true }
+    },
+    {
+      "id": 29,
+      "type": "table",
+      "title": "Top 15 CPU Consumers",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
+      "targets": [
+        {
+          "expr": "topk(15, sum by(namespace, pod) (rate(container_cpu_usage_seconds_total{container!=\"\", container!=\"POD\"}[5m])) * 100)",
+          "legendFormat": "{{namespace}}/{{pod}}",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "CPU %" }] }
+        ]
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Value", "desc": true }] } }
+      ],
+      "options": { "showHeader": true }
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "⚠️ PROBLEM PODS",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
+      "collapsed": false
+    },
+    {
+      "id": 31,
+      "type": "table",
+      "title": "Pods with Restarts (Last Hour)",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 40 },
+      "targets": [
+        {
+          "expr": "topk(20, sum by(namespace, pod) (increase(kube_pod_container_status_restarts_total[1h])) > 0)",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": { "steps": [{ "color": "yellow", "value": null }, { "color": "red", "value": 5 }] },
+          "custom": { "displayMode": "color-background-solid" }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Restarts" }] }
+        ]
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
+      ]
+    },
+    {
+      "id": 32,
+      "type": "table",
+      "title": "Pods Not Ready",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 40 },
+      "targets": [
+        {
+          "expr": "kube_pod_status_ready{condition=\"false\"} == 1",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "1": { "text": "Not Ready", "color": "red" } } }],
+          "custom": { "displayMode": "color-background-solid" }
+        }
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "Value": true, "__name__": true, "condition": true, "endpoint": true, "instance": true, "job": true, "service": true, "uid": true } } }
+      ]
+    }
+  ],
+  "links": [
+    { "title": "Prometheus", "url": "https://prometheus.eldertree.local", "icon": "external link", "type": "link" },
+    { "title": "Alertmanager", "url": "https://alertmanager.eldertree.local", "icon": "external link", "type": "link" }
+  ]
+}

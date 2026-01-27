@@ -1,68 +1,98 @@
 ---
+# Configure k3s to use gigabit network for node-to-node communication
+#
+# This playbook configures /etc/rancher/k3s/config.yaml with:
+# - node-ip: gigabit IP (10.0.0.X)
+# - bind-address: 0.0.0.0 (for kube-vip VIP access)
+# - advertise-address: gigabit IP
+# - tls-san: all valid hostnames/IPs
+#
+# Usage:
+#   ansible-playbook playbooks/configure-k3s-gigabit.yml
+#
+# To apply to a single node:
+#   ansible-playbook playbooks/configure-k3s-gigabit.yml --limit node-1
+#
+# Note: This playbook uses config.yaml instead of modifying the service file
+#       for cleaner configuration management.
+
 - name: Configure k3s to use gigabit network
   hosts: raspberry_pi
   become: true
+  gather_facts: true
+
   vars:
-    # Gigabit network IPs - adjust if different
-    node_1_gigabit_ip: "10.0.0.1"
-    node_2_gigabit_ip: "10.0.0.2"
-    node_3_gigabit_ip: "10.0.0.3"
-    gigabit_interface: "eth0"
+    # Import from group_vars/all.yml
+    gigabit_interface: "{{ k3s_flannel_iface | default('eth0') }}"
+
+    # Node-specific configuration mapping
+    node_config:
+      node-1:
+        node_ip: "{{ node_1_eth0_ip }}"
+        wifi_ip: "{{ node_1_ip }}"
+        hostname: "node-1.eldertree.local"
+      node-2:
+        node_ip: "{{ node_2_eth0_ip }}"
+        wifi_ip: "{{ node_2_ip }}"
+        hostname: "node-2.eldertree.local"
+      node-3:
+        node_ip: "{{ node_3_eth0_ip }}"
+        wifi_ip: "{{ node_3_ip }}"
+        hostname: "node-3.eldertree.local"
 
   tasks:
     # =========================================================================
-    # Determine gigabit IP for this node
+    # Determine node configuration
     # =========================================================================
-    - name: Get gigabit IP for this node
+    - name: Set node-specific variables
       set_fact:
-        node_gigabit_ip: >-
-          {%- if inventory_hostname == 'node-1' -%}
-            {{ node_1_gigabit_ip }}
-          {%- elif inventory_hostname == 'node-2' -%}
-            {{ node_2_gigabit_ip }}
-          {%- elif inventory_hostname == 'node-3' -%}
-            {{ node_3_gigabit_ip }}
-          {%- else -%}
-            {{ node_1_gigabit_ip }}
-          {%- endif -%}
-      changed_when: false
+        this_node_config: "{{ node_config[inventory_hostname] }}"
+      failed_when: this_node_config is not defined
+
+    - name: Display configuration to be applied
+      debug:
+        msg:
+          - "Node: {{ inventory_hostname }}"
+          - "Gigabit IP (node-ip): {{ this_node_config.node_ip }}"
+          - "WiFi IP: {{ this_node_config.wifi_ip }}"
+          - "Hostname: {{ this_node_config.hostname }}"
+          - "VIP: {{ kube_vip_ip }}"
+          - "bind-address: {{ k3s_bind_address | default('0.0.0.0') }}"
+          - "Flannel interface: {{ gigabit_interface }}"
 
     # =========================================================================
     # Verify eth0 has gigabit IP configured
     # =========================================================================
     - name: Check if eth0 has gigabit IP
-      command: ip addr show eth0 | grep "inet {{ node_gigabit_ip }}/" || echo "not_configured"
+      shell: ip addr show eth0 | grep "inet {{ this_node_config.node_ip }}/" || echo "not_configured"
       register: eth0_ip_check
       changed_when: false
       failed_when: false
 
     - name: Fail if eth0 gigabit IP is not configured
       fail:
-        msg: "eth0 does not have gigabit IP {{ node_gigabit_ip }} configured. Please run setup-system.yml playbook first to configure the gigabit network."
+        msg: "eth0 does not have gigabit IP {{ this_node_config.node_ip }} configured. Please run setup-system.yml playbook first to configure the gigabit network."
       when: "'not_configured' in eth0_ip_check.stdout"
 
     # =========================================================================
-    # Check current k3s service configuration
+    # Check if k3s is installed
     # =========================================================================
     - name: Check if k3s service exists (control plane)
       stat:
         path: /etc/systemd/system/k3s.service
       register: k3s_service_file
       changed_when: false
-      failed_when: false
 
     - name: Check if k3s-agent service exists (worker)
       stat:
         path: /etc/systemd/system/k3s-agent.service
       register: k3s_agent_service_file
       changed_when: false
-      failed_when: false
 
     - name: Determine service type
       set_fact:
         is_control_plane: "{{ k3s_service_file.stat.exists | default(false) }}"
         is_worker: "{{ k3s_agent_service_file.stat.exists | default(false) }}"
-      changed_when: false
 
     - name: Fail if k3s is not installed
       fail:
@@ -70,99 +100,102 @@
       when: not is_control_plane and not is_worker
 
     # =========================================================================
-    # Backup current service file
+    # Backup existing config
     # =========================================================================
-    - name: Backup k3s service file
+    - name: Check if config.yaml exists
+      stat:
+        path: /etc/rancher/k3s/config.yaml
+      register: existing_config
+
+    - name: Backup existing config.yaml
       copy:
-        src: "{{ item.src }}"
-        dest: "{{ item.src }}.backup-{{ ansible_date_time.epoch }}"
+        src: /etc/rancher/k3s/config.yaml
+        dest: "/etc/rancher/k3s/config.yaml.backup-{{ ansible_date_time.epoch }}"
         remote_src: yes
-      loop:
-        - {src: /etc/systemd/system/k3s.service}
-        - {src: /etc/systemd/system/k3s-agent.service}
-      when: item.src is defined
-      failed_when: false
+        mode: "0600"
+      when: existing_config.stat.exists | default(false)
 
     # =========================================================================
-    # Update k3s service file (control plane)
+    # Create k3s config.yaml (control plane)
     # =========================================================================
-    - name: Check if node-ip already configured in k3s service
-      command: grep -q "node-ip={{ node_gigabit_ip }}" /etc/systemd/system/k3s.service || echo "not_configured"
-      register: k3s_node_ip_check
-      changed_when: false
-      failed_when: false
+    - name: Ensure /etc/rancher/k3s directory exists
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: "0755"
+
+    - name: Write k3s config.yaml (control plane)
+      copy:
+        content: |
+          # k3s configuration - managed by Ansible
+          # Playbook: configure-k3s-gigabit.yml
+          # Last updated: {{ ansible_date_time.iso8601 }}
+
+          # Node identity - use gigabit IP for internal communication
+          node-ip: {{ this_node_config.node_ip }}
+
+          # API server binding
+          # IMPORTANT: bind-address must be 0.0.0.0 for kube-vip to work!
+          # If set to a specific IP, the API server only listens on that interface
+          # and kube-vip VIP ({{ kube_vip_ip }}) cannot reach it from WiFi network
+          bind-address: {{ k3s_bind_address | default('0.0.0.0') }}
+
+          # Advertise the gigabit IP for internal cluster communication
+          advertise-address: {{ this_node_config.node_ip }}
+
+          # TLS SANs - all valid ways to reach this API server
+          tls-san:
+            - {{ kube_vip_ip }}
+            - {{ this_node_config.wifi_ip }}
+            - {{ this_node_config.node_ip }}
+            - {{ this_node_config.hostname }}
+            - {{ inventory_hostname }}
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0600"
+        owner: root
+        group: root
+      register: config_updated
       when: is_control_plane
 
-    - name: Update k3s service with gigabit network settings
-      lineinfile:
-        path: /etc/systemd/system/k3s.service
-        regexp: "^ExecStart=(.*)$"
-        line: 'ExecStart=\1 --node-ip={{ node_gigabit_ip }} --flannel-iface={{ gigabit_interface }}'
-        backrefs: yes
-        mode: "0644"
-      when:
-        - is_control_plane
-        - "'not_configured' in k3s_node_ip_check.stdout"
+    # =========================================================================
+    # Create k3s config.yaml (worker/agent)
+    # =========================================================================
+    - name: Write k3s config.yaml (worker)
+      copy:
+        content: |
+          # k3s agent configuration - managed by Ansible
+          # Playbook: configure-k3s-gigabit.yml
+          # Last updated: {{ ansible_date_time.iso8601 }}
 
-    # =========================================================================
-    # Update k3s-agent service file (worker)
-    # =========================================================================
-    - name: Check if node-ip already configured in k3s-agent service
-      command: grep -q "node-ip={{ node_gigabit_ip }}" /etc/systemd/system/k3s-agent.service || echo "not_configured"
-      register: k3s_agent_node_ip_check
-      changed_when: false
-      failed_when: false
+          # Node identity - use gigabit IP for internal communication
+          node-ip: {{ this_node_config.node_ip }}
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0600"
+        owner: root
+        group: root
+      register: agent_config_updated
       when: is_worker
 
-    - name: Update k3s-agent service with gigabit network settings
-      lineinfile:
-        path: /etc/systemd/system/k3s-agent.service
-        regexp: "^ExecStart=(.*)$"
-        line: 'ExecStart=\1 --node-ip={{ node_gigabit_ip }} --flannel-iface={{ gigabit_interface }}'
-        backrefs: yes
-        mode: "0644"
-      when:
-        - is_worker
-        - "'not_configured' in k3s_agent_node_ip_check.stdout"
-
     # =========================================================================
-    # Reload systemd and restart k3s
+    # Restart k3s services
     # =========================================================================
-    - name: Reload systemd daemon
-      systemd:
-        daemon_reload: yes
-
     - name: Restart k3s service (control plane)
       systemd:
         name: k3s
         state: restarted
-      when: is_control_plane
-
-    - name: Stop k3s-agent before restart (cleanup stuck state)
-      systemd:
-        name: k3s-agent
-        state: stopped
-      when: is_worker
-      ignore_errors: true
-
-    - name: Clean k3s-agent state if needed
-      file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /var/lib/rancher/k3s/agent
-        - /var/lib/rancher/k3s/agent-tls
-      when: is_worker
-      ignore_errors: true
+        daemon_reload: yes
+      when:
+        - is_control_plane
+        - config_updated.changed | default(false)
 
     - name: Restart k3s-agent service (worker)
       systemd:
         name: k3s-agent
         state: restarted
-      when: is_worker
-      async: 60
-      poll: 5
-      ignore_errors: true
+        daemon_reload: yes
+      when:
+        - is_worker
+        - agent_config_updated.changed | default(false)
 
     - name: Wait for k3s to be ready
       command: k3s kubectl get nodes
@@ -170,12 +203,27 @@
       until: k3s_ready.rc == 0
       retries: 30
       delay: 5
+      changed_when: false
       failed_when: false
       when: is_control_plane
 
     # =========================================================================
     # Verify configuration
     # =========================================================================
+    - name: Verify API server is listening on all interfaces
+      shell: ss -tlnp | grep 6443 | head -1
+      register: api_server_listen
+      changed_when: false
+      failed_when: false
+      when: is_control_plane
+
+    - name: Display API server listening status
+      debug:
+        msg: "API server listening: {{ api_server_listen.stdout }}"
+      when:
+        - is_control_plane
+        - api_server_listen.stdout is defined
+
     - name: Display k3s nodes with new IPs
       command: k3s kubectl get nodes -o wide
       register: k3s_nodes
@@ -192,7 +240,11 @@
       debug:
         msg:
           - "✅ k3s configured to use gigabit network"
-          - "Node IP: {{ node_gigabit_ip }}"
-          - "Interface: {{ gigabit_interface }}"
+          - ""
+          - "Configuration applied:"
+          - "  node-ip: {{ this_node_config.node_ip }}"
+          - "  bind-address: {{ k3s_bind_address | default('0.0.0.0') }}"
+          - "  advertise-address: {{ this_node_config.node_ip }}"
+          - "  Interface: {{ gigabit_interface }}"
           - ""
           - "Verify with: kubectl get nodes -o wide"

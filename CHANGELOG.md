@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.7] - 2026-01-25
+
+### Fixed
+
+- **k3s API server binding for kube-vip compatibility**
+  - Changed `bind-address` from `10.0.0.1` to `0.0.0.0` on all control plane nodes
+  - This allows the API server to accept connections from the kube-vip VIP (192.168.2.100)
+  - Previously, the API server only listened on the gigabit network, making VIP inaccessible
+
+### Changed
+
+- **Updated `configure-k3s-gigabit.yml` playbook**
+  - Refactored to use `/etc/rancher/k3s/config.yaml` instead of modifying the service file
+  - Cleaner and more maintainable configuration management
+  - Sets `bind-address: 0.0.0.0` for kube-vip compatibility
+
+- **New variable in `group_vars/all.yml`**
+  - `k3s_bind_address: "0.0.0.0"` - API server bind address for kube-vip
+
+### Documentation
+
+- Updated `docs/NETWORK_ARCHITECTURE.md` with k3s API server binding configuration
+
 ## [1.3.6] - 2026-01-20
 
 ### Added

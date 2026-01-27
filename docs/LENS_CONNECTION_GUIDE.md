@@ -52,7 +52,7 @@ If the above methods don't work, you can add the cluster manually:
 3. **Select "Custom"** or **"Enter manually"**
 4. **Enter cluster details:**
    - **Name:** `eldertree`
-   - **API Server:** `https://192.168.2.101:6443`
+   - **API Server:** `https://192.168.2.100:6443` (VIP for HA)
    - **Certificate Authority:** (from kubeconfig)
    - **Client Certificate:** (from kubeconfig)
    - **Client Key:** (from kubeconfig)
@@ -63,10 +63,9 @@ After connecting, verify the connection:
 
 1. **Check cluster status** - Should show "Connected" or green indicator
 2. **View nodes** - You should see:
-   - `node-1.eldertree.local` (control-plane)
-   - `node-1.eldertree.local` (control-plane)
-   - `node-2.eldertree.local` (worker)
-   - `node-3.eldertree.local` (worker)
+   - `node-1.eldertree.local` (control-plane, etcd, master)
+   - `node-2.eldertree.local` (control-plane, etcd, master)
+   - `node-3.eldertree.local` (control-plane, etcd, master)
 3. **View namespaces** - Should show system namespaces (kube-system, etc.)
 
 ## Troubleshooting
@@ -77,7 +76,10 @@ If Lens can't connect:
 
 1. **Check network connectivity:**
    ```bash
-   ping 192.168.2.101
+   ping 192.168.2.100  # VIP
+   ping 192.168.2.101  # node-1
+   ping 192.168.2.102  # node-2
+   ping 192.168.2.103  # node-3
    ```
 
 2. **Test with kubectl:**
@@ -122,10 +124,13 @@ If you see certificate errors:
 ## Cluster Information
 
 - **Cluster Name:** eldertree
-- **Control Plane:** node-1.eldertree.local (192.168.2.101)
-- **API Server:** https://192.168.2.101:6443
-- **Kubernetes Version:** v1.33.6+k3s1
-- **Nodes:** 4 (2 control-plane, 2 workers)
+- **VIP (HA):** 192.168.2.100
+- **API Server:** https://192.168.2.100:6443
+- **Kubernetes Version:** v1.33.6+k3s1 / v1.34.3+k3s1
+- **Nodes:** 3 (all control-plane with etcd)
+  - node-1: 192.168.2.101
+  - node-2: 192.168.2.102
+  - node-3: 192.168.2.103
 
 ## Useful Lens Features
 

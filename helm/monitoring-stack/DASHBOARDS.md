@@ -15,15 +15,42 @@ Access Grafana at `https://grafana.eldertree.local` (or `:32474` NodePort for Wi
 
 ---
 
+## Dashboard Organization
+
+### 📁 Folder Structure (Tags)
+
+| Tag | Purpose |
+|-----|---------|
+| `featured` | Key dashboards to check first |
+| `sre` | SRE/DevOps focused dashboards |
+| `overview` | High-level cluster views |
+| `network` | Network and traffic analysis |
+| `workloads` | Kubernetes workload details |
+| `storage` | Storage and PVC monitoring |
+| `app-*` | Application-specific dashboards |
+
+---
+
 ## Dashboard Inventory
 
-### Infrastructure (14 dashboards)
+### 🌟 Featured Dashboards (Start Here)
+
+| Dashboard | File | Description |
+|-----------|------|-------------|
+| **Eldertree Command Center** | `command-center.json` | Single-pane-of-glass for cluster health, resources, and problems |
+| **Eldertree Cluster** | `eldertree-cluster.json` | 3-node HA cluster overview with service status |
+| **Pi Fleet Overview** | `pi-fleet-overview.json` | Resource trends and utilization summary |
+
+### Infrastructure (17 dashboards)
 
 | Dashboard | Source | ID | Description |
 |-----------|--------|-----|-------------|
+| **Eldertree Command Center** | Custom | - | 🌟 Single-pane-of-glass for cluster health, resources, problems |
 | **Eldertree Cluster** | Custom | - | 3-node HA cluster overview, Vault status, all services |
 | **Pi Fleet Overview** | Custom | - | Cluster health summary, resource trends |
 | **Hardware Health** | Custom | - | Raspberry Pi temperature and hardware |
+| **Network Intelligence** | Custom | - | Deep traffic analysis, latency, error rates |
+| **Kubernetes Workloads** | Custom | - | Deployments, StatefulSets, Jobs status and resources |
 | K8s Views Global | Grafana.com | 15757 | Cluster-wide health, resources, nodes |
 | K8s Views Namespaces | Grafana.com | 15758 | Per-namespace CPU, memory, network |
 | K8s Views Pods | Grafana.com | 15759 | Individual pod metrics |

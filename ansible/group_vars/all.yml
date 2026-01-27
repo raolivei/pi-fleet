@@ -46,6 +46,12 @@ k3s_node_ip_node_3: "{{ node_3_eth0_ip }}"
 # Flannel interface for CNI (use gigabit)
 k3s_flannel_iface: "eth0"
 
+# API server bind address
+# IMPORTANT: Must be 0.0.0.0 for kube-vip to work properly
+# If set to a specific IP (e.g., 10.0.0.1), the API server only listens
+# on that interface and kube-vip VIP (192.168.2.100) cannot reach it
+k3s_bind_address: "0.0.0.0"
+
 # Services to disable on all nodes
 # Tailscale was causing routing conflicts with k3s CNI
 disabled_services:

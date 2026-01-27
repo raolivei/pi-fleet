@@ -29,6 +29,12 @@
 #   # Skip reboot
 #   ansible-playbook playbooks/security-update.yml -e skip_reboot=true
 #
+#   # Specific k3s version
+#   ansible-playbook playbooks/security-update.yml -e k3s_target_version=v1.34.3+k3s1
+#
+#   # Only upgrade k3s (skip OS updates, skip reboot)
+#   ansible-playbook playbooks/security-update.yml -e skip_reboot=true --tags k3s
+#
 # =============================================================================
 
 - name: Security Update - Rolling Update for Eldertree Cluster
@@ -44,6 +50,8 @@
     skip_k3s_upgrade: false
     # Skip reboot if set to true
     skip_reboot: false
+    # Target k3s version (empty = latest stable)
+    k3s_target_version: ""
     # kubectl path (on control node)
     kubectl_bin: kubectl
     # kubeconfig path
@@ -202,9 +210,9 @@
           when: k3s_service_status.rc == 0
           failed_when: false
 
-        - name: "k3s: Download and install latest k3s"
+        - name: "k3s: Download and install k3s {{ k3s_target_version | default('latest') }}"
           shell: |
-            curl -sfL https://get.k3s.io | INSTALL_K3S_SKIP_START=true sh -
+            curl -sfL https://get.k3s.io | INSTALL_K3S_SKIP_START=true {{ 'INSTALL_K3S_VERSION=' + k3s_target_version if k3s_target_version else '' }} sh -
           register: k3s_install
           when: k3s_service_status.rc == 0
 
