@@ -1,0 +1,80 @@
+---
+# Fix klipper-lb sysctl issue on k3s nodes
+# The svclb-traefik pods need net.ipv4.ip_forward sysctl which is blocked by default
+#
+# Usage: ansible-playbook -i inventory/eldertree.yml playbooks/fix-klipper-sysctl.yml
+
+- name: Allow net.ipv4.ip_forward sysctl for klipper-lb
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure /etc/rancher/k3s directory exists
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: "0755"
+
+    - name: Check if config.yaml exists
+      stat:
+        path: /etc/rancher/k3s/config.yaml
+      register: config_file
+
+    - name: Create config.yaml if it doesn't exist
+      copy:
+        content: |
+          # K3s configuration
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0644"
+      when: not config_file.stat.exists
+
+    - name: Check if kubelet-arg already configured
+      shell: grep -q "allowed-unsafe-sysctls" /etc/rancher/k3s/config.yaml
+      register: sysctl_configured
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Add allowed-unsafe-sysctls configuration
+      blockinfile:
+        path: /etc/rancher/k3s/config.yaml
+        marker: "# {mark} ANSIBLE MANAGED - klipper-lb sysctl fix"
+        block: |
+          kubelet-arg:
+            - "allowed-unsafe-sysctls=net.ipv4.ip_forward"
+      when: sysctl_configured.rc != 0
+      register: config_changed
+
+    - name: Check if node is a server (control plane)
+      stat:
+        path: /etc/systemd/system/k3s.service
+      register: k3s_server
+
+    - name: Restart k3s server
+      systemd:
+        name: k3s
+        state: restarted
+      when:
+        - config_changed.changed
+        - k3s_server.stat.exists
+
+    - name: Restart k3s agent (if not server)
+      systemd:
+        name: k3s-agent
+        state: restarted
+      when:
+        - config_changed.changed
+        - not k3s_server.stat.exists
+      ignore_errors: yes
+
+    - name: Wait for node to be ready
+      pause:
+        seconds: 30
+      when: config_changed.changed
+
+    - name: Verify k3s is running
+      shell: systemctl is-active k3s || systemctl is-active k3s-agent
+      register: k3s_status
+      changed_when: false
+
+    - name: Display status
+      debug:
+        msg: "K3s status on {{ inventory_hostname }}: {{ k3s_status.stdout }}"

@@ -1,8 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Autoscaling infrastructure - KEDA for event-driven scaling
+# Autoscaling infrastructure
 resources:
-  - keda # Kubernetes Event-Driven Autoscaling
+  - keda # Kubernetes Event-Driven Autoscaling (horizontal)
+  - vpa  # Vertical Pod Autoscaler (vertical)
 
 
 

@@ -1,0 +1,49 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vpa
+  namespace: vpa
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: vpa
+      version: "4.6.0"
+      sourceRef:
+        kind: HelmRepository
+        name: fairwinds-stable
+        namespace: vpa
+      interval: 12h
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    # Recommender - provides resource recommendations
+    recommender:
+      enabled: true
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+
+    # Updater - automatically updates pod resources (DISABLED for now)
+    # Start with recommendations only, enable later if needed
+    updater:
+      enabled: false
+
+    # Admission Controller - mutates pods at creation (DISABLED for now)
+    # Start with recommendations only, enable later if needed
+    admissionController:
+      enabled: false
+
+    # Use CRDs from the chart
+    crds:
+      install: true

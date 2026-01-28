@@ -1,0 +1,307 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  longhorn-overview.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+          "id": 1,
+          "options": {
+            "content": "# Longhorn Storage Analysis\n\nThis dashboard tracks Longhorn resource usage to help determine if it's overkill for your cluster.",
+            "mode": "markdown"
+          },
+          "title": "",
+          "type": "text"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 500 },
+                  { "color": "red", "value": 1000 }
+                ]
+              },
+              "unit": "decmbytes"
+            }
+          },
+          "gridPos": { "h": 6, "w": 8, "x": 0, "y": 4 },
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"longhorn-system\"}) / 1024 / 1024",
+              "refId": "A"
+            }
+          ],
+          "title": "Longhorn Total Memory (MB)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 200 },
+                  { "color": "red", "value": 500 }
+                ]
+              },
+              "unit": "none"
+            }
+          },
+          "gridPos": { "h": 6, "w": 8, "x": 8, "y": 4 },
+          "id": 3,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"longhorn-system\"}[5m])) * 1000",
+              "refId": "A"
+            }
+          ],
+          "title": "Longhorn Total CPU (millicores)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 20 },
+                  { "color": "red", "value": 30 }
+                ]
+              },
+              "unit": "none"
+            }
+          },
+          "gridPos": { "h": 6, "w": 8, "x": 16, "y": 4 },
+          "id": 4,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "count(kube_pod_info{namespace=\"longhorn-system\"})",
+              "refId": "A"
+            }
+          ],
+          "title": "Longhorn Pod Count",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" },
+                "thresholdsStyle": { "mode": "off" }
+              },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+              "unit": "decmbytes"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+          "id": 5,
+          "options": {
+            "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"longhorn-system\", pod=~\".*manager.*|.*instance.*\"}) / 1024 / 1024",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Longhorn Manager & Instance Memory",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" },
+                "thresholdsStyle": { "mode": "off" }
+              },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+              "unit": "none"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+          "id": 6,
+          "options": {
+            "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"longhorn-system\", pod=~\".*manager.*|.*instance.*\"}[5m])) * 1000",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Longhorn Manager & Instance CPU (millicores)",
+          "type": "timeseries"
+        },
+        {
+          "gridPos": { "h": 2, "w": 24, "x": 0, "y": 18 },
+          "id": 7,
+          "options": {
+            "content": "## Comparison: Longhorn vs Other Namespaces",
+            "mode": "markdown"
+          },
+          "title": "",
+          "type": "text"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+              "mappings": [],
+              "unit": "decmbytes"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+          "id": 8,
+          "options": {
+            "displayLabels": ["name", "value"],
+            "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value"] },
+            "pieType": "pie",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "sum by (namespace) (container_memory_working_set_bytes{namespace=~\"longhorn-system|kube-system|vault|swimto|observability|external-secrets\"}) / 1024 / 1024",
+              "legendFormat": "{{namespace}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Memory by Namespace (MB)",
+          "type": "piechart"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+              "mappings": [],
+              "unit": "none"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+          "id": 9,
+          "options": {
+            "displayLabels": ["name", "value"],
+            "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value"] },
+            "pieType": "pie",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "count by (namespace) (kube_pod_info{namespace=~\"longhorn-system|kube-system|vault|swimto|observability|external-secrets\"})",
+              "legendFormat": "{{namespace}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Pod Count by Namespace",
+          "type": "piechart"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["longhorn", "storage", "resources"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "title": "Longhorn Resource Analysis",
+      "uid": "longhorn-resources",
+      "version": 1
+    }

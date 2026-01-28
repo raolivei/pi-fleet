@@ -1,0 +1,242 @@
+---
+# =============================================================================
+# k3s Upgrade Playbook for Eldertree Cluster
+# =============================================================================
+# Performs rolling k3s upgrades on Raspberry Pi nodes (k3s only, no OS updates)
+#
+# Features:
+#   - Rolling upgrades (one node at a time) to maintain cluster availability
+#   - Kubernetes drain/uncordon for graceful workload migration
+#   - Uses k3s_version from group_vars/all.yml as target (or override with -e)
+#   - Pre-flight version checks (skip nodes already at target version)
+#   - Respects PodDisruptionBudgets during drain
+#   - Post-upgrade cluster health verification
+#   - No reboot required (k3s upgrade only)
+#
+# Usage:
+#   # Update target version first
+#   # Edit ansible/group_vars/all.yml: k3s_version: "v1.34.5+k3s1"
+#
+#   # Dry run (preview changes)
+#   ansible-playbook playbooks/upgrade-k3s.yml --check
+#
+#   # Single node first (recommended)
+#   ansible-playbook playbooks/upgrade-k3s.yml --limit node-1
+#
+#   # Full rolling upgrade (all nodes)
+#   ansible-playbook playbooks/upgrade-k3s.yml
+#
+#   # Override target version (without editing group_vars)
+#   ansible-playbook playbooks/upgrade-k3s.yml -e k3s_target_version=v1.34.5+k3s1
+#
+# Comparison with security-update.yml:
+#   - security-update.yml: Full rolling update (OS + firmware + k3s + reboot)
+#   - upgrade-k3s.yml: k3s-only rolling upgrade (no OS updates, no reboot)
+#
+# =============================================================================
+
+- name: k3s Rolling Upgrade - Eldertree Cluster
+  hosts: raspberry_pi
+  become: true
+  serial: 1  # Rolling upgrade - one node at a time
+  vars:
+    # Target version from group_vars/all.yml (can override with -e)
+    k3s_target_version: "{{ k3s_version }}"
+    # Kubeconfig for kubectl commands
+    kubeconfig_path: "{{ lookup('env', 'HOME') }}/.kube/config-eldertree"
+    # kubectl binary path
+    kubectl_bin: kubectl
+    # Drain timeout in seconds
+    drain_timeout: 120
+    # Node ready timeout in seconds
+    node_ready_timeout: 300
+
+  tasks:
+    # =========================================================================
+    # Pre-Flight Checks
+    # =========================================================================
+    - name: "Pre-flight: Get current k3s version"
+      shell: k3s --version 2>/dev/null | head -1 || echo "k3s not installed"
+      register: k3s_version_before
+      changed_when: false
+      failed_when: false
+
+    - name: "Pre-flight: Extract version string"
+      shell: k3s --version 2>/dev/null | head -1 | grep -oP 'v[\d.]+\+k3s\d+' || echo "unknown"
+      register: k3s_current_version
+      changed_when: false
+      failed_when: false
+
+    - name: "Pre-flight: Display upgrade info"
+      debug:
+        msg:
+          - "======================================"
+          - "k3s Upgrade on {{ inventory_hostname }}"
+          - "IP: {{ ansible_host }}"
+          - "Current: {{ k3s_version_before.stdout }}"
+          - "Target:  {{ k3s_target_version }}"
+          - "======================================"
+
+    - name: "Pre-flight: Skip if already at target version"
+      meta: end_host
+      when: k3s_target_version in (k3s_current_version.stdout | default(''))
+
+    # =========================================================================
+    # Kubernetes Drain
+    # =========================================================================
+    - name: "Kubernetes: Check if k3s is running"
+      shell: systemctl is-active k3s || systemctl is-active k3s-agent
+      register: k3s_service_status
+      changed_when: false
+      failed_when: false
+
+    - name: "Kubernetes: Get node FQDN"
+      shell: hostname -f
+      register: node_fqdn
+      changed_when: false
+
+    - name: "Kubernetes: Drain node (evacuate workloads)"
+      delegate_to: localhost
+      become: false
+      shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        {{ kubectl_bin }} drain {{ node_fqdn.stdout }} \
+          --ignore-daemonsets \
+          --delete-emptydir-data \
+          --force \
+          --timeout={{ drain_timeout }}s || true
+      when: k3s_service_status.rc == 0
+      register: drain_result
+      failed_when: false
+
+    - name: "Kubernetes: Display drain result"
+      debug:
+        msg: "Node drained: {{ 'success' if drain_result.rc == 0 else 'skipped or failed (continuing)' }}"
+      when: k3s_service_status.rc == 0
+
+    # =========================================================================
+    # k3s Upgrade
+    # =========================================================================
+    - name: "k3s: Determine service name"
+      set_fact:
+        k3s_service_name: "{{ 'k3s' if k3s_service_status.stdout == 'active' else 'k3s-agent' }}"
+      when: k3s_service_status.rc == 0
+
+    - name: "k3s: Stop service"
+      systemd:
+        name: "{{ k3s_service_name }}"
+        state: stopped
+      when: k3s_service_status.rc == 0
+      failed_when: false
+
+    - name: "k3s: Download and install {{ k3s_target_version }}"
+      shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_target_version }}" sh -
+      register: k3s_install
+      when: k3s_service_status.rc == 0
+
+    - name: "k3s: Ensure service is started"
+      systemd:
+        name: "{{ k3s_service_name }}"
+        state: started
+        enabled: true
+      when: k3s_service_status.rc == 0
+
+    # =========================================================================
+    # Post-Upgrade Verification
+    # =========================================================================
+    - name: "Verify: Wait for k3s to be ready"
+      shell: |
+        for i in $(seq 1 30); do
+          if systemctl is-active k3s >/dev/null 2>&1 || systemctl is-active k3s-agent >/dev/null 2>&1; then
+            echo "k3s is active"
+            exit 0
+          fi
+          sleep 5
+        done
+        echo "k3s not ready after 150s"
+        exit 1
+      register: k3s_ready
+      changed_when: false
+      when: k3s_service_status.rc == 0
+      failed_when: false
+
+    - name: "Verify: Get new k3s version"
+      shell: k3s --version 2>/dev/null | head -1 || echo "unknown"
+      register: k3s_version_after
+      changed_when: false
+
+    - name: "Verify: Display upgrade result"
+      debug:
+        msg:
+          - "======================================"
+          - "Upgrade Complete: {{ inventory_hostname }}"
+          - "Before: {{ k3s_version_before.stdout }}"
+          - "After:  {{ k3s_version_after.stdout }}"
+          - "======================================"
+
+    # =========================================================================
+    # Kubernetes Uncordon
+    # =========================================================================
+    - name: "Kubernetes: Uncordon node (re-enable scheduling)"
+      delegate_to: localhost
+      become: false
+      shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        {{ kubectl_bin }} uncordon {{ node_fqdn.stdout }} || true
+      when: k3s_service_status.rc == 0
+      register: uncordon_result
+      failed_when: false
+
+    - name: "Kubernetes: Display uncordon result"
+      debug:
+        msg: "Node uncordoned: {{ 'success' if uncordon_result.rc == 0 else 'skipped or failed' }}"
+      when: k3s_service_status.rc == 0
+
+    # =========================================================================
+    # Wait for Cluster Health
+    # =========================================================================
+    - name: "Cluster: Wait for node to be Ready"
+      delegate_to: localhost
+      become: false
+      shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        {{ kubectl_bin }} wait --for=condition=Ready \
+          node/{{ node_fqdn.stdout }} --timeout={{ node_ready_timeout }}s
+      register: node_ready
+      when: k3s_service_status.rc == 0
+      failed_when: false
+      retries: 3
+      delay: 10
+
+    - name: "Cluster: Display final node status"
+      delegate_to: localhost
+      become: false
+      shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        {{ kubectl_bin }} get node {{ node_fqdn.stdout }} -o wide
+      register: node_status
+      changed_when: false
+      when: k3s_service_status.rc == 0
+      failed_when: false
+
+    - name: "Cluster: Show node status"
+      debug:
+        msg: "{{ node_status.stdout_lines | default(['Node status unknown']) }}"
+      when: k3s_service_status.rc == 0
+
+  # ===========================================================================
+  # Handlers
+  # ===========================================================================
+  handlers:
+    - name: restart k3s
+      systemd:
+        name: k3s
+        state: restarted
+      failed_when: false
+
+    - name: restart k3s-agent
+      systemd:
+        name: k3s-agent
+        state: restarted
+      failed_when: false

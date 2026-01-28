@@ -1,0 +1,110 @@
+# Longhorn Helm Chart Values
+# Optimized for Raspberry Pi ARM64 with NVMe storage
+
+# Default replica count - ensures data survives single node failure
+defaultSettings:
+  defaultReplicaCount: "2"
+  replicaSoftAntiAffinity: "false" # Hard anti-affinity - replicas must be on different nodes
+  defaultDataPath: "/mnt/longhorn"
+  defaultFsType: "ext4"
+  storageOverProvisioningPercentage: "200"
+  storageMinimalAvailablePercentage: "25"
+  allowRecurringJobWhileVolumeDetached: "true"
+  # Node drain policy - allows draining when replicas exist on other nodes
+  # Options: block-if-contains-last-replica, allow-if-replica-is-stopped, always-allow
+  nodeDrainPolicy: "block-if-contains-last-replica"
+  # Auto-delete workload pods when draining (needed for graceful drain)
+  nodeDownPodDeletionPolicy: "delete-both-statefulset-and-deployment-pod"
+  # Replica auto-balance spreads replicas across nodes when a node comes back
+  replicaAutoBalance: "best-effort"
+
+  # Disable default storage class - manual selection preferred
+  defaultClass: "false"
+
+  # Backup settings (configured separately via backup-setup.sh)
+  backupTarget: ""
+  backupTargetCredentialSecret: ""
+
+# Resource limits optimized for Raspberry Pi
+persistence:
+  fsType: "ext4"
+
+# Manager settings
+manager:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# Engine settings
+engine:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+# Instance Manager settings
+instanceManager:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+# CSI Driver settings
+csi:
+  attacher:
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+  provisioner:
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+  resizer:
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+  snapshotter:
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+
+# UI settings
+ui:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+# Disable features not needed for homelab
+# Keep default settings for other components
+

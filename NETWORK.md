@@ -4,30 +4,30 @@
 
 **Cluster Nodes:**
 
-| Node   | Hostname                  | wlan0 IP       | eth0 IP   |
-|--------|---------------------------|----------------|-----------|
-| node-1 | node-1.eldertree.local    | 192.168.2.101  | 10.0.0.1  |
-| node-2 | node-2.eldertree.local    | 192.168.2.102  | 10.0.0.2  |
-| node-3 | node-3.eldertree.local    | 192.168.2.103  | 10.0.0.3  |
+| Node   | Hostname               | wlan0 IP      | eth0 IP  |
+| ------ | ---------------------- | ------------- | -------- |
+| node-1 | node-1.eldertree.local | 192.168.2.101 | 10.0.0.1 |
+| node-2 | node-2.eldertree.local | 192.168.2.102 | 10.0.0.2 |
+| node-3 | node-3.eldertree.local | 192.168.2.103 | 10.0.0.3 |
 
 **kube-vip Virtual IPs (ARP Mode):**
 
 kube-vip handles both the HA control plane VIP and LoadBalancer service VIPs.
 This replaces MetalLB and provides reliable ARP-based IP assignment.
 
-| VIP            | Service           | Description                    |
-|----------------|-------------------|--------------------------------|
-| 192.168.2.100  | K8s API Server    | HA control plane VIP           |
-| 192.168.2.200  | Traefik Ingress   | HTTPS ingress for all services |
-| 192.168.2.201  | Pi-hole           | DNS server                     |
+| VIP           | Service         | Description                    |
+| ------------- | --------------- | ------------------------------ |
+| 192.168.2.100 | K8s API Server  | HA control plane VIP           |
+| 192.168.2.200 | Traefik Ingress | HTTPS ingress for all services |
+| 192.168.2.201 | Pi-hole         | DNS server                     |
 
 **k3s Internal Networks:**
 
-| Network        | CIDR            | Description          |
-|----------------|-----------------|----------------------|
-| Pod Network    | 10.42.0.0/16    | Container IPs        |
-| Service Network| 10.43.0.0/16    | ClusterIP services   |
-| Internal       | 10.0.0.0/24     | Node eth0 (internal) |
+| Network         | CIDR         | Description          |
+| --------------- | ------------ | -------------------- |
+| Pod Network     | 10.42.0.0/16 | Container IPs        |
+| Service Network | 10.43.0.0/16 | ClusterIP services   |
+| Internal        | 10.0.0.0/24  | Node eth0 (internal) |
 
 ## Static IP Configuration
 
@@ -69,12 +69,14 @@ Pi-hole is configured as a LoadBalancer service (kube-vip) on port 53, making it
 For Bell Giga Hub or routers that don't forward DNS properly, configure macOS directly:
 
 **Via Terminal (recommended):**
+
 ```bash
 sudo networksetup -setdnsservers Wi-Fi 192.168.2.201 1.1.1.1
 sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
 ```
 
 **Via System Settings:**
+
 1. Open **System Settings** → **Network** → **Wi-Fi/Ethernet** → **Details...** → **DNS**.
 2. Add `192.168.2.201` as the primary DNS server.
 3. Add `1.1.1.1` as secondary DNS server (fallback).

@@ -283,6 +283,67 @@ ansible-playbook playbooks/install-k3s.yml \
 
 **Note**: This playbook will reboot the Pi if cgroup configuration is updated. The playbook will wait for the Pi to come back online automatically.
 
+### Upgrade k3s (`playbooks/upgrade-k3s.yml`)
+
+Perform rolling k3s upgrades across the cluster. This playbook upgrades k3s only (no OS updates, no reboot) and is designed for Kubernetes version upgrades between full maintenance windows.
+
+**Features**:
+
+- Rolling upgrades (one node at a time) via `serial: 1`
+- Kubernetes drain/uncordon for graceful workload migration
+- Uses `k3s_version` from `group_vars/all.yml` as target version
+- Pre-flight version checks (skips nodes already at target version)
+- Respects PodDisruptionBudgets during drain
+- Post-upgrade cluster health verification
+- No reboot required
+
+**Comparison with security-update.yml**:
+
+| Playbook | Purpose | When to Use |
+|----------|---------|-------------|
+| `security-update.yml` | Full rolling update (OS + firmware + k3s + reboot) | Monthly maintenance windows |
+| `upgrade-k3s.yml` | k3s-only rolling upgrade (no OS updates, no reboot) | K8s version upgrades between maintenance |
+
+**Usage**:
+
+```bash
+cd ansible
+
+# Update target version first
+# Edit ansible/group_vars/all.yml: k3s_version: "v1.34.5+k3s1"
+
+# Dry run (preview changes)
+ansible-playbook playbooks/upgrade-k3s.yml --check
+
+# Single node first (recommended)
+ansible-playbook playbooks/upgrade-k3s.yml --limit node-1
+
+# Full rolling upgrade (all nodes)
+ansible-playbook playbooks/upgrade-k3s.yml
+
+# Override target version (without editing group_vars)
+ansible-playbook playbooks/upgrade-k3s.yml -e k3s_target_version=v1.34.5+k3s1
+```
+
+**Variables** (can be overridden):
+
+```yaml
+k3s_target_version: "{{ k3s_version }}"  # From group_vars/all.yml
+kubeconfig_path: "~/.kube/config-eldertree"  # Local kubeconfig
+kubectl_bin: kubectl  # kubectl binary
+drain_timeout: 120  # Drain timeout in seconds
+node_ready_timeout: 300  # Node ready timeout in seconds
+```
+
+**Workflow**:
+
+1. Pre-flight: Check current version, skip if already at target
+2. Drain: Evacuate workloads from node (respects PDBs)
+3. Upgrade: Stop k3s, install target version, start k3s
+4. Verify: Wait for k3s service to be active
+5. Uncordon: Re-enable scheduling on node
+6. Health check: Wait for node to be Ready before proceeding to next node
+
 ### Bootstrap FluxCD (`playbooks/bootstrap-flux.yml`)
 
 Bootstrap FluxCD GitOps on the eldertree cluster. This playbook is idempotent and will skip bootstrap if FluxCD is already installed.

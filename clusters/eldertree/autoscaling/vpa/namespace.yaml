@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vpa
+  labels:
+    app.kubernetes.io/name: vpa
+    app.kubernetes.io/component: autoscaling

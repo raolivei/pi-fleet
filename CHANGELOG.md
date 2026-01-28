@@ -2,6 +2,18 @@
 
 ## [1.3.8] - 2026-01-27
 
+### Added
+
+- **k3s Upgrade Playbook** (`ansible/playbooks/upgrade-k3s.yml`)
+  - Rolling k3s-only upgrades (no OS updates, no reboot required)
+  - One node at a time via `serial: 1` for cluster availability
+  - Kubernetes drain/uncordon for graceful workload migration
+  - Uses `k3s_version` from `group_vars/all.yml` as target
+  - Pre-flight version checks (skips nodes already at target)
+  - Respects PodDisruptionBudgets during drain
+  - Post-upgrade cluster health verification
+  - Complements `security-update.yml` for K8s version upgrades between maintenance windows
+
 ### Fixed
 
 - **Traefik LoadBalancer IP configuration**
@@ -13,6 +25,7 @@
 
 - Updated `NETWORK.md` with Bell Giga Hub DNS limitations
 - Added macOS terminal commands for direct Pi-hole DNS configuration
+- Added `upgrade-k3s.yml` documentation to `ansible/README.md`
 
 ## [1.3.7] - 2026-01-25
 
