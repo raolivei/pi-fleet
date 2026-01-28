@@ -10,6 +10,13 @@ defaultSettings:
   storageOverProvisioningPercentage: "200"
   storageMinimalAvailablePercentage: "25"
   allowRecurringJobWhileVolumeDetached: "true"
+  # Node drain policy - allows draining when replicas exist on other nodes
+  # Options: block-if-contains-last-replica, allow-if-replica-is-stopped, always-allow
+  nodeDrainPolicy: "block-if-contains-last-replica"
+  # Auto-delete workload pods when draining (needed for graceful drain)
+  nodeDownPodDeletionPolicy: "delete-both-statefulset-and-deployment-pod"
+  # Replica auto-balance spreads replicas across nodes when a node comes back
+  replicaAutoBalance: "best-effort"
 
   # Disable default storage class - manual selection preferred
   defaultClass: "false"

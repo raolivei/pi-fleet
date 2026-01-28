@@ -1,0 +1,42 @@
+# ExternalSecret for eldertree.xyz Cloudflare Origin Certificate
+# Syncs the origin certificate from Vault to Kubernetes for TLS termination
+# Used by swimto.eldertree.xyz and other *.eldertree.xyz subdomains
+#
+# Prerequisites:
+# 1. Cloudflare Origin Certificate generated via Terraform (eldertree_xyz_origin_cert output)
+# 2. Certificate and key stored in Vault at: secret/swimto/cloudflare-origin-cert-eldertree
+#
+# To store in Vault (after running terraform apply):
+#   cd ~/WORKSPACE/raolivei/pi-fleet/terraform
+#   CERT=$(terraform output -raw eldertree_xyz_origin_cert)
+#   KEY=$(terraform output -raw eldertree_xyz_origin_key)
+#   kubectl exec -n vault vault-1 -- vault kv put secret/swimto/cloudflare-origin-cert-eldertree \
+#     certificate="$CERT" \
+#     private-key="$KEY"
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: swimto-cloudflare-origin-cert-eldertree
+  namespace: swimto
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: swimto-cloudflare-origin-tls
+    creationPolicy: Owner
+    template:
+      type: kubernetes.io/tls
+      data:
+        tls.crt: "{{ .certificate }}"
+        tls.key: "{{ .privatekey }}"
+  data:
+    - secretKey: certificate
+      remoteRef:
+        key: secret/swimto/cloudflare-origin-cert-eldertree
+        property: certificate
+    - secretKey: privatekey
+      remoteRef:
+        key: secret/swimto/cloudflare-origin-cert-eldertree
+        property: private-key

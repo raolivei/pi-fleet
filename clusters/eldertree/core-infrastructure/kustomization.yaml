@@ -11,3 +11,4 @@ resources:
   - storage-class-default-patch.yaml # Ensure local-path is NOT default (Longhorn is)
   - storage-class-nvme.yaml # NVMe/SATA storage class for main node (high-performance)
   - storage-class-sd.yaml # SD card storage class for worker nodes
+  - traefik-config.yaml # HA Traefik with 2 replicas for graceful node drains

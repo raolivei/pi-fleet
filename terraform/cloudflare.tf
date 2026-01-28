@@ -172,6 +172,47 @@ resource "cloudflare_origin_ca_certificate" "swimto_app" {
   ]
 }
 
+# =============================================================================
+# eldertree.xyz Origin Certificate
+# =============================================================================
+
+# Generate private key for eldertree.xyz Origin Certificate
+resource "tls_private_key" "eldertree_xyz" {
+  count     = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+# Generate CSR for eldertree.xyz Origin Certificate
+resource "tls_cert_request" "eldertree_xyz" {
+  count           = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? 1 : 0
+  private_key_pem = tls_private_key.eldertree_xyz[0].private_key_pem
+
+  subject {
+    common_name  = "eldertree.xyz"
+    organization = "Eldertree"
+  }
+}
+
+# Cloudflare Origin Certificate for eldertree.xyz
+# Creates Origin CA certificate for eldertree.xyz and all subdomains
+# NOTE: Requires API token with "SSL and Certificates:Edit" permission
+resource "cloudflare_origin_ca_certificate" "eldertree_xyz" {
+  count = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? 1 : 0
+
+  # Certificate configuration
+  request_type       = "origin-rsa" # RSA 2048-bit key
+  requested_validity = 5475         # 15 years (maximum)
+  csr                = tls_cert_request.eldertree_xyz[0].cert_request_pem
+
+  # Hostnames covered by this certificate
+  # Using wildcard to cover all subdomains (eldertree.xyz, swimto.eldertree.xyz, etc.)
+  hostnames = [
+    "eldertree.xyz",
+    "*.eldertree.xyz"
+  ]
+}
+
 # NOTE: TLS certificates are managed by cert-manager via Helm charts
 # See: clusters/eldertree/core-infrastructure/issuers/
 # 
@@ -443,6 +484,22 @@ output "cloudflare_tunnel_cname" {
 }
 
 # =============================================================================
+# eldertree.xyz Origin Certificate Outputs
+# =============================================================================
+
+output "eldertree_xyz_origin_cert" {
+  description = "Origin certificate for eldertree.xyz - use with kubectl create secret tls"
+  value       = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? cloudflare_origin_ca_certificate.eldertree_xyz[0].certificate : null
+  sensitive   = true
+}
+
+output "eldertree_xyz_origin_key" {
+  description = "Private key for eldertree.xyz origin certificate"
+  value       = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? tls_private_key.eldertree_xyz[0].private_key_pem : null
+  sensitive   = true
+}
+
+# =============================================================================
 # swimto.app Origin Certificate Outputs
 # =============================================================================
 
@@ -455,6 +512,22 @@ output "swimto_app_origin_cert" {
 output "swimto_app_origin_key" {
   description = "Private key for swimto.app origin certificate"
   value       = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? tls_private_key.swimto_app[0].private_key_pem : null
+  sensitive   = true
+}
+
+# =============================================================================
+# pitanga.cloud Origin Certificate Outputs
+# =============================================================================
+
+output "pitanga_cloud_origin_cert" {
+  description = "Origin certificate for pitanga.cloud - use with kubectl create secret tls"
+  value       = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? cloudflare_origin_ca_certificate.pitanga_cloud[0].certificate : null
+  sensitive   = true
+}
+
+output "pitanga_cloud_origin_key" {
+  description = "Private key for pitanga.cloud origin certificate"
+  value       = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? tls_private_key.pitanga_cloud[0].private_key_pem : null
   sensitive   = true
 }
 

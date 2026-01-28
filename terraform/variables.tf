@@ -61,7 +61,9 @@ variable "vault_address" {
   description = "Vault server address. Use http://127.0.0.1:8200 with port-forward or Vault ingress URL."
   type        = string
   default     = "http://127.0.0.1:8200"
-}variable "vault_token" {
+}
+
+variable "vault_token" {
   description = "Vault authentication token (root token or token with sufficient permissions). Stored in external-secrets namespace."
   type        = string
   sensitive   = true

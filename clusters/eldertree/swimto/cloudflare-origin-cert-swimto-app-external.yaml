@@ -1,0 +1,41 @@
+# ExternalSecret for swimto.app Cloudflare Origin Certificate
+# Syncs the origin certificate from Vault to Kubernetes for TLS termination
+#
+# Prerequisites:
+# 1. Cloudflare Origin Certificate generated via Terraform (swimto_app_origin_cert output)
+# 2. Certificate and key stored in Vault at: secret/swimto/cloudflare-origin-cert-app
+#
+# To store in Vault (after running terraform apply):
+#   VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
+#   CERT=$(cd pi-fleet/terraform && terraform output -raw swimto_app_origin_cert)
+#   KEY=$(cd pi-fleet/terraform && terraform output -raw swimto_app_origin_key)
+#   kubectl exec -n vault $VAULT_POD -- vault kv put secret/swimto/cloudflare-origin-cert-app \
+#     certificate="$CERT" \
+#     private-key="$KEY"
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: swimto-app-cloudflare-origin-cert
+  namespace: swimto
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: swimto-app-tls
+    creationPolicy: Owner
+    template:
+      type: kubernetes.io/tls
+      data:
+        tls.crt: "{{ .certificate }}"
+        tls.key: "{{ .privatekey }}"
+  data:
+    - secretKey: certificate
+      remoteRef:
+        key: secret/swimto/cloudflare-origin-cert-app
+        property: certificate
+    - secretKey: privatekey
+      remoteRef:
+        key: secret/swimto/cloudflare-origin-cert-app
+        property: private-key

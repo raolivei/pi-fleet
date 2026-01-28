@@ -13,7 +13,9 @@ output "pitanga_cloud_origin_private_key" {
   description = "Private key for pitanga.cloud Origin Certificate (PEM format)"
   value       = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? tls_private_key.pitanga_cloud[0].private_key_pem : null
   sensitive   = true
-}output "pitanga_cloud_certificate_id" {
+}
+
+output "pitanga_cloud_certificate_id" {
   description = "Cloudflare Origin Certificate ID for pitanga.cloud"
   value       = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? cloudflare_origin_ca_certificate.pitanga_cloud[0].id : null
 }

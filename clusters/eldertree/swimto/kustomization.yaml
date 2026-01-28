@@ -16,3 +16,6 @@ resources:
   - image-repositories.yaml
   - image-policies.yaml
   - image-update-automation.yaml
+  # Cloudflare Origin Certificates (synced from Vault)
+  - cloudflare-origin-cert-swimto-app-external.yaml
+  - cloudflare-origin-cert-eldertree-xyz-external.yaml

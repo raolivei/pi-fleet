@@ -9,6 +9,7 @@ spec:
     regex: "^/api(/.*?)/?$"
     replacement: "$1/"
 ---
+
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -143,6 +144,127 @@ spec:
                 name: swimto-web-service
                 port:
                   number: 3000
+---
+# =============================================================================
+# swimto.app Public Domain Ingress (Production)
+# =============================================================================
+# Configured for swimto.app domain via Cloudflare Tunnel
+# Requires:
+# 1. Cloudflare Origin Certificate for swimto.app (generated via Terraform)
+# 2. Certificate stored as Kubernetes secret: swimto-app-tls
+# 3. Cloudflare SSL/TLS mode set to "Full (strict)" in Cloudflare Dashboard
+# 4. DNS records managed by Terraform (CNAME to Cloudflare Tunnel)
+# 5. Cloudflare proxy enabled (orange cloud) for automatic HTTPS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: swimto-api-swimto-app
+  namespace: swimto
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: swimto-api-path-rewrite@kubernetescrd
+  labels:
+    app: swimto
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - swimto.app
+      secretName: swimto-app-tls
+  rules:
+    - host: swimto.app
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: swimto-api-service
+                port:
+                  number: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: swimto-web-swimto-app
+  namespace: swimto
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  labels:
+    app: swimto
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - swimto.app
+      secretName: swimto-app-tls
+  rules:
+    - host: swimto.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: swimto-web-service
+                port:
+                  number: 3000
+---
+# www.swimto.app - routes to same backend
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: swimto-web-www-swimto-app
+  namespace: swimto
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  labels:
+    app: swimto
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - www.swimto.app
+      secretName: swimto-app-tls
+  rules:
+    - host: www.swimto.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: swimto-web-service
+                port:
+                  number: 3000
+---
+# api.swimto.app - direct API subdomain access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: swimto-api-subdomain-swimto-app
+  namespace: swimto
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  labels:
+    app: swimto
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - api.swimto.app
+      secretName: swimto-app-tls
+  rules:
+    - host: api.swimto.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: swimto-api-service
+                port:
+                  number: 8000
 ---
 # IP-based Ingress for access via IP (mobile/iPhone via WireGuard, or localhost)
 # Supports both HTTP and HTTPS

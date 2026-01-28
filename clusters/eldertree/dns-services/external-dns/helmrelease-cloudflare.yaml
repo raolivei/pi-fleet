@@ -26,7 +26,9 @@ spec:
   upgrade:
     cleanupOnFail: true
   values:
-    replicaCount: 2
+    # Note: External-DNS chart uses 'replicas' under 'deployment' section
+    deployment:
+      replicas: 2
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
