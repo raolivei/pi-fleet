@@ -26,3 +26,8 @@ spec:
       limits:
         cpu: "500m"
         memory: "512Mi"
+    # LoadBalancer configuration for kube-vip
+    # VIP 192.168.2.200 is assigned by kube-vip on wlan0 interface
+    service:
+      spec:
+        loadBalancerIP: 192.168.2.200

@@ -62,13 +62,22 @@ Pi-hole is configured as a LoadBalancer service (kube-vip) on port 53, making it
 5. Save and apply changes
 6. **Restart devices** or renew DHCP leases to pick up the new DNS settings
 
-**Configure macOS (Device-Level - Optional):**
+> **Bell Giga Hub Note:** Bell routers often ignore custom DNS settings and act as DNS proxies using Bell's own DNS servers. If router-level DNS doesn't work, configure each device directly (see below).
 
-If you prefer device-level DNS configuration instead of router-level:
+**Configure macOS (Device-Level - Recommended for Bell routers):**
 
+For Bell Giga Hub or routers that don't forward DNS properly, configure macOS directly:
+
+**Via Terminal (recommended):**
+```bash
+sudo networksetup -setdnsservers Wi-Fi 192.168.2.201 1.1.1.1
+sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
+```
+
+**Via System Settings:**
 1. Open **System Settings** → **Network** → **Wi-Fi/Ethernet** → **Details...** → **DNS**.
 2. Add `192.168.2.201` as the primary DNS server.
-3. Add `8.8.8.8` or `1.1.1.1` as secondary DNS server.
+3. Add `1.1.1.1` as secondary DNS server (fallback).
 4. Click **OK** and **Apply**.
 
 **Verify DNS Resolution:**

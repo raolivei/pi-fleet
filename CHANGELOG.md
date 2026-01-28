@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.8] - 2026-01-27
+
+### Fixed
+
+- **Traefik LoadBalancer IP configuration**
+  - Added `loadBalancerIP: 192.168.2.200` to Traefik HelmChartConfig
+  - Prevents kube-vip from assigning wrong IP (was conflicting with Pi-hole's 192.168.2.201)
+  - Traefik ingress VIP is now correctly pinned via IaC
+
+### Documentation
+
+- Updated `NETWORK.md` with Bell Giga Hub DNS limitations
+- Added macOS terminal commands for direct Pi-hole DNS configuration
+
 ## [1.3.7] - 2026-01-25
 
 ### Fixed
