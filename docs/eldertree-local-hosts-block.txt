@@ -1,0 +1,26 @@
+# Eldertree *.eldertree.local — append to /etc/hosts
+# Replace TRAEFIK_LB_IP with Traefik EXTERNAL-IP: kubectl get svc traefik -n kube-system
+# (Typically 192.168.2.200 on WiFi or 10.0.0.3 on gigabit.)
+# Use with Tailscale + Accept Routes. If you use Pi-hole (192.168.2.201) + 1.1.1.1 as DNS, this block is optional; if you can't change DNS (e.g. corporate VPN), append to /etc/hosts only.
+
+# Traefik ingress (all web services)
+TRAEFIK_LB_IP  vault.eldertree.local
+TRAEFIK_LB_IP  grafana.eldertree.local
+TRAEFIK_LB_IP  prometheus.eldertree.local
+TRAEFIK_LB_IP  pihole.eldertree.local
+TRAEFIK_LB_IP  visage.eldertree.local
+TRAEFIK_LB_IP  minio.eldertree.local
+TRAEFIK_LB_IP  swimto.eldertree.local
+TRAEFIK_LB_IP  canopy.eldertree.local
+TRAEFIK_LB_IP  pitanga.eldertree.local
+TRAEFIK_LB_IP  pushgateway.eldertree.local
+TRAEFIK_LB_IP  flux-ui.eldertree.local
+TRAEFIK_LB_IP  alertmanager.eldertree.local
+TRAEFIK_LB_IP  docs.eldertree.local
+TRAEFIK_LB_IP  journey.eldertree.local
+TRAEFIK_LB_IP  nima.eldertree.local
+
+# Cluster nodes
+192.168.2.101  node-1.eldertree.local
+192.168.2.102  node-2.eldertree.local
+192.168.2.103  node-3.eldertree.local
