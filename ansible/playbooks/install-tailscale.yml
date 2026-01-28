@@ -14,8 +14,9 @@
   hosts: raspberry_pi
   become: true
   vars:
-    # Subnets to advertise (LAN + k8s pod/service networks)
-    advertise_routes: "192.168.2.0/24,10.42.0.0/16,10.43.0.0/16"
+    # Subnets to advertise (LAN + gigabit/Traefik + k8s pod/service networks)
+    # 10.0.0.0/24 = gigabit network, Traefik LoadBalancer (e.g. 10.0.0.3)
+    advertise_routes: "192.168.2.0/24,10.0.0.0/24,10.42.0.0/16,10.43.0.0/16"
 
   tasks:
     - name: Validate auth key is provided

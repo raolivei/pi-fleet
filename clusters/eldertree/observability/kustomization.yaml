@@ -6,7 +6,9 @@ resources:
   - weave-gitops-gitrepository.yaml # GitRepository for Weave GitOps charts (from GitHub)
   - monitoring-stack-helmrelease.yaml # Prometheus + Grafana monitoring stack
   - pihole-scrape-config.yaml # Pi-hole Prometheus scrape configuration
+  - visage-scrape-config.yaml # Visage metrics scrape configuration
   - flux-ui-helmrelease.yaml # Flux UI (Weave GitOps) for managing FluxCD resources
   - postgres-exporter.yaml # PostgreSQL metrics exporter for all DB instances
   - redis-exporter.yaml # Redis metrics exporter for all Redis instances
+  # grafana-dashboards-configmap.yaml removed - Longhorn no longer in use
   # - traefik-servicemonitor.yaml # Traefik metrics (DISABLED - requires Prometheus Operator / PodMonitor CRD)

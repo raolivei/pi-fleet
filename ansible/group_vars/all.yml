@@ -53,9 +53,8 @@ k3s_flannel_iface: "eth0"
 k3s_bind_address: "0.0.0.0"
 
 # Services to disable on all nodes
-# Tailscale was causing routing conflicts with k3s CNI
-disabled_services:
-  - tailscaled
+# (Tailscale was previously disabled due to same-LAN routing conflicts; re-enabled as the path to access all services from Mac when Mac is never on gigabit — see docs/TAILSCALE.md)
+disabled_services: []
 
 # Backup Configuration
 backup_mount_default: "/mnt/backup"

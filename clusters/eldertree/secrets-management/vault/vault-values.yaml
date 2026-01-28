@@ -1,11 +1,17 @@
 # Vault HA Configuration with Raft Integrated Storage
-# Updated: January 13, 2026
+# Updated: January 27, 2026
 #
 # This configuration runs Vault in HA mode with:
 # - 3 replicas (one per node)
 # - Raft integrated storage (data replicated across nodes)
-# - Longhorn PVCs for each pod
+# - Local NVMe storage (Raft handles replication - no need for Longhorn!)
 # - Anti-affinity to spread pods across nodes
+#
+# Why local-path instead of Longhorn?
+# - Raft already replicates data across all 3 nodes
+# - Local NVMe is faster than network-replicated storage
+# - No Multi-Attach errors or Longhorn complexity
+# - Each vault pod has its own local copy via Raft consensus
 #
 # Unseal keys are stored in K8s secret: vault-unseal-keys
 # Initialize with: ./scripts/operations/init-vault-ha.sh
@@ -15,11 +21,12 @@ server:
   dev:
     enabled: false  # Production mode with persistence
   
-  # Enable persistence for secrets - each pod gets its own PVC
+  # Enable persistence for secrets - each pod gets its own LOCAL PVC
+  # Raft handles replication across nodes, no need for distributed storage
   dataStorage:
     enabled: true
     size: 10Gi
-    storageClass: longhorn
+    storageClass: local-path-nvme  # Fast local NVMe storage
     accessMode: ReadWriteOnce
   
   # HA mode with Raft integrated storage
