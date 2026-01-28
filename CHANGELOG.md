@@ -14,6 +14,26 @@
   - Post-upgrade cluster health verification
   - Complements `security-update.yml` for K8s version upgrades between maintenance windows
 
+- **Vertical Pod Autoscaler (VPA)** (`clusters/eldertree/autoscaling/vpa/`)
+  - Fairwinds VPA Helm chart deployment
+  - Recommender enabled (provides resource recommendations)
+  - Updater and AdmissionController disabled (recommendation-only mode)
+  - VPA resources for swimto-api and swimto-web workloads
+  - Helps optimize resource utilization on limited Raspberry Pi hardware
+
+- **Native Sidecar Container POC** (`clusters/eldertree/swimto/redis-deployment.yaml`)
+  - Demonstrates Kubernetes 1.33+ native sidecar pattern
+  - Redis-exporter as native sidecar using `restartPolicy: Always` in initContainers
+  - Proper lifecycle management (starts before main container, terminates with it)
+  - Local Redis monitoring with metrics exposed on port 9121
+
+### Changed
+
+- **Target k3s version** updated to v1.34.5+k3s1 in `group_vars/all.yml`
+  - Extended certificate renewal (90 → 120 days)
+  - S3 snapshot retention support
+  - Various bug fixes and improvements
+
 ### Fixed
 
 - **Traefik LoadBalancer IP configuration**

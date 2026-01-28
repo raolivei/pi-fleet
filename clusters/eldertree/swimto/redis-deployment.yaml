@@ -14,7 +14,43 @@ spec:
     metadata:
       labels:
         app: redis
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
     spec:
+      # Native sidecar container (K8s 1.33+ feature)
+      # Uses restartPolicy: Always in initContainers to run alongside main container
+      initContainers:
+        - name: redis-exporter
+          image: oliver006/redis_exporter:v1.62.0
+          restartPolicy: Always  # Makes this a native sidecar
+          ports:
+            - containerPort: 9121
+              name: metrics
+          env:
+            - name: REDIS_ADDR
+              value: "redis://localhost:6379"
+            - name: REDIS_EXPORTER_LOG_FORMAT
+              value: "json"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9121
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9121
+            initialDelaySeconds: 5
+            periodSeconds: 10
       containers:
       - name: redis
         image: redis:7-alpine
@@ -34,11 +70,20 @@ kind: Service
 metadata:
   name: redis-service
   namespace: swimto
+  labels:
+    app: redis
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
 spec:
   selector:
     app: redis
   ports:
   - port: 6379
     targetPort: 6379
+    name: redis
+  - port: 9121
+    targetPort: 9121
+    name: metrics
   type: ClusterIP
 
