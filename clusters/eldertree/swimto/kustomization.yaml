@@ -18,3 +18,5 @@ resources:
   # Cloudflare Origin Certificates (synced from Vault)
   - cloudflare-origin-cert-swimto-app-external.yaml
   - cloudflare-origin-cert-eldertree-xyz-external.yaml
+  # Vertical Pod Autoscaler (recommendations only)
+  - vpa.yaml

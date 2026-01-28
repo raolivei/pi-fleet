@@ -1,0 +1,48 @@
+---
+# Vertical Pod Autoscaler resources for swimto workloads
+# Mode: "Off" - recommendations only, no automatic updates
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: swimto-api-vpa
+  namespace: swimto
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: swimto-api
+  updatePolicy:
+    updateMode: "Off"  # Recommendations only, no auto-updates
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "*"
+        minAllowed:
+          cpu: 100m
+          memory: 128Mi
+        maxAllowed:
+          cpu: 1000m
+          memory: 1Gi
+        controlledResources: ["cpu", "memory"]
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: swimto-web-vpa
+  namespace: swimto
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: swimto-web
+  updatePolicy:
+    updateMode: "Off"  # Recommendations only, no auto-updates
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "*"
+        minAllowed:
+          cpu: 50m
+          memory: 64Mi
+        maxAllowed:
+          cpu: 500m
+          memory: 512Mi
+        controlledResources: ["cpu", "memory"]
