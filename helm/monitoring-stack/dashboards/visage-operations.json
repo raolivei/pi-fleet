@@ -29,7 +29,7 @@
       "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 },
       "id": 1,
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "expr": "up{job=\"visage-worker\"}", "refId": "A" }],
+      "targets": [{ "expr": "(count(visage_worker_info{job=\"visage-worker\"}) >= 1) or (up{job=\"visage-worker\"} == 1)", "refId": "A" }],
       "title": "Worker",
       "type": "stat"
     },

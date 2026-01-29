@@ -16,10 +16,10 @@ Document both DNS (192.168.2.201 + 1.1.1.1) and hosts-only eldertree.local acces
 
 ## Tasks
 
-- [x] **TAILSCALE.md "Access all services from your Mac":** Add Option A (DNS: 192.168.2.201 + 1.1.1.1) and Option B (hosts-only + corporate-VPN note). *(Done)*
-- [x] **eldertree-local-hosts-block.txt:** Add comment that block is optional when using Pi-hole + 1.1.1.1; required when can't change DNS. *(Done)*
-- [x] **TAILSCALE.md "VPN and eldertree.local access":** Remove WireGuard bullet and Related Documentation link to WireGuard; state Tailscale-only. *(Done)*
-- [x] **TAILSCALE.md "Current state" / design:** Clarify DNS vs hosts-only where Pi-hole is mentioned. *(Done)*
+- [x] **TAILSCALE.md "Access all services from your Mac":** Add Option A (DNS: 192.168.2.201 + 1.1.1.1) and Option B (hosts-only + corporate-VPN note). _(Done)_
+- [x] **eldertree-local-hosts-block.txt:** Add comment that block is optional when using Pi-hole + 1.1.1.1; required when can't change DNS. _(Done)_
+- [x] **TAILSCALE.md "VPN and eldertree.local access":** Remove WireGuard bullet and Related Documentation link to WireGuard; state Tailscale-only. _(Done)_
+- [x] **TAILSCALE.md "Current state" / design:** Clarify DNS vs hosts-only where Pi-hole is mentioned. _(Done)_
 
 ## Result
 

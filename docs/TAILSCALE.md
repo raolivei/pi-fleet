@@ -85,7 +85,6 @@ You do **not** need to change your Mac’s DNS. Use Tailscale + the full `/etc/h
    Use the **EXTERNAL-IP** (e.g. `192.168.2.200` on WiFi, or `10.0.0.3` on gigabit).
 
 2. **Resolve eldertree.local**
-
    - **DNS path:** Set Mac DNS to 192.168.2.201 and 1.1.1.1 (Pi-hole resolves `*.eldertree.local`).
    - **Hosts-only path:** Copy the block from [eldertree-local-hosts-block.txt](eldertree-local-hosts-block.txt), replace `TRAEFIK_LB_IP` with the Traefik EXTERNAL-IP from step 1, and append to `/etc/hosts`. That file is the single source of truth for all `*.eldertree.local` hostnames (vault, grafana, prometheus, pihole, visage, minio, swimto, canopy, pitanga, pushgateway, flux-ui, alertmanager, docs, journey, nima, and node-1/2/3).
 
