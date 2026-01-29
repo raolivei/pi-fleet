@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **Prometheus scrape config for Lens IDE**
+  - Added `node` label to `kubernetes-nodes` and `kubernetes-nodes-cadvisor` scrape jobs
+  - Lens matches node metrics by Kubernetes node name; without this label, node metrics in Lens stay loading
+  - Use Prometheus address in Lens: `observability/observability-monitoring-stack-prometheus-server:80`
+
 ## [1.3.8] - 2026-01-27
 
 ### Added
@@ -29,10 +38,12 @@
 
 ### Changed
 
-- **Target k3s version** updated to v1.34.5+k3s1 in `group_vars/all.yml`
+- **k3s cluster upgraded** to v1.35.0+k3s1 across all nodes (Kubernetes 1.35)
+  - Traefik v3.5.1
+  - CoreDNS v1.13.1
+  - Containerd 2.1.5
   - Extended certificate renewal (90 → 120 days)
-  - S3 snapshot retention support
-  - Various bug fixes and improvements
+  - All K8s 1.34 features now GA
 
 ### Fixed
 

@@ -40,6 +40,16 @@ grafana:
 
 This chart is deployed via FluxCD from the git repository.
 
+## Lens IDE
+
+To show node/workload metrics in Lens, set **Metrics Source** → **Prometheus** and **Prometheus Service Address** to:
+
+```
+observability/observability-monitoring-stack-prometheus-server:80
+```
+
+Leave **Custom path prefix** empty. The scrape config adds a `node` label so Lens can match metrics to cluster nodes.
+
 ## Dashboards
 
 See [DASHBOARDS.md](./DASHBOARDS.md) for dashboard details and useful PromQL queries.
