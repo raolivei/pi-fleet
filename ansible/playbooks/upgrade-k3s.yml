@@ -40,8 +40,9 @@
   become: true
   serial: 1  # Rolling upgrade - one node at a time
   vars:
-    # Target version from group_vars/all.yml (can override with -e)
-    k3s_target_version: "{{ k3s_version }}"
+    # Target version - override with -e k3s_target_version=v1.34.5+k3s1
+    # If not specified, uses k3s_version from group_vars/all.yml
+    k3s_target_version: ""
     # Kubeconfig for kubectl commands
     kubeconfig_path: "{{ lookup('env', 'HOME') }}/.kube/config-eldertree"
     # kubectl binary path
@@ -67,6 +68,10 @@
       changed_when: false
       failed_when: false
 
+    - name: "Pre-flight: Set effective target version"
+      set_fact:
+        effective_target_version: "{{ k3s_target_version if k3s_target_version else k3s_version }}"
+
     - name: "Pre-flight: Display upgrade info"
       debug:
         msg:
@@ -74,12 +79,12 @@
           - "k3s Upgrade on {{ inventory_hostname }}"
           - "IP: {{ ansible_host }}"
           - "Current: {{ k3s_version_before.stdout }}"
-          - "Target:  {{ k3s_target_version }}"
+          - "Target:  {{ effective_target_version }}"
           - "======================================"
 
     - name: "Pre-flight: Skip if already at target version"
       meta: end_host
-      when: k3s_target_version in (k3s_current_version.stdout | default(''))
+      when: effective_target_version in (k3s_current_version.stdout | default(''))
 
     # =========================================================================
     # Kubernetes Drain
@@ -129,9 +134,9 @@
       when: k3s_service_status.rc == 0
       failed_when: false
 
-    - name: "k3s: Download and install {{ k3s_target_version }}"
+    - name: "k3s: Download and install {{ effective_target_version }}"
       shell: |
-        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_target_version }}" sh -
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ effective_target_version }}" sh -
       register: k3s_install
       when: k3s_service_status.rc == 0
 

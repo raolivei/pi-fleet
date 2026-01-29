@@ -116,6 +116,22 @@
       when: existing_config.stat.exists | default(false)
 
     # =========================================================================
+    # Get cluster token from init node for joining nodes
+    # =========================================================================
+    - name: Get cluster token from init node
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: cluster_token_result
+      delegate_to: "{{ k3s_cluster_init_node }}"
+      run_once: true
+      changed_when: false
+      when: is_control_plane
+
+    - name: Set cluster token fact
+      set_fact:
+        k3s_cluster_token: "{{ cluster_token_result.stdout }}"
+      when: is_control_plane and cluster_token_result.stdout is defined
+
+    # =========================================================================
     # Create k3s config.yaml (control plane)
     # =========================================================================
     - name: Ensure /etc/rancher/k3s directory exists
@@ -124,24 +140,26 @@
         state: directory
         mode: "0755"
 
-    - name: Write k3s config.yaml (control plane)
+    - name: Write k3s config.yaml (control plane - init node)
       copy:
         content: |
           # k3s configuration - managed by Ansible
           # Playbook: configure-k3s-gigabit.yml
           # Last updated: {{ ansible_date_time.iso8601 }}
+          # Node: {{ inventory_hostname }} (cluster init node)
 
           # Node identity - use gigabit IP for internal communication
           node-ip: {{ this_node_config.node_ip }}
 
           # API server binding
           # IMPORTANT: bind-address must be 0.0.0.0 for kube-vip to work!
-          # If set to a specific IP, the API server only listens on that interface
-          # and kube-vip VIP ({{ kube_vip_ip }}) cannot reach it from WiFi network
           bind-address: {{ k3s_bind_address | default('0.0.0.0') }}
 
           # Advertise the gigabit IP for internal cluster communication
           advertise-address: {{ this_node_config.node_ip }}
+
+          # Flannel interface for CNI
+          flannel-iface: {{ gigabit_interface }}
 
           # TLS SANs - all valid ways to reach this API server
           tls-san:
@@ -155,7 +173,51 @@
         owner: root
         group: root
       register: config_updated
-      when: is_control_plane
+      when:
+        - is_control_plane
+        - inventory_hostname == k3s_cluster_init_node
+
+    - name: Write k3s config.yaml (control plane - joining nodes)
+      copy:
+        content: |
+          # k3s configuration - managed by Ansible
+          # Playbook: configure-k3s-gigabit.yml
+          # Last updated: {{ ansible_date_time.iso8601 }}
+          # Node: {{ inventory_hostname }} (joining node)
+
+          # Cluster join configuration - required for auto-rejoin after reboot
+          server: https://{{ node_1_eth0_ip }}:6443
+          token: {{ k3s_cluster_token }}
+
+          # Node identity - use gigabit IP for internal communication
+          node-ip: {{ this_node_config.node_ip }}
+
+          # API server binding
+          # IMPORTANT: bind-address must be 0.0.0.0 for kube-vip to work!
+          bind-address: {{ k3s_bind_address | default('0.0.0.0') }}
+
+          # Advertise the gigabit IP for internal cluster communication
+          advertise-address: {{ this_node_config.node_ip }}
+
+          # Flannel interface for CNI
+          flannel-iface: {{ gigabit_interface }}
+
+          # TLS SANs - all valid ways to reach this API server
+          tls-san:
+            - {{ kube_vip_ip }}
+            - {{ this_node_config.wifi_ip }}
+            - {{ this_node_config.node_ip }}
+            - {{ this_node_config.hostname }}
+            - {{ inventory_hostname }}
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0600"
+        owner: root
+        group: root
+      register: config_updated_joining
+      when:
+        - is_control_plane
+        - inventory_hostname != k3s_cluster_init_node
+        - k3s_cluster_token is defined
 
     # =========================================================================
     # Create k3s config.yaml (worker/agent)
@@ -186,7 +248,7 @@
         daemon_reload: yes
       when:
         - is_control_plane
-        - config_updated.changed | default(false)
+        - config_updated.changed | default(false) or config_updated_joining.changed | default(false)
 
     - name: Restart k3s-agent service (worker)
       systemd:

@@ -26,8 +26,8 @@ node_3_ip: "192.168.2.103"
 kube_vip_ip: "192.168.2.100"
 
 # k3s Configuration
-# Updated: 2026-01-27 - Upgrade to v1.34.x for extended cert renewal and new features
-k3s_version: "v1.34.5+k3s1"
+# Updated: 2026-01-29 - Upgrade to v1.35.0+k3s1 (latest stable)
+k3s_version: "v1.35.0+k3s1"
 k3s_server_url: "https://{{ kube_vip_ip }}:6443"
 k3s_cluster_init_node: "node-1"
 

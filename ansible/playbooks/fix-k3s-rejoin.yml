@@ -1,0 +1,171 @@
+---
+# Fix k3s node that failed to rejoin the cluster after reboot
+#
+# This playbook handles the common case where a node creates its own
+# cluster instead of rejoining the existing one.
+#
+# Usage:
+#   ansible-playbook playbooks/fix-k3s-rejoin.yml --limit node-3
+#
+# What it does:
+#   1. Stops k3s on the target node
+#   2. Removes etcd data and TLS certs
+#   3. Gets the cluster token from the init node
+#   4. Updates the k3s config with server/token
+#   5. Removes the node from etcd membership (if exists)
+#   6. Starts k3s to rejoin the cluster
+
+- name: Fix k3s node rejoin
+  hosts: raspberry_pi
+  become: true
+  gather_facts: true
+  serial: 1  # Process one node at a time for safety
+
+  vars:
+    init_node: "{{ k3s_cluster_init_node | default('node-1') }}"
+    init_node_ip: "{{ node_1_eth0_ip | default('10.0.0.1') }}"
+
+  tasks:
+    - name: Fail if trying to run on init node
+      fail:
+        msg: "This playbook should not be run on the cluster init node ({{ init_node }}). It's for fixing joining nodes only."
+      when: inventory_hostname == init_node
+
+    - name: Check if eth0 is up
+      shell: ip addr show eth0 | grep "inet " | grep -v "169.254"
+      register: eth0_check
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if eth0 is not up
+      fail:
+        msg: |
+          eth0 is not configured or down. Please check:
+          1. Ethernet cable is connected
+          2. Switch port is active
+          3. Run 'ip addr show eth0' to verify
+      when: eth0_check.rc != 0
+
+    - name: Stop k3s service
+      systemd:
+        name: k3s
+        state: stopped
+      failed_when: false
+
+    - name: Wait for k3s to stop
+      pause:
+        seconds: 5
+
+    - name: Remove k3s server data
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rancher/k3s/server/db
+        - /var/lib/rancher/k3s/server/tls
+      failed_when: false
+
+    - name: Remove k3s credentials
+      shell: rm -f /var/lib/rancher/k3s/server/cred/*
+      failed_when: false
+      changed_when: false
+
+    - name: Get cluster token from init node
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: cluster_token
+      delegate_to: "{{ init_node }}"
+      changed_when: false
+
+    - name: Get current config
+      slurp:
+        src: /etc/rancher/k3s/config.yaml
+      register: current_config
+      failed_when: false
+
+    - name: Parse current config
+      set_fact:
+        config_lines: "{{ (current_config.content | b64decode).split('\n') }}"
+      when: current_config.content is defined
+
+    - name: Filter out old server/token lines
+      set_fact:
+        clean_config_lines: "{{ config_lines | reject('match', '^server:') | reject('match', '^token:') | list }}"
+      when: config_lines is defined
+
+    - name: Build new config content
+      set_fact:
+        new_config: |
+          # k3s configuration - managed by Ansible
+          # Node: {{ inventory_hostname }} (rejoining node)
+          # Fixed: {{ ansible_date_time.iso8601 }}
+
+          # Cluster join configuration - required for auto-rejoin after reboot
+          server: https://{{ init_node_ip }}:6443
+          token: {{ cluster_token.stdout }}
+
+          {{ clean_config_lines | default([]) | select('match', '^[^#]') | join('\n') }}
+
+    - name: Write updated config
+      copy:
+        content: "{{ new_config }}"
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0600"
+        owner: root
+        group: root
+
+    - name: Get node's etcd member ID from init node
+      shell: |
+        etcdctl --endpoints=https://127.0.0.1:2379 \
+          --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+          --cert=/var/lib/rancher/k3s/server/tls/etcd/server-client.crt \
+          --key=/var/lib/rancher/k3s/server/tls/etcd/server-client.key \
+          member list | grep "{{ inventory_hostname }}" | cut -d',' -f1
+      register: etcd_member_id
+      delegate_to: "{{ init_node }}"
+      failed_when: false
+      changed_when: false
+
+    - name: Remove node from etcd membership
+      shell: |
+        etcdctl --endpoints=https://127.0.0.1:2379 \
+          --cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt \
+          --cert=/var/lib/rancher/k3s/server/tls/etcd/server-client.crt \
+          --key=/var/lib/rancher/k3s/server/tls/etcd/server-client.key \
+          member remove {{ etcd_member_id.stdout }}
+      delegate_to: "{{ init_node }}"
+      when:
+        - etcd_member_id.stdout is defined
+        - etcd_member_id.stdout | length > 0
+      failed_when: false
+
+    - name: Start k3s service
+      systemd:
+        name: k3s
+        state: started
+        daemon_reload: yes
+
+    - name: Wait for k3s to be ready
+      command: k3s kubectl get nodes
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 60
+      delay: 5
+      changed_when: false
+      failed_when: false
+
+    - name: Verify node joined cluster
+      command: k3s kubectl get nodes -o wide
+      register: cluster_nodes
+      changed_when: false
+
+    - name: Display cluster status
+      debug:
+        msg: "{{ cluster_nodes.stdout_lines }}"
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ Node {{ inventory_hostname }} has rejoined the cluster"
+          - ""
+          - "If the node shows SchedulingDisabled, run:"
+          - "  kubectl uncordon {{ inventory_hostname }}.eldertree.local"

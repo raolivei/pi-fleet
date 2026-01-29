@@ -1,0 +1,87 @@
+---
+# Add eth0 wait check before k3s starts
+#
+# This creates a systemd drop-in that waits for eth0 to have an IP
+# before starting k3s. This prevents k3s from failing when eth0 is slow
+# to come up after reboot.
+#
+# Usage:
+#   ansible-playbook playbooks/fix-k3s-eth0-wait.yml
+
+- name: Add eth0 wait to k3s service
+  hosts: raspberry_pi
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Create systemd drop-in directory
+      file:
+        path: /etc/systemd/system/k3s.service.d
+        state: directory
+        mode: "0755"
+
+    - name: Create eth0 wait script
+      copy:
+        content: |
+          #!/bin/bash
+          # Wait for eth0 to have an IP address before starting k3s
+          # This prevents flannel from failing when eth0 is slow to come up
+
+          MAX_WAIT=60
+          WAITED=0
+          INTERFACE="eth0"
+
+          echo "Waiting for $INTERFACE to have an IP address..."
+
+          while [ $WAITED -lt $MAX_WAIT ]; do
+            # Check if eth0 has a non-link-local IP
+            if ip addr show $INTERFACE 2>/dev/null | grep -q "inet 10\." ; then
+              echo "$INTERFACE has IP address, proceeding with k3s start"
+              exit 0
+            fi
+            
+            # Check if the interface exists and has carrier
+            if ! ip link show $INTERFACE 2>/dev/null | grep -q "state UP"; then
+              echo "$INTERFACE not up yet, waiting... ($WAITED/$MAX_WAIT)"
+            else
+              echo "$INTERFACE up but no IP yet, waiting... ($WAITED/$MAX_WAIT)"
+            fi
+            
+            sleep 2
+            WAITED=$((WAITED + 2))
+          done
+
+          echo "WARNING: $INTERFACE did not get an IP address within $MAX_WAIT seconds"
+          echo "k3s will start but may have issues with flannel networking"
+          # Don't fail - let k3s try to start anyway, it might use wlan0
+          exit 0
+        dest: /usr/local/bin/wait-for-eth0.sh
+        mode: "0755"
+        owner: root
+        group: root
+
+    - name: Create k3s service drop-in
+      copy:
+        content: |
+          [Service]
+          # Wait for eth0 before starting k3s
+          ExecStartPre=/usr/local/bin/wait-for-eth0.sh
+        dest: /etc/systemd/system/k3s.service.d/wait-for-eth0.conf
+        mode: "0644"
+        owner: root
+        group: root
+      register: dropin_created
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+      when: dropin_created.changed
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ eth0 wait script installed"
+          - ""
+          - "k3s will now wait up to 60 seconds for eth0 to have an IP"
+          - "before starting. This helps prevent boot failures when eth0"
+          - "is slow to initialize."
