@@ -192,6 +192,36 @@
         - {regexp: "^::1.*localhost", line: "::1 localhost ip6-localhost ip6-loopback"}
 
     # =========================================================================
+    # Cloud-init Hostname Persistence (Prevents ghost nodes on reboot)
+    # =========================================================================
+    # CRITICAL: Without these fixes, cloud-init will reset hostname on reboot
+    # to whatever is in /boot/firmware/user-data (typically "node-x" from SD card template)
+    # This causes "ghost node" issues where a node registers with wrong hostname
+    - name: Check if cloud-init user-data exists
+      stat:
+        path: /boot/firmware/user-data
+      register: user_data_file
+
+    - name: Fix hostname in /boot/firmware/user-data (prevents ghost nodes on reboot)
+      replace:
+        path: /boot/firmware/user-data
+        regexp: '^hostname:\s*.*$'
+        replace: "hostname: {{ hostname }}"
+      when: user_data_file.stat.exists
+
+    - name: Check if cloud.cfg exists
+      stat:
+        path: /etc/cloud/cloud.cfg
+      register: cloud_cfg_file
+
+    - name: Set preserve_hostname to true in cloud.cfg (prevents cloud-init from overwriting hostname)
+      replace:
+        path: /etc/cloud/cloud.cfg
+        regexp: '^preserve_hostname:\s*false'
+        replace: "preserve_hostname: true"
+      when: cloud_cfg_file.stat.exists
+
+    # =========================================================================
     # Network Configuration (Static IP - Optional)
     #
     # Design: Resilient, Safe, Idempotent

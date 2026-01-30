@@ -1,10 +1,26 @@
 ---
-# Fix hostnames on nodes (if they were incorrectly set to 'eldertree')
-# Run this when nodes are back online
+# Fix hostnames on nodes - both runtime and persistent (cloud-init) configuration
+# This prevents "ghost node" issues where nodes register with wrong hostname after reboot
+#
+# Root cause: cloud-init reads hostname from /boot/firmware/user-data on every boot
+# If that file has a template hostname (like "node-x"), it will override the correct hostname
+#
+# This playbook fixes:
+#   1. Runtime hostname (immediate)
+#   2. /etc/hostname (persistent)
+#   3. /etc/hosts (local resolution)
+#   4. /boot/firmware/user-data (cloud-init source) - CRITICAL for reboot persistence
+#   5. /etc/cloud/cloud.cfg (preserve_hostname setting)
+#
+# Usage:
+#   ansible-playbook playbooks/fix-hostnames.yml
+#   ansible-playbook playbooks/fix-hostnames.yml --limit node-3
 
 - name: Fix Hostnames on All Nodes
   hosts: raspberry_pi
   become: true
+  vars:
+    expected_hostname: "{{ inventory_hostname }}.eldertree.local"
   tasks:
     - name: Get current hostname
       command: hostname
@@ -14,36 +30,99 @@
 
     - name: Display current hostname
       debug:
-        msg: "Current hostname: {{ current_hostname.stdout }} (should be {{ inventory_hostname }})"
+        msg: "Current hostname: {{ current_hostname.stdout }} (should be {{ expected_hostname }})"
 
-    - name: Set correct hostname
+    - name: Set correct hostname (runtime)
       hostname:
-        name: "{{ inventory_hostname }}"
-      when: current_hostname.stdout != inventory_hostname
+        name: "{{ expected_hostname }}"
+      when: current_hostname.stdout != expected_hostname
 
     - name: Update /etc/hostname
       copy:
-        content: "{{ inventory_hostname }}\n"
+        content: "{{ expected_hostname }}\n"
         dest: /etc/hostname
         mode: '0644'
-      when: current_hostname.stdout != inventory_hostname
 
-    - name: Update /etc/hosts
+    - name: Update /etc/hosts - set correct hostname for 127.0.1.1
       lineinfile:
         path: /etc/hosts
         regexp: '^127\.0\.1\.1.*'
-        line: "127.0.1.1 {{ inventory_hostname }}"
+        line: "127.0.1.1 {{ expected_hostname }} {{ inventory_hostname }}"
         state: present
-      when: current_hostname.stdout != inventory_hostname
+
+    # === Cloud-init fixes to prevent ghost nodes on reboot ===
+
+    - name: Check if cloud-init user-data exists
+      stat:
+        path: /boot/firmware/user-data
+      register: user_data_file
+
+    - name: Read current cloud-init user-data
+      slurp:
+        src: /boot/firmware/user-data
+      register: user_data_content
+      when: user_data_file.stat.exists
+
+    - name: Check current hostname in user-data
+      set_fact:
+        user_data_hostname: "{{ (user_data_content.content | b64decode | regex_search('hostname:\\s*(.+)', '\\1'))[0] | default('') | trim }}"
+      when: user_data_file.stat.exists and user_data_content.content is defined
+
+    - name: Fix hostname in /boot/firmware/user-data (prevents ghost nodes on reboot)
+      replace:
+        path: /boot/firmware/user-data
+        regexp: '^hostname:\s*.*$'
+        replace: "hostname: {{ expected_hostname }}"
+      when:
+        - user_data_file.stat.exists
+        - user_data_hostname is defined
+        - user_data_hostname != expected_hostname
+      register: user_data_fixed
+
+    - name: Check if cloud.cfg exists
+      stat:
+        path: /etc/cloud/cloud.cfg
+      register: cloud_cfg_file
+
+    - name: Set preserve_hostname to true in cloud.cfg (prevents cloud-init from overwriting hostname)
+      replace:
+        path: /etc/cloud/cloud.cfg
+        regexp: '^preserve_hostname:\s*false'
+        replace: "preserve_hostname: true"
+      when: cloud_cfg_file.stat.exists
+      register: preserve_hostname_fixed
+
+    # === Verification ===
 
     - name: Verify hostname fix
       command: hostname
       register: new_hostname
       changed_when: false
 
+    - name: Read updated user-data hostname (for verification)
+      shell: grep '^hostname:' /boot/firmware/user-data | head -1
+      register: final_user_data_hostname
+      changed_when: false
+      failed_when: false
+      when: user_data_file.stat.exists
+
+    - name: Read preserve_hostname setting (for verification)
+      shell: grep '^preserve_hostname:' /etc/cloud/cloud.cfg | head -1
+      register: final_preserve_hostname
+      changed_when: false
+      failed_when: false
+      when: cloud_cfg_file.stat.exists
+
     - name: Display result
       debug:
         msg:
-          - "✅ Hostname fixed: {{ new_hostname.stdout }}"
-          - "Reboot may be needed: sudo reboot"
+          - "=== Hostname Fix Results ==="
+          - "Runtime hostname: {{ new_hostname.stdout }}"
+          - "Expected hostname: {{ expected_hostname }}"
+          - "user-data hostname: {{ final_user_data_hostname.stdout | default('N/A') }}"
+          - "preserve_hostname: {{ final_preserve_hostname.stdout | default('N/A') }}"
+          - ""
+          - "{{ '✅ Hostname fixed and will persist across reboots' if (new_hostname.stdout == expected_hostname) else '⚠️  Hostname mismatch - may need reboot' }}"
+          - "{{ '✅ Cloud-init user-data fixed' if (user_data_fixed.changed | default(false)) else '✓ Cloud-init user-data already correct' }}"
+          - "{{ '✅ preserve_hostname enabled' if (preserve_hostname_fixed.changed | default(false)) else '✓ preserve_hostname already enabled' }}"
 
