@@ -30,6 +30,8 @@ spec:
           # Custom ARM64 build - see .github/workflows/build-openclaw-arm64.yml
           image: ghcr.io/raolivei/openclaw:latest
           imagePullPolicy: Always
+          # Run the gateway server
+          command: ["node", "dist/index.js", "gateway"]
           ports:
             - containerPort: 18789
               name: gateway
