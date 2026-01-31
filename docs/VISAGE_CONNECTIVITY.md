@@ -1,4 +1,4 @@
-# Troubleshooting: Unable to connect to *.eldertree.local (grafana, visage, etc.)
+# Troubleshooting: Unable to connect to \*.eldertree.local (grafana, visage, etc.)
 
 When the browser shows **"No available server"**, **"Unable to connect"**, or **"Server not found"** for `https://grafana.eldertree.local`, `https://visage.eldertree.local`, or any `*.eldertree.local` URL, the cause is usually one of two things:
 

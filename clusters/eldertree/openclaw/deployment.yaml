@@ -62,6 +62,9 @@ spec:
           volumeMounts:
             - name: openclaw-data
               mountPath: /home/node/.openclaw
+            - name: config-file
+              mountPath: /home/node/.openclaw/config.json
+              subPath: config.json
             - name: skills
               mountPath: /home/node/.openclaw/skills
               readOnly: true
@@ -90,6 +93,9 @@ spec:
         - name: openclaw-data
           persistentVolumeClaim:
             claimName: openclaw-data
+        - name: config-file
+          configMap:
+            name: openclaw-config-file
         - name: skills
           configMap:
             name: openclaw-skills
