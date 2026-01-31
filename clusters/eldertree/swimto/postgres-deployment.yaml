@@ -46,7 +46,7 @@ spec:
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
-          claimName: postgres-pvc-longhorn
+          claimName: postgres-pvc  # Updated: Longhorn removed from cluster
 ---
 apiVersion: v1
 kind: Service

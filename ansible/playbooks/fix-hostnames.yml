@@ -41,7 +41,7 @@
       copy:
         content: "{{ expected_hostname }}\n"
         dest: /etc/hostname
-        mode: '0644'
+        mode: "0644"
 
     - name: Update /etc/hosts - set correct hostname for 127.0.1.1
       lineinfile:
@@ -125,4 +125,3 @@
           - "{{ '✅ Hostname fixed and will persist across reboots' if (new_hostname.stdout == expected_hostname) else '⚠️  Hostname mismatch - may need reboot' }}"
           - "{{ '✅ Cloud-init user-data fixed' if (user_data_fixed.changed | default(false)) else '✓ Cloud-init user-data already correct' }}"
           - "{{ '✅ preserve_hostname enabled' if (preserve_hostname_fixed.changed | default(false)) else '✓ preserve_hostname already enabled' }}"
-

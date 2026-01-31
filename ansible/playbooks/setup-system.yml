@@ -431,7 +431,7 @@
     # =========================================================================
     # NOTE: This is NOT from Longhorn. Longhorn uses /mnt/longhorn-backup (different mount)
     # This is for general system backups to USB drive (/dev/sdb1)
-    # 
+    #
     # Trade-off analysis:
     # - ON (enable_backup_mount=true): Prepared for backup drive, but causes boot timeout if drive not connected
     # - OFF (default): Faster boot, but need to configure manually when connecting backup drive
@@ -476,7 +476,7 @@
       replace:
         path: /etc/fstab
         regexp: '^{{ backup_device }}.*{{ backup_mount }}.*\n?'
-        replace: ''
+        replace: ""
       when: not (enable_backup_mount | bool)
 
     # =========================================================================

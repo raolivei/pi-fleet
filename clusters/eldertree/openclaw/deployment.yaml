@@ -25,56 +25,12 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
-      initContainers:
-        - name: init-config
-          image: busybox:latest
-          command:
-            - sh
-            - -c
-            - |
-              # Create directories
-              mkdir -p /data/agents/main/sessions
-              mkdir -p /data/credentials
-              mkdir -p /data/workspace
-              chmod 700 /data
-              
-              # Create config file
-              cat > /data/openclaw.json << 'EOFCONFIG'
-              {
-                "gateway": {
-                  "mode": "local",
-                  "port": 18789
-                },
-                "channels": {
-                  "telegram": {
-                    "enabled": true,
-                    "dmPolicy": "open",
-                    "allowFrom": ["*"]
-                  }
-                },
-                "agents": {
-                  "defaults": {
-                    "model": {
-                      "primary": "google/gemini-1.5-flash"
-                    },
-                    "workspace": "/home/node/.openclaw/workspace"
-                  }
-                }
-              }
-              EOFCONFIG
-              chmod 600 /data/openclaw.json
-              echo "Config and directories created"
-              ls -la /data/
-          volumeMounts:
-            - name: openclaw-data
-              mountPath: /data
       containers:
         - name: openclaw
-          # Custom ARM64 build - see .github/workflows/build-openclaw-arm64.yml
+          # Custom ARM64 build with entrypoint - see .github/workflows/build-openclaw-arm64.yml
           image: ghcr.io/raolivei/openclaw:latest
           imagePullPolicy: Always
-          # Start gateway directly (config is set via init container)
-          command: ["node", "dist/index.js", "gateway", "--verbose"]
+          # Uses entrypoint from Dockerfile (handles setup + starts gateway)
           ports:
             - containerPort: 18789
               name: gateway
@@ -118,14 +74,14 @@ spec:
             httpGet:
               path: /health
               port: 18789
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             periodSeconds: 30
             timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
               port: 18789
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 10
             timeoutSeconds: 5
           resources:
