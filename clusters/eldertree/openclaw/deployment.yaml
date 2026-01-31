@@ -25,6 +25,49 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      initContainers:
+        - name: init-config
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              cat > /data/openclaw.json << 'EOFCONFIG'
+              {
+                "gateway": {
+                  "mode": "local",
+                  "bind": "0.0.0.0",
+                  "port": 18789
+                },
+                "providers": {
+                  "google": {
+                    "enabled": true
+                  }
+                },
+                "models": {
+                  "default": "google:gemini-1.5-flash"
+                },
+                "channels": {
+                  "telegram": {
+                    "enabled": true,
+                    "dmPolicy": "open",
+                    "allowFrom": ["*"]
+                  }
+                },
+                "agents": {
+                  "defaults": {
+                    "model": {
+                      "primary": "google/gemini-1.5-flash"
+                    }
+                  }
+                }
+              }
+              EOFCONFIG
+              echo "Config created at /data/openclaw.json"
+              cat /data/openclaw.json
+          volumeMounts:
+            - name: openclaw-data
+              mountPath: /data
       containers:
         - name: openclaw
           # Custom ARM64 build - see .github/workflows/build-openclaw-arm64.yml
