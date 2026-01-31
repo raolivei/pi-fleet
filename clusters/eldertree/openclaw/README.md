@@ -2,6 +2,20 @@
 
 Personal AI assistant powered by OpenClaw (Moltbot) running on eldertree.
 
+## ARM64 Build
+
+The official `moltbot/moltbot` Docker image doesn't support ARM64 (Raspberry Pi).
+We build our own multi-arch image using GitHub Actions.
+
+**Image:** `ghcr.io/raolivei/openclaw:latest`
+
+**Workflow:** `.github/workflows/build-openclaw-arm64.yml`
+
+To rebuild manually:
+1. Go to Actions → "Build OpenClaw ARM64"
+2. Click "Run workflow"
+3. Wait for build (~10-15 min)
+
 ## Features
 
 - **Telegram Integration**: Chat with your assistant via `@eldertree_assistant_bot`

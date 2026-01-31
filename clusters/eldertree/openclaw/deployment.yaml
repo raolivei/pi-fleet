@@ -17,15 +17,18 @@ spec:
       labels:
         app: openclaw
       annotations:
-        deployment.kubernetes.io/revision: "2026-01-30-v1.0.0"
+        deployment.kubernetes.io/revision: "2026-01-31-v1.0.0"
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
       containers:
         - name: openclaw
-          image: moltbot/moltbot:latest
+          # Custom ARM64 build - see .github/workflows/build-openclaw-arm64.yml
+          image: ghcr.io/raolivei/openclaw:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 18789
