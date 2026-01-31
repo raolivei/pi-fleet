@@ -30,8 +30,8 @@ spec:
           # Custom ARM64 build - see .github/workflows/build-openclaw-arm64.yml
           image: ghcr.io/raolivei/openclaw:latest
           imagePullPolicy: Always
-          # Run the gateway server
-          command: ["node", "dist/index.js", "gateway"]
+          # Run the gateway server with auto-configuration
+          command: ["node", "dist/index.js", "gateway", "--allow-unconfigured"]
           ports:
             - containerPort: 18789
               name: gateway
@@ -62,9 +62,6 @@ spec:
           volumeMounts:
             - name: openclaw-data
               mountPath: /home/node/.openclaw
-            - name: config-file
-              mountPath: /home/node/.openclaw/config.json
-              subPath: config.json
             - name: skills
               mountPath: /home/node/.openclaw/skills
               readOnly: true
@@ -93,9 +90,6 @@ spec:
         - name: openclaw-data
           persistentVolumeClaim:
             claimName: openclaw-data
-        - name: config-file
-          configMap:
-            name: openclaw-config-file
         - name: skills
           configMap:
             name: openclaw-skills
