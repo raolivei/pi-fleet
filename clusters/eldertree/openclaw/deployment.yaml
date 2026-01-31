@@ -30,7 +30,9 @@ spec:
           # Custom ARM64 build with entrypoint - see .github/workflows/build-openclaw-arm64.yml
           image: ghcr.io/raolivei/openclaw:latest
           imagePullPolicy: Always
-          # Uses entrypoint from Dockerfile (handles setup + starts gateway)
+          # Explicit command - entrypoint alone wasn't working
+          command: ["openclaw"]
+          args: ["gateway", "--port", "18789"]
           ports:
             - containerPort: 18789
               name: gateway
