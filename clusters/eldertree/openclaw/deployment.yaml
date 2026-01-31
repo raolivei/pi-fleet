@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw
+  namespace: openclaw
+  labels:
+    app: openclaw
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openclaw
+  strategy:
+    type: Recreate  # Use Recreate since we have a PVC
+  template:
+    metadata:
+      labels:
+        app: openclaw
+      annotations:
+        deployment.kubernetes.io/revision: "2026-01-30-v1.0.0"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: openclaw
+          image: moltbot/moltbot:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 18789
+              name: gateway
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            # AI Provider Configuration
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: GOOGLE_API_KEY
+            # Telegram Channel Configuration
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: TELEGRAM_BOT_TOKEN
+            # Home directory for config persistence
+            - name: HOME
+              value: /home/node
+          envFrom:
+            - configMapRef:
+                name: openclaw-config
+          volumeMounts:
+            - name: openclaw-data
+              mountPath: /home/node/.openclaw
+            - name: skills
+              mountPath: /home/node/.openclaw/skills
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 18789
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 18789
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: openclaw-data
+          persistentVolumeClaim:
+            claimName: openclaw-data
+        - name: skills
+          configMap:
+            name: openclaw-skills
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-service
+  namespace: openclaw
+  labels:
+    app: openclaw
+spec:
+  selector:
+    app: openclaw
+  ports:
+    - port: 18789
+      targetPort: 18789
+      name: gateway
+  type: ClusterIP

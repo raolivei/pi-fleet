@@ -21,3 +21,4 @@ resources:
   # - nima          # AI/ML learning project (DISABLED - not needed)
   # - journey       # AI-powered career pathfinder (DISABLED - not deployed yet)
   # - us-law-severity-map  # US law visualization (DISABLED - not deployed yet)
+  - openclaw      # AI assistant with Telegram + SwimTO integration
