@@ -53,6 +53,12 @@ spec:
                 secretKeyRef:
                   name: openclaw-secrets
                   key: TELEGRAM_BOT_TOKEN
+            # Gateway Authentication Token
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: OPENCLAW_GATEWAY_TOKEN
             # Home directory for config persistence
             - name: HOME
               value: /home/node
