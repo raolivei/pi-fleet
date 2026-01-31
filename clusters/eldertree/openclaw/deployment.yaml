@@ -36,16 +36,7 @@ spec:
               {
                 "gateway": {
                   "mode": "local",
-                  "bind": "0.0.0.0",
                   "port": 18789
-                },
-                "providers": {
-                  "google": {
-                    "enabled": true
-                  }
-                },
-                "models": {
-                  "default": "google:gemini-1.5-flash"
                 },
                 "channels": {
                   "telegram": {
