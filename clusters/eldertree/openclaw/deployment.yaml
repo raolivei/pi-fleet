@@ -64,16 +64,8 @@ spec:
           # Custom ARM64 build - see .github/workflows/build-openclaw-arm64.yml
           image: ghcr.io/raolivei/openclaw:latest
           imagePullPolicy: Always
-          # Enable Telegram channel, then start gateway
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              echo "Enabling Telegram channel..."
-              node dist/index.js channels add --channel telegram --token "$TELEGRAM_BOT_TOKEN" 2>&1 || true
-              echo "Running doctor..."
-              node dist/index.js doctor --fix --yes 2>&1 || true
-              echo "Starting gateway..."
-              exec node dist/index.js gateway
+          # Start gateway directly (config is set via init container)
+          command: ["node", "dist/index.js", "gateway", "--verbose"]
           ports:
             - containerPort: 18789
               name: gateway
