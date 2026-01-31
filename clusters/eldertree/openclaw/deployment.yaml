@@ -32,6 +32,13 @@ spec:
             - sh
             - -c
             - |
+              # Create directories
+              mkdir -p /data/agents/main/sessions
+              mkdir -p /data/credentials
+              mkdir -p /data/workspace
+              chmod 700 /data
+              
+              # Create config file
               cat > /data/openclaw.json << 'EOFCONFIG'
               {
                 "gateway": {
@@ -49,13 +56,15 @@ spec:
                   "defaults": {
                     "model": {
                       "primary": "google/gemini-1.5-flash"
-                    }
+                    },
+                    "workspace": "/home/node/.openclaw/workspace"
                   }
                 }
               }
               EOFCONFIG
-              echo "Config created at /data/openclaw.json"
-              cat /data/openclaw.json
+              chmod 600 /data/openclaw.json
+              echo "Config and directories created"
+              ls -la /data/
           volumeMounts:
             - name: openclaw-data
               mountPath: /data
