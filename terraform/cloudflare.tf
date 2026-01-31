@@ -276,6 +276,25 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
       service  = "http://10.43.23.214:80"
     }
 
+    # Visage AI headshots routes
+    ingress_rule {
+      hostname = "visage.eldertree.xyz"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    ingress_rule {
+      hostname = "visage.eldertree.xyz"
+      path     = "/api/*"
+      service  = "http://10.43.23.214:80"
+    }
+
+    ingress_rule {
+      hostname = "visage.eldertree.xyz"
+      path     = "/health"
+      service  = "http://10.43.23.214:80"
+    }
+
     # Pitanga website routes
     ingress_rule {
       hostname = "pitanga.cloud"
@@ -339,6 +358,20 @@ resource "cloudflare_record" "swimto_eldertree_xyz_tunnel" {
   proxied         = true # Enable Cloudflare proxy (orange cloud) for automatic HTTPS
   allow_overwrite = true
   comment         = "swimto.eldertree.xyz - managed by Terraform via Cloudflare Tunnel"
+}
+
+# DNS CNAME record for visage.eldertree.xyz pointing to tunnel
+# Visage AI headshot generator - external access via Cloudflare Tunnel
+resource "cloudflare_record" "visage_eldertree_xyz_tunnel" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "visage"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1    # Must be 1 when proxied=true
+  proxied         = true # Enable Cloudflare proxy (orange cloud) for automatic HTTPS
+  allow_overwrite = true
+  comment         = "visage.eldertree.xyz - Visage AI headshots via Cloudflare Tunnel - managed by Terraform"
 }
 
 # DNS CNAME record for blog.eldertree.xyz pointing to GitHub Pages
