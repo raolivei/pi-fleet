@@ -161,7 +161,7 @@
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
-        { "expr": "sum(rate(traefik_service_requests_total{namespace=\"visage\", service=~\"visage-api.*\"}[5m])) by (code)", "legendFormat": "HTTP {{code}}", "refId": "A" }
+        { "expr": "sum(rate(traefik_service_requests_total{service=~\"visage-visage-api.*\"}[5m])) by (code)", "legendFormat": "HTTP {{code}}", "refId": "A" }
       ],
       "title": "API Request Rate",
       "type": "timeseries"
@@ -197,8 +197,8 @@
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
-        { "expr": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{namespace=\"visage\", service=~\"visage-api.*\"}[5m])) by (le))", "legendFormat": "p95", "refId": "A" },
-        { "expr": "histogram_quantile(0.50, sum(rate(traefik_service_request_duration_seconds_bucket{namespace=\"visage\", service=~\"visage-api.*\"}[5m])) by (le))", "legendFormat": "p50", "refId": "B" }
+        { "expr": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{service=~\"visage-visage-api.*\"}[5m])) by (le))", "legendFormat": "p95", "refId": "A" },
+        { "expr": "histogram_quantile(0.50, sum(rate(traefik_service_request_duration_seconds_bucket{service=~\"visage-visage-api.*\"}[5m])) by (le))", "legendFormat": "p50", "refId": "B" }
       ],
       "title": "API Response Time",
       "type": "timeseries"
