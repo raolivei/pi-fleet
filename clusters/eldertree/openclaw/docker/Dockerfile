@@ -50,6 +50,7 @@ if [ ! -s "$CONFIG_FILE" ]; then
 {
   "gateway": {
     "mode": "local",
+    "bind": "0.0.0.0",
     "port": 18789
   },
   "channels": {
