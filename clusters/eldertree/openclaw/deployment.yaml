@@ -32,6 +32,8 @@ spec:
           imagePullPolicy: Always
           # Entrypoint from Dockerfile handles setup + starts gateway
           # See: clusters/eldertree/openclaw/docker/Dockerfile
+          # Bind to LAN for k8s networking
+          args: ["--bind", "lan"]
           ports:
             - containerPort: 18789
               name: gateway
