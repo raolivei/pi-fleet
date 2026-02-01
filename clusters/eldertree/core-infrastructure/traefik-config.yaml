@@ -29,5 +29,8 @@ spec:
     # LoadBalancer configuration for kube-vip
     # VIP 192.168.2.200 is assigned by kube-vip on wlan0 interface
     service:
+      annotations:
+        # Disable K3s ServiceLB - we use kube-vip for LoadBalancer VIPs
+        svc.k3s.cattle.io/loadbalancer-proxy: "false"
       spec:
         loadBalancerIP: 192.168.2.200

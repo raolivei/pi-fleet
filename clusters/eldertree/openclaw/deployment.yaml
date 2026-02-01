@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: openclaw
   strategy:
-    type: Recreate  # Use Recreate since we have a PVC
+    type: Recreate # Use Recreate since we have a PVC
   template:
     metadata:
       labels:
@@ -30,9 +30,8 @@ spec:
           # Custom ARM64 build with entrypoint - see .github/workflows/build-openclaw-arm64.yml
           image: ghcr.io/raolivei/openclaw:latest
           imagePullPolicy: Always
-          # Explicit command - entrypoint alone wasn't working
-          command: ["openclaw"]
-          args: ["gateway", "--port", "18789"]
+          # Entrypoint from Dockerfile handles setup + starts gateway
+          # See: clusters/eldertree/openclaw/docker/Dockerfile
           ports:
             - containerPort: 18789
               name: gateway
@@ -63,6 +62,9 @@ spec:
             # Home directory for config persistence
             - name: HOME
               value: /home/node
+            # Increase Node.js heap size for OpenClaw
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=1536"
           envFrom:
             - configMapRef:
                 name: openclaw-config
@@ -88,11 +90,11 @@ spec:
             timeoutSeconds: 5
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
+              memory: "1Gi"
+              cpu: "200m"
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: "2Gi" # OpenClaw needs ~1.5GB for Node.js heap + overhead
+              cpu: "1000m"
       volumes:
         - name: openclaw-data
           persistentVolumeClaim:
