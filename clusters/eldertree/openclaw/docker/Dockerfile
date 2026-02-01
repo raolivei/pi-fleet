@@ -50,7 +50,6 @@ if [ ! -s "$CONFIG_FILE" ]; then
 {
   "gateway": {
     "mode": "local",
-    "bind": "0.0.0.0",
     "port": 18789
   },
   "channels": {
@@ -82,9 +81,9 @@ fi
 echo "[entrypoint] Running doctor --fix..."
 node dist/index.js doctor --fix --yes 2>&1 || true
 
-# Start the gateway
-echo "[entrypoint] Starting gateway..."
-exec node dist/index.js gateway "$@"
+# Start the gateway (bind to all interfaces for k8s)
+echo "[entrypoint] Starting gateway on 0.0.0.0:18789..."
+exec node dist/index.js gateway --host 0.0.0.0 "$@"
 ENTRYPOINT_EOF
 
 RUN chmod +x /app/docker-entrypoint.sh
