@@ -10,6 +10,17 @@ spec:
     scheme: https
     permanent: true
 
+---
+# Basic Auth Middleware for Canopy
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: canopy-basic-auth
+  namespace: canopy
+spec:
+  basicAuth:
+    secret: canopy-basic-auth
+
 
 
 
