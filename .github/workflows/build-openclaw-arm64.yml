@@ -11,6 +11,10 @@ on:
     # Rebuild weekly to pick up upstream updates
     - cron: '0 6 * * 0'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/openclaw
