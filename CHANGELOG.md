@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Cloudflare Tunnel pod anti-affinity** (`clusters/eldertree/cloudflare-tunnel/deployment.yaml`)
+  - Changed from `preferredDuringSchedulingIgnoredDuringExecution` to `requiredDuringSchedulingIgnoredDuringExecution`
+  - Guarantees 2 cloudflared replicas run on different nodes
+  - Prevents complete tunnel failure when a single node loses network connectivity
+  - Root cause: Both pods landed on node-2; when node-2's WiFi failed, swimto.app went down
+
 ### Changed
 
 - **Prometheus scrape config for Lens IDE**

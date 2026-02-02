@@ -22,7 +22,50 @@ The Cloudflare Tunnel is deployed as a Kubernetes Deployment that:
 
 ## Common Issues
 
-### 1. "Unauthorized: Invalid tunnel secret" Error
+### 1. Tunnel Down Due to Single Node Failure
+
+**Symptoms:**
+
+- All public sites (swimto.app, pitanga.cloud, etc.) are unreachable
+- Both cloudflared pods are on the same node
+- One node has lost WiFi/network connectivity
+- Tunnel logs show "failed to dial to edge with quic: timeout"
+
+**Cause:**
+Both cloudflared pods were scheduled on the same node due to soft anti-affinity. When that node's network fails, both tunnels go down simultaneously.
+
+**Solution:**
+
+1. **Verify pod placement:**
+
+   ```bash
+   kubectl get pods -n cloudflare-tunnel -o wide
+   ```
+
+2. **If both pods are on the same node, the deployment needs hard anti-affinity:**
+
+   ```yaml
+   # deployment.yaml should have:
+   affinity:
+     podAntiAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:  # HARD requirement
+       - labelSelector:
+           matchLabels:
+             app: cloudflared
+         topologyKey: kubernetes.io/hostname
+   ```
+
+3. **Restart deployment to reschedule pods:**
+
+   ```bash
+   kubectl rollout restart deployment/cloudflared -n cloudflare-tunnel
+   kubectl get pods -n cloudflare-tunnel -o wide  # Verify different nodes
+   ```
+
+**Prevention:**
+The deployment now uses `requiredDuringSchedulingIgnoredDuringExecution` to guarantee pods run on different nodes. If a node goes down, at least one tunnel replica remains active.
+
+### 2. "Unauthorized: Invalid tunnel secret" Error
 
 **Symptoms:**
 
