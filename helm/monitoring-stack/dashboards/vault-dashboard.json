@@ -166,7 +166,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{job=\"vault\"}",
+          "expr": "time() - process_start_time_seconds{service=\"vault\"}",
           "refId": "A"
         }
       ],
@@ -369,12 +369,12 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{job=\"vault\"}",
+          "expr": "process_resident_memory_bytes{service=\"vault\"}",
           "legendFormat": "RSS Memory",
           "refId": "A"
         },
         {
-          "expr": "go_memstats_heap_inuse_bytes{job=\"vault\"}",
+          "expr": "go_memstats_heap_inuse_bytes{service=\"vault\"}",
           "legendFormat": "Heap In Use",
           "refId": "B"
         }
@@ -403,7 +403,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
       "targets": [
         {
-          "expr": "go_goroutines{job=\"vault\"}",
+          "expr": "go_goroutines{service=\"vault\"}",
           "legendFormat": "Goroutines",
           "refId": "A"
         }

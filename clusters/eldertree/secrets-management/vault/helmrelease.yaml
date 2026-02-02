@@ -91,6 +91,12 @@ spec:
       ui:
         enabled: true
         serviceType: ClusterIP
+      # Prometheus scrape annotations for metrics collection
+      service:
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "8200"
+          prometheus.io/path: "/v1/sys/metrics"
       ingress:
         enabled: true
         ingressClassName: traefik
