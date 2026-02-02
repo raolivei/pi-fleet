@@ -10,5 +10,5 @@ spec:
     requests:
       # 20GB for audio files (~100+ episodes at 10-20MB each)
       storage: 20Gi
-  # Use Longhorn for durability and replication
-  storageClassName: longhorn
+  # Use local-path-nvme for NVMe storage on Raspberry Pi
+  storageClassName: local-path-nvme
