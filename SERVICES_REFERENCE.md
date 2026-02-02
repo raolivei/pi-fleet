@@ -180,6 +180,19 @@ dig @192.168.2.201 grafana.eldertree.local
 | **Namespace**   | `nima`                                       |
 | **Credentials** | Stored in Vault: `secret/nima/*`             |
 
+### OpenClaw (AI Assistant)
+
+| Property         | Value                                  |
+| ---------------- | -------------------------------------- |
+| **Local URL**    | `https://openclaw.eldertree.local`     |
+| **Telegram Bot** | `@eldertree_assistant_bot`             |
+| **Namespace**    | `openclaw`                             |
+| **Gateway Port** | 18789                                  |
+| **AI Provider**  | Google Gemini 1.5 Flash (free tier)    |
+| **Features**     | SwimTO integration, cluster monitoring |
+| **Credentials**  | Stored in Vault: `secret/openclaw/*`   |
+| **Setup Script** | `./scripts/setup-openclaw.sh`          |
+
 ---
 
 ## 🌐 Public Services (Pitanga LLC)
@@ -301,6 +314,9 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 - `secret/swimto/oauth` - Google OAuth client ID and secret
 - `secret/journey/postgres` - Journey PostgreSQL password
 - `secret/journey/database` - Journey database URL
+- `secret/openclaw/telegram` - OpenClaw Telegram bot token
+- `secret/openclaw/gemini` - OpenClaw Google AI Studio API key
+- `secret/openclaw/gateway` - OpenClaw gateway authentication token
 
 ### Pitanga
 
@@ -315,13 +331,14 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 
 Tailscale provides secure VPN access from anywhere with automatic HA failover.
 
-| Node   | Tailscale IP     | Advertised Subnets                                     |
-|--------|------------------|--------------------------------------------------------|
-| node-1 | 100.86.241.124   | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16            |
-| node-2 | 100.116.185.57   | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16            |
-| node-3 | 100.104.30.105   | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16            |
+| Node   | Tailscale IP   | Advertised Subnets                         |
+| ------ | -------------- | ------------------------------------------ |
+| node-1 | 100.86.241.124 | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16 |
+| node-2 | 100.116.185.57 | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16 |
+| node-3 | 100.104.30.105 | 192.168.2.0/24, 10.42.0.0/16, 10.43.0.0/16 |
 
 **Features:**
+
 - ✅ Full network access (LAN, pods, services)
 - ✅ kubectl access from anywhere
 - ✅ SSH to nodes from anywhere
@@ -329,6 +346,7 @@ Tailscale provides secure VPN access from anywhere with automatic HA failover.
 - ✅ No port forwarding required
 
 **Client Setup:**
+
 1. Install Tailscale: https://tailscale.com/download
 2. Login with same account used for cluster
 3. Enable **"Accept Routes"** in Tailscale preferences
@@ -336,10 +354,10 @@ Tailscale provides secure VPN access from anywhere with automatic HA failover.
 
 **kubeconfig for Remote Access:**
 
-| Location | kubeconfig | API Server |
-|----------|-----------|------------|
-| Home (LAN) | `~/.kube/config-eldertree` | 192.168.2.100:6443 |
-| Remote | `~/.kube/config-eldertree-remote` | 100.86.241.124:6443 |
+| Location   | kubeconfig                        | API Server          |
+| ---------- | --------------------------------- | ------------------- |
+| Home (LAN) | `~/.kube/config-eldertree`        | 192.168.2.100:6443  |
+| Remote     | `~/.kube/config-eldertree-remote` | 100.86.241.124:6443 |
 
 ```bash
 # When remote (mobile, travel, etc.)

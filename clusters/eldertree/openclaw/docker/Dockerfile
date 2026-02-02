@@ -50,7 +50,8 @@ if [ ! -s "$CONFIG_FILE" ]; then
 {
   "gateway": {
     "mode": "local",
-    "port": 18789
+    "port": 18789,
+    "trustedProxies": ["10.42.0.0/16", "10.43.0.0/16"]
   },
   "channels": {
     "telegram": {

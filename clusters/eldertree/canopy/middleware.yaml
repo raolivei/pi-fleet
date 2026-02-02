@@ -20,12 +20,3 @@ metadata:
 spec:
   basicAuth:
     secret: canopy-basic-auth
-
-
-
-
-
-
-
-
-

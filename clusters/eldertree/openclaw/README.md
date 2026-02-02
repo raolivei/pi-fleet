@@ -12,6 +12,7 @@ We build our own multi-arch image using GitHub Actions.
 **Workflow:** `.github/workflows/build-openclaw-arm64.yml`
 
 To rebuild manually:
+
 1. Go to Actions → "Build OpenClaw ARM64"
 2. Click "Run workflow"
 3. Wait for build (~10-15 min)
@@ -51,17 +52,11 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/openclaw/telegram token=
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/openclaw/gemini api-key="YOUR_API_KEY"
 ```
 
-### 3. Enable Deployment
+### 3. Deploy
 
-Edit `clusters/eldertree/kustomization.yaml` and add:
+OpenClaw is already enabled in `clusters/eldertree/kustomization.yaml`.
 
-```yaml
-resources:
-  # ... existing resources ...
-  - openclaw
-```
-
-### 4. Deploy
+Push the changes to trigger Flux deployment:
 
 ```bash
 git add clusters/eldertree/openclaw/
@@ -109,10 +104,11 @@ Ask your bot questions like:
 
 ## Secrets
 
-| Path | Description |
-|------|-------------|
-| `secret/openclaw/telegram` | Telegram bot token |
-| `secret/openclaw/gemini` | Google AI Studio API key |
+| Path                       | Description                                   |
+| -------------------------- | --------------------------------------------- |
+| `secret/openclaw/telegram` | Telegram bot token                            |
+| `secret/openclaw/gemini`   | Google AI Studio API key                      |
+| `secret/openclaw/gateway`  | Gateway authentication token (auto-generated) |
 
 ## Storage
 
@@ -136,5 +132,6 @@ Data stored on whichever node the pod runs on.
 ### API rate limits
 
 Gemini free tier: 60 requests/minute. If you hit limits, consider:
+
 - Upgrading to paid tier
 - Using a different provider (OpenAI, OpenRouter)

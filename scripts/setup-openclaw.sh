@@ -67,9 +67,15 @@ read -p "Google AI Studio API Key: " -s GEMINI_API_KEY
 echo ""
 echo ""
 
+# Generate gateway token (random 32-character hex string)
+echo -e "${YELLOW}Generating gateway authentication token...${NC}"
+GATEWAY_TOKEN=$(openssl rand -hex 32)
+echo -e "${GREEN}✓ Gateway token generated${NC}"
+echo ""
+
 # Validate inputs
 if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$GEMINI_API_KEY" ]; then
-    echo -e "${RED}Error: Both tokens are required${NC}"
+    echo -e "${RED}Error: Both Telegram token and Gemini API key are required${NC}"
     exit 1
 fi
 
@@ -84,6 +90,10 @@ echo -e "${GREEN}✓ Telegram token stored at secret/openclaw/telegram${NC}"
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/openclaw/gemini api-key="$GEMINI_API_KEY"
 echo -e "${GREEN}✓ Gemini API key stored at secret/openclaw/gemini${NC}"
 
+# Store Gateway token
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/openclaw/gateway token="$GATEWAY_TOKEN"
+echo -e "${GREEN}✓ Gateway token stored at secret/openclaw/gateway${NC}"
+
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}Secrets stored successfully!${NC}"
@@ -94,22 +104,22 @@ echo ""
 echo -e "${YELLOW}Verifying secrets...${NC}"
 kubectl exec -n vault $VAULT_POD -- vault kv get -field=token secret/openclaw/telegram > /dev/null && echo -e "${GREEN}✓ Telegram token verified${NC}"
 kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-key secret/openclaw/gemini > /dev/null && echo -e "${GREEN}✓ Gemini API key verified${NC}"
+kubectl exec -n vault $VAULT_POD -- vault kv get -field=token secret/openclaw/gateway > /dev/null && echo -e "${GREEN}✓ Gateway token verified${NC}"
 
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}  Next Steps${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo "1. Commit the OpenClaw manifests to the pi-fleet repo:"
+echo "1. OpenClaw is already enabled in clusters/eldertree/kustomization.yaml"
+echo ""
+echo "2. Commit any changes and push to trigger Flux deployment:"
 echo "   cd $PI_FLEET_DIR"
-echo "   git add clusters/eldertree/openclaw/"
-echo "   git commit -m 'feat(openclaw): add OpenClaw deployment with Telegram + Gemini'"
+echo "   git add ."
+echo "   git commit -m 'feat(openclaw): configure OpenClaw deployment'"
 echo "   git push"
 echo ""
-echo "2. Flux will automatically deploy OpenClaw"
-echo ""
-echo "3. Enable OpenClaw in clusters/eldertree/kustomization.yaml:"
-echo "   Uncomment or add: - openclaw"
+echo "3. Flux will automatically deploy OpenClaw"
 echo ""
 echo "4. Monitor deployment:"
 echo "   kubectl get pods -n openclaw -w"
@@ -117,9 +127,7 @@ echo ""
 echo "5. Check logs:"
 echo "   kubectl logs -n openclaw -l app=openclaw -f"
 echo ""
-echo "6. Access OpenClaw web UI:"
-echo "   https://openclaw.eldertree.local"
-echo ""
-echo "7. Test via Telegram:"
-echo "   Send a message to @eldertree_assistant_bot"
+echo "6. Access OpenClaw:"
+echo "   - Web UI: https://openclaw.eldertree.local"
+echo "   - Telegram: Message @eldertree_assistant_bot"
 echo ""
