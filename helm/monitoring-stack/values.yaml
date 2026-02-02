@@ -99,37 +99,6 @@ prometheus:
         static_configs:
           - targets: ['observability-monitoring-stack-prometheus-pushgateway.observability.svc.cluster.local:9091']
         scrape_interval: 15s
-      # Vault HA metrics
-      - job_name: 'vault'
-        metrics_path: /v1/sys/metrics
-        params:
-          format: ['prometheus']
-        static_configs:
-          - targets:
-              - 'vault.vault.svc.cluster.local:8200'
-            labels:
-              service: vault
-              namespace: vault
-        scrape_interval: 30s
-      # Pi-hole metrics
-      - job_name: 'pihole'
-        static_configs:
-          - targets:
-              - 'pi-hole.pihole.svc.cluster.local:9617'
-            labels:
-              service: pihole
-              namespace: pihole
-        scrape_interval: 30s
-      # Visage API metrics
-      - job_name: 'visage-api'
-        static_configs:
-          - targets:
-              - 'visage-api.visage.svc.cluster.local:8000'
-            labels:
-              service: visage-api
-              namespace: visage
-        metrics_path: /metrics
-        scrape_interval: 30s
     # ServiceMonitor and PodMonitor discovery
     serviceMonitorSelectorNilUsesAll: true
     podMonitorSelectorNilUsesAll: true
@@ -241,6 +210,38 @@ prometheus:
               annotations:
                 summary: "Low disk space on {{ $labels.instance }}"
                 description: "Disk space is below 15% on {{ $labels.instance }}."
+
+# Extra scrape configs for external services (Vault, Pi-hole, Visage)
+# Note: This is passed to the prometheus subchart at root level
+extraScrapeConfigs: |
+  - job_name: 'vault'
+    metrics_path: /v1/sys/metrics
+    params:
+      format: ['prometheus']
+    static_configs:
+      - targets:
+          - 'vault.vault.svc.cluster.local:8200'
+        labels:
+          service: vault
+          namespace: vault
+    scrape_interval: 30s
+  - job_name: 'pihole'
+    static_configs:
+      - targets:
+          - 'pi-hole.pihole.svc.cluster.local:9617'
+        labels:
+          service: pihole
+          namespace: pihole
+    scrape_interval: 30s
+  - job_name: 'visage-api'
+    static_configs:
+      - targets:
+          - 'visage-api.visage.svc.cluster.local:8000'
+        labels:
+          service: visage-api
+          namespace: visage
+    metrics_path: /metrics
+    scrape_interval: 30s
 
 # Grafana configuration
 grafana:
