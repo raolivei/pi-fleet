@@ -59,7 +59,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
       "targets": [
         {
-          "expr": "kube_node_status_condition{node=\"node-1\", condition=\"Ready\", status=\"true\"}",
+          "expr": "kube_node_status_condition{node=\"node-1.eldertree.local\", condition=\"Ready\", status=\"true\"}",
           "legendFormat": "node-1",
           "refId": "A"
         }
@@ -93,7 +93,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
       "targets": [
         {
-          "expr": "kube_node_status_condition{node=\"node-2\", condition=\"Ready\", status=\"true\"}",
+          "expr": "kube_node_status_condition{node=\"node-2.eldertree.local\", condition=\"Ready\", status=\"true\"}",
           "legendFormat": "node-2",
           "refId": "A"
         }
@@ -127,7 +127,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
       "targets": [
         {
-          "expr": "kube_node_status_condition{node=\"node-3\", condition=\"Ready\", status=\"true\"}",
+          "expr": "kube_node_status_condition{node=\"node-3.eldertree.local\", condition=\"Ready\", status=\"true\"}",
           "legendFormat": "node-3",
           "refId": "A"
         }
