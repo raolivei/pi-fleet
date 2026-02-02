@@ -45,9 +45,9 @@
               "options": {
                 "match": "null",
                 "result": {
-                  "color": "red",
+                  "color": "yellow",
                   "index": 1,
-                  "text": "DOWN"
+                  "text": "N/A"
                 }
               },
               "type": "special"
@@ -57,7 +57,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "yellow",
                 "value": null
               },
               {
@@ -91,11 +91,11 @@
       },
       "targets": [
         {
-          "expr": "(count(visage_worker_info{job=\"visage-worker\"}) >= 1) or (up{job=\"visage-worker\"} == 1)",
+          "expr": "count(kube_pod_status_phase{namespace=\"visage\", pod=~\"visage-watermark-worker-.*\", phase=\"Running\"})",
           "refId": "A"
         }
       ],
-      "title": "Worker",
+      "title": "Watermark Worker",
       "type": "stat"
     },
     {
