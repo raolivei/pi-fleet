@@ -155,6 +155,25 @@ ssh raolivei@100.116.185.57  # node-2
 ssh raolivei@100.104.30.105  # node-3
 ```
 
+### Lens IDE Configuration
+
+For guaranteed cluster access in Lens regardless of WiFi VIP issues:
+
+1. **Install Tailscale on your Mac** (if not already): https://tailscale.com/download/mac
+2. **Enable Accept Routes** in Tailscale preferences
+3. **Add the remote kubeconfig to Lens:**
+   - Open Lens → File → Add Cluster (or Cmd+Shift+A)
+   - Select "Add from kubeconfig file"
+   - Choose `~/.kube/config-eldertree-remote`
+   - Name it "eldertree-remote" to distinguish from the LAN config
+
+**Why use the remote config?**
+- The default `config-eldertree` uses the kube-vip WiFi VIP (192.168.2.100)
+- If the VIP leader node's WiFi fails, the VIP becomes unreachable
+- The remote config uses Tailscale (100.86.241.124) which is more reliable
+
+**Limitation:** The remote config points only to node-1. If node-1 is completely down, you'll need to manually edit the kubeconfig to use node-2 (100.116.185.57) or node-3 (100.104.30.105).
+
 ### Create Remote kubeconfig (if needed)
 
 If `~/.kube/config-eldertree-remote` doesn't exist:
