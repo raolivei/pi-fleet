@@ -91,7 +91,7 @@
       },
       "targets": [
         {
-          "expr": "count(kube_pod_status_phase{namespace=\"swimto\", pod=~\"swimto-postgres-.*\", phase=\"Running\"})",
+          "expr": "count(kube_pod_status_phase{namespace=\"swimto\", pod=~\"postgres-.*\", phase=\"Running\"})",
           "legendFormat": "DB Status"
         }
       ]
@@ -108,7 +108,7 @@
       },
       "targets": [
         {
-          "expr": "count(kube_pod_status_phase{namespace=\"swimto\", pod=~\"swimto-redis-.*\", phase=\"Running\"})",
+          "expr": "count(kube_pod_status_phase{namespace=\"swimto\", pod=~\"redis-.*\", phase=\"Running\"})",
           "legendFormat": "Redis Status"
         }
       ]
