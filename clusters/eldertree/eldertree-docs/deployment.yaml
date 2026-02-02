@@ -24,6 +24,9 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
+            - name: audio
+              containerPort: 8080
+              protocol: TCP
           volumeMounts:
             - name: audio-storage
               mountPath: /data

@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eldertree-audio
+  namespace: eldertree-docs
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    external-dns.alpha.kubernetes.io/hostname: audio.eldertree.local
+  labels:
+    app.kubernetes.io/name: eldertree-docs
+    app.kubernetes.io/component: audio
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - audio.eldertree.local
+      secretName: audio-tls
+  rules:
+    - host: audio.eldertree.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: eldertree-audio
+                port:
+                  number: 80

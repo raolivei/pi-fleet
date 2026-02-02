@@ -5,36 +5,41 @@ metadata:
   namespace: eldertree-docs
 data:
   audio.conf: |
-    # Audio files with proper headers for streaming
-    location /audio/ {
-        alias /data/audio/;
-        
-        # Enable byte-range requests for seeking
-        add_header Accept-Ranges bytes;
-        
-        # CORS for podcast apps
-        add_header Access-Control-Allow-Origin *;
-        add_header Access-Control-Allow-Methods 'GET, HEAD, OPTIONS';
-        
-        # Cache audio files (1 week)
-        expires 7d;
-        add_header Cache-Control "public, immutable";
-        
-        # Directory listing (JSON format)
-        autoindex on;
-        autoindex_format json;
-        
-        # MIME types
-        types {
-            audio/mpeg mp3;
-            audio/ogg ogg;
-            audio/wav wav;
-        }
-    }
+    # Audio server block - listens on different port to avoid conflict
+    server {
+        listen 8080;
+        server_name _;
 
-    # RSS feed for podcast apps
-    location /feed.xml {
-        alias /data/feed.xml;
-        add_header Content-Type application/rss+xml;
-        add_header Access-Control-Allow-Origin *;
+        # Audio files with proper headers for streaming
+        location /audio/ {
+            alias /data/audio/;
+            
+            # Enable byte-range requests for seeking
+            add_header Accept-Ranges bytes;
+            
+            # CORS for podcast apps
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Allow-Methods 'GET, HEAD, OPTIONS';
+            
+            # Cache audio files (1 week)
+            expires 7d;
+            add_header Cache-Control "public, immutable";
+            
+            # Directory listing (JSON format)
+            autoindex on;
+            autoindex_format json;
+        }
+
+        # RSS feed for podcast apps
+        location /feed.xml {
+            alias /data/feed.xml;
+            default_type application/rss+xml;
+            add_header Access-Control-Allow-Origin *;
+        }
+
+        # Health check
+        location /health {
+            return 200 'OK';
+            add_header Content-Type text/plain;
+        }
     }
