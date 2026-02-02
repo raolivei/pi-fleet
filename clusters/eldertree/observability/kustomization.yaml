@@ -7,6 +7,7 @@ resources:
   - monitoring-stack-helmrelease.yaml # Prometheus + Grafana monitoring stack
   - pihole-scrape-config.yaml # Pi-hole Prometheus scrape configuration
   - visage-scrape-config.yaml # Visage metrics scrape configuration
+  - vault-scrape-config.yaml # Vault telemetry scrape configuration
   - flux-ui-helmrelease.yaml # Flux UI (Weave GitOps) for managing FluxCD resources
   - postgres-exporter.yaml # PostgreSQL metrics exporter for all DB instances
   - redis-exporter.yaml # Redis metrics exporter for all Redis instances

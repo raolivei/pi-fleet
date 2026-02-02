@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-scrape-config
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: vault-scrape-config
+    prometheus-scrape-config: "true"
+data:
+  vault-scrape.yaml: |
+    - job_name: 'vault'
+      metrics_path: /v1/sys/metrics
+      params:
+        format: ['prometheus']
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      static_configs:
+        - targets:
+          - 'vault.vault.svc.cluster.local:8200'
+          labels:
+            service: vault
+            namespace: vault
+      # Vault metrics endpoint requires authentication unless unauthenticated_metrics_access is enabled
+      # For now, we'll try without auth - if it fails, we'll need to add a token

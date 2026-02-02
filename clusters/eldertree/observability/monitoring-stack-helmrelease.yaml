@@ -59,6 +59,8 @@ spec:
             name: pihole-scrape-config
           - key: visage-scrape.yaml
             name: visage-scrape-config
+          - key: vault-scrape.yaml
+            name: vault-scrape-config
     grafana:
       enabled: true
       adminPassword: admin
