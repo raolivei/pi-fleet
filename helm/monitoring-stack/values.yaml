@@ -8,9 +8,11 @@ global:
 # Prometheus configuration
 prometheus:
   enabled: true
-  # Extra scrape configs for external services (Vault, Pi-hole, Visage)
-  extraScrapeConfigs: |
-    - job_name: 'vault'
+  # Extra scrape configs using scrapeConfigs map (new format for prometheus chart)
+  scrapeConfigs:
+    vault:
+      enabled: true
+      job_name: 'vault'
       metrics_path: /v1/sys/metrics
       params:
         format: ['prometheus']
@@ -21,7 +23,9 @@ prometheus:
             service: vault
             namespace: vault
       scrape_interval: 30s
-    - job_name: 'pihole'
+    pihole:
+      enabled: true
+      job_name: 'pihole'
       static_configs:
         - targets:
             - 'pi-hole.pihole.svc.cluster.local:9617'
@@ -29,7 +33,9 @@ prometheus:
             service: pihole
             namespace: pihole
       scrape_interval: 30s
-    - job_name: 'visage-api'
+    visage-api:
+      enabled: true
+      job_name: 'visage-api'
       static_configs:
         - targets:
             - 'visage-api.visage.svc.cluster.local:8000'
