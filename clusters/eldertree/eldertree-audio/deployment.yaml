@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audio-server
+  namespace: eldertree-audio
+  labels:
+    app: eldertree-audio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eldertree-audio
+  template:
+    metadata:
+      labels:
+        app: eldertree-audio
+    spec:
+      containers:
+        - name: nginx
+          # ARM64-compatible nginx
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: audio-storage
+              mountPath: /data
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: static-content
+              mountPath: /usr/share/nginx/html
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: audio-storage
+          persistentVolumeClaim:
+            claimName: audio-storage
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+        - name: static-content
+          configMap:
+            name: static-content

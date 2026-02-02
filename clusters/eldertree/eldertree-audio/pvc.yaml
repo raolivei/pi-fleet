@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: audio-storage
+  namespace: eldertree-audio
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # 20GB for audio files (~100+ episodes at 10-20MB each)
+      storage: 20Gi
+  # Use Longhorn for durability and replication
+  storageClassName: longhorn

@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: static-content
+  namespace: eldertree-audio
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>ElderTree Audio</title>
+      <style>
+        :root {
+          --bg: #1a1a2e;
+          --surface: #16213e;
+          --primary: #e94560;
+          --text: #eaeaea;
+          --muted: #8b8b8b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: var(--bg);
+          color: var(--text);
+          min-height: 100vh;
+          padding: 2rem;
+        }
+        .container {
+          max-width: 800px;
+          margin: 0 auto;
+        }
+        header {
+          margin-bottom: 3rem;
+          padding-bottom: 2rem;
+          border-bottom: 1px solid var(--surface);
+        }
+        h1 {
+          font-size: 2.5rem;
+          font-weight: 300;
+          margin-bottom: 0.5rem;
+        }
+        .tagline {
+          color: var(--muted);
+          font-size: 1.1rem;
+        }
+        .info-box {
+          background: var(--surface);
+          padding: 1.5rem;
+          border-radius: 8px;
+          margin-bottom: 2rem;
+        }
+        .info-box h2 {
+          font-size: 1rem;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--primary);
+          margin-bottom: 1rem;
+        }
+        .info-box p {
+          line-height: 1.6;
+          color: var(--muted);
+        }
+        .links {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-top: 1rem;
+        }
+        a {
+          color: var(--primary);
+          text-decoration: none;
+        }
+        a:hover {
+          text-decoration: underline;
+        }
+        .feed-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: var(--surface);
+          padding: 0.75rem 1.25rem;
+          border-radius: 4px;
+          font-size: 0.9rem;
+        }
+        footer {
+          margin-top: 4rem;
+          padding-top: 2rem;
+          border-top: 1px solid var(--surface);
+          color: var(--muted);
+          font-size: 0.85rem;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <header>
+          <h1>ElderTree Audio</h1>
+          <p class="tagline">Human voice. Real thoughts. No AI.</p>
+        </header>
+        
+        <div class="info-box">
+          <h2>About</h2>
+          <p>
+            Audio recordings from the ElderTree blog — reflections on software engineering,
+            systems thinking, and the journey of building infrastructure that lasts.
+          </p>
+          <p style="margin-top: 1rem;">
+            All audio is recorded with the author's real human voice. 
+            No TTS. No voice cloning. No hybrid approaches.
+          </p>
+        </div>
+
+        <div class="info-box">
+          <h2>Listen</h2>
+          <div class="links">
+            <a href="/audio/" class="feed-link">Browse Episodes</a>
+            <a href="/feed.xml" class="feed-link">RSS Feed</a>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <h2>Related</h2>
+          <div class="links">
+            <a href="https://github.com/raolivei/pi-fleet-blog">ElderTree Blog</a>
+            <a href="https://github.com/raolivei/pi-fleet">Pi-Fleet Cluster</a>
+          </div>
+        </div>
+
+        <footer>
+          <p>ElderTree &middot; Built on Kubernetes &middot; Raspberry Pi Cluster</p>
+        </footer>
+      </div>
+    </body>
+    </html>

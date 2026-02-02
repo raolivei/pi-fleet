@@ -13,7 +13,6 @@ resources:
   - observability # Monitoring stack (Prometheus, Grafana, Alertmanager)
   - autoscaling # KEDA event-driven autoscaling
 
-
   # Applications
   # - canopy # Personal finance dashboard
   - swimto # Toronto pool schedules
@@ -21,4 +20,5 @@ resources:
   # - nima          # AI/ML learning project (DISABLED - not needed)
   # - journey       # AI-powered career pathfinder (DISABLED - not deployed yet)
   # - us-law-severity-map  # US law visualization (DISABLED - not deployed yet)
-  - openclaw      # AI assistant with Telegram + SwimTO integration
+  - openclaw # AI assistant with Telegram + SwimTO integration
+  - eldertree-audio # Audio hosting for ElderTree blog
