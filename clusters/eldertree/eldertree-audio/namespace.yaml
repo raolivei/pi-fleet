@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: eldertree-audio
-  labels:
-    app.kubernetes.io/name: eldertree-audio
-    app.kubernetes.io/part-of: eldertree

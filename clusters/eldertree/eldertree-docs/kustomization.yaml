@@ -3,6 +3,8 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - audio-pvc.yaml
+  - audio-nginx-config.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml

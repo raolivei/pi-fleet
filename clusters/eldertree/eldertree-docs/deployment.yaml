@@ -24,6 +24,12 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
+          volumeMounts:
+            - name: audio-storage
+              mountPath: /data
+            - name: audio-nginx-config
+              mountPath: /etc/nginx/conf.d/audio.conf
+              subPath: audio.conf
           resources:
             requests:
               memory: "32Mi"
@@ -43,5 +49,12 @@ spec:
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: audio-storage
+          persistentVolumeClaim:
+            claimName: audio-storage
+        - name: audio-nginx-config
+          configMap:
+            name: audio-nginx-config
 
 

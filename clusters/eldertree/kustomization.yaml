@@ -21,4 +21,4 @@ resources:
   # - journey       # AI-powered career pathfinder (DISABLED - not deployed yet)
   # - us-law-severity-map  # US law visualization (DISABLED - not deployed yet)
   - openclaw # AI assistant with Telegram + SwimTO integration
-  - eldertree-audio # Audio hosting for ElderTree blog
+  - eldertree-docs # Documentation + Audio hosting for ElderTree blog
