@@ -20,8 +20,10 @@ To rebuild manually:
 ## Features
 
 - **Telegram Integration**: Chat with your assistant via `@eldertree_assistant_bot`
-- **Google Gemini AI**: Uses Gemini 1.5 Flash (free tier)
+- **Google Gemini AI**: Uses Gemini 2.5 Flash Lite (free tier)
 - **SwimTO Integration**: Query Toronto pool schedules
+- **Kubernetes Access**: Read-only access to cluster - check pod logs, status, events
+- **Web Search**: Search the web using Brave Search API
 - **Web UI**: Access at `https://openclaw.eldertree.local`
 
 ## Quick Start
@@ -87,6 +89,18 @@ Ask your bot questions like:
 - "Show me Riverdale pool schedule"
 - "Find pools near High Park"
 
+## Kubernetes Integration
+
+Elder has read-only access to the cluster via kubectl. Ask things like:
+
+- "Show me swimto pod logs"
+- "Are all pods running in the canopy namespace?"
+- "What events happened in swimto recently?"
+- "How's the cluster doing?"
+- "What's using the most memory?"
+
+**RBAC**: Uses a ServiceAccount with ClusterRole `openclaw-reader` (read-only access to pods, logs, deployments, services, events).
+
 ## Architecture
 
 ```
@@ -109,6 +123,7 @@ Ask your bot questions like:
 | `secret/openclaw/telegram` | Telegram bot token                            |
 | `secret/openclaw/gemini`   | Google AI Studio API key                      |
 | `secret/openclaw/gateway`  | Gateway authentication token (auto-generated) |
+| `secret/openclaw/brave`    | Brave Search API key (for web search)         |
 
 ## Storage
 

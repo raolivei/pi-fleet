@@ -9,78 +9,124 @@ data:
   # SwimTO Skill - Query Toronto pool schedules
   swimto-skill.md: |
     # SwimTO Skill
-    
+
     Query Toronto pool schedules and find swimming activities.
-    
+
     ## Tools
-    
+
     ### swimto_search
     Search for pools with specific activities.
-    
+
     Parameters:
     - activity: string (optional) - Activity type: "lane_swim", "leisure_swim", "aquafit", "family_swim"
     - date: string (optional) - Date in YYYY-MM-DD format (default: today)
-    
+
     Example: "Find pools with lane swim today"
-    
+
     ### swimto_pool_schedule  
     Get the schedule for a specific pool.
-    
+
     Parameters:
     - pool_name: string - Name of the pool (partial match supported)
     - days: number (optional) - Number of days to show (default: 7)
-    
+
     Example: "Show me Regent Park pool schedule"
-    
+
     ### swimto_nearby
     Find pools near a location.
-    
+
     Parameters:
     - location: string - Address or neighborhood in Toronto
     - activity: string (optional) - Filter by activity type
-    
+
     Example: "Find pools near High Park with family swim"
-    
+
     ## Implementation
-    
+
     The SwimTO API is available at: ${SWIMTO_API_URL}
-    
+
     Endpoints:
     - GET /api/pools - List all pools
     - GET /api/pools/{id}/schedule - Get pool schedule
     - GET /api/search?activity={type}&date={date} - Search by activity
     - GET /api/nearby?lat={lat}&lng={lng}&radius={km} - Find nearby pools
-    
+
     ## Example Conversations
-    
+
     User: "What pools have lane swim tonight?"
     Assistant: *calls swimto_search with activity="lane_swim" and today's date*
-    
+
     User: "Show me Riverdale pool schedule for this week"
     Assistant: *calls swimto_pool_schedule with pool_name="Riverdale"*
 
-  # Cluster Ops Skill - Basic cluster operations (future expansion)
+  # Cluster Ops Skill - Kubernetes cluster operations
   cluster-ops-skill.md: |
     # Cluster Ops Skill
-    
+
     Monitor and interact with the eldertree Kubernetes cluster.
-    
-    ## Tools
-    
-    ### cluster_status
-    Get current cluster health and status.
-    
-    Example: "How is the cluster doing?"
-    
-    ### pod_status
-    Check status of pods in a namespace.
-    
-    Parameters:
-    - namespace: string (optional) - Kubernetes namespace (default: all)
-    
-    Example: "Are all pods running in swimto namespace?"
-    
-    ## Notes
-    
-    This skill provides read-only cluster monitoring.
-    For security, write operations require manual approval.
+    You have read-only access to the cluster via kubectl.
+
+    ## How to Use
+
+    You can run kubectl commands using the shell tool. Common commands:
+
+    ### List pods in a namespace
+    ```bash
+    kubectl get pods -n swimto
+    kubectl get pods -n canopy
+    kubectl get pods -n openclaw
+    kubectl get pods -A  # all namespaces
+    ```
+
+    ### Get pod logs
+    ```bash
+    kubectl logs -n swimto deployment/swimto-api --tail=50
+    kubectl logs -n swimto deployment/swimto-web --tail=50
+    kubectl logs -n canopy deployment/canopy-api --tail=50
+    ```
+
+    ### Check pod details (for troubleshooting)
+    ```bash
+    kubectl describe pod -n swimto -l app=swimto-api
+    kubectl get events -n swimto --sort-by='.lastTimestamp'
+    ```
+
+    ### Cluster health
+    ```bash
+    kubectl get nodes
+    kubectl top nodes  # resource usage
+    kubectl top pods -n swimto  # pod resource usage
+    ```
+
+    ### Services and ingress
+    ```bash
+    kubectl get svc -n swimto
+    kubectl get ingress -n swimto
+    ```
+
+    ## Namespaces in Eldertree
+
+    - **swimto**: SwimTO pool schedule app (Rafa's project)
+    - **canopy**: Personal finance dashboard
+    - **openclaw**: This is where you (Elder) live!
+    - **vault**: HashiCorp Vault for secrets
+    - **monitoring**: Prometheus + Grafana
+    - **longhorn-system**: Distributed storage
+    - **flux-system**: GitOps controller
+
+    ## Example Conversations
+
+    User: "Show me swimto pod logs"
+    Assistant: *runs `kubectl logs -n swimto deployment/swimto-api --tail=100`*
+
+    User: "Are all pods healthy in swimto?"
+    Assistant: *runs `kubectl get pods -n swimto` and analyzes output*
+
+    User: "What's using the most memory?"
+    Assistant: *runs `kubectl top pods -A --sort-by=memory`*
+
+    ## Important Notes
+
+    - You have READ-ONLY access (no delete, scale, or modify operations)
+    - Always use `--tail=N` when getting logs to avoid overwhelming output
+    - Check events if pods are not starting: `kubectl get events -n NAMESPACE`

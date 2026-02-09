@@ -182,16 +182,16 @@ dig @192.168.2.201 grafana.eldertree.local
 
 ### OpenClaw (AI Assistant)
 
-| Property         | Value                                  |
-| ---------------- | -------------------------------------- |
-| **Local URL**    | `https://openclaw.eldertree.local`     |
-| **Telegram Bot** | `@eldertree_assistant_bot`             |
-| **Namespace**    | `openclaw`                             |
-| **Gateway Port** | 18789                                  |
-| **AI Provider**  | Google Gemini 1.5 Flash (free tier)    |
-| **Features**     | SwimTO integration, cluster monitoring |
-| **Credentials**  | Stored in Vault: `secret/openclaw/*`   |
-| **Setup Script** | `./scripts/setup-openclaw.sh`          |
+| Property         | Value                                              |
+| ---------------- | -------------------------------------------------- |
+| **Local URL**    | `https://openclaw.eldertree.local`                 |
+| **Telegram Bot** | `@eldertree_assistant_bot`                         |
+| **Namespace**    | `openclaw`                                         |
+| **Gateway Port** | 18789                                              |
+| **AI Provider**  | Google Gemini 1.5 Flash (free tier)                |
+| **Features**     | SwimTO integration, cluster monitoring, web search |
+| **Credentials**  | Stored in Vault: `secret/openclaw/*`               |
+| **Setup Script** | `./scripts/setup-openclaw.sh`                      |
 
 ---
 
@@ -317,6 +317,7 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 - `secret/openclaw/telegram` - OpenClaw Telegram bot token
 - `secret/openclaw/gemini` - OpenClaw Google AI Studio API key
 - `secret/openclaw/gateway` - OpenClaw gateway authentication token
+- `secret/openclaw/brave` - OpenClaw Brave Search API key (web search)
 
 ### Pitanga
 

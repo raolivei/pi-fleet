@@ -12,9 +12,14 @@ RUN corepack enable
 
 WORKDIR /app
 
-# Clone OpenClaw source
+# Clone OpenClaw source and install kubectl for Kubernetes access
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git curl && \
+    apt-get install -y --no-install-recommends git curl ca-certificates && \
+    # Install kubectl (ARM64)
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/ && \
+    # Clone OpenClaw
     git clone --depth 1 https://github.com/openclaw/openclaw.git . && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*

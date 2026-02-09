@@ -38,7 +38,8 @@ data:
       "gateway": {
         "mode": "local",
         "bind": "0.0.0.0",
-        "port": 18789
+        "port": 18789,
+        "trustedProxies": ["10.42.0.0/16", "10.43.0.0/16"]
       },
       "agents": {
         "defaults": {

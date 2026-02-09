@@ -1,0 +1,49 @@
+# ServiceAccount for OpenClaw to interact with Kubernetes API
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openclaw
+  namespace: openclaw
+---
+# ClusterRole with read-only access to pods, logs, deployments, services
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: openclaw-reader
+rules:
+  # Read pods and their logs
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  # Read deployments, services, ingresses
+  - apiGroups: [""]
+    resources: ["services", "configmaps", "secrets", "namespaces"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list"]
+  # Read events for troubleshooting
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+  # Read nodes for cluster status
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+# Bind the ClusterRole to OpenClaw's ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openclaw-reader-binding
+subjects:
+  - kind: ServiceAccount
+    name: openclaw
+    namespace: openclaw
+roleRef:
+  kind: ClusterRole
+  name: openclaw-reader
+  apiGroup: rbac.authorization.k8s.io

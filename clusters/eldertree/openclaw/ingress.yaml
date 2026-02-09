@@ -9,6 +9,19 @@ spec:
     scheme: https
     permanent: true
 ---
+# Middleware to add gateway token as a custom header
+# OpenClaw should read this header for authentication
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: add-token-header
+  namespace: openclaw
+spec:
+  headers:
+    customRequestHeaders:
+      X-OpenClaw-Token: "851da3d676fec9cacfc9cc5ea6233b2126a28f815c5757b40c5a5d71857b1a41"
+      Authorization: "Bearer 851da3d676fec9cacfc9cc5ea6233b2126a28f815c5757b40c5a5d71857b1a41"
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -16,7 +29,7 @@ metadata:
   namespace: openclaw
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    traefik.ingress.kubernetes.io/router.middlewares: openclaw-redirect-https@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: openclaw-redirect-https@kubernetescrd,openclaw-add-token-header@kubernetescrd
     cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
     external-dns.alpha.kubernetes.io/hostname: openclaw.eldertree.local
   labels:
