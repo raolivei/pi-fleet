@@ -1,0 +1,88 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: dex
+  namespace: observability
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: dex
+      version: "0.19.x"
+      sourceRef:
+        kind: HelmRepository
+        name: dex
+        namespace: observability
+      interval: 12h
+  install:
+    createNamespace: false
+  upgrade:
+    cleanupOnFail: true
+  values:
+    image:
+      tag: v2.41.1
+
+    # Inject GitHub OAuth credentials from Vault via ExternalSecret
+    envVars:
+      - name: GITHUB_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: dex-github-client
+            key: client-id
+      - name: GITHUB_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: dex-github-client
+            key: client-secret
+
+    config:
+      issuer: https://dex.eldertree.local
+
+      storage:
+        type: memory
+
+      # Weave GitOps as an OIDC client of Dex
+      staticClients:
+        - name: "Weave GitOps"
+          id: weave-gitops
+          secret: weave-gitops-dex-secret
+          redirectURIs:
+            - "https://flux.eldertree.local/oauth2/callback"
+
+      # GitHub as the identity provider
+      connectors:
+        - type: github
+          id: github
+          name: GitHub
+          config:
+            clientID: $GITHUB_CLIENT_ID
+            clientSecret: $GITHUB_CLIENT_SECRET
+            redirectURI: https://dex.eldertree.local/callback
+            # Restrict to your GitHub user
+            orgs:
+              - name: raolivei
+
+    # Resource limits for Raspberry Pi
+    resources:
+      limits:
+        cpu: 250m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+    # Ingress for Dex
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+      hosts:
+        - host: dex.eldertree.local
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: dex-tls
+          hosts:
+            - dex.eldertree.local

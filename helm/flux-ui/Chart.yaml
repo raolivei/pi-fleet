@@ -2,8 +2,8 @@ apiVersion: v2
 name: flux-ui
 description: Flux UI (Weave GitOps) for visualizing and managing FluxCD deployments
 type: application
-version: 0.1.1
-appVersion: "0.38.0"
+version: 0.2.0
+appVersion: "0.39.0-rc.2"
 dependencies:
   - name: weave-gitops
     version: "4.0.36"

@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: ./helm/flux-ui
-      version: "0.1.1"
+      version: "0.2.0"
       sourceRef:
         kind: GitRepository
         name: flux-system
@@ -29,7 +29,12 @@ spec:
     # Values passed to weave-gitops dependency (gitops-server chart)
     weave-gitops:
       enabled: true
-      
+
+      # Image override: v0.39.0-rc.2 adds Flux v2 API support (fixes v2beta1 error)
+      image:
+        repository: ghcr.io/weaveworks/wego-app
+        tag: v0.39.0-rc.2
+
       # Service configuration
       service:
         type: ClusterIP
@@ -79,9 +84,15 @@ spec:
         create: true
         clusterRole: true
       
-      # Admin user configuration - required for authentication
+      # OIDC authentication via Dex + GitHub
+      # Disabling static admin user in favour of GitHub login
       adminUser:
-        create: true
-        createClusterRole: true
-        username: admin
-        passwordHash: "$2y$10$b9.2/PghT0wFR1VVeEt10.nJ6JxfKMAto5YpIFehLISdeeqP.PuQC" # Password: admin123
+        create: false
+
+      # Additional server args for OIDC
+      additionalArgs:
+        - --auth-methods=oidc
+        - --oidc-issuer-url=https://dex.eldertree.local
+        - --oidc-client-id=weave-gitops
+        - --oidc-client-secret=weave-gitops-dex-secret
+        - --oidc-redirect-url=https://flux.eldertree.local/oauth2/callback
