@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grove
+  namespace: openclaw
+  labels:
+    app: openclaw
+    component: grove
+spec:
+  selector:
+    app: openclaw
+    component: grove
+  ports:
+    - port: 8000
+      targetPort: 8006
+      name: api
+  type: ClusterIP

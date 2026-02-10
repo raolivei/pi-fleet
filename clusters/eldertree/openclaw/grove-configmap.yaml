@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grove-config
+  namespace: openclaw
+  labels:
+    app: openclaw
+    component: grove
+data:
+  GROVE_REPO_SYNC_INTERVAL_HOURS: "6"
+  GROVE_GITHUB_OWNER: "raolivei"

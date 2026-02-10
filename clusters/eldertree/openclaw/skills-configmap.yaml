@@ -130,3 +130,184 @@ data:
     - You have READ-ONLY access (no delete, scale, or modify operations)
     - Always use `--tail=N` when getting logs to avoid overwhelming output
     - Check events if pods are not starting: `kubectl get events -n NAMESPACE`
+
+  # Grove Skill - AI agent for code, infrastructure, and project management
+  grove-skill.md: |
+    # Grove Skill
+
+    Grove is your AI agent that can browse codebases, manage GitHub issues/PRs,
+    monitor Kubernetes, trigger deployments, and plan project features.
+    Grove has its own GitHub App identity ("Grove [bot]").
+
+    **Auto-approved** operations run immediately. **Approval-required** operations
+    return an approval ID — ask the user to confirm before executing.
+
+    ## Tools
+
+    ### grove_list_repos
+    List all project repos Grove has cloned. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/code/repos
+
+    ### grove_search_code
+    Search code across all repos using ripgrep. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/code/search
+    Body: {"query": "search term", "repo": "optional-repo-name", "file_pattern": "*.py", "max_results": 50}
+
+    Example: "Search for authentication in SwimTO"
+
+    ### grove_read_file
+    Read contents of a file from a repo. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/code/read?repo=swimTO&path=backend/main.py
+
+    ### grove_tree
+    Get directory structure of a repo. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/code/tree?repo=swimTO&path=backend
+
+    ### grove_edit_file
+    Edit a file: creates a branch, commits, and pushes. (approval required)
+
+    HTTP: POST ${GROVE_URL}/api/code/edit
+    Body: {"repo": "swimTO", "path": "backend/main.py", "content": "new content", "commit_message": "fix: description"}
+
+    Returns an approval_id. Ask the user to approve before executing.
+
+    ### grove_create_pr
+    Create a pull request as Grove [bot]. (approval required)
+
+    HTTP: POST ${GROVE_URL}/api/code/pr
+    Body: {"repo": "swimTO", "branch": "grove/fix-123", "title": "fix: description", "body": "PR body"}
+
+    ### grove_list_issues
+    List GitHub issues across one or all repos. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/github/issues/list
+    Body: {"repo": "swimTO", "state": "open", "max_results": 20}
+
+    ### grove_create_issue
+    Create a GitHub issue as Grove [bot]. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/github/issues
+    Body: {"repo": "swimTO", "title": "feat: new feature", "body": "Description", "labels": ["enhancement"]}
+
+    ### grove_trigger_workflow
+    Trigger a GitHub Actions workflow. (approval required)
+
+    HTTP: POST ${GROVE_URL}/api/github/trigger-workflow
+    Body: {"repo": "swimTO", "workflow": "build-and-push.yml", "ref": "main"}
+
+    ### grove_list_pods
+    List Kubernetes pods. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/k8s/pods?namespace=swimto
+
+    ### grove_pod_logs
+    Get pod logs. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/k8s/logs
+    Body: {"namespace": "swimto", "pod": "swimto-api-xxx", "tail_lines": 100}
+
+    ### grove_events
+    List cluster events. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/k8s/events?namespace=swimto
+
+    ### grove_cluster_health
+    Get cluster health summary with FluxCD status. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/k8s/health
+
+    ### grove_scale
+    Scale a deployment. (approval required)
+
+    HTTP: POST ${GROVE_URL}/api/k8s/scale
+    Body: {"namespace": "swimto", "deployment": "swimto-api", "replicas": 2}
+
+    ### grove_flux_reconcile
+    Trigger FluxCD reconciliation. (approval required)
+
+    HTTP: POST ${GROVE_URL}/api/k8s/flux/reconcile
+    Body: {"kustomization": "flux-system"}
+
+    ### grove_project_status
+    Get status of all managed projects (versions, health, last commits). (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/projects/status
+
+    ### grove_roadmap
+    Aggregate TODO/roadmap items from all projects. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/projects/roadmap
+
+    ### grove_plan_feature
+    Generate a feature plan and optionally create GitHub issues. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/projects/plan
+    Body: {"project": "swimTO", "feature": "Push notifications", "description": "Add web push...", "create_issues": true}
+
+    ### grove_run_tests
+    Trigger test workflow. (approval required)
+
+    HTTP: POST ${GROVE_URL}/api/tests/run?repo=swimTO&workflow=python-ci.yml
+
+    ### grove_test_status
+    Get latest test run status. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/tests/status?repo=swimTO
+
+    ### grove_pending_approvals
+    List pending approval requests. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/approvals/pending
+
+    ### grove_approve
+    Approve a pending action after user confirms. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/approvals/{id}/approve
+
+    ### grove_reject
+    Reject a pending action. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/approvals/{id}/reject
+
+    ## Approval Workflow
+
+    When a user asks you to do something destructive (deploy, scale, edit code, trigger CI):
+    1. Call the Grove endpoint — it returns an approval_id and description
+    2. Show the user what will happen and ask for confirmation
+    3. If they say yes, call grove_approve with the approval_id
+    4. If they say no, call grove_reject
+
+    ## Projects Managed by Grove
+
+    | Project | Description | Cluster URL |
+    |---------|-------------|-------------|
+    | canopy | Personal finance | https://canopy.eldertree.local |
+    | swimTO | Toronto pools | https://swimto.eldertree.xyz |
+    | journey | AI career pathfinder | https://journey.eldertree.local |
+    | nima | ML experiments | https://nima.eldertree.local |
+    | visage | AI headshot gen | https://visage.eldertree.local |
+    | ollie | Local AI assistant | - |
+    | pi-fleet | Cluster infra | - |
+    | pitanga-website | Company site | https://pitanga.cloud |
+    | grove | This agent! | http://grove.openclaw.svc.cluster.local:8000 |
+
+    ## Example Conversations
+
+    User: "What's the status of all my projects?"
+    Assistant: *calls grove_project_status, formats a summary table*
+
+    User: "Search for the auth middleware in swimTO"
+    Assistant: *calls grove_search_code with query="auth" and repo="swimTO"*
+
+    User: "Deploy the latest SwimTO"
+    Assistant: *calls grove_flux_reconcile → gets approval_id → shows plan → asks user to confirm → calls grove_approve*
+
+    User: "Create an issue in swimTO for adding push notifications"
+    Assistant: *calls grove_create_issue with title and body*
+
+    User: "What pods are failing?"
+    Assistant: *calls grove_cluster_health, checks for failed pods and warnings*
