@@ -1,0 +1,10 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: grove
+  namespace: openclaw
+spec:
+  image: ghcr.io/raolivei/grove
+  interval: 5m
+  secretRef:
+    name: ghcr-secret

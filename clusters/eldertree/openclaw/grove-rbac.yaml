@@ -1,0 +1,63 @@
+# ServiceAccount for Grove
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grove
+  namespace: openclaw
+---
+# ClusterRole with read + scoped write access
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: grove-agent
+rules:
+  # Read pods and their logs
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  # Read services, configmaps, secrets, namespaces
+  - apiGroups: [""]
+    resources: ["services", "configmaps", "secrets", "namespaces"]
+    verbs: ["get", "list"]
+  # Read deployments, replicasets, statefulsets, daemonsets
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list"]
+  # Read ingresses
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list"]
+  # Read events for troubleshooting
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+  # Read nodes for cluster status
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+  # Write: scale deployments
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch"]
+  # Write: annotate FluxCD Kustomizations for reconciliation
+  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+    resources: ["kustomizations"]
+    verbs: ["get", "list", "patch"]
+  # Write: annotate FluxCD GitRepositories for reconciliation
+  - apiGroups: ["source.toolkit.fluxcd.io"]
+    resources: ["gitrepositories"]
+    verbs: ["get", "list", "patch"]
+---
+# Bind the ClusterRole to Grove's ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: grove-agent-binding
+subjects:
+  - kind: ServiceAccount
+    name: grove
+    namespace: openclaw
+roleRef:
+  kind: ClusterRole
+  name: grove-agent
+  apiGroup: rbac.authorization.k8s.io
