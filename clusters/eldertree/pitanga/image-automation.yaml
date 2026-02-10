@@ -41,7 +41,7 @@ spec:
       author:
         email: fluxcdbot@users.noreply.github.com
         name: fluxcdbot
-      messageTemplate: "chore(pitanga): update pitanga-website image to {{range .Changed.Objects}}{{println .NewValue}}{{end}}"
+      messageTemplate: "chore(pitanga): update pitanga-website image{{range .Changed.Changes}} {{.NewValue}}{{end}}"
     push:
       branch: main
   update:
