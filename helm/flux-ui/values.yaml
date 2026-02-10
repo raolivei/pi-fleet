@@ -62,9 +62,9 @@ weave-gitops:
     clusterRole: true
   
   # Admin user configuration - required for authentication
+  # passwordHash is injected from Vault via ExternalSecret + valuesFrom in the HelmRelease
   adminUser:
     create: true
     createClusterRole: true
     username: admin
-    passwordHash: "$2y$10$b9.2/PghT0wFR1VVeEt10.nJ6JxfKMAto5YpIFehLISdeeqP.PuQC" # Password: admin123
 
