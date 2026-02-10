@@ -54,7 +54,6 @@ $INGRESS_IP  grafana.eldertree.local
 $INGRESS_IP  prometheus.eldertree.local
 $INGRESS_IP  pihole.eldertree.local
 $INGRESS_IP  flux.eldertree.local
-$INGRESS_IP  dex.eldertree.local
 $INGRESS_IP  docs.eldertree.local
 
 # Applications
@@ -82,7 +81,6 @@ echo "  - grafana.eldertree.local"
 echo "  - prometheus.eldertree.local"
 echo "  - pihole.eldertree.local"
 echo "  - flux.eldertree.local"
-echo "  - dex.eldertree.local"
 echo "  - docs.eldertree.local"
 echo "  - canopy.eldertree.local"
 echo "  - swimto.eldertree.local"

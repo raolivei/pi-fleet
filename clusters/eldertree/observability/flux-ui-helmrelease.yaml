@@ -84,16 +84,10 @@ spec:
         create: true
         clusterRole: true
       
-      # OIDC authentication via Dex + GitHub
-      # Disabling static admin user in favour of GitHub login
+      # Static admin user
       adminUser:
-        create: false
-
-      # Additional server args for OIDC
-      additionalArgs:
-        - --auth-methods=oidc
-        - --oidc-issuer-url=https://dex.eldertree.local
-        - --oidc-client-id=weave-gitops
-        - --oidc-client-secret=weave-gitops-dex-secret
-        - --oidc-redirect-url=https://flux.eldertree.local/oauth2/callback
-        - --insecure
+        create: true
+        createClusterRole: true
+        username: admin
+        # Password: eldertree2026
+        passwordHash: "$2b$10$0e.ArIfqhaYjJ7LiUDO9keg47pCzHJxB632/9s6b6hhNjW0pSXJqa"

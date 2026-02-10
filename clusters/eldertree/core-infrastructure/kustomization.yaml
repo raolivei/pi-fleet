@@ -5,7 +5,6 @@ kind: Kustomization
 resources:
   - cert-manager # TLS certificate management using cert-manager
   - coredns-autoscaler # Auto-scales CoreDNS for HA (min 2 replicas)
-  - coredns-custom.yaml # Resolve *.eldertree.local inside the cluster
   - issuers # ClusterIssuer resources (self-signed certificates)
   # MetalLB removed - kube-vip now handles LoadBalancer services
   - pod-disruption-budgets # PDBs for critical infrastructure components
