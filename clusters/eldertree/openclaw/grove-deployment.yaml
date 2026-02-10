@@ -39,6 +39,9 @@ spec:
             capabilities:
               drop:
                 - ALL
+          envFrom:
+            - configMapRef:
+                name: grove-config
           env:
             - name: GROVE_PORT
               value: "8006"

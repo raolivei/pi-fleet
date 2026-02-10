@@ -17,6 +17,7 @@ TRAEFIK_LB_IP  pushgateway.eldertree.local
 TRAEFIK_LB_IP  flux.eldertree.local
 TRAEFIK_LB_IP  alertmanager.eldertree.local
 TRAEFIK_LB_IP  docs.eldertree.local
+TRAEFIK_LB_IP  grove.eldertree.local
 TRAEFIK_LB_IP  journey.eldertree.local
 TRAEFIK_LB_IP  nima.eldertree.local
 

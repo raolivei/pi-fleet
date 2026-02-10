@@ -110,6 +110,17 @@ pushgateway.eldertree.local {
     }
 }
 
+# Grove (AI agent API + Swagger docs)
+grove.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host grove.eldertree.local
+    }
+}
+
 # Pi-hole (DNS admin - may not work via ingress)
 pihole.eldertree.local {
     tls internal

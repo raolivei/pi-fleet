@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grove
+  namespace: openclaw
+  labels:
+    app: openclaw
+    component: grove
+  annotations:
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - grove.eldertree.local
+      secretName: grove-tls
+  rules:
+    - host: grove.eldertree.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grove
+                port:
+                  number: 8000

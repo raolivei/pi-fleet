@@ -18,6 +18,7 @@ resources:
   - grove-configmap.yaml
   - grove-deployment.yaml
   - grove-service.yaml
+  - grove-ingress.yaml
   - grove-image-repo.yaml
   - grove-image-policy.yaml
   - grove-image-update.yaml
