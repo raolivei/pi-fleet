@@ -22,7 +22,7 @@ Currently, Weave GitOps is deployed directly via HelmRelease referencing the Hel
 
 The deployment configures Traefik ingress with TLS certificates via cert-manager.
 
-Default host: `flux-ui.eldertree.local`
+Default host: `flux.eldertree.local`
 
 ### Resources
 
@@ -37,7 +37,7 @@ Weave GitOps requires cluster-admin permissions to manage FluxCD resources. The 
 ## Access
 
 After deployment, access the UI at:
-- URL: `https://flux-ui.eldertree.local` (via ingress)
+- URL: `https://flux.eldertree.local` (via ingress)
 - Or port-forward: `kubectl port-forward -n observability svc/weave-gitops 9001:9001`
 
 ## Dependencies

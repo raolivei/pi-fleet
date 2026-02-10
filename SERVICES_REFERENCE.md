@@ -119,7 +119,7 @@ dig @192.168.2.201 grafana.eldertree.local
 
 | Property           | Value                                           |
 | ------------------ | ----------------------------------------------- |
-| **Local URL**      | `https://flux-ui.eldertree.local` (if deployed) |
+| **Local URL**      | `https://flux.eldertree.local` (if deployed) |
 | **Namespace**      | `flux-system`                                   |
 | **Git Repository** | `https://github.com/raolivei/pi-fleet`          |
 | **Branch**         | `main`                                          |

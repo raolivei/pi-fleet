@@ -14,7 +14,7 @@ TRAEFIK_LB_IP  swimto.eldertree.local
 TRAEFIK_LB_IP  canopy.eldertree.local
 TRAEFIK_LB_IP  pitanga.eldertree.local
 TRAEFIK_LB_IP  pushgateway.eldertree.local
-TRAEFIK_LB_IP  flux-ui.eldertree.local
+TRAEFIK_LB_IP  flux.eldertree.local
 TRAEFIK_LB_IP  alertmanager.eldertree.local
 TRAEFIK_LB_IP  docs.eldertree.local
 TRAEFIK_LB_IP  journey.eldertree.local
