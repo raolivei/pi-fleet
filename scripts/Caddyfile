@@ -89,13 +89,13 @@ pitanga.eldertree.local {
 }
 
 # Flux UI (GitOps dashboard)
-flux-ui.eldertree.local {
+flux.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
         transport http {
             tls_insecure_skip_verify
         }
-        header_up Host flux-ui.eldertree.local
+        header_up Host flux.eldertree.local
     }
 }
 
