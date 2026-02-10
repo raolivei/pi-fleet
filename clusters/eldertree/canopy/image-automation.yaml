@@ -1,0 +1,72 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: canopy-api
+  namespace: canopy
+spec:
+  image: ghcr.io/raolivei/canopy-api
+  interval: 5m
+  secretRef:
+    name: ghcr-secret
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: canopy-frontend
+  namespace: canopy
+spec:
+  image: ghcr.io/raolivei/canopy-frontend
+  interval: 5m
+  secretRef:
+    name: ghcr-secret
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: canopy-api-policy
+  namespace: canopy
+spec:
+  imageRepositoryRef:
+    name: canopy-api
+  policy:
+    semver:
+      range: ">=0.4.0 <1.0.0"
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: canopy-frontend-policy
+  namespace: canopy
+spec:
+  imageRepositoryRef:
+    name: canopy-frontend
+  policy:
+    semver:
+      range: ">=0.4.0 <1.0.0"
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: canopy-updates
+  namespace: canopy
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: "chore(canopy): update images to {{range .Updated.Images}}{{println .}}{{end}}"
+    push:
+      branch: main
+  update:
+    path: ./clusters/eldertree/canopy
+    strategy: Setters

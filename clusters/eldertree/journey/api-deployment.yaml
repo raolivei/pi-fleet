@@ -18,9 +18,11 @@ spec:
         app: journey
         component: api
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: api
-          image: ghcr.io/raolivei/journey-api:0.2.0
+          image: ghcr.io/raolivei/journey-api:v0.2.0 # {"$imagepolicy": "journey:journey-api-policy"}
           ports:
             - containerPort: 8000
               name: http

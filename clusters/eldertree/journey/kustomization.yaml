@@ -8,7 +8,8 @@ resources:
   - postgres-pvc.yaml
   - redis-deployment.yaml
   - ingress.yaml
-  # Note: secrets-template.yaml is a template, not deployed via kustomization
+  - ghcr-secret-external.yaml
+  - image-automation.yaml
 
 
 

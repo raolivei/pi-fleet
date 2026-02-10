@@ -25,9 +25,11 @@ spec:
         app: canopy
         component: api
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: api
-          image: ghcr.io/raolivei/canopy-api:latest
+          image: ghcr.io/raolivei/canopy-api:v0.4.0 # {"$imagepolicy": "canopy:canopy-api-policy"}
           ports:
             - containerPort: 8000
               name: http
@@ -82,9 +84,11 @@ spec:
         app: canopy
         component: frontend
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: frontend
-          image: ghcr.io/raolivei/canopy-frontend:latest
+          image: ghcr.io/raolivei/canopy-frontend:v0.4.0 # {"$imagepolicy": "canopy:canopy-frontend-policy"}
           ports:
             - containerPort: 3000
               name: http

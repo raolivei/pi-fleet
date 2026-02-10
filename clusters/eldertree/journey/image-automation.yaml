@@ -1,0 +1,72 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: journey-api
+  namespace: journey
+spec:
+  image: ghcr.io/raolivei/journey-api
+  interval: 5m
+  secretRef:
+    name: ghcr-secret
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: journey-frontend
+  namespace: journey
+spec:
+  image: ghcr.io/raolivei/journey-frontend
+  interval: 5m
+  secretRef:
+    name: ghcr-secret
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: journey-api-policy
+  namespace: journey
+spec:
+  imageRepositoryRef:
+    name: journey-api
+  policy:
+    semver:
+      range: ">=0.2.0 <1.0.0"
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: journey-frontend-policy
+  namespace: journey
+spec:
+  imageRepositoryRef:
+    name: journey-frontend
+  policy:
+    semver:
+      range: ">=0.2.0 <1.0.0"
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: journey-updates
+  namespace: journey
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: "chore(journey): update images to {{range .Updated.Images}}{{println .}}{{end}}"
+    push:
+      branch: main
+  update:
+    path: ./clusters/eldertree/journey
+    strategy: Setters
