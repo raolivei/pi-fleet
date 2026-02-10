@@ -1,0 +1,27 @@
+# Custom CoreDNS config to resolve *.eldertree.local inside the cluster.
+# Without this, pods can't reach ingress hostnames like dex.eldertree.local,
+# because CoreDNS only knows about cluster.local and upstream resolvers.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  eldertree.server: |
+    eldertree.local:53 {
+      errors
+      cache 30
+      hosts {
+        192.168.2.200 dex.eldertree.local
+        192.168.2.200 flux.eldertree.local
+        192.168.2.200 grafana.eldertree.local
+        192.168.2.200 prometheus.eldertree.local
+        192.168.2.200 vault.eldertree.local
+        192.168.2.200 swimto.eldertree.local
+        192.168.2.200 canopy.eldertree.local
+        192.168.2.200 pitanga.eldertree.local
+        192.168.2.200 docs.eldertree.local
+        192.168.2.200 openclaw.eldertree.local
+        fallthrough
+      }
+    }

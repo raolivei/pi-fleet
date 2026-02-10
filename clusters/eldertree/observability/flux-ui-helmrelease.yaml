@@ -96,3 +96,4 @@ spec:
         - --oidc-client-id=weave-gitops
         - --oidc-client-secret=weave-gitops-dex-secret
         - --oidc-redirect-url=https://flux.eldertree.local/oauth2/callback
+        - --insecure
