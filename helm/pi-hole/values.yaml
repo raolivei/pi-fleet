@@ -18,7 +18,12 @@ image:
 
 service:
   type: LoadBalancer
-  # kube-vip will assign this IP (replaces MetalLB)
+  # Setting a loadBalancerClass prevents K3s built-in ServiceLB (Klipper) from
+  # creating svclb DaemonSet pods for this service. Without this, K3s ServiceLB
+  # tries to bind host port 53 (conflicting with CoreDNS), the svclb pods get
+  # stuck Pending, and the service never gets an EXTERNAL-IP — breaking DNS.
+  loadBalancerClass: kube-vip.io/kube-vip
+  # kube-vip will assign this IP via the kube-vip.io/loadbalancerIPs annotation
   # This IP should be configured as the DNS server on your router
   loadBalancerIP: 192.168.2.201
   dnsUdpPort: 53
@@ -28,11 +33,8 @@ service:
   httpPort: 80
   httpsPort: 443
   metricsPort: 9617
-  # NodePort for external access if LoadBalancer doesn't get an IP
-  # NOTE: These are only used when service.type is NodePort
-  # When using LoadBalancer, MetalLB handles external access and NodePorts are not needed
-  # However, k3s may still allocate them - the svc.k3s.cattle.io/loadbalancer-proxy: "false"
-  # annotation prevents k3s ServiceLB from creating conflicting DaemonSet pods
+  # NodePort values - K3s auto-allocates these for LoadBalancer services.
+  # They serve as a fallback if the LoadBalancer VIP is unreachable.
   dnsNodePort: 30053
   httpNodePort: 30080
   httpsNodePort: 30443
