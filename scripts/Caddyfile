@@ -99,17 +99,6 @@ flux.eldertree.local {
     }
 }
 
-# Dex (OIDC identity provider for Flux UI GitHub auth)
-dex.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.200 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host dex.eldertree.local
-    }
-}
-
 # Pushgateway (metrics push endpoint)
 pushgateway.eldertree.local {
     tls internal

@@ -53,7 +53,6 @@ $MARKER_START
 127.0.0.1  swimto.eldertree.local
 127.0.0.1  pitanga.eldertree.local
 127.0.0.1  flux.eldertree.local
-127.0.0.1  dex.eldertree.local
 127.0.0.1  pushgateway.eldertree.local
 127.0.0.1  pihole.eldertree.local
 
