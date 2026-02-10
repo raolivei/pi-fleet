@@ -193,6 +193,17 @@ dig @192.168.2.201 grafana.eldertree.local
 | **Credentials**  | Stored in Vault: `secret/openclaw/*`               |
 | **Setup Script** | `./scripts/setup-openclaw.sh`                      |
 
+### Grove (AI Agent)
+
+| Property         | Value                                              |
+| ---------------- | -------------------------------------------------- |
+| **Local URL**    | `https://grove.eldertree.local`                    |
+| **Swagger Docs** | `https://grove.eldertree.local/docs`               |
+| **Namespace**    | `openclaw`                                         |
+| **API Port**     | 8006                                               |
+| **Role**         | AI agent sidecar for cluster management & code ops |
+| **Credentials**  | Stored in Vault: `secret/grove/*`                  |
+
 ---
 
 ## 🌐 Public Services (Pitanga LLC)
@@ -318,6 +329,8 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 - `secret/openclaw/gemini` - OpenClaw Google AI Studio API key
 - `secret/openclaw/gateway` - OpenClaw gateway authentication token
 - `secret/openclaw/brave` - OpenClaw Brave Search API key (web search)
+- `secret/grove/github-app` - Grove GitHub App credentials (app-id, installation-id, private-key)
+- `secret/grove/api-key` - Grove API authentication key
 
 ### Pitanga
 
