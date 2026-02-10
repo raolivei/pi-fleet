@@ -40,7 +40,14 @@ data:
         "mode": "local",
         "bind": "0.0.0.0",
         "port": 18789,
-        "trustedProxies": ["10.42.0.0/16", "10.43.0.0/16"]
+        "trustedProxies": ["10.42.0.0/16", "10.43.0.0/16"],
+        "http": {
+          "endpoints": {
+            "chatCompletions": {
+              "enabled": true
+            }
+          }
+        }
       },
       "agents": {
         "defaults": {

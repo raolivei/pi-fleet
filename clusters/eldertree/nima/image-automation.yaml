@@ -41,7 +41,7 @@ spec:
       author:
         email: fluxcdbot@users.noreply.github.com
         name: fluxcdbot
-      messageTemplate: "chore(nima): update images to {{range .Changed.Objects}}{{println .NewValue}}{{end}}"
+      messageTemplate: "chore(nima): update images{{range .Changed.Changes}} {{.NewValue}}{{end}}"
     push:
       branch: main
   update:

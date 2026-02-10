@@ -64,7 +64,7 @@ spec:
       author:
         email: fluxcdbot@users.noreply.github.com
         name: fluxcdbot
-      messageTemplate: "chore(canopy): update images to {{range .Changed.Objects}}{{println .NewValue}}{{end}}"
+      messageTemplate: "chore(canopy): update images{{range .Changed.Changes}} {{.NewValue}}{{end}}"
     push:
       branch: main
   update:
