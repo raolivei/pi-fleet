@@ -1,10 +1,11 @@
-apiVersion: image.toolkit.fluxcd.io/v1beta2
+---
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageUpdateAutomation
 metadata:
   name: grove-image-updates
   namespace: openclaw
 spec:
-  interval: 30m
+  interval: 5m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -17,9 +18,9 @@ spec:
       author:
         email: fluxcdbot@users.noreply.github.com
         name: fluxcdbot
-      messageTemplate: "chore: update grove image to {{range .Changed.Changes}}{{.NewValue}}{{end}}"
+      messageTemplate: "chore(grove): update image to {{range .Updated.Images}}{{println .}}{{end}}"
     push:
-      branch: flux/grove-image-updates
+      branch: main
   update:
     path: ./clusters/eldertree/openclaw
     strategy: Setters

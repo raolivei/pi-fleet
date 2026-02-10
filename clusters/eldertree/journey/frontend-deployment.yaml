@@ -18,9 +18,11 @@ spec:
         app: journey
         component: frontend
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: frontend
-          image: ghcr.io/raolivei/journey-frontend:0.2.0
+          image: ghcr.io/raolivei/journey-frontend:v0.2.0 # {"$imagepolicy": "journey:journey-frontend-policy"}
           ports:
             - containerPort: 80
               name: http

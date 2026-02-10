@@ -8,6 +8,7 @@ resources:
   - ingress.yaml
   - pvc.yaml
   - ghcr-secret-external.yaml
+  - image-automation.yaml
 
 
 

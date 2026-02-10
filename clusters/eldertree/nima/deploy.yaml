@@ -23,7 +23,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: api
-          image: ghcr.io/raolivei/nima-api:v0.3.2
+          image: ghcr.io/raolivei/nima-api:v0.5.0 # {"$imagepolicy": "nima:nima-api-policy"}
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

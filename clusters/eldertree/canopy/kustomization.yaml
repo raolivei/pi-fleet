@@ -5,3 +5,5 @@ resources:
   - service.yaml
   - middleware.yaml
   - ingress.yaml
+  - ghcr-secret-external.yaml
+  - image-automation.yaml

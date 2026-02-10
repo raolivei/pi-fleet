@@ -16,14 +16,11 @@ spec:
         branch: main
     commit:
       author:
-        name: Flux Image Automation
-        email: flux-image-automation@eldertree.local
-      messageTemplate: |
-        chore: update swimto images
-
-        Automated image update by Flux
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: "chore(swimto): update images to {{range .Updated.Images}}{{println .}}{{end}}"
     push:
-      branch: flux/swimto-image-updates
+      branch: main
   update:
     path: ./clusters/eldertree/swimto
     strategy: Setters
