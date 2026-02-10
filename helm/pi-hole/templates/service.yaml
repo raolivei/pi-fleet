@@ -5,15 +5,18 @@ metadata:
   labels:
     {{- include "pi-hole.labels" . | nindent 4 }}
   annotations:
-    # CRITICAL: Disable K3s built-in ServiceLB (Klipper) since we use kube-vip
-    # Without this, k3s will create svclb DaemonSet pods that conflict with port 53
-    # This annotation MUST be present to prevent port conflicts and scheduling issues
-    # Using both annotation formats for maximum compatibility
-    svc.k3s.cattle.io/loadbalancer-proxy: "false"
-    service.beta.kubernetes.io/k3s-lb: "false"
-    # kube-vip reads loadBalancerIP from spec.loadBalancerIP
+    # kube-vip: tell kube-vip which IP to assign (preferred over deprecated spec.loadBalancerIP)
+    {{- if .Values.service.loadBalancerIP }}
+    kube-vip.io/loadbalancerIPs: {{ .Values.service.loadBalancerIP | quote }}
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
+  {{- if and (eq .Values.service.type "LoadBalancer") .Values.service.loadBalancerClass }}
+  # loadBalancerClass tells K3s ServiceLB to ignore this service entirely,
+  # preventing it from creating svclb DaemonSet pods that conflict with port 53.
+  # Without this, K3s ServiceLB creates Pending pods and blocks the external IP assignment.
+  loadBalancerClass: {{ .Values.service.loadBalancerClass }}
+  {{- end }}
   {{- if and (eq .Values.service.type "LoadBalancer") .Values.service.loadBalancerIP }}
   loadBalancerIP: {{ .Values.service.loadBalancerIP }}
   {{- end }}
