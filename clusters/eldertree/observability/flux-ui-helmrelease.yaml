@@ -19,6 +19,12 @@ spec:
     createNamespace: false
   upgrade:
     cleanupOnFail: true
+  # Inject admin password hash from Vault (via ExternalSecret)
+  valuesFrom:
+    - kind: Secret
+      name: flux-ui-admin
+      valuesKey: password-hash
+      targetPath: weave-gitops.adminUser.passwordHash
   values:
     # Global configuration
     global:
@@ -84,10 +90,8 @@ spec:
         create: true
         clusterRole: true
       
-      # Static admin user
+      # Admin user - password hash injected from Vault via valuesFrom
       adminUser:
         create: true
         createClusterRole: true
         username: admin
-        # Password: eldertree2026
-        passwordHash: "$2b$10$0e.ArIfqhaYjJ7LiUDO9keg47pCzHJxB632/9s6b6hhNjW0pSXJqa"
