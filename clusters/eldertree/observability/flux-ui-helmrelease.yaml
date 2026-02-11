@@ -103,7 +103,7 @@ spec:
       # OIDC via Dex - enables "Login with OIDC Provider" button
       oidcSecret:
         create: true
-        issuerURL: https://dex.eldertree.local
+        issuerURL: http://dex.eldertree.local
         clientID: weave-gitops
         clientSecret: weave-gitops-dex-secret
         redirectURL: https://flux.eldertree.local/oauth2/callback
