@@ -7,6 +7,10 @@ metadata:
   namespace: {{ include "eldertree-app.namespace" $ }}
   labels:
     {{- include "eldertree-app.componentLabels" (dict "releaseName" $.Release.Name "componentName" $name) | nindent 4 }}
+  {{- with $component.serviceAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: ClusterIP
   selector:

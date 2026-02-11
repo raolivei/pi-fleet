@@ -45,7 +45,6 @@ Resolve the namespace. Prefer explicit, then release namespace.
 
 {{/*
 Merge security contexts: component overrides global.
-Usage: include "eldertree-app.podSecurityContext" (dict "component" .componentValues "global" .Values.global)
 */}}
 {{- define "eldertree-app.podSecurityContext" -}}
 {{- $ctx := .global.podSecurityContext | default dict }}
@@ -61,4 +60,11 @@ Usage: include "eldertree-app.podSecurityContext" (dict "component" .componentVa
 {{- $ctx = .component.securityContext }}
 {{- end }}
 {{- toYaml $ctx }}
+{{- end }}
+
+{{/*
+Resolve service name for ingress paths (component name = service name).
+*/}}
+{{- define "eldertree-app.serviceName" -}}
+{{- . }}
 {{- end }}

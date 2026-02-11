@@ -23,23 +23,20 @@ spec:
   {{- if $ing.tls }}
   tls:
     - hosts:
+        {{- if $ing.host }}
         - {{ $ing.host }}
+        {{- end }}
         {{- range $ing.hosts }}
         - {{ . }}
         {{- end }}
       secretName: {{ $ing.tls.secretName }}
   {{- end }}
   rules:
+    {{- if $ing.host }}
     - host: {{ $ing.host }}
       http:
         paths:
-          - path: {{ $ing.path | default "/" }}
-            pathType: {{ $ing.pathType | default "Prefix" }}
-            backend:
-              service:
-                name: {{ $ing.service }}
-                port:
-                  number: {{ $ing.port | default 80 }}
+          {{- /* Extra paths first (e.g., /api before /) */ -}}
           {{- range $ing.paths }}
           - path: {{ .path }}
             pathType: {{ .pathType | default "Prefix" }}
@@ -49,10 +46,6 @@ spec:
                 port:
                   number: {{ .port | default 80 }}
           {{- end }}
-    {{- range $ing.hosts }}
-    - host: {{ . }}
-      http:
-        paths:
           - path: {{ $ing.path | default "/" }}
             pathType: {{ $ing.pathType | default "Prefix" }}
             backend:
@@ -60,5 +53,50 @@ spec:
                 name: {{ $ing.service }}
                 port:
                   number: {{ $ing.port | default 80 }}
+    {{- else }}
+    {{- /* Host-less ingress (e.g., IP-based routing) */ -}}
+    - http:
+        paths:
+          {{- range $ing.paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .service }}
+                port:
+                  number: {{ .port | default 80 }}
+          {{- end }}
+          {{- if $ing.service }}
+          - path: {{ $ing.path | default "/" }}
+            pathType: {{ $ing.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $ing.service }}
+                port:
+                  number: {{ $ing.port | default 80 }}
+          {{- end }}
+    {{- end }}
+    {{- range $ing.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          {{- range $ing.paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .service }}
+                port:
+                  number: {{ .port | default 80 }}
+          {{- end }}
+          {{- if $ing.service }}
+          - path: {{ $ing.path | default "/" }}
+            pathType: {{ $ing.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $ing.service }}
+                port:
+                  number: {{ $ing.port | default 80 }}
+          {{- end }}
     {{- end }}
 {{- end }}

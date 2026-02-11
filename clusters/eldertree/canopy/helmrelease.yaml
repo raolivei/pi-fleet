@@ -1,0 +1,106 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: canopy
+  namespace: canopy
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm/eldertree-app
+      version: "0.1.0"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: canopy
+  upgrade:
+    cleanupOnFail: true
+  values:
+    # ============================================================
+    # Canopy - Personal finance
+    # ============================================================
+
+    components:
+      canopy-api:
+        image:
+          repository: ghcr.io/raolivei/canopy-api
+          tag: v0.4.0 # {"$imagepolicy": "canopy:canopy-api-policy:tag"}
+        replicas: 2
+        port: 8000
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: canopy-secrets
+                key: database-url
+          - name: REDIS_URL
+            value: "redis://canopy-redis:6379/0"
+          - name: ENVIRONMENT
+            value: "production"
+        resources:
+          requests: { cpu: "250m", memory: "256Mi" }
+          limits: { cpu: "500m", memory: "512Mi" }
+        probes:
+          path: /v1/health
+          liveness: { initialDelaySeconds: 30, periodSeconds: 10 }
+          readiness: { initialDelaySeconds: 5, periodSeconds: 5 }
+
+      canopy-frontend:
+        image:
+          repository: ghcr.io/raolivei/canopy-frontend
+          tag: v0.4.0 # {"$imagepolicy": "canopy:canopy-frontend-policy:tag"}
+        replicas: 2
+        port: 3000
+        probesEnabled: false
+        env:
+          - name: NEXT_PUBLIC_API_URL
+            value: "http://canopy-api:8000"
+        resources:
+          requests: { cpu: "100m", memory: "128Mi" }
+          limits: { cpu: "200m", memory: "256Mi" }
+
+      canopy-redis:
+        image:
+          repository: redis
+          tag: 7-alpine
+        builtinImage: true
+        port: 6379
+        probesEnabled: false
+        resources:
+          requests: { cpu: "50m", memory: "64Mi" }
+          limits: { cpu: "100m", memory: "128Mi" }
+        volumeMounts:
+          - name: redis-data
+            mountPath: /data
+        volumes:
+          - name: redis-data
+            emptyDir: {}
+
+    # -- Middleware
+    middleware:
+      redirect-https:
+        type: redirectScheme
+        scheme: https
+        permanent: true
+      canopy-basic-auth:
+        type: basicAuth
+        secret: canopy-basic-auth
+
+    # -- Ingress
+    ingress:
+      canopy:
+        host: canopy.eldertree.local
+        service: canopy-frontend
+        port: 3000
+        middlewares:
+          - canopy-redirect-https@kubernetescrd
+          - canopy-canopy-basic-auth@kubernetescrd
+        tls:
+          secretName: canopy-tls
+          certManager: true
+        paths:
+          - path: /api
+            service: canopy-api
+            port: 8000
