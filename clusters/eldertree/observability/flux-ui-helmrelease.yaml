@@ -109,7 +109,11 @@ spec:
         redirectURL: https://flux.eldertree.local/oauth2/callback
         cookieDuration: "24h"
 
-      # Mount Eldertree CA bundle so the OIDC client trusts Dex's CA-signed TLS cert
+      # Trust the Eldertree Local CA for OIDC discovery to Dex
+      # SSL_CERT_FILE tells Go's crypto/x509 to use this as the system cert pool
+      envVars:
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/eldertree-ca.crt
       extraVolumes:
         - name: ca-bundle
           configMap:
