@@ -10,7 +10,7 @@ data:
   OPENCLAW_GATEWAY_BIND: "0.0.0.0"
   OPENCLAW_GATEWAY_PORT: "18789"
   TZ: "America/Toronto"
-  SWIMTO_API_URL: "http://swimto-api-service.swimto.svc.cluster.local:8000"
+  SWIMTO_API_URL: "http://swimto-api.swimto.svc.cluster.local:8000"
   GROVE_URL: "http://grove.openclaw.svc.cluster.local:8000"
 ---
 apiVersion: v1

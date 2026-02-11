@@ -2,20 +2,10 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespace.yaml
-  # GHCR secret for pulling images
+  # Infrastructure secrets (must exist before HelmRelease deploys)
   - ghcr-secret-external.yaml
-  # Cloudflare Origin Certificate (synced from Vault)
   - cloudflare-origin-cert-external.yaml
-  # Pitanga website deployment
-  - website-deployment.yaml
-  - website-service.yaml
-  - website-ingress.yaml
-  # Northwaysignal website deployment
-  - northwaysignal-deployment.yaml
-  - northwaysignal-service.yaml
-  - northwaysignal-ingress.yaml
-  # Image automation
+  # Helm-managed app (deployments, services, ingress, middleware)
+  - helmrelease.yaml
+  # Image automation (stays separate - FluxCD needs these outside Helm)
   - image-automation.yaml
-  # Future resources can be added here as needed:
-  # - secrets.yaml
-  # - etc.

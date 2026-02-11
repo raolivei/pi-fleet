@@ -1,0 +1,139 @@
+# ============================================================
+# Eldertree App - Shared Helm Chart
+# ============================================================
+# Each project defines its components under `components:`.
+# Common defaults (security, probes, resources) are applied
+# automatically. Override per-component as needed.
+# ============================================================
+
+# -- Namespace (usually set by HelmRelease targetNamespace)
+namespace: ""
+
+# -- Global defaults applied to ALL components
+global:
+  # -- GHCR image pull secret (synced from Vault via ExternalSecret)
+  imagePullSecrets:
+    - name: ghcr-secret
+
+  # -- Pod-level security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+  # -- Container-level security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+  # -- Default node selector (ARM64 cluster)
+  nodeSelector:
+    kubernetes.io/arch: arm64
+
+# -- Components: each key becomes a Deployment + Service
+# Example:
+#   components:
+#     api:
+#       image:
+#         repository: ghcr.io/raolivei/my-api
+#         tag: v1.0.0
+#       port: 8000
+components: {}
+# Supported fields per component:
+#   image:
+#     repository: ""          # Required
+#     tag: ""                 # Required
+#     pullPolicy: IfNotPresent
+#     policy: ""              # FluxCD imagepolicy comment, e.g. "ns:policy-name"
+#   replicas: 1
+#   port: 8000                # Container port
+#   targetPort: null          # If service port differs from container port
+#   env: []                   # List of env vars (name/value or name/valueFrom)
+#   envFrom: []               # List of envFrom (configMapRef, secretRef)
+#   command: []               # Container command override
+#   args: []                  # Container args override
+#   resources:
+#     requests: { cpu: "100m", memory: "128Mi" }
+#     limits:   { cpu: "200m", memory: "256Mi" }
+#   probes:
+#     path: /health           # HTTP probe path
+#     port: null              # Defaults to component port
+#     liveness:
+#       initialDelaySeconds: 30
+#       periodSeconds: 10
+#     readiness:
+#       initialDelaySeconds: 10
+#       periodSeconds: 5
+#   probesEnabled: true       # Set to false to skip probes
+#   volumes: []               # Extra volumes
+#   volumeMounts: []          # Extra volume mounts
+#   podSecurityContext: {}    # Override global pod security context
+#   securityContext: {}       # Override global container security context
+#   imagePullSecrets: []      # Override global imagePullSecrets
+#   builtinImage: false       # If true, skip imagePullSecrets (for postgres, redis, etc.)
+#   nodeSelector: {}          # Override global nodeSelector
+
+# -- Ingress rules: each key becomes an Ingress resource
+# Example:
+#   ingress:
+#     local:
+#       host: myapp.eldertree.local
+#       service: api
+#       tls:
+#         secretName: myapp-tls
+#         certManager: true
+ingress: {}
+# Supported fields per ingress:
+#   host: ""                  # Required
+#   hosts: []                 # Additional hosts (for multi-domain ingress)
+#   service: ""               # Component name to route to (required)
+#   port: null                # Override service port
+#   path: /                   # URL path
+#   pathType: Prefix
+#   paths: []                 # Additional path rules [{path, pathType, service, port}]
+#   tls:
+#     secretName: ""
+#     certManager: false      # Auto-add cert-manager annotation
+#   middlewares: []            # Traefik middleware refs, e.g. ["ns-name@kubernetescrd"]
+#   annotations: {}           # Extra annotations
+#   cloudflare: false         # Shorthand for Cloudflare-proxied public ingress
+
+# -- Traefik Middleware resources
+# Example:
+#   middleware:
+#     redirect-https:
+#       type: redirectScheme
+#       scheme: https
+#       permanent: true
+middleware: {}
+
+# -- ExternalSecrets (synced from Vault)
+# Example:
+#   externalSecrets:
+#     ghcr-secret:
+#       type: kubernetes.io/dockerconfigjson
+#       refreshInterval: 24h
+#       vaultPath: secret/myapp/ghcr-token
+#       data:
+#         - secretKey: token
+#           property: token
+externalSecrets: {}
+
+# -- Persistent Volume Claims
+# Example:
+#   pvc:
+#     data:
+#       size: 10Gi
+#       storageClass: local-path
+#       accessMode: ReadWriteOnce
+pvc: {}
+
+# -- Raw ConfigMaps
+# Example:
+#   configMaps:
+#     app-config:
+#       data:
+#         KEY: value
+configMaps: {}

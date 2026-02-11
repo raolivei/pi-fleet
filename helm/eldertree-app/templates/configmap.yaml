@@ -1,0 +1,10 @@
+{{- range $name, $cm := .Values.configMaps }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "eldertree-app.namespace" $ }}
+data:
+  {{- toYaml $cm.data | nindent 2 }}
+{{- end }}

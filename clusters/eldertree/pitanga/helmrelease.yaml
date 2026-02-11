@@ -1,0 +1,120 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pitanga
+  namespace: pitanga
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm/eldertree-app
+      version: "0.1.0"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: pitanga
+  install:
+    createNamespace: true
+  upgrade:
+    cleanupOnFail: true
+  values:
+    # ============================================================
+    # Pitanga - Company websites
+    # ============================================================
+
+    components:
+      pitanga-website:
+        image:
+          repository: ghcr.io/raolivei/pitanga-website
+          tag: v1.0.0 # {"$imagepolicy": "pitanga:pitanga-website-policy:tag"}
+          pullPolicy: IfNotPresent
+        port: 80
+        podSecurityContext:
+          runAsNonRoot: true
+          runAsUser: 101
+          fsGroup: 101
+        resources:
+          requests: { cpu: "50m", memory: "64Mi" }
+          limits: { cpu: "100m", memory: "128Mi" }
+        probes:
+          path: /
+          liveness: { initialDelaySeconds: 10, periodSeconds: 15 }
+          readiness: { initialDelaySeconds: 5, periodSeconds: 10 }
+        volumeMounts:
+          - name: nginx-cache
+            mountPath: /var/cache/nginx
+          - name: nginx-run
+            mountPath: /var/run
+        volumes:
+          - name: nginx-cache
+            emptyDir: {}
+          - name: nginx-run
+            emptyDir: {}
+
+      northwaysignal-website:
+        image:
+          repository: ghcr.io/raolivei/northwaysignal-website
+          tag: latest
+          pullPolicy: Always
+        port: 5000
+        servicePort: 80
+        env:
+          - name: NODE_ENV
+            value: "production"
+          - name: PORT
+            value: "5000"
+        resources:
+          requests: { cpu: "100m", memory: "128Mi" }
+          limits: { cpu: "200m", memory: "256Mi" }
+        probes:
+          path: /api/health
+          liveness: { initialDelaySeconds: 30, periodSeconds: 15 }
+          readiness: { initialDelaySeconds: 15, periodSeconds: 10 }
+
+    # -- Middleware
+    middleware:
+      redirect-https:
+        type: redirectScheme
+        scheme: https
+        permanent: true
+
+    # -- Ingress
+    ingress:
+      pitanga-website-local:
+        host: pitanga.eldertree.local
+        service: pitanga-website
+        port: 80
+        middlewares:
+          - pitanga-redirect-https@kubernetescrd
+        tls:
+          secretName: pitanga-website-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: pitanga.eldertree.local
+
+      pitanga-website-public:
+        host: pitanga.cloud
+        hosts:
+          - www.pitanga.cloud
+        service: pitanga-website
+        port: 80
+        tls:
+          secretName: pitanga-cloudflare-origin-tls
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: "pitanga.cloud,www.pitanga.cloud"
+          external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+
+      northwaysignal-website-public:
+        host: northwaysignal.pitanga.cloud
+        service: northwaysignal-website
+        port: 80
+        tls:
+          secretName: pitanga-cloudflare-origin-tls
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: northwaysignal.pitanga.cloud
+          external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+
+    # ExternalSecrets are kept outside Helm (in kustomization.yaml)
+    # to avoid race conditions during prune/reconcile cycles.

@@ -1,0 +1,24 @@
+{{- range $name, $mw := .Values.middleware }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "eldertree-app.namespace" $ }}
+spec:
+  {{- if eq $mw.type "redirectScheme" }}
+  redirectScheme:
+    scheme: {{ $mw.scheme | default "https" }}
+    permanent: {{ $mw.permanent | default true }}
+  {{- else if eq $mw.type "basicAuth" }}
+  basicAuth:
+    secret: {{ $mw.secret }}
+  {{- else if eq $mw.type "replacePathRegex" }}
+  replacePathRegex:
+    regex: {{ $mw.regex | quote }}
+    replacement: {{ $mw.replacement | quote }}
+  {{- else if eq $mw.type "headers" }}
+  headers:
+    {{- toYaml $mw.headers | nindent 4 }}
+  {{- end }}
+{{- end }}

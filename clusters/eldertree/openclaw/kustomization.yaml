@@ -9,16 +9,14 @@ resources:
   - pvc.yaml
   - configmap.yaml
   - skills-configmap.yaml
-  - deployment.yaml
-  - ingress.yaml
-  # Grove (AI agent sidecar)
+  # Grove
   - grove-rbac.yaml
   - grove-externalsecret.yaml
   - grove-pvc.yaml
   - grove-configmap.yaml
-  - grove-deployment.yaml
-  - grove-service.yaml
-  - grove-ingress.yaml
+  # Helm-managed app (openclaw, grove deployments, services, ingress, middleware)
+  - helmrelease.yaml
+  # Image automation (stays separate - FluxCD requirement)
   - grove-image-repo.yaml
   - grove-image-policy.yaml
   - grove-image-update.yaml

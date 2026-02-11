@@ -1,0 +1,88 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: journey
+  namespace: journey
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm/eldertree-app
+      version: "0.1.0"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: journey
+  upgrade:
+    cleanupOnFail: true
+  values:
+    # ============================================================
+    # Journey - AI career pathfinder
+    # ============================================================
+
+    components:
+      journey-api:
+        image:
+          repository: ghcr.io/raolivei/journey-api
+          tag: v0.2.0 # {"$imagepolicy": "journey:journey-api-policy:tag"}
+        replicas: 2
+        port: 8000
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: journey-secrets
+                key: database-url
+          - name: REDIS_URL
+            value: "redis://journey-redis:6379/0"
+          - name: API_HOST
+            value: "0.0.0.0"
+          - name: API_PORT
+            value: "8000"
+          - name: ENVIRONMENT
+            value: "production"
+          - name: CORS_ORIGINS
+            value: "https://journey.eldertree.local"
+        resources:
+          requests: { cpu: "200m", memory: "512Mi" }
+          limits: { cpu: "500m", memory: "512Mi" }
+        probes:
+          path: /health
+          liveness: { initialDelaySeconds: 30, periodSeconds: 10 }
+          readiness: { initialDelaySeconds: 10, periodSeconds: 5 }
+
+      journey-frontend:
+        image:
+          repository: ghcr.io/raolivei/journey-frontend
+          tag: v0.2.0 # {"$imagepolicy": "journey:journey-frontend-policy:tag"}
+        replicas: 2
+        port: 80
+        probes:
+          path: /
+          liveness: { initialDelaySeconds: 10, periodSeconds: 10 }
+          readiness: { initialDelaySeconds: 5, periodSeconds: 5 }
+        resources:
+          requests: { cpu: "50m", memory: "64Mi" }
+          limits: { cpu: "200m", memory: "128Mi" }
+
+    # -- Ingress
+    ingress:
+      journey-ingress:
+        host: journey.eldertree.local
+        service: journey-frontend
+        port: 80
+        tls:
+          secretName: journey-tls
+          certManager: true
+        paths:
+          - path: /api
+            service: journey-api
+            port: 8000
+          - path: /docs
+            service: journey-api
+            port: 8000
+          - path: /openapi.json
+            service: journey-api
+            port: 8000

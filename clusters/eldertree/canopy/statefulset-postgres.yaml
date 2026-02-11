@@ -1,0 +1,79 @@
+---
+# PostgreSQL StatefulSet - kept outside Helm chart (volumeClaimTemplates)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: canopy-postgres
+  namespace: canopy
+  labels:
+    app: canopy
+    component: postgres
+spec:
+  serviceName: canopy-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: canopy
+      component: postgres
+  template:
+    metadata:
+      labels:
+        app: canopy
+        component: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: canopy
+            - name: POSTGRES_USER
+              value: canopy
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: canopy-secrets
+                  key: postgres-password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 10Gi
+---
+# PostgreSQL Service (standalone - matches StatefulSet selector)
+apiVersion: v1
+kind: Service
+metadata:
+  name: canopy-postgres
+  namespace: canopy
+  labels:
+    app: canopy
+    component: postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: canopy
+    component: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres

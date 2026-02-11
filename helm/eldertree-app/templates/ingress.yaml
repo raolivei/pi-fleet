@@ -1,0 +1,102 @@
+{{- range $name, $ing := .Values.ingress }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "eldertree-app.namespace" $ }}
+  labels:
+    {{- include "eldertree-app.labels" $ | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    {{- if and $ing.tls $ing.tls.certManager }}
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    {{- end }}
+    {{- if $ing.middlewares }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ join "," $ing.middlewares }}
+    {{- end }}
+    {{- with $ing.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: traefik
+  {{- if $ing.tls }}
+  tls:
+    - hosts:
+        {{- if $ing.host }}
+        - {{ $ing.host }}
+        {{- end }}
+        {{- range $ing.hosts }}
+        - {{ . }}
+        {{- end }}
+      secretName: {{ $ing.tls.secretName }}
+  {{- end }}
+  rules:
+    {{- if $ing.host }}
+    - host: {{ $ing.host }}
+      http:
+        paths:
+          {{- /* Extra paths first (e.g., /api before /) */ -}}
+          {{- range $ing.paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .service }}
+                port:
+                  number: {{ .port | default 80 }}
+          {{- end }}
+          - path: {{ $ing.path | default "/" }}
+            pathType: {{ $ing.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $ing.service }}
+                port:
+                  number: {{ $ing.port | default 80 }}
+    {{- else }}
+    {{- /* Host-less ingress (e.g., IP-based routing) */ -}}
+    - http:
+        paths:
+          {{- range $ing.paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .service }}
+                port:
+                  number: {{ .port | default 80 }}
+          {{- end }}
+          {{- if $ing.service }}
+          - path: {{ $ing.path | default "/" }}
+            pathType: {{ $ing.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $ing.service }}
+                port:
+                  number: {{ $ing.port | default 80 }}
+          {{- end }}
+    {{- end }}
+    {{- range $ing.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          {{- range $ing.paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .service }}
+                port:
+                  number: {{ .port | default 80 }}
+          {{- end }}
+          {{- if $ing.service }}
+          - path: {{ $ing.path | default "/" }}
+            pathType: {{ $ing.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $ing.service }}
+                port:
+                  number: {{ $ing.port | default 80 }}
+          {{- end }}
+    {{- end }}
+{{- end }}
