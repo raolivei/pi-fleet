@@ -10,6 +10,10 @@ resources:
   - vault-scrape-config.yaml # Vault telemetry scrape configuration
   - flux-ui-externalsecret.yaml # Flux UI admin password from Vault
   - flux-ui-helmrelease.yaml # Flux UI (Weave GitOps) for managing FluxCD resources
+  - dex-helmrepository.yaml # Dex Helm chart repo (charts.dexidp.io)
+  - dex-externalsecret.yaml # GitHub OAuth client credentials from Vault
+  - dex-helmrelease.yaml # Dex OIDC provider for Flux UI GitHub login
+  - dex-rbac.yaml # ClusterRoleBinding for GitHub org members
   - postgres-exporter.yaml # PostgreSQL metrics exporter for all DB instances
   - redis-exporter.yaml # Redis metrics exporter for all Redis instances
   # grafana-dashboards-configmap.yaml removed - Longhorn no longer in use

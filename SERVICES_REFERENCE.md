@@ -117,13 +117,13 @@ dig @192.168.2.201 grafana.eldertree.local
 
 ### FluxCD (GitOps UI)
 
-| Property           | Value                                           |
-| ------------------ | ----------------------------------------------- |
+| Property           | Value                                        |
+| ------------------ | -------------------------------------------- |
 | **Local URL**      | `https://flux.eldertree.local` (if deployed) |
-| **Namespace**      | `flux-system`                                   |
-| **Git Repository** | `https://github.com/raolivei/pi-fleet`          |
-| **Branch**         | `main`                                          |
-| **Path**           | `clusters/eldertree/`                           |
+| **Namespace**      | `flux-system`                                |
+| **Git Repository** | `https://github.com/raolivei/pi-fleet`       |
+| **Branch**         | `main`                                       |
+| **Path**           | `clusters/eldertree/`                        |
 
 ### Eldertree Docs
 

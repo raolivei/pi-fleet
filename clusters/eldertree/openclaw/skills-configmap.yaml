@@ -129,13 +129,13 @@ data:
     ```bash
     # Get recent events across all namespaces (warnings and errors)
     kubectl get events -A --sort-by='.lastTimestamp' | grep -E "Warning|Error" | tail -30
-    
+
     # Get events for a specific namespace
     kubectl get events -n swimto --sort-by='.lastTimestamp'
-    
+
     # Check for pod restarts (indicates issues)
     kubectl get pods -A | grep -E "CrashLoopBackOff|Error|Pending|ImagePullBackOff"
-    
+
     # Check node status
     kubectl get nodes
     kubectl describe nodes | grep -A 5 "Conditions:"
