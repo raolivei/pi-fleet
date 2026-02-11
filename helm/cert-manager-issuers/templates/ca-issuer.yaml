@@ -1,0 +1,22 @@
+{{- if .Values.ca.enabled }}
+---
+# Secret containing the CA certificate and private key
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.ca.secretName }}
+  namespace: cert-manager
+type: kubernetes.io/tls
+data:
+  tls.crt: {{ .Values.ca.certificate }}
+  tls.key: {{ .Values.ca.privateKey }}
+---
+# ClusterIssuer using the CA key pair to sign certificates
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.ca.name }}
+spec:
+  ca:
+    secretName: {{ .Values.ca.secretName }}
+{{- end }}

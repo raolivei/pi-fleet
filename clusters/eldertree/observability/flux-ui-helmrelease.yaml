@@ -29,7 +29,7 @@ spec:
     # Global configuration
     global:
       domain: eldertree.local
-      clusterIssuer: selfsigned-cluster-issuer
+      clusterIssuer: ca-cluster-issuer
 
     # Weave GitOps configuration
     # Values passed to weave-gitops dependency (gitops-server chart)
@@ -64,7 +64,7 @@ spec:
             hosts:
               - flux.eldertree.local
         annotations:
-          cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+          cert-manager.io/cluster-issuer: ca-cluster-issuer
       
       # Resource limits for Raspberry Pi
       resources:
@@ -103,8 +103,19 @@ spec:
       # OIDC via Dex - enables "Login with OIDC Provider" button
       oidcSecret:
         create: true
-        issuerURL: http://dex.eldertree.local
+        issuerURL: https://dex.eldertree.local
         clientID: weave-gitops
         clientSecret: weave-gitops-dex-secret
         redirectURL: https://flux.eldertree.local/oauth2/callback
         cookieDuration: "24h"
+
+      # Mount Eldertree CA bundle so the OIDC client trusts Dex's CA-signed TLS cert
+      extraVolumes:
+        - name: ca-bundle
+          configMap:
+            name: eldertree-ca-bundle
+      extraVolumeMounts:
+        - name: ca-bundle
+          mountPath: /etc/ssl/certs/eldertree-ca.crt
+          subPath: ca.crt
+          readOnly: true

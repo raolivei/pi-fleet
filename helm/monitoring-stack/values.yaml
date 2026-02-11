@@ -3,7 +3,7 @@
 # Global configuration
 global:
   domain: eldertree.local
-  clusterIssuer: selfsigned-cluster-issuer
+  clusterIssuer: ca-cluster-issuer
 
 # Prometheus configuration
 # Note: External services (Vault, Pi-hole, Visage) are scraped via kubernetes-service-endpoints
@@ -29,7 +29,7 @@ prometheus:
           hosts:
             - alertmanager.eldertree.local
       annotations:
-        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+        cert-manager.io/cluster-issuer: ca-cluster-issuer
   nodeExporter:
     enabled: true
   pushgateway:
@@ -46,7 +46,7 @@ prometheus:
           hosts:
             - pushgateway.eldertree.local
       annotations:
-        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+        cert-manager.io/cluster-issuer: ca-cluster-issuer
   kube-state-metrics:
     enabled: true
     fullnameOverride: "monitoring-stack-kube-state-metrics"
@@ -68,7 +68,7 @@ prometheus:
           hosts:
             - prometheus.eldertree.local
       annotations:
-        cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+        cert-manager.io/cluster-issuer: ca-cluster-issuer
     global:
       scrape_interval: 30s
       scrape_timeout: 10s
@@ -376,4 +376,4 @@ grafana:
         hosts:
           - grafana.eldertree.local
     annotations:
-      cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+      cert-manager.io/cluster-issuer: ca-cluster-issuer

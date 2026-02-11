@@ -13,7 +13,8 @@ resources:
   - dex-helmrepository.yaml # Dex Helm chart repo (charts.dexidp.io)
   - dex-externalsecret.yaml # GitHub OAuth client credentials from Vault
   - dex-helmrelease.yaml # Dex OIDC provider for Flux UI GitHub login
-  - dex-rbac.yaml # ClusterRoleBinding for GitHub org members
+  - dex-rbac.yaml # ClusterRoleBinding for GitHub user via OIDC
+  - ca-bundle-configmap.yaml # Eldertree CA cert for pods verifying CA-signed TLS
   - postgres-exporter.yaml # PostgreSQL metrics exporter for all DB instances
   - redis-exporter.yaml # Redis metrics exporter for all Redis instances
   # grafana-dashboards-configmap.yaml removed - Longhorn no longer in use
