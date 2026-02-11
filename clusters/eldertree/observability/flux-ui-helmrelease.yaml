@@ -99,3 +99,12 @@ spec:
         create: true
         createClusterRole: true
         username: admin
+
+      # OIDC via Dex - enables "Login with OIDC Provider" button
+      oidcSecret:
+        create: true
+        issuerURL: https://dex.eldertree.local
+        clientID: weave-gitops
+        clientSecret: weave-gitops-dex-secret
+        redirectURL: https://flux.eldertree.local/oauth2/callback
+        cookieDuration: "24h"
