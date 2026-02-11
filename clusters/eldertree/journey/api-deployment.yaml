@@ -20,9 +20,18 @@ spec:
     spec:
       imagePullSecrets:
         - name: ghcr-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: api
           image: ghcr.io/raolivei/journey-api:v0.2.0 # {"$imagepolicy": "journey:journey-api-policy"}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8000
               name: http
@@ -41,7 +50,7 @@ spec:
             - name: ENVIRONMENT
               value: "production"
             - name: CORS_ORIGINS
-              value: "https://journey.yourdomain.com"
+              value: "https://journey.eldertree.local"
           resources:
             requests:
               memory: "512Mi"

@@ -7,8 +7,13 @@ metadata:
     app.kubernetes.io/name: eldertree-docs
     app.kubernetes.io/component: documentation
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
 spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - docs.eldertree.local
+      secretName: eldertree-docs-tls
   rules:
     - host: docs.eldertree.local
       http:
