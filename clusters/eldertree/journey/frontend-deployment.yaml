@@ -20,9 +20,18 @@ spec:
     spec:
       imagePullSecrets:
         - name: ghcr-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: frontend
           image: ghcr.io/raolivei/journey-frontend:v0.2.0 # {"$imagepolicy": "journey:journey-frontend-policy"}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 80
               name: http

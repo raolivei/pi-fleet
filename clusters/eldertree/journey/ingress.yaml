@@ -6,17 +6,15 @@ metadata:
   labels:
     app: journey
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   tls:
     - hosts:
-        - journey.yourdomain.com
+        - journey.eldertree.local
       secretName: journey-tls
   rules:
-    - host: journey.yourdomain.com
+    - host: journey.eldertree.local
       http:
         paths:
           # API routes
