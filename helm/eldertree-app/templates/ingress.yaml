@@ -36,7 +36,6 @@ spec:
     - host: {{ $ing.host }}
       http:
         paths:
-          {{- /* Extra paths first (e.g., /api before /) */ -}}
           {{- range $ing.paths }}
           - path: {{ .path }}
             pathType: {{ .pathType | default "Prefix" }}
@@ -54,7 +53,6 @@ spec:
                 port:
                   number: {{ $ing.port | default 80 }}
     {{- else }}
-    {{- /* Host-less ingress (e.g., IP-based routing) */ -}}
     - http:
         paths:
           {{- range $ing.paths }}
