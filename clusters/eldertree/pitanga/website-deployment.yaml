@@ -23,7 +23,7 @@ spec:
         fsGroup: 101
       containers:
         - name: website
-          image: ghcr.io/raolivei/pitanga-website:latest # {"$imagepolicy": "pitanga:pitanga-website-policy"}
+          image: ghcr.io/raolivei/pitanga-website:v1.0.0 # {"$imagepolicy": "pitanga:pitanga-website-policy"}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
