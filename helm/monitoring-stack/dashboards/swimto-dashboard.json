@@ -8,7 +8,7 @@
   ],
   "timezone": "",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "panels": [
     {
@@ -23,7 +23,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(traefik_service_requests_total{namespace=\"swimto\", service=\"swimto-api-service\"}[5m])) by (code)",
+          "expr": "sum(rate(traefik_service_requests_total{namespace=\"swimto\", service=~\".*swimto-api-service.*\"}[5m])) by (code)",
           "legendFormat": "HTTP {{code}}"
         }
       ]
@@ -40,7 +40,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{namespace=\"swimto\", service=\"swimto-api-service\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{namespace=\"swimto\", service=~\".*swimto-api-service.*\"}[5m])) by (le))",
           "legendFormat": "p95"
         }
       ]
@@ -57,7 +57,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(traefik_service_requests_total{namespace=\"swimto\", service=\"swimto-web-service\"}[5m])) by (code)",
+          "expr": "sum(rate(traefik_service_requests_total{namespace=\"swimto\", service=~\".*swimto-web-service.*\"}[5m])) by (code)",
           "legendFormat": "HTTP {{code}}"
         }
       ]
