@@ -1,0 +1,15 @@
+{{- range $name, $pvc := .Values.pvc }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "eldertree-app.namespace" $ }}
+spec:
+  accessModes:
+    - {{ $pvc.accessMode | default "ReadWriteOnce" }}
+  storageClassName: {{ $pvc.storageClass | default "local-path" }}
+  resources:
+    requests:
+      storage: {{ $pvc.size | default "5Gi" }}
+{{- end }}

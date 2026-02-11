@@ -1,0 +1,100 @@
+{{- range $name, $component := .Values.components }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "eldertree-app.namespace" $ }}
+  labels:
+    {{- include "eldertree-app.componentLabels" (dict "releaseName" $.Release.Name "componentName" $name) | nindent 4 }}
+    {{- include "eldertree-app.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ $component.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "eldertree-app.selectorLabels" (dict "releaseName" $.Release.Name "componentName" $name) | nindent 6 }}
+  {{- if $component.strategy }}
+  strategy:
+    type: {{ $component.strategy }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "eldertree-app.selectorLabels" (dict "releaseName" $.Release.Name "componentName" $name) | nindent 8 }}
+    spec:
+      {{- if not $component.builtinImage }}
+      {{- with ($component.imagePullSecrets | default $.Values.global.imagePullSecrets) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- $podSec := include "eldertree-app.podSecurityContext" (dict "component" $component "global" $.Values.global) }}
+      {{- if $podSec }}
+      securityContext:
+        {{- $podSec | nindent 8 }}
+      {{- end }}
+      {{- with ($component.nodeSelector | default $.Values.global.nodeSelector) }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ $name }}
+          image: "{{ $component.image.repository }}:{{ $component.image.tag }}"
+          {{- if $component.image.pullPolicy }}
+          imagePullPolicy: {{ $component.image.pullPolicy }}
+          {{- end }}
+          {{- if not $component.builtinImage }}
+          {{- $sec := include "eldertree-app.securityContext" (dict "component" $component "global" $.Values.global) }}
+          {{- if $sec }}
+          securityContext:
+            {{- $sec | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- with $component.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $component.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ $component.port | default 8000 }}
+              name: http
+          {{- with $component.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $component.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $component.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if ne (toString ($component.probesEnabled | default true)) "false" }}
+          {{- if $component.probes }}
+          livenessProbe:
+            httpGet:
+              path: {{ $component.probes.path | default "/health" }}
+              port: {{ $component.probes.port | default ($component.port | default 8000) }}
+            initialDelaySeconds: {{ ($component.probes.liveness).initialDelaySeconds | default 30 }}
+            periodSeconds: {{ ($component.probes.liveness).periodSeconds | default 10 }}
+          readinessProbe:
+            httpGet:
+              path: {{ $component.probes.path | default "/health" }}
+              port: {{ $component.probes.port | default ($component.port | default 8000) }}
+            initialDelaySeconds: {{ ($component.probes.readiness).initialDelaySeconds | default 10 }}
+            periodSeconds: {{ ($component.probes.readiness).periodSeconds | default 5 }}
+          {{- end }}
+          {{- end }}
+          {{- with $component.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with $component.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

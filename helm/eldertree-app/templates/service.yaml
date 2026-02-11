@@ -1,0 +1,18 @@
+{{- range $name, $component := .Values.components }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "eldertree-app.namespace" $ }}
+  labels:
+    {{- include "eldertree-app.componentLabels" (dict "releaseName" $.Release.Name "componentName" $name) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "eldertree-app.selectorLabels" (dict "releaseName" $.Release.Name "componentName" $name) | nindent 4 }}
+  ports:
+    - port: {{ $component.servicePort | default ($component.port | default 8000) }}
+      targetPort: {{ $component.port | default 8000 }}
+      name: http
+{{- end }}
