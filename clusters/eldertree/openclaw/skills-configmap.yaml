@@ -125,11 +125,29 @@ data:
     User: "What's using the most memory?"
     Assistant: *runs `kubectl top pods -A --sort-by=memory`*
 
+    ### Check for recent issues (last 24h)
+    ```bash
+    # Get recent events across all namespaces (warnings and errors)
+    kubectl get events -A --sort-by='.lastTimestamp' | grep -E "Warning|Error" | tail -30
+    
+    # Get events for a specific namespace
+    kubectl get events -n swimto --sort-by='.lastTimestamp'
+    
+    # Check for pod restarts (indicates issues)
+    kubectl get pods -A | grep -E "CrashLoopBackOff|Error|Pending|ImagePullBackOff"
+    
+    # Check node status
+    kubectl get nodes
+    kubectl describe nodes | grep -A 5 "Conditions:"
+    ```
+
     ## Important Notes
 
     - You have READ-ONLY access (no delete, scale, or modify operations)
     - Always use `--tail=N` when getting logs to avoid overwhelming output
     - Check events if pods are not starting: `kubectl get events -n NAMESPACE`
+    - DO NOT try to access system logs (journalctl, /var/log) - use kubectl events instead
+    - For "any issues" questions, check: events, pod status, node status
 
   # Grove Skill - AI agent for code, infrastructure, and project management
   grove-skill.md: |
