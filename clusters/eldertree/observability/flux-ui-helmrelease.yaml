@@ -36,6 +36,10 @@ spec:
     weave-gitops:
       enabled: true
 
+      # Auto-restart when secrets change (requires Stakater Reloader)
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
+
       # Image override: v0.39.0-rc.2 adds Flux v2 API support (fixes v2beta1 error)
       image:
         repository: ghcr.io/weaveworks/wego-app
