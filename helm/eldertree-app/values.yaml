@@ -28,6 +28,9 @@ global:
       drop:
         - ALL
 
+  # -- Default cert-manager ClusterIssuer for TLS ingresses
+  clusterIssuer: ca-cluster-issuer
+
   # -- Default node selector (ARM64 cluster)
   nodeSelector:
     kubernetes.io/arch: arm64

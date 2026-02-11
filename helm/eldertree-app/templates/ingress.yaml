@@ -10,7 +10,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     {{- if and $ing.tls $ing.tls.certManager }}
-    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    cert-manager.io/cluster-issuer: {{ $.Values.global.clusterIssuer | default "ca-cluster-issuer" }}
     {{- end }}
     {{- if $ing.middlewares }}
     traefik.ingress.kubernetes.io/router.middlewares: {{ join "," $ing.middlewares }}

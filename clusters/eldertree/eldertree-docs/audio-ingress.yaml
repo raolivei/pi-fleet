@@ -5,7 +5,7 @@ metadata:
   namespace: eldertree-docs
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+    cert-manager.io/cluster-issuer: ca-cluster-issuer
     external-dns.alpha.kubernetes.io/hostname: audio.eldertree.local
   labels:
     app.kubernetes.io/name: eldertree-docs

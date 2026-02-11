@@ -1,0 +1,43 @@
+# ConfigMap containing the Eldertree Local CA certificate (PEM)
+# Mount into pods that need to verify certificates signed by ca-cluster-issuer
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eldertree-ca-bundle
+  namespace: observability
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    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
+    -----END CERTIFICATE-----

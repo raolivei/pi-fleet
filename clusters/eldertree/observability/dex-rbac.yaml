@@ -1,13 +1,13 @@
-# ClusterRoleBinding: Grant GitHub org members full Weave GitOps access
-# Dex maps GitHub org membership to groups like "raolivei:*"
+# ClusterRoleBinding: Grant GitHub user full Weave GitOps access via OIDC
+# Dex authenticates via GitHub OAuth -- raolivei is a personal account
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: flux-ui-github-admin
 subjects:
-  # Match any member of the raolivei GitHub org
-  - kind: Group
+  # Match the GitHub username authenticated via Dex OIDC
+  - kind: User
     name: "raolivei"
     apiGroup: rbac.authorization.k8s.io
 roleRef:
