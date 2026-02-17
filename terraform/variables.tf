@@ -53,7 +53,7 @@ variable "swimto_app_zone_id" {
 }
 
 variable "raolivei_com_zone_id" {
-  description = "Cloudflare Zone ID for raolivei.com. Obtained after adding domain to Cloudflare account."
+  description = "Cloudflare Zone ID for raolivei.me. Obtained after adding domain to Cloudflare account."
   type        = string
   default     = ""
 }
@@ -140,7 +140,7 @@ variable "vault_projects" {
     },
     {
       name        = "personal-website"
-      description = "Personal portfolio website (raolivei.com)"
+      description = "Personal portfolio website (raolivei.me)"
       paths       = ["secret/data/personal-website/*", "secret/metadata/personal-website/*"]
     }
   ]

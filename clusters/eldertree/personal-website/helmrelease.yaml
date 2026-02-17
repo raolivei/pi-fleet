@@ -51,13 +51,13 @@ spec:
 
     ingress:
       personal-website-public:
-        host: raolivei.com
+        host: raolivei.me
         hosts:
-          - www.raolivei.com
+          - www.raolivei.me
         service: personal-website
         port: 80
         tls:
           secretName: raolivei-cloudflare-origin-tls
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: "raolivei.com,www.raolivei.com"
+          external-dns.alpha.kubernetes.io/hostname: "raolivei.me,www.raolivei.me"
           external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"

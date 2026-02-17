@@ -68,7 +68,7 @@ data "cloudflare_zone" "swimto_app" {
   zone_id = var.swimto_app_zone_id
 }
 
-# Data source to get Cloudflare zone for raolivei.com
+# Data source to get Cloudflare zone for raolivei.me
 # Zone ID can be obtained from Cloudflare dashboard or API after adding domain
 # Only created if Cloudflare API token is provided
 data "cloudflare_zone" "raolivei_com" {
@@ -223,29 +223,29 @@ resource "cloudflare_origin_ca_certificate" "eldertree_xyz" {
 }
 
 # =============================================================================
-# raolivei.com Origin Certificate
+# raolivei.me Origin Certificate
 # =============================================================================
 
-# Generate private key for raolivei.com Origin Certificate
+# Generate private key for raolivei.me Origin Certificate
 resource "tls_private_key" "raolivei_com" {
   count     = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? 1 : 0
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
-# Generate CSR for raolivei.com Origin Certificate
+# Generate CSR for raolivei.me Origin Certificate
 resource "tls_cert_request" "raolivei_com" {
   count           = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? 1 : 0
   private_key_pem = tls_private_key.raolivei_com[0].private_key_pem
 
   subject {
-    common_name  = "raolivei.com"
+    common_name  = "raolivei.me"
     organization = "Rafael Oliveira"
   }
 }
 
-# Cloudflare Origin Certificate for raolivei.com
-# Creates Origin CA certificate for raolivei.com and all subdomains
+# Cloudflare Origin Certificate for raolivei.me
+# Creates Origin CA certificate for raolivei.me and all subdomains
 # NOTE: Requires API token with "SSL and Certificates:Edit" permission
 resource "cloudflare_origin_ca_certificate" "raolivei_com" {
   count = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? 1 : 0
@@ -255,8 +255,8 @@ resource "cloudflare_origin_ca_certificate" "raolivei_com" {
   csr                = tls_cert_request.raolivei_com[0].cert_request_pem
 
   hostnames = [
-    "raolivei.com",
-    "*.raolivei.com"
+    "raolivei.me",
+    "*.raolivei.me"
   ]
 }
 
@@ -386,15 +386,15 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
       service  = "http://10.43.23.214:80"
     }
 
-    # raolivei.com routes (personal website)
+    # raolivei.me routes (personal website)
     ingress_rule {
-      hostname = "raolivei.com"
+      hostname = "raolivei.me"
       path     = "/"
       service  = "http://10.43.23.214:80"
     }
 
     ingress_rule {
-      hostname = "www.raolivei.com"
+      hostname = "www.raolivei.me"
       path     = "/"
       service  = "http://10.43.23.214:80"
     }
@@ -549,10 +549,10 @@ resource "cloudflare_record" "swimto_app_api" {
 }
 
 # =============================================================================
-# raolivei.com DNS Records - Point to Cloudflare Tunnel
+# raolivei.me DNS Records - Point to Cloudflare Tunnel
 # =============================================================================
 
-# DNS CNAME record for raolivei.com (root domain)
+# DNS CNAME record for raolivei.me (root domain)
 resource "cloudflare_record" "raolivei_com_root" {
   count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.raolivei_com_zone_id != "" ? 1 : 0
   zone_id         = data.cloudflare_zone.raolivei_com[0].id
@@ -562,10 +562,10 @@ resource "cloudflare_record" "raolivei_com_root" {
   ttl             = 1    # Must be 1 when proxied=true
   proxied         = true # Enable Cloudflare proxy for automatic HTTPS
   allow_overwrite = true
-  comment         = "raolivei.com - Personal website via Cloudflare Tunnel - managed by Terraform"
+  comment         = "raolivei.me - Personal website via Cloudflare Tunnel - managed by Terraform"
 }
 
-# DNS CNAME record for www.raolivei.com
+# DNS CNAME record for www.raolivei.me
 resource "cloudflare_record" "raolivei_com_www" {
   count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.raolivei_com_zone_id != "" ? 1 : 0
   zone_id         = data.cloudflare_zone.raolivei_com[0].id
@@ -575,7 +575,7 @@ resource "cloudflare_record" "raolivei_com_www" {
   ttl             = 1    # Must be 1 when proxied=true
   proxied         = true # Enable Cloudflare proxy for automatic HTTPS
   allow_overwrite = true
-  comment         = "www.raolivei.com - Personal website via Cloudflare Tunnel - managed by Terraform"
+  comment         = "www.raolivei.me - Personal website via Cloudflare Tunnel - managed by Terraform"
 }
 
 # Output zone ID for External-DNS integration
@@ -655,17 +655,17 @@ output "pitanga_cloud_origin_key" {
 }
 
 # =============================================================================
-# raolivei.com Origin Certificate Outputs
+# raolivei.me Origin Certificate Outputs
 # =============================================================================
 
 output "raolivei_com_origin_cert" {
-  description = "Origin certificate for raolivei.com - use with kubectl create secret tls"
+  description = "Origin certificate for raolivei.me - use with kubectl create secret tls"
   value       = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? cloudflare_origin_ca_certificate.raolivei_com[0].certificate : null
   sensitive   = true
 }
 
 output "raolivei_com_origin_key" {
-  description = "Private key for raolivei.com origin certificate"
+  description = "Private key for raolivei.me origin certificate"
   value       = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? tls_private_key.raolivei_com[0].private_key_pem : null
   sensitive   = true
 }
