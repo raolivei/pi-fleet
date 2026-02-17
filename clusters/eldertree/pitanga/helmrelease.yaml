@@ -28,7 +28,7 @@ spec:
       pitanga-website:
         image:
           repository: ghcr.io/raolivei/pitanga-website
-          tag: v1.1.0 # {"$imagepolicy": "pitanga:pitanga-website-policy:tag"}
+          tag: v1.1.1 # {"$imagepolicy": "pitanga:pitanga-website-policy:tag"}
           pullPolicy: IfNotPresent
         port: 80
         podSecurityContext:
