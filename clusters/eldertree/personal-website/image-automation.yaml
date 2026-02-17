@@ -1,0 +1,49 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: personal-website
+  namespace: personal-website
+spec:
+  image: ghcr.io/raolivei/personal-website
+  interval: 5m
+  secretRef:
+    name: ghcr-secret
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: personal-website-policy
+  namespace: personal-website
+spec:
+  imageRepositoryRef:
+    name: personal-website
+  policy:
+    semver:
+      range: '>=0.1.0 <1.0.0'
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: personal-website-automation
+  namespace: personal-website
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: "chore(personal-website): update personal-website image{{range .Changed.Changes}} {{.NewValue}}{{end}}"
+    push:
+      branch: main
+  update:
+    path: ./clusters/eldertree/personal-website
+    strategy: Setters
