@@ -28,8 +28,7 @@ concurrency:
 env:
   # Cloudflare
   TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-  # Origin CA Key passed as env var (SDK picks it up for Origin CA operations)
-  CLOUDFLARE_API_USER_SERVICE_KEY: ${{ secrets.CLOUDFLARE_ORIGIN_CA_KEY }}
+  TF_VAR_cloudflare_origin_ca_key: ${{ secrets.CLOUDFLARE_ORIGIN_CA_KEY }}
   TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
   TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
   TF_VAR_pitanga_cloud_zone_id: ${{ vars.PITANGA_CLOUD_ZONE_ID }}
@@ -148,6 +147,9 @@ jobs:
 
       - name: Terraform Apply
         if: |
-          steps.plan.outcome == 'success' && 
-          (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+          steps.plan.outcome == 'success' &&
+          (
+            (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+            (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+          )
         run: terraform apply -auto-approve -input=false -refresh=false
