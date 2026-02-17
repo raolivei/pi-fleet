@@ -15,6 +15,13 @@ variable "cloudflare_api_token" {
   default     = ""
 }
 
+variable "cloudflare_origin_ca_key" {
+  description = "Cloudflare Origin CA Key (api_user_service_key) for creating Origin CA certificates. Account-level key found at: Cloudflare Dashboard → Profile → API Tokens → Origin CA Key. Required for cloudflare_origin_ca_certificate resources across all zones."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "cloudflare_zone_id" {
   description = "Cloudflare Zone ID for eldertree.xyz. Obtained after adding domain to Cloudflare account."
   type        = string

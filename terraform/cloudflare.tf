@@ -40,7 +40,8 @@ locals {
 # the provider but all Cloudflare resources will be skipped via count conditions.
 # The provider may show warnings but will not fail if resources are not created.
 provider "cloudflare" {
-  api_token = var.cloudflare_api_token
+  api_token            = var.cloudflare_api_token
+  api_user_service_key = var.cloudflare_origin_ca_key != "" ? var.cloudflare_origin_ca_key : null
 }
 
 # Data source to get Cloudflare zone for eldertree.xyz
