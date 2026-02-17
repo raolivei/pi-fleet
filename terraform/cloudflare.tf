@@ -40,7 +40,11 @@ locals {
 # the provider but all Cloudflare resources will be skipped via count conditions.
 # The provider may show warnings but will not fail if resources are not created.
 provider "cloudflare" {
-  api_token            = var.cloudflare_api_token
+  api_token = var.cloudflare_api_token
+}
+
+provider "cloudflare" {
+  alias                = "origin_ca"
   api_user_service_key = var.cloudflare_origin_ca_key
 }
 
@@ -125,11 +129,11 @@ resource "tls_cert_request" "pitanga_cloud" {
 # NOTE: Requires API token with "SSL and Certificates:Edit" permission
 # See: ORIGIN_CERT_API_PERMISSIONS.md for permission setup
 resource "cloudflare_origin_ca_certificate" "pitanga_cloud" {
-  count = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? 1 : 0
+  provider = cloudflare.origin_ca
+  count    = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" && var.cloudflare_origin_ca_key != "" ? 1 : 0
 
-  # Certificate configuration
-  request_type       = "origin-rsa" # RSA 2048-bit key
-  requested_validity = 5475         # 15 years (maximum)
+  request_type       = "origin-rsa"
+  requested_validity = 5475
   csr                = tls_cert_request.pitanga_cloud[0].cert_request_pem
 
   # Hostnames covered by this certificate
@@ -166,11 +170,11 @@ resource "tls_cert_request" "swimto_app" {
 # Creates Origin CA certificate for swimto.app and all subdomains
 # NOTE: Requires API token with "SSL and Certificates:Edit" permission
 resource "cloudflare_origin_ca_certificate" "swimto_app" {
-  count = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? 1 : 0
+  provider = cloudflare.origin_ca
+  count    = local.cloudflare_enabled && var.swimto_app_zone_id != "" && var.cloudflare_origin_ca_key != "" ? 1 : 0
 
-  # Certificate configuration
-  request_type       = "origin-rsa" # RSA 2048-bit key
-  requested_validity = 5475         # 15 years (maximum)
+  request_type       = "origin-rsa"
+  requested_validity = 5475
   csr                = tls_cert_request.swimto_app[0].cert_request_pem
 
   # Hostnames covered by this certificate
@@ -207,11 +211,11 @@ resource "tls_cert_request" "eldertree_xyz" {
 # Creates Origin CA certificate for eldertree.xyz and all subdomains
 # NOTE: Requires API token with "SSL and Certificates:Edit" permission
 resource "cloudflare_origin_ca_certificate" "eldertree_xyz" {
-  count = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? 1 : 0
+  provider = cloudflare.origin_ca
+  count    = local.cloudflare_enabled && var.cloudflare_zone_id != "" && var.cloudflare_origin_ca_key != "" ? 1 : 0
 
-  # Certificate configuration
-  request_type       = "origin-rsa" # RSA 2048-bit key
-  requested_validity = 5475         # 15 years (maximum)
+  request_type       = "origin-rsa"
+  requested_validity = 5475
   csr                = tls_cert_request.eldertree_xyz[0].cert_request_pem
 
   # Hostnames covered by this certificate
@@ -248,10 +252,11 @@ resource "tls_cert_request" "raolivei_com" {
 # Creates Origin CA certificate for raolivei.com and all subdomains
 # NOTE: Requires API token with "SSL and Certificates:Edit" permission
 resource "cloudflare_origin_ca_certificate" "raolivei_com" {
-  count = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? 1 : 0
+  provider = cloudflare.origin_ca
+  count    = local.cloudflare_enabled && var.raolivei_com_zone_id != "" && var.cloudflare_origin_ca_key != "" ? 1 : 0
 
   request_type       = "origin-rsa"
-  requested_validity = 5475 # 15 years (maximum)
+  requested_validity = 5475
   csr                = tls_cert_request.raolivei_com[0].cert_request_pem
 
   hostnames = [
@@ -612,7 +617,7 @@ output "cloudflare_tunnel_cname" {
 
 output "eldertree_xyz_origin_cert" {
   description = "Origin certificate for eldertree.xyz - use with kubectl create secret tls"
-  value       = local.cloudflare_enabled && var.cloudflare_zone_id != "" ? cloudflare_origin_ca_certificate.eldertree_xyz[0].certificate : null
+  value       = local.cloudflare_enabled && var.cloudflare_zone_id != "" && var.cloudflare_origin_ca_key != "" ? cloudflare_origin_ca_certificate.eldertree_xyz[0].certificate : null
   sensitive   = true
 }
 
@@ -628,7 +633,7 @@ output "eldertree_xyz_origin_key" {
 
 output "swimto_app_origin_cert" {
   description = "Origin certificate for swimto.app - use with kubectl create secret tls"
-  value       = local.cloudflare_enabled && var.swimto_app_zone_id != "" ? cloudflare_origin_ca_certificate.swimto_app[0].certificate : null
+  value       = local.cloudflare_enabled && var.swimto_app_zone_id != "" && var.cloudflare_origin_ca_key != "" ? cloudflare_origin_ca_certificate.swimto_app[0].certificate : null
   sensitive   = true
 }
 
@@ -644,7 +649,7 @@ output "swimto_app_origin_key" {
 
 output "pitanga_cloud_origin_cert" {
   description = "Origin certificate for pitanga.cloud - use with kubectl create secret tls"
-  value       = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? cloudflare_origin_ca_certificate.pitanga_cloud[0].certificate : null
+  value       = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" && var.cloudflare_origin_ca_key != "" ? cloudflare_origin_ca_certificate.pitanga_cloud[0].certificate : null
   sensitive   = true
 }
 
@@ -660,7 +665,7 @@ output "pitanga_cloud_origin_key" {
 
 output "raolivei_com_origin_cert" {
   description = "Origin certificate for raolivei.com - use with kubectl create secret tls"
-  value       = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? cloudflare_origin_ca_certificate.raolivei_com[0].certificate : null
+  value       = local.cloudflare_enabled && var.raolivei_com_zone_id != "" && var.cloudflare_origin_ca_key != "" ? cloudflare_origin_ca_certificate.raolivei_com[0].certificate : null
   sensitive   = true
 }
 
