@@ -25,10 +25,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# Shared env block for all Terraform variables
-# Secrets: sensitive credentials (from GitHub Secrets)
-# Vars: non-sensitive config (from GitHub Variables)
 env:
+  # Cloudflare
   TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
   TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -36,14 +34,14 @@ env:
   TF_VAR_swimto_app_zone_id: ${{ vars.SWIMTO_APP_ZONE_ID }}
   TF_VAR_raolivei_com_zone_id: ${{ vars.RAOLIVEI_COM_ZONE_ID }}
   TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
+  # Skip k3s (managed by Ansible)
   TF_VAR_skip_k3s_resources: "true"
-  # vault_enabled stays true (token non-empty + skip=false) so vault resources
-  # in state keep count=1 and aren't planned for destruction.
-  # -refresh=false ensures no actual Vault API calls are made.
-  # vault_address points to a reachable endpoint so the provider plugin starts.
+  # Vault: use local dev server started in CI (see "Start Vault" step)
+  # This prevents the Vault provider plugin from crashing and keeps
+  # vault_enabled=true so existing vault resources aren't planned for destruction
   TF_VAR_skip_vault_resources: "false"
-  TF_VAR_vault_token: "ci-no-op"
-  TF_VAR_vault_address: "https://vault.hashicorp.com"
+  TF_VAR_vault_token: "ci-root"
+  TF_VAR_vault_address: "http://127.0.0.1:8200"
   TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
   TF_VAR_pi_user: ${{ secrets.PI_USER }}
 
@@ -52,6 +50,17 @@ jobs:
     name: "Terraform"
     runs-on: ubuntu-latest
     environment: dev
+
+    services:
+      vault:
+        image: hashicorp/vault:1.15
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: ci-root
+          VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+        ports:
+          - 8200:8200
+        options: >-
+          --cap-add=IPC_LOCK
 
     defaults:
       run:
@@ -72,8 +81,7 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
 
-      # Avoid piping terraform output through head/tail to prevent EPIPE
-      # crashes with the setup-terraform Node.js wrapper
+      # Redirect to file (not pipe) to avoid EPIPE crash in setup-terraform wrapper
       - name: Verify Remote State
         run: |
           if terraform state list > state-list.txt 2>&1; then
@@ -82,7 +90,7 @@ jobs:
             head -20 state-list.txt
             [ "$STATE_COUNT" -gt 20 ] && echo "... and $((STATE_COUNT - 20)) more"
             if [ "$STATE_COUNT" -eq "0" ]; then
-              echo "❌ State is empty - failing to prevent accidental recreation"
+              echo "❌ State is empty"
               exit 1
             fi
           else
@@ -98,8 +106,8 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-      # -refresh=false: skip provider connections for state refresh
-      # Required because Vault resources exist in state but CI can't reach Vault
+      # -refresh=false: use cached state, don't refresh from providers
+      # Vault dev server satisfies provider init; -refresh=false avoids state drift
       - name: Terraform Plan
         id: plan
         run: |
