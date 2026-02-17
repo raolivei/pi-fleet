@@ -78,6 +78,23 @@ jobs:
           cli_config_credentials_hostname: app.terraform.io
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
+      # Pre-configure Vault dev server with backends that exist in TF state
+      # so the provider doesn't crash during PlanResourceChange calls
+      - name: Configure Vault Dev Server
+        run: |
+          # Wait for Vault to be ready
+          for i in 1 2 3 4 5; do
+            curl -sf http://127.0.0.1:8200/v1/sys/health && break
+            echo "Waiting for Vault... ($i)"
+            sleep 2
+          done
+          # Enable kubernetes auth backend (kv-v2 at secret/ is default in dev)
+          curl -sf --header "X-Vault-Token: ci-root" \
+            --request POST \
+            --data '{"type":"kubernetes"}' \
+            http://127.0.0.1:8200/v1/sys/auth/kubernetes || true
+        working-directory: .
+
       - name: Terraform Init
         run: terraform init -input=false
 
