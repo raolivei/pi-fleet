@@ -36,7 +36,7 @@ if [ "$VAULT_STATUS" = "true" ]; then
     exit 1
 fi
 
-# Get token from Vault (optional - Cloudflare resources are optional)
+# Get Cloudflare API token from Vault (optional - Cloudflare resources are optional)
 export TF_VAR_cloudflare_api_token=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/pi-fleet/terraform/cloudflare-api-token 2>/dev/null || echo "")
 
 if [ -z "$TF_VAR_cloudflare_api_token" ]; then
@@ -62,6 +62,17 @@ if [ -z "$TF_VAR_cloudflare_api_token" ]; then
     export TF_VAR_cloudflare_api_token=""
 else
     echo "✅ Cloudflare API token loaded from Vault"
+fi
+
+# Get Cloudflare Origin CA Key from Vault (required for Origin CA certificates)
+export TF_VAR_cloudflare_origin_ca_key=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=origin-ca-key secret/pi-fleet/terraform/cloudflare-origin-ca-key 2>/dev/null || echo "")
+
+if [ -z "$TF_VAR_cloudflare_origin_ca_key" ]; then
+    echo "⚠️  Cloudflare Origin CA Key not found in Vault"
+    echo "   Origin CA certificate resources will be skipped"
+    export TF_VAR_cloudflare_origin_ca_key=""
+else
+    echo "✅ Cloudflare Origin CA Key loaded from Vault"
 fi
 
 # Get pi_user from Vault (optional, falls back to default "pi")
