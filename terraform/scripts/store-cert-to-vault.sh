@@ -5,7 +5,7 @@
 #   ./scripts/store-cert-to-vault.sh <domain> <vault-path>
 #
 # Examples:
-#   ./scripts/store-cert-to-vault.sh raolivei_com personal-website
+#   ./scripts/store-cert-to-vault.sh raolivei_me personal-website
 #   ./scripts/store-cert-to-vault.sh pitanga_cloud pitanga
 #
 # Reads Terraform Cloud state outputs via API (no terraform CLI needed)
@@ -18,8 +18,8 @@
 
 set -e
 
-DOMAIN="${1:?Usage: $0 <domain> <vault-path>  (e.g., raolivei_com personal-website)}"
-VAULT_PATH="${2:?Usage: $0 <domain> <vault-path>  (e.g., raolivei_com personal-website)}"
+DOMAIN="${1:?Usage: $0 <domain> <vault-path>  (e.g., raolivei_me personal-website)}"
+VAULT_PATH="${2:?Usage: $0 <domain> <vault-path>  (e.g., raolivei_me personal-website)}"
 
 export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config-eldertree}"
 VAULT_NAMESPACE="vault"

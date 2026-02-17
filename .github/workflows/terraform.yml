@@ -33,7 +33,7 @@ env:
   TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
   TF_VAR_pitanga_cloud_zone_id: ${{ vars.PITANGA_CLOUD_ZONE_ID }}
   TF_VAR_swimto_app_zone_id: ${{ vars.SWIMTO_APP_ZONE_ID }}
-  TF_VAR_raolivei_com_zone_id: ${{ vars.RAOLIVEI_COM_ZONE_ID }}
+  TF_VAR_raolivei_me_zone_id: ${{ vars.RAOLIVEI_ME_ZONE_ID }}
   TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
   # Skip k3s (managed by Ansible)
   TF_VAR_skip_k3s_resources: "true"

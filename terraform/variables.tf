@@ -52,7 +52,7 @@ variable "swimto_app_zone_id" {
   default     = ""
 }
 
-variable "raolivei_com_zone_id" {
+variable "raolivei_me_zone_id" {
   description = "Cloudflare Zone ID for raolivei.me. Obtained after adding domain to Cloudflare account."
   type        = string
   default     = ""

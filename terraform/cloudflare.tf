@@ -70,9 +70,9 @@ data "cloudflare_zone" "swimto_app" {
 # Data source to get Cloudflare zone for raolivei.me
 # Zone ID can be obtained from Cloudflare dashboard or API after adding domain
 # Only created if Cloudflare API token is provided
-data "cloudflare_zone" "raolivei_com" {
-  count   = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? 1 : 0
-  zone_id = var.raolivei_com_zone_id
+data "cloudflare_zone" "raolivei_me" {
+  count   = local.cloudflare_enabled && var.raolivei_me_zone_id != "" ? 1 : 0
+  zone_id = var.raolivei_me_zone_id
 }
 
 # Root domain A record
@@ -226,16 +226,16 @@ resource "cloudflare_origin_ca_certificate" "eldertree_xyz" {
 # =============================================================================
 
 # Generate private key for raolivei.me Origin Certificate
-resource "tls_private_key" "raolivei_com" {
-  count     = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? 1 : 0
+resource "tls_private_key" "raolivei_me" {
+  count     = local.cloudflare_enabled && var.raolivei_me_zone_id != "" ? 1 : 0
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
 # Generate CSR for raolivei.me Origin Certificate
-resource "tls_cert_request" "raolivei_com" {
-  count           = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? 1 : 0
-  private_key_pem = tls_private_key.raolivei_com[0].private_key_pem
+resource "tls_cert_request" "raolivei_me" {
+  count           = local.cloudflare_enabled && var.raolivei_me_zone_id != "" ? 1 : 0
+  private_key_pem = tls_private_key.raolivei_me[0].private_key_pem
 
   subject {
     common_name  = "raolivei.me"
@@ -246,12 +246,12 @@ resource "tls_cert_request" "raolivei_com" {
 # Cloudflare Origin Certificate for raolivei.me
 # Creates Origin CA certificate for raolivei.me and all subdomains
 # NOTE: Requires API token with "SSL and Certificates:Edit" permission
-resource "cloudflare_origin_ca_certificate" "raolivei_com" {
-  count = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? 1 : 0
+resource "cloudflare_origin_ca_certificate" "raolivei_me" {
+  count = local.cloudflare_enabled && var.raolivei_me_zone_id != "" ? 1 : 0
 
   request_type       = "origin-rsa"
   requested_validity = 5475 # 15 years (maximum)
-  csr                = tls_cert_request.raolivei_com[0].cert_request_pem
+  csr                = tls_cert_request.raolivei_me[0].cert_request_pem
 
   hostnames = [
     "raolivei.me",
@@ -552,9 +552,9 @@ resource "cloudflare_record" "swimto_app_api" {
 # =============================================================================
 
 # DNS CNAME record for raolivei.me (root domain)
-resource "cloudflare_record" "raolivei_com_root" {
-  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.raolivei_com_zone_id != "" ? 1 : 0
-  zone_id         = data.cloudflare_zone.raolivei_com[0].id
+resource "cloudflare_record" "raolivei_me_root" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.raolivei_me_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.raolivei_me[0].id
   name            = "@"
   content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
   type            = "CNAME"
@@ -565,9 +565,9 @@ resource "cloudflare_record" "raolivei_com_root" {
 }
 
 # DNS CNAME record for www.raolivei.me
-resource "cloudflare_record" "raolivei_com_www" {
-  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.raolivei_com_zone_id != "" ? 1 : 0
-  zone_id         = data.cloudflare_zone.raolivei_com[0].id
+resource "cloudflare_record" "raolivei_me_www" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.raolivei_me_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.raolivei_me[0].id
   name            = "www"
   content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
   type            = "CNAME"
@@ -581,17 +581,20 @@ resource "cloudflare_record" "raolivei_com_www" {
 output "cloudflare_zone_id" {
   description = "Cloudflare Zone ID for eldertree.xyz (for External-DNS configuration)"
   value       = var.cloudflare_api_token != "" && var.cloudflare_zone_id != "" ? data.cloudflare_zone.eldertree_xyz[0].id : null
+  sensitive   = true
 }
 
 # Output Cloudflare Tunnel information
 output "cloudflare_tunnel_id" {
   description = "Cloudflare Tunnel ID for eldertree"
   value       = var.cloudflare_api_token != "" && var.cloudflare_account_id != "" ? cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id : null
+  sensitive   = true
 }
 
 output "cloudflare_tunnel_name" {
   description = "Cloudflare Tunnel name"
   value       = var.cloudflare_api_token != "" && var.cloudflare_account_id != "" ? cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].name : null
+  sensitive   = true
 }
 
 output "cloudflare_tunnel_token" {
@@ -603,6 +606,7 @@ output "cloudflare_tunnel_token" {
 output "cloudflare_tunnel_cname" {
   description = "CNAME target for tunnel DNS records"
   value       = var.cloudflare_api_token != "" && var.cloudflare_account_id != "" ? "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com" : null
+  sensitive   = true
 }
 
 # =============================================================================
@@ -657,15 +661,15 @@ output "pitanga_cloud_origin_key" {
 # raolivei.me Origin Certificate Outputs
 # =============================================================================
 
-output "raolivei_com_origin_cert" {
+output "raolivei_me_origin_cert" {
   description = "Origin certificate for raolivei.me - use with kubectl create secret tls"
-  value       = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? cloudflare_origin_ca_certificate.raolivei_com[0].certificate : null
+  value       = local.cloudflare_enabled && var.raolivei_me_zone_id != "" ? cloudflare_origin_ca_certificate.raolivei_me[0].certificate : null
   sensitive   = true
 }
 
-output "raolivei_com_origin_key" {
+output "raolivei_me_origin_key" {
   description = "Private key for raolivei.me origin certificate"
-  value       = local.cloudflare_enabled && var.raolivei_com_zone_id != "" ? tls_private_key.raolivei_com[0].private_key_pem : null
+  value       = local.cloudflare_enabled && var.raolivei_me_zone_id != "" ? tls_private_key.raolivei_me[0].private_key_pem : null
   sensitive   = true
 }
 

@@ -6,7 +6,7 @@
 output "pitanga_cloud_origin_certificate" {
   description = "Cloudflare Origin Certificate for pitanga.cloud (PEM format)"
   value       = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? cloudflare_origin_ca_certificate.pitanga_cloud[0].certificate : null
-  sensitive   = false
+  sensitive   = true
 }
 
 output "pitanga_cloud_origin_private_key" {
@@ -18,4 +18,5 @@ output "pitanga_cloud_origin_private_key" {
 output "pitanga_cloud_certificate_id" {
   description = "Cloudflare Origin Certificate ID for pitanga.cloud"
   value       = local.cloudflare_enabled && var.pitanga_cloud_zone_id != "" ? cloudflare_origin_ca_certificate.pitanga_cloud[0].id : null
+  sensitive   = true
 }
