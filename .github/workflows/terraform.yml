@@ -92,11 +92,13 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
+      # -refresh=false: skip provider connections for state refresh
+      # Required because Vault resources exist in state but CI can't reach Vault
       - name: Terraform Plan
         id: plan
         run: |
           set +e
-          terraform plan -input=false -detailed-exitcode > plan-output.txt 2>&1
+          terraform plan -input=false -refresh=false -detailed-exitcode > plan-output.txt 2>&1
           PLAN_EXIT_CODE=$?
           set -e
           cat plan-output.txt
@@ -115,4 +117,4 @@ jobs:
         if: |
           steps.plan.outcome == 'success' && 
           (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false -refresh=false
