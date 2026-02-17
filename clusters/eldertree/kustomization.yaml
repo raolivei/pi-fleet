@@ -22,3 +22,4 @@ resources:
   # - us-law-severity-map  # US law visualization (DISABLED - not deployed yet)
   - openclaw # AI assistant with Telegram + SwimTO integration
   - eldertree-docs # Documentation + Audio hosting for ElderTree blog
+  - personal-website/flux-kustomization.yaml # Personal portfolio (raolivei.com)

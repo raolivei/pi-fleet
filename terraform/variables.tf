@@ -45,6 +45,12 @@ variable "swimto_app_zone_id" {
   default     = ""
 }
 
+variable "raolivei_com_zone_id" {
+  description = "Cloudflare Zone ID for raolivei.com. Obtained after adding domain to Cloudflare account."
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # Vault Configuration Variables
 # =============================================================================
@@ -124,6 +130,11 @@ variable "vault_projects" {
       name        = "ollie"
       description = "Ollie task automation"
       paths       = ["secret/data/ollie/*", "secret/metadata/ollie/*"]
+    },
+    {
+      name        = "personal-website"
+      description = "Personal portfolio website (raolivei.com)"
+      paths       = ["secret/data/personal-website/*", "secret/metadata/personal-website/*"]
     }
   ]
 }
