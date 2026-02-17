@@ -25,11 +25,42 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  # Cloudflare
+  TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+  TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  TF_VAR_pitanga_cloud_zone_id: ${{ vars.PITANGA_CLOUD_ZONE_ID }}
+  TF_VAR_swimto_app_zone_id: ${{ vars.SWIMTO_APP_ZONE_ID }}
+  TF_VAR_raolivei_com_zone_id: ${{ vars.RAOLIVEI_COM_ZONE_ID }}
+  TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
+  # Skip k3s (managed by Ansible)
+  TF_VAR_skip_k3s_resources: "true"
+  # Vault: use local dev server started in CI (see "Start Vault" step)
+  # This prevents the Vault provider plugin from crashing and keeps
+  # vault_enabled=true so existing vault resources aren't planned for destruction
+  TF_VAR_skip_vault_resources: "false"
+  TF_VAR_vault_token: "ci-root"
+  TF_VAR_vault_address: "http://127.0.0.1:8200"
+  TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
+  TF_VAR_pi_user: ${{ secrets.PI_USER }}
+
 jobs:
   terraform:
     name: "Terraform"
     runs-on: ubuntu-latest
     environment: dev
+
+    services:
+      vault:
+        image: hashicorp/vault:1.15
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: ci-root
+          VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+        ports:
+          - 8200:8200
+        options: >-
+          --cap-add=IPC_LOCK
 
     defaults:
       run:
@@ -37,336 +68,84 @@ jobs:
         working-directory: terraform
 
     steps:
-      # Checkout the repository to the GitHub Actions runner
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install the latest version of Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
-          # Configure Terraform Cloud backend for remote state
-          # This allows Terraform to check state across CI runs
           cli_config_credentials_hostname: app.terraform.io
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      # Initialize Terraform working directory with remote backend
-      # Backend configuration is in providers.tf (organization and workspace are hardcoded)
-      # If workspace doesn't exist, terraform init will create it (empty)
-      # If workspace exists but is empty, we need to migrate state manually
-      - name: Terraform Init
+      # Pre-configure Vault dev server with backends that exist in TF state
+      # so the provider doesn't crash during PlanResourceChange calls
+      - name: Configure Vault Dev Server
         run: |
-          echo "🔧 Initializing Terraform with remote backend..."
-          echo "Backend config: organization=eldertree, workspace=pi-fleet-terraform"
-          echo ""
-          # Set empty defaults for Cloudflare vars if not provided (for provider initialization)
-          export TF_VAR_cloudflare_api_token="${TF_VAR_cloudflare_api_token:-}"
-          export TF_VAR_cloudflare_zone_id="${TF_VAR_cloudflare_zone_id:-}"
-          export TF_VAR_cloudflare_account_id="${TF_VAR_cloudflare_account_id:-}"
-          terraform init -input=false 2>&1 | tee init-output.txt
-          echo ""
-          echo "═══════════════════════════════════════════════════════════"
-          echo "Init output summary:"
-          echo "═══════════════════════════════════════════════════════════"
-          grep -E "(Successfully|Error|workspace|backend)" init-output.txt || cat init-output.txt | tail -20
-          echo ""
-          echo "Backend initialization complete"
-        env:
-          TF_INPUT: false
-          # Provide empty defaults for optional Cloudflare secrets
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
-          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
-          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
+          # Wait for Vault to be ready
+          for i in 1 2 3 4 5; do
+            curl -sf http://127.0.0.1:8200/v1/sys/health && break
+            echo "Waiting for Vault... ($i)"
+            sleep 2
+          done
+          # Enable kubernetes auth backend (kv-v2 at secret/ is default in dev)
+          curl -sf --header "X-Vault-Token: ci-root" \
+            --request POST \
+            --data '{"type":"kubernetes"}' \
+            http://127.0.0.1:8200/v1/sys/auth/kubernetes || true
+        working-directory: .
 
-      # Verify state is being read from Terraform Cloud
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      # Redirect to file (not pipe) to avoid EPIPE crash in setup-terraform wrapper
       - name: Verify Remote State
         run: |
-          echo "📋 Verifying Terraform Cloud backend connection..."
-          echo ""
-          echo "Backend configuration (from providers.tf):"
-          echo "  Organization: eldertree"
-          echo "  Workspace: pi-fleet-terraform"
-          echo ""
-          echo "Checking if we can access the remote state..."
-          if terraform state list > /dev/null 2>&1; then
-            STATE_COUNT=$(terraform state list | wc -l | tr -d ' ')
-            echo "✅ Successfully connected to remote state"
-            echo "✅ State contains $STATE_COUNT resources"
-            echo ""
-            echo "Resources in state:"
-            terraform state list | head -20
-            if [ "$STATE_COUNT" -gt 20 ]; then
-              echo "... and $((STATE_COUNT - 20)) more"
-            fi
-            echo ""
+          if terraform state list > state-list.txt 2>&1; then
+            STATE_COUNT=$(wc -l < state-list.txt | tr -d ' ')
+            echo "✅ Remote state: $STATE_COUNT resources"
+            head -20 state-list.txt
+            [ "$STATE_COUNT" -gt 20 ] && echo "... and $((STATE_COUNT - 20)) more"
             if [ "$STATE_COUNT" -eq "0" ]; then
-              echo "⚠️  WARNING: State is empty!"
-              echo ""
-              echo "This workspace exists but has no resources in state."
-              echo "If resources already exist in Cloudflare, Terraform will try to recreate them."
-              echo ""
-              echo "To fix this:"
-              echo "1. Run locally: cd terraform && terraform init -migrate-state"
-              echo "2. When prompted, type 'yes' to copy existing state to Terraform Cloud"
-              echo "3. Verify: terraform state list (should show resources)"
-              echo "4. Re-run this workflow"
-              echo ""
-              echo "⚠️  FAILING WORKFLOW to prevent accidental resource recreation"
+              echo "❌ State is empty"
               exit 1
             fi
           else
-            echo "❌ ERROR: Could not access remote state!"
-            echo ""
-            echo "Attempting to get more details..."
-            terraform state list 2>&1 || true
-            echo ""
-            echo "Possible causes:"
-            echo "  1. Workspace 'pi-fleet-terraform' doesn't exist in organization 'eldertree'"
-            echo "  2. TF_API_TOKEN doesn't have access to this workspace"
-            echo "  3. Network/authentication issue"
-            echo ""
-            echo "To fix:"
-            echo "  1. Verify TF_API_TOKEN secret is set correctly in GitHub Secrets"
-            echo "  2. Check Terraform Cloud: https://app.terraform.io/app/eldertree/workspaces/pi-fleet-terraform"
-            echo "  3. If workspace doesn't exist, run locally: terraform init -migrate-state"
-            echo "  4. Verify state exists: terraform state list (should show 14 resources)"
+            echo "❌ Could not access remote state"
+            cat state-list.txt 2>/dev/null || true
             exit 1
           fi
+          rm -f state-list.txt
 
-      # Checks that all Terraform configuration files adhere to a canonical format
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
 
-      # Validate Terraform configuration
-      # Use environment variable to set skip_k3s_resources=true (terraform validate doesn't support -var)
-      # This prevents Terraform from evaluating k3s resources during validation in CI
       - name: Terraform Validate
         run: terraform validate
-        env:
-          TF_VAR_skip_k3s_resources: "true"
 
-      # Validate secrets (Cloudflare resources are optional)
-      # If Cloudflare secrets are not set, Terraform will skip Cloudflare resources
-      - name: Validate Secrets
-        run: |
-          echo "🔍 Checking Cloudflare configuration..."
-          echo ""
-          
-          CLOUDFLARE_TOKEN_SET=false
-          CLOUDFLARE_ZONE_SET=false
-          CLOUDFLARE_ACCOUNT_SET=false
-          
-          # Check Cloudflare API Token
-          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] || [ "${{ secrets.CLOUDFLARE_API_TOKEN }}" == "" ]; then
-            echo "⚠️  CLOUDFLARE_API_TOKEN is not set in GitHub Secrets"
-            echo ""
-            echo "   📍 Where to find/set the token:"
-            echo "   ───────────────────────────────────────────────────────────"
-            echo "   1. Check Vault (if cluster is accessible):"
-            echo "      kubectl exec -n vault vault-0 -- vault kv get secret/terraform/cloudflare-api-token"
-            echo ""
-            echo "   2. Sync from Vault to GitHub Secrets (if you have kubeconfig):"
-            echo "      ./scripts/setup/setup-github-secrets.sh"
-            echo ""
-            echo "   3. Set manually in GitHub:"
-            echo "      - Go to: https://github.com/raolivei/pi-fleet/settings/secrets/actions"
-            echo "      - Click 'New repository secret'"
-            echo "      - Name: CLOUDFLARE_API_TOKEN"
-            echo "      - Value: Your Cloudflare API token"
-            echo ""
-            echo "   4. Get token from Cloudflare Dashboard:"
-            echo "      - Go to: https://dash.cloudflare.com/profile/api-tokens"
-            echo "      - Create token with: Zone DNS Edit, Account Cloudflare Tunnel Edit"
-            echo ""
-            echo "   Cloudflare resources will be SKIPPED (this is OK if you don't need them)"
-            echo ""
-          else
-            echo "✅ CLOUDFLARE_API_TOKEN is set in GitHub Secrets"
-            CLOUDFLARE_TOKEN_SET=true
-          fi
-          
-          # Check Cloudflare Zone ID
-          if [ -z "${{ secrets.CLOUDFLARE_ZONE_ID }}" ] || [ "${{ secrets.CLOUDFLARE_ZONE_ID }}" == "" ]; then
-            echo "⚠️  CLOUDFLARE_ZONE_ID is not set - Cloudflare DNS resources will be skipped"
-            echo "   To set: https://github.com/raolivei/pi-fleet/settings/secrets/actions"
-            echo "   Find Zone ID in Cloudflare Dashboard → Domain → Overview → Zone ID"
-          else
-            echo "✅ CLOUDFLARE_ZONE_ID is set"
-            CLOUDFLARE_ZONE_SET=true
-          fi
-          
-          # Check Cloudflare Account ID
-          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ] || [ "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" == "" ]; then
-            echo "⚠️  CLOUDFLARE_ACCOUNT_ID is not set - Cloudflare Tunnel resources will be skipped"
-            echo "   To set: https://github.com/raolivei/pi-fleet/settings/secrets/actions"
-            echo "   Find Account ID in Cloudflare Dashboard → Right sidebar → Account ID"
-          else
-            echo "✅ CLOUDFLARE_ACCOUNT_ID is set"
-            CLOUDFLARE_ACCOUNT_SET=true
-          fi
-          
-          echo ""
-          if [ "$CLOUDFLARE_TOKEN_SET" = "true" ] && [ "$CLOUDFLARE_ZONE_SET" = "true" ] && [ "$CLOUDFLARE_ACCOUNT_SET" = "true" ]; then
-            echo "✅ All Cloudflare secrets are configured - Cloudflare resources will be created"
-          else
-            echo "ℹ️  Cloudflare resources are OPTIONAL - workflow will continue without them"
-            echo "   To enable Cloudflare later, set the missing secrets and re-run this workflow"
-          fi
-
-      # Generates an execution plan for Terraform
-      # Use -detailed-exitcode: exit code 0 = no changes, 1 = error, 2 = changes detected
-      # Exit code 2 is OK - it means plan succeeded and shows changes (including destruction)
-      # We only fail on exit code 1 (actual error)
-      # Note: When skip_k3s_resources=true, Terraform may plan to destroy existing k3s resources
-      # This is expected and OK - we treat exit code 2 as success
-      # Note: Terraform Cloud remote backend doesn't support -var flags, use TF_VAR_ env vars instead
-      # Note: Terraform Cloud remote backend doesn't support saving plans locally (-out), so we don't use it
-      # IMPORTANT: Workspace must be configured for "Local" execution mode in Terraform Cloud
-      # Remote execution mode doesn't have access to TF_VAR_ environment variables
+      # -refresh=false: use cached state, don't refresh from providers
+      # Vault dev server satisfies provider init; -refresh=false avoids state drift
       - name: Terraform Plan
         id: plan
         run: |
           set +e
-          terraform plan -input=false -detailed-exitcode 2>&1 | tee plan-output.txt
-          PLAN_EXIT_CODE=${PIPESTATUS[0]}
+          terraform plan -input=false -refresh=false -detailed-exitcode > plan-output.txt 2>&1
+          PLAN_EXIT_CODE=$?
           set -e
+          cat plan-output.txt
           echo ""
-          echo "═══════════════════════════════════════════════════════════"
-          echo "Terraform plan exit code: $PLAN_EXIT_CODE"
-          echo "═══════════════════════════════════════════════════════════"
           if [ $PLAN_EXIT_CODE -eq 0 ]; then
-            echo "✅ Plan succeeded with no changes"
-            exit 0
+            echo "✅ No changes needed"
           elif [ $PLAN_EXIT_CODE -eq 2 ]; then
-            echo "✅ Plan succeeded with changes detected"
-            echo ""
-            echo "📋 Plan summary:"
-            echo "───────────────────────────────────────────────────────────"
-            # Extract and show the plan summary
-            grep -A 20 "Plan:" plan-output.txt || cat plan-output.txt | tail -30
-            echo ""
-            echo "🔍 Resources that will be CREATED (should be 0 if state is correct):"
-            grep -E "^  \+ (resource|data)" plan-output.txt | head -20 || echo "  (none or couldn't parse)"
-            echo ""
-            echo "🔍 Resources that will be DESTROYED:"
-            grep -E "^  \- (resource|data)" plan-output.txt | head -20 || echo "  (none or couldn't parse)"
-            echo ""
-            echo "🔍 Resources that will be REPLACED:"
-            grep -E "^  \~\/- (resource|data)" plan-output.txt | head -20 || echo "  (none or couldn't parse)"
-            echo ""
-            echo "Note: Plan may show k3s resources being destroyed - this is expected when skip_k3s_resources=true"
-            echo "Note: Plan may show Vault resources being destroyed - this is expected when skip_vault_resources=true"
-            echo "⚠️  If you see Cloudflare resources being CREATED, the state migration may have failed!"
-            exit 0
+            echo "✅ Changes detected"
+            grep -A 5 "Plan:" plan-output.txt || true
           else
-            echo "❌ Plan failed with error (exit code $PLAN_EXIT_CODE)"
-            echo ""
-            echo "Plan output:"
-            cat plan-output.txt || true
-            echo ""
-            
-            # Check for specific error types and provide helpful guidance
-            if grep -qi "authentication\|unauthorized\|invalid.*token\|api.*token" plan-output.txt 2>/dev/null; then
-              echo ""
-              echo "🔐 Cloudflare Authentication Error Detected"
-              echo "───────────────────────────────────────────────────────────"
-              echo "The Cloudflare provider failed to authenticate."
-              echo ""
-              echo "Possible causes:"
-              echo "  1. CLOUDFLARE_API_TOKEN is invalid or expired"
-              echo "  2. Token doesn't have required permissions"
-              echo ""
-              echo "To fix:"
-              echo "  1. Check token in GitHub Secrets:"
-              echo "     https://github.com/raolivei/pi-fleet/settings/secrets/actions"
-              echo ""
-              echo "  2. Get token from Vault (if cluster is accessible):"
-              echo "     kubectl exec -n vault vault-0 -- vault kv get secret/terraform/cloudflare-api-token"
-              echo ""
-              echo "  3. Create new token in Cloudflare:"
-              echo "     https://dash.cloudflare.com/profile/api-tokens"
-              echo "     Required permissions: Zone DNS Edit, Account Cloudflare Tunnel Edit"
-              echo ""
-              echo "  4. Update GitHub Secret:"
-              echo "     https://github.com/raolivei/pi-fleet/settings/secrets/actions"
-              echo "     Update CLOUDFLARE_API_TOKEN with new token"
-              echo ""
-              echo "  5. Or skip Cloudflare resources (remove CLOUDFLARE_API_TOKEN secret)"
-              echo ""
-            elif grep -q "No value for required variable" plan-output.txt 2>/dev/null; then
-              echo ""
-              echo "⚠️  Missing Required Variable"
-              echo "───────────────────────────────────────────────────────────"
-              echo "This error usually means Terraform Cloud workspace is using 'Remote' execution mode."
-              echo "With Remote execution, TF_VAR_ environment variables are not available."
-              echo ""
-              echo "To fix:"
-              echo "  1. Go to: https://app.terraform.io/app/eldertree/workspaces/pi-fleet-terraform"
-              echo "  2. Click Settings → General"
-              echo "  3. Set Execution Mode to 'Local'"
-              echo "  4. Save settings"
-              echo "  5. Re-run this workflow"
-              echo ""
-            elif grep -qi "provider.*cloudflare.*not.*configured\|provider.*initialization" plan-output.txt 2>/dev/null; then
-              echo ""
-              echo "⚠️  Cloudflare Provider Configuration Issue"
-              echo "───────────────────────────────────────────────────────────"
-              echo "The Cloudflare provider failed to initialize."
-              echo ""
-              echo "This usually happens when:"
-              echo "  - CLOUDFLARE_API_TOKEN is empty but Cloudflare resources exist in state"
-              echo "  - Provider authentication failed"
-              echo ""
-              echo "To fix:"
-              echo "  1. Set CLOUDFLARE_API_TOKEN in GitHub Secrets (see above)"
-              echo "  2. Or remove Cloudflare resources from state if not needed:"
-              echo "     terraform state rm 'cloudflare_*'"
-              echo ""
-            else
-              echo ""
-              echo "💡 Troubleshooting Tips:"
-              echo "───────────────────────────────────────────────────────────"
-              echo "1. Check Terraform Cloud workspace execution mode (should be 'Local')"
-              echo "2. Verify all required secrets are set in GitHub Actions"
-              echo "3. Check Terraform state for inconsistencies"
-              echo "4. Review full error output above for specific error messages"
-              echo ""
-            fi
+            echo "❌ Plan failed (exit code $PLAN_EXIT_CODE)"
             exit 1
           fi
-        env:
-          # Use empty string if secrets are not set (Cloudflare resources will be skipped)
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
-          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
-          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
-          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP || '' }}
-          TF_VAR_skip_k3s_resources: "true"
-          TF_VAR_skip_vault_resources: "true"
-          TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
-          TF_VAR_pi_user: ${{ secrets.PI_USER || '' }}
 
-      # Show plan output (if plan failed)
-      - name: Show Plan Output
-        if: steps.plan.outcome == 'failure'
-        run: cat plan-output.txt || true
-
-      # Apply Terraform changes (only via manual workflow_dispatch)
-      # Note: Terraform Cloud remote backend requires TF_VAR_ environment variables
-      # Note: Terraform Cloud remote backend doesn't support saved plans, so we run plan again during apply
       - name: Terraform Apply
         if: |
           steps.plan.outcome == 'success' && 
           (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
-        run: terraform apply -auto-approve -input=false
-        env:
-          TF_INPUT: false
-          # Use empty string if secrets are not set (Cloudflare resources will be skipped)
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
-          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
-          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
-          TF_VAR_public_ip: ${{ secrets.PUBLIC_IP || '' }}
-          TF_VAR_skip_k3s_resources: "true"
-          TF_VAR_skip_vault_resources: "true"
-          TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
-          TF_VAR_pi_user: ${{ secrets.PI_USER || '' }}
+        run: terraform apply -auto-approve -input=false -refresh=false
