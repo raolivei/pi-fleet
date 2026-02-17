@@ -49,6 +49,12 @@ spec:
           - name: nginx-run
             emptyDir: {}
 
+    middleware:
+      redirect-https:
+        type: redirectScheme
+        scheme: https
+        permanent: true
+
     ingress:
       personal-website-public:
         host: raolivei.me
@@ -56,6 +62,8 @@ spec:
           - www.raolivei.me
         service: personal-website
         port: 80
+        middlewares:
+          - personal-website-redirect-https@kubernetescrd
         tls:
           secretName: raolivei-cloudflare-origin-tls
         annotations:
