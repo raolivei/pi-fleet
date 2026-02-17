@@ -59,8 +59,9 @@ provider "vault" {
   token           = var.vault_token
   skip_tls_verify = var.vault_skip_tls_verify
 
-  # Skip provider configuration if Vault is not available
-  # This allows Terraform to run in CI without Vault access
-  skip_child_token = true
+  # These flags prevent the provider from making API calls during init,
+  # allowing Terraform to run in CI without Vault access (with -refresh=false)
+  skip_child_token      = true
+  skip_get_vault_version = true
 }
 

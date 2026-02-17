@@ -23,7 +23,8 @@
 # Local values for Vault configuration
 locals {
   # Skip Vault resources when token is not provided or skip flag is set
-  vault_enabled = var.vault_token != "" && !var.skip_vault_resources
+  # nonsensitive() is safe here: the boolean "is vault configured?" is not secret
+  vault_enabled = nonsensitive(var.vault_token != "" && !var.skip_vault_resources)
 
   # Project policies map for easy lookup
   project_policies = {
