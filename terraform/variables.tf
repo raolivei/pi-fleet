@@ -15,13 +15,6 @@ variable "cloudflare_api_token" {
   default     = ""
 }
 
-variable "cloudflare_origin_ca_key" {
-  description = "Cloudflare Origin CA Key (api_user_service_key) for creating Origin CA certificates. Account-level key found at: Cloudflare Dashboard → Profile → API Tokens → Origin CA Key. Required for cloudflare_origin_ca_certificate resources across all zones."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
 variable "cloudflare_zone_id" {
   description = "Cloudflare Zone ID for eldertree.xyz. Obtained after adding domain to Cloudflare account."
   type        = string
@@ -37,6 +30,13 @@ variable "public_ip" {
 variable "cloudflare_account_id" {
   description = "Cloudflare Account ID (required for tunnels). Found in Cloudflare Dashboard → Right sidebar → Account ID"
   type        = string
+  default     = ""
+}
+
+variable "cloudflare_origin_ca_key" {
+  description = "Cloudflare Origin CA Key for creating Origin CA certificates. Stored in Vault at secret/pi-fleet/terraform/cloudflare-origin-ca-key"
+  type        = string
+  sensitive   = true
   default     = ""
 }
 
