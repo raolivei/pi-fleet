@@ -37,7 +37,10 @@ env:
   TF_VAR_raolivei_com_zone_id: ${{ vars.RAOLIVEI_COM_ZONE_ID }}
   TF_VAR_public_ip: ${{ secrets.PUBLIC_IP }}
   TF_VAR_skip_k3s_resources: "true"
-  TF_VAR_skip_vault_resources: "true"
+  # Keep vault_enabled=true so existing vault resources in state aren't planned
+  # for destruction. With -refresh=false, Vault won't be contacted.
+  TF_VAR_skip_vault_resources: "false"
+  TF_VAR_vault_token: "ci-placeholder"
   TF_VAR_kubeconfig_path: "~/.kube/config-eldertree"
   TF_VAR_pi_user: ${{ secrets.PI_USER }}
 
