@@ -61,7 +61,7 @@ provider "vault" {
 
   # These flags prevent the provider from making API calls during init,
   # allowing Terraform to run in CI without Vault access (with -refresh=false)
-  skip_child_token      = true
+  skip_child_token       = true
   skip_get_vault_version = true
 }
 
