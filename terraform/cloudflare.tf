@@ -75,26 +75,13 @@ data "cloudflare_zone" "raolivei_me" {
   zone_id = var.raolivei_me_zone_id
 }
 
-# raolivei.me zone settings: Full (Strict) SSL, HTTPS redirect, HSTS
-resource "cloudflare_zone_settings_override" "raolivei_me" {
-  count   = local.cloudflare_enabled && var.raolivei_me_zone_id != "" ? 1 : 0
-  zone_id = data.cloudflare_zone.raolivei_me[0].id
-
-  settings {
-    ssl                      = "strict"
-    always_use_https         = "on"
-    automatic_https_rewrites = "on"
-    min_tls_version          = "1.2"
-    tls_1_3                  = "on"
-    security_header {
-      enabled            = true
-      max_age            = 31536000
-      include_subdomains = true
-      preload            = true
-      nosniff            = true
-    }
-  }
-}
+# NOTE: Zone-level SSL/TLS settings managed via Cloudflare Dashboard:
+#   - SSL/TLS mode: Full (Strict)
+#   - Always Use HTTPS: On
+#   - Minimum TLS Version: 1.2
+#   - TLS 1.3: On
+#   - HSTS: Enabled (max-age 1 year, includeSubDomains, preload)
+# (API token lacks Zone Settings:Edit permission)
 
 # Root domain A record
 resource "cloudflare_record" "eldertree_xyz_root" {
