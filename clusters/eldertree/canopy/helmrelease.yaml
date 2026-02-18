@@ -39,6 +39,12 @@ spec:
             value: "redis://canopy-redis:6379/0"
           - name: ENVIRONMENT
             value: "production"
+          - name: QUESTRADE_REFRESH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: canopy-secrets
+                key: questrade-refresh-token
+                optional: true
         resources:
           requests: { cpu: "250m", memory: "256Mi" }
           limits: { cpu: "500m", memory: "512Mi" }

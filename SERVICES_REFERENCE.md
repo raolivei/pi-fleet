@@ -317,6 +317,7 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 
 - `secret/canopy/postgres` - Canopy PostgreSQL password
 - `secret/canopy/app` - Canopy application secret key
+- `secret/canopy/questrade` - Canopy Questrade API refresh token (background sync)
 - `secret/swimto/database` - SwimTO database URL
 - `secret/swimto/postgres` - SwimTO PostgreSQL password
 - `secret/swimto/redis` - SwimTO Redis URL

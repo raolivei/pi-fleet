@@ -31,6 +31,7 @@ This document lists all secrets required for the eldertree cluster to function p
 | `secret/canopy/postgres` | `password` | PostgreSQL password |
 | `secret/canopy/app` | `secret-key` | App secret key |
 | `secret/canopy/database` | `url` | PostgreSQL connection URL |
+| `secret/canopy/questrade` | `refresh-token` | Questrade API refresh token (for background sync) |
 | `secret/journey/postgres` | `user`, `password` | PostgreSQL credentials |
 | `secret/journey/database` | `url` | PostgreSQL connection URL |
 
