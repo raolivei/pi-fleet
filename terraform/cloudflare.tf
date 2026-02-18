@@ -406,11 +406,37 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
       service  = "http://10.43.23.214:80"
     }
 
+    # Canopy personal finance routes
+    ingress_rule {
+      hostname = "canopy.eldertree.xyz"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    ingress_rule {
+      hostname = "canopy.eldertree.xyz"
+      path     = "/v1/*"
+      service  = "http://10.43.23.214:80"
+    }
+
     # Catch-all rule (must be last)
     ingress_rule {
       service = "http_status:404"
     }
   }
+}
+
+# DNS CNAME record for canopy.eldertree.xyz pointing to tunnel
+resource "cloudflare_record" "canopy_eldertree_xyz_tunnel" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "canopy"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1
+  proxied         = true
+  allow_overwrite = true
+  comment         = "canopy.eldertree.xyz - managed by Terraform via Cloudflare Tunnel"
 }
 
 # DNS CNAME record for swimto.eldertree.xyz pointing to tunnel
