@@ -135,3 +135,4 @@ spec:
             port: 8000
         annotations:
           external-dns.alpha.kubernetes.io/hostname: canopy.eldertree.xyz
+          external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
