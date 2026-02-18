@@ -17,7 +17,8 @@ spec:
     kind: ClusterSecretStore
   target:
     name: canopy-cloudflare-origin-tls
-    creationPolicy: Owner
+    # Merge updates existing secret (e.g. if created manually); avoids "secret already exists" error
+    creationPolicy: Merge
     template:
       type: kubernetes.io/tls
       data:

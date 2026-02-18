@@ -16,4 +16,8 @@ spec:
       remoteRef:
         key: secret/pi-fleet/flux/git
         property: sshKey
+    - secretKey: known_hosts
+      remoteRef:
+        key: secret/pi-fleet/flux/git
+        property: known_hosts
 

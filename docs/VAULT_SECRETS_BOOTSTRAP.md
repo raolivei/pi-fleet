@@ -53,10 +53,13 @@ This document lists all secrets required for the eldertree cluster to function p
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')
 kubectl exec -it -n vault $VAULT_POD -- vault login
 
-# 3. Run interactive setup
+# 3. Canopy – save all required + optional secrets in one go
+./scripts/operations/save-canopy-secrets-to-vault.sh
+
+# 4. Or run generic interactive setup
 ./scripts/operations/setup-vault-secrets.sh
 
-# 4. Or set secrets directly:
+# 5. Or set secrets directly:
 VAULT_TOKEN=$(kubectl get secret -n vault vault-unseal-keys -o jsonpath='{.data.ROOT_TOKEN}' | base64 -d)
 
 # TSIG key (generate new)
@@ -91,3 +94,27 @@ kubectl get externalsecrets -A
 # Restore from backup
 ./scripts/operations/restore-vault-secrets.sh
 ```
+
+## Troubleshooting
+
+### ImageUpdateAutomation: "failed to push to remote: authentication required: No anonymous write access"
+
+Flux ImageUpdateAutomation (e.g. `canopy-updates`) commits new image tags and pushes to the pi-fleet repo. Push uses the same Git credentials as the `flux-system` GitRepository, which come from Vault at `secret/pi-fleet/flux/git` (key: `sshKey`).
+
+**Fix:** The SSH key must have **write** access to the GitHub repo. If the deploy key is read-only:
+
+1. In GitHub: **Settings → Deploy keys** for `raolivei/pi-fleet`, either edit the existing key and enable "Allow write access", or add a new deploy key with write access.
+2. Put the private key into Vault:
+   ```bash
+   kubectl exec -n vault vault-0 -- vault kv put secret/pi-fleet/flux/git sshKey="$(cat /path/to/private_key)"
+   ```
+3. Force External Secrets to refresh: `kubectl annotate externalsecret flux-system -n flux-system force-sync=$(date +%s) --overwrite`
+
+Until the key has write access, image tag updates will not be committed automatically; update tags in `clusters/eldertree/canopy/helmrelease.yaml` manually and push.
+
+### ExternalSecret: "secrets 'canopy-cloudflare-origin-tls' already exists"
+
+If the TLS secret was created manually or by another process, the ExternalSecret with `creationPolicy: Owner` cannot create it. The canopy Cloudflare cert ExternalSecret uses `creationPolicy: Merge` so it updates the existing secret instead. If you still see this error:
+
+1. Delete the existing secret once: `kubectl delete secret canopy-cloudflare-origin-tls -n canopy`
+2. On the next sync (within 24h or after force-sync), the ExternalSecret will create it.
