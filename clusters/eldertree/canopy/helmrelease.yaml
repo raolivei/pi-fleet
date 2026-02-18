@@ -101,6 +101,6 @@ spec:
           secretName: canopy-tls
           certManager: true
         paths:
-          - path: /api
+          - path: /v1
             service: canopy-api
             port: 8000
