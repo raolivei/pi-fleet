@@ -45,6 +45,12 @@ spec:
                 name: canopy-secrets
                 key: questrade-refresh-token
                 optional: true
+          - name: WISE_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: canopy-secrets
+                key: wise-api-token
+                optional: true
         resources:
           requests: { cpu: "250m", memory: "256Mi" }
           limits: { cpu: "500m", memory: "512Mi" }

@@ -134,6 +134,7 @@ The following paths are being migrated to `secret/pi-fleet/`:
 - `secret/canopy/app` - Canopy application secret key
 - `secret/canopy/database` - Canopy database URL
 - `secret/canopy/questrade` - Questrade API refresh token (`refresh-token`); used for Celery background sync and optional env in API
+- `secret/canopy/wise` - Wise API token (`api-token`); used for Wise sync (balances/transactions) and optional env in API
 
 ### SwimTO Application
 - `secret/swimto/database` - SwimTO database URL
@@ -248,6 +249,7 @@ kubectl exec -n vault $VAULT_POD -- vault kv put secret/canopy/postgres password
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/canopy/app secret-key=your-secret-key
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/canopy/database url=postgresql+psycopg://canopy:password@canopy-postgres:5432/canopy
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/canopy/questrade refresh-token=YOUR_QUESTRADE_REFRESH_TOKEN
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/canopy/wise api-token=YOUR_WISE_API_TOKEN
 
 # Grafana secrets
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/monitoring/grafana adminUser=admin adminPassword=yourpassword

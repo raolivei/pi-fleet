@@ -55,13 +55,14 @@ get_secret_info() {
         11) echo "secret/canopy/app:secret-key" ;;
         12) echo "secret/canopy/database:url" ;;
         13) echo "secret/canopy/questrade:refresh-token" ;;
-        14) echo "secret/journey/postgres:user,password" ;;
-        15) echo "secret/journey/database:url" ;;
-        16) echo "secret/monitoring/grafana:adminUser,adminPassword" ;;
-        17) echo "secret/pi-fleet/pihole/webpassword:password" ;;
-        18) echo "secret/us-law-severity-map/mapbox:api-key" ;;
-        19) echo "secret/pi-fleet/flux/git:sshKey" ;;
-        20) echo "secret/pi-fleet/external-dns/tsig-secret:secret" ;;
+        14) echo "secret/canopy/wise:api-token" ;;
+        15) echo "secret/journey/postgres:user,password" ;;
+        16) echo "secret/journey/database:url" ;;
+        17) echo "secret/monitoring/grafana:adminUser,adminPassword" ;;
+        18) echo "secret/pi-fleet/pihole/webpassword:password" ;;
+        19) echo "secret/us-law-severity-map/mapbox:api-key" ;;
+        20) echo "secret/pi-fleet/flux/git:sshKey" ;;
+        21) echo "secret/pi-fleet/external-dns/tsig-secret:secret" ;;
         *)  echo "" ;;
     esac
 }
@@ -81,13 +82,14 @@ echo " 10) secret/canopy/postgres (password)"
 echo " 11) secret/canopy/app (secret-key)"
 echo " 12) secret/canopy/database (url)"
 echo " 13) secret/canopy/questrade (refresh-token)"
-echo " 14) secret/journey/postgres (user,password)"
-echo " 15) secret/journey/database (url)"
-echo " 16) secret/monitoring/grafana (adminUser,adminPassword)"
-echo " 17) secret/pi-fleet/pihole/webpassword (password)"
-echo " 18) secret/us-law-severity-map/mapbox (api-key)"
-echo " 19) secret/pi-fleet/flux/git (sshKey)"
-echo " 20) secret/pi-fleet/external-dns/tsig-secret (secret)"
+echo " 14) secret/canopy/wise (api-token)"
+echo " 15) secret/journey/postgres (user,password)"
+echo " 16) secret/journey/database (url)"
+echo " 17) secret/monitoring/grafana (adminUser,adminPassword)"
+echo " 18) secret/pi-fleet/pihole/webpassword (password)"
+echo " 19) secret/us-law-severity-map/mapbox (api-key)"
+echo " 20) secret/pi-fleet/flux/git (sshKey)"
+echo " 21) secret/pi-fleet/external-dns/tsig-secret (secret)"
 echo "  0) Custom path"
 echo ""
 

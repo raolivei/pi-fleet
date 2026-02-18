@@ -38,6 +38,7 @@ SECRET_PATHS=(
     "secret/canopy/app"
     "secret/canopy/database"
     "secret/canopy/questrade"
+    "secret/canopy/wise"
     "secret/swimto/database"
     "secret/swimto/postgres"
     "secret/swimto/redis"

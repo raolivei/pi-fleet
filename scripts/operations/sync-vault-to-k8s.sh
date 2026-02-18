@@ -83,11 +83,16 @@ CANOPY_DATABASE_URL=$(kubectl exec -n "$VAULT_NAMESPACE" "$VAULT_POD" -- \
     vault kv get -field=url secret/canopy/database 2>/dev/null || echo "")
 CANOPY_QUESTRADE_TOKEN=$(kubectl exec -n "$VAULT_NAMESPACE" "$VAULT_POD" -- \
     vault kv get -field=refresh-token secret/canopy/questrade 2>/dev/null || echo "")
+CANOPY_WISE_TOKEN=$(kubectl exec -n "$VAULT_NAMESPACE" "$VAULT_POD" -- \
+    vault kv get -field=api-token secret/canopy/wise 2>/dev/null || echo "")
 
 if [ -n "$CANOPY_POSTGRES" ] && [ -n "$CANOPY_SECRET_KEY" ] && [ -n "$CANOPY_DATABASE_URL" ]; then
     CANOPY_SECRET_ARGS="--from-literal=postgres-password=$CANOPY_POSTGRES --from-literal=secret-key=$CANOPY_SECRET_KEY --from-literal=database-url=$CANOPY_DATABASE_URL"
     if [ -n "$CANOPY_QUESTRADE_TOKEN" ]; then
         CANOPY_SECRET_ARGS="$CANOPY_SECRET_ARGS --from-literal=questrade-refresh-token=$CANOPY_QUESTRADE_TOKEN"
+    fi
+    if [ -n "$CANOPY_WISE_TOKEN" ]; then
+        CANOPY_SECRET_ARGS="$CANOPY_SECRET_ARGS --from-literal=wise-api-token=$CANOPY_WISE_TOKEN"
     fi
     kubectl create secret generic canopy-secrets $CANOPY_SECRET_ARGS \
         -n canopy \
