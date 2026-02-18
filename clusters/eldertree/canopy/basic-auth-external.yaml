@@ -1,0 +1,24 @@
+---
+# ExternalSecret for Traefik BasicAuth middleware
+# Syncs htpasswd credentials from Vault to the canopy-basic-auth Kubernetes secret
+#
+# Vault path: secret/canopy/basic-auth
+# Required key: users (htpasswd format, e.g. "user:$apr1$...")
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: canopy-basic-auth
+  namespace: canopy
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: canopy-basic-auth
+    creationPolicy: Owner
+  data:
+    - secretKey: users
+      remoteRef:
+        key: secret/canopy/basic-auth
+        property: users

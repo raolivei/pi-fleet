@@ -1,0 +1,34 @@
+---
+# ExternalSecret for *.eldertree.xyz Cloudflare Origin Certificate
+# Reuses the wildcard cert stored in Vault (shared across all *.eldertree.xyz subdomains)
+# Used by canopy.eldertree.xyz for public HTTPS access
+#
+# Vault path: secret/swimto/cloudflare-origin-cert-eldertree
+# (Wildcard cert covers *.eldertree.xyz and eldertree.xyz)
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: canopy-cloudflare-origin-cert
+  namespace: canopy
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: canopy-cloudflare-origin-tls
+    creationPolicy: Owner
+    template:
+      type: kubernetes.io/tls
+      data:
+        tls.crt: "{{ .certificate }}"
+        tls.key: "{{ .privatekey }}"
+  data:
+    - secretKey: certificate
+      remoteRef:
+        key: secret/swimto/cloudflare-origin-cert-eldertree
+        property: certificate
+    - secretKey: privatekey
+      remoteRef:
+        key: secret/swimto/cloudflare-origin-cert-eldertree
+        property: private-key

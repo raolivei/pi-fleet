@@ -102,6 +102,7 @@ spec:
 
     # -- Ingress
     ingress:
+      # --- Local (canopy.eldertree.local) ---
       canopy:
         host: canopy.eldertree.local
         service: canopy-frontend
@@ -116,3 +117,21 @@ spec:
           - path: /v1
             service: canopy-api
             port: 8000
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: canopy.eldertree.local
+
+      # --- Public (canopy.eldertree.xyz) ---
+      canopy-public:
+        host: canopy.eldertree.xyz
+        service: canopy-frontend
+        port: 3000
+        middlewares:
+          - canopy-canopy-basic-auth@kubernetescrd
+        tls:
+          secretName: canopy-cloudflare-origin-tls
+        paths:
+          - path: /v1
+            service: canopy-api
+            port: 8000
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: canopy.eldertree.xyz
