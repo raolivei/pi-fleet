@@ -22,8 +22,14 @@ All 3 cluster nodes are configured as Tailscale subnet routers, advertising the 
 | -------------- | ------------------------------------------- |
 | 192.168.2.0/24 | Home LAN                                    |
 | 10.0.0.0/24    | Gigabit network (Traefik LB, e.g. 10.0.0.3) |
-| 10.42.0.0/16   | Kubernetes pod network                      |
-| 10.43.0.0/16   | Kubernetes service network                  |
+
+> **Note:** Kubernetes CIDRs (10.42.0.0/16, 10.43.0.0/16) are intentionally NOT advertised. Tailscale adds policy routes (table 52) for every advertised subnet, which hijacks pod/service traffic away from Flannel/cni0 and breaks k3s networking. All services are accessed via Traefik ingress instead of direct pod IPs.
+
+### Node Tailscale settings
+
+- `--netfilter-mode=off` — UFW + kube-router already manage iptables; Tailscale's ts-input/ts-forward chains conflict with k3s FORWARD rules.
+- `--accept-routes=false` — Only Mac/mobile clients need accept-routes. On subnet router nodes sharing the same LAN, accepting routes creates table 52 entries that hijack local traffic through tailscale0.
+- `--accept-dns=false` — **Critical.** Tailscale's MagicDNS rewrites `/etc/resolv.conf` to use `100.100.100.100` and adds `tailb05d7e.ts.net` as a search domain. CoreDNS inherits this via `forward . /etc/resolv.conf`, routing ALL cluster DNS through Tailscale's proxy. This causes intermittent DNS failures, pod health probe timeouts, and cluster-wide restart cascades. A dedicated `/etc/rancher/k3s/resolv.conf` is also deployed as a safety net (configured via `resolv-conf` in k3s config).
 
 ## Client Setup
 
@@ -225,9 +231,10 @@ If you need to reconfigure or add new nodes:
 ```bash
 cd /path/to/pi-fleet/ansible
 
-# Get auth key from Vault
+# Get auth key from Vault (use root token)
 export KUBECONFIG=~/.kube/config-eldertree
-AUTH_KEY=$(kubectl exec -n vault vault-0 -- vault kv get -field=auth-key secret/pi-fleet/tailscale)
+ROOT_TOKEN=$(kubectl get secret vault-unseal-keys -n vault -o jsonpath='{.data.ROOT_TOKEN}' | base64 -d)
+AUTH_KEY=$(kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$ROOT_TOKEN vault kv get -field=auth-key secret/pi-fleet/tailscale")
 
 # Run playbook
 ansible-playbook -i inventory/hosts.yml playbooks/install-tailscale.yml \
@@ -261,9 +268,7 @@ The Tailscale ACL (Access Control List) is configured in the Tailscale admin con
   "autoApprovers": {
     "routes": {
       "192.168.2.0/24": ["tag:subnet-router"],
-      "10.0.0.0/24": ["tag:subnet-router"],
-      "10.42.0.0/16": ["tag:subnet-router"],
-      "10.43.0.0/16": ["tag:subnet-router"]
+      "10.0.0.0/24": ["tag:subnet-router"]
     }
   },
   "grants": [{ "src": ["*"], "dst": ["*"], "ip": ["*"] }],
@@ -300,7 +305,19 @@ ssh raolivei@NODE_IP "sudo systemctl status tailscaled"
 ssh raolivei@NODE_IP "sudo journalctl -u tailscaled -n 50"
 
 # Re-authenticate if needed
-ssh raolivei@NODE_IP "sudo tailscale up --auth-key=AUTHKEY --advertise-routes=192.168.2.0/24,10.0.0.0/24,10.42.0.0/16,10.43.0.0/16 --accept-routes"
+ssh raolivei@NODE_IP "sudo tailscale up --auth-key=AUTHKEY --advertise-routes=192.168.2.0/24,10.0.0.0/24 --accept-routes=false --netfilter-mode=off"
+```
+
+### Pod Networking Broken After Tailscale Start
+
+If k3s pod networking breaks after starting tailscaled:
+
+```bash
+# Check if table 52 has k8s routes (these should NOT exist)
+ip route show table 52 | grep -E '10.42|10.43'
+
+# Fix: remove k8s CIDRs from advertised routes and disable accept-routes/netfilter
+sudo tailscale set --advertise-routes=192.168.2.0/24,10.0.0.0/24 --accept-routes=false --netfilter-mode=off
 ```
 
 ### Failover Not Working
@@ -324,9 +341,10 @@ tailscale status
 Tailscale is enabled when `tailscaled` is not in `disabled_services` in `ansible/group_vars/all.yml` (default is now empty). To use Tailscale as the way to reach all Eldertree services from your Mac:
 
 1. Ensure `tailscaled` is not in `disabled_services` (if it is, remove it).
-2. Run the Tailscale playbook (nodes will install/start Tailscale and advertise 192.168.2/24, 10.0.0/24, 10.42/16, 10.43/16):
+2. Run the Tailscale playbook (nodes will install/start Tailscale and advertise 192.168.2/24, 10.0.0/24):
    ```bash
-   AUTH_KEY=$(kubectl exec -n vault vault-0 -- vault kv get -field=auth-key secret/pi-fleet/tailscale)
+   ROOT_TOKEN=$(kubectl get secret vault-unseal-keys -n vault -o jsonpath='{.data.ROOT_TOKEN}' | base64 -d)
+   AUTH_KEY=$(kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$ROOT_TOKEN vault kv get -field=auth-key secret/pi-fleet/tailscale")
    ansible-playbook -i inventory/hosts.yml playbooks/install-tailscale.yml -e "tailscale_auth_key=$AUTH_KEY"
    ```
 3. In the [Tailscale admin console](https://login.tailscale.com/admin/acls), ensure **10.0.0.0/24** is in `autoApprovers.routes` if you use route approval.
@@ -334,7 +352,7 @@ Tailscale is enabled when `tailscaled` is not in `disabled_services` in `ansible
 
 ## VPN and eldertree.local access (design)
 
-- **Tailscale (only VPN for Eldertree access):** No router port-forward. Nodes advertise 192.168.2/24, 10.0.0/24, 10.42/16, 10.43/16. Mac uses Accept Routes plus either (a) DNS 192.168.2.201 + 1.1.1.1 so Pi-hole resolves `*.eldertree.local`, or (b) the full `/etc/hosts` block ([eldertree-local-hosts-block.txt](eldertree-local-hosts-block.txt)) when you cannot change DNS (e.g. corporate VPN). WireGuard is not used for Eldertree access.
+- **Tailscale (only VPN for Eldertree access):** No router port-forward. Nodes advertise 192.168.2/24 and 10.0.0/24 (NOT k8s CIDRs — see [Advertised Subnets](#advertised-subnets)). Mac uses Accept Routes plus either (a) DNS 192.168.2.201 + 1.1.1.1 so Pi-hole resolves `*.eldertree.local`, or (b) the full `/etc/hosts` block ([eldertree-local-hosts-block.txt](eldertree-local-hosts-block.txt)) when you cannot change DNS (e.g. corporate VPN). WireGuard is not used for Eldertree access.
 - **eldertree.local:** **DNS path** — set Mac DNS to 192.168.2.201 and 1.1.1.1; Pi-hole resolves `*.eldertree.local` to 192.168.2.200. **Hosts-only path** — use the full `/etc/hosts` block with the Traefik EXTERNAL-IP (from `kubectl get svc traefik -n kube-system`); no DNS change required.
 
 ## Related Documentation
