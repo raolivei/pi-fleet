@@ -4,9 +4,30 @@
 #
 # This playbook:
 # 1. Installs Tailscale on all nodes
-# 2. Authenticates each node with the provided auth key
-# 3. Advertises subnet routes for LAN and Kubernetes networks
-# 4. Enables IP forwarding for subnet routing
+# 2. Adds a systemd drop-in so tailscaled starts after network is up and restarts reliably on failure
+# 3. Authenticates each node with the provided auth key
+# 4. Advertises subnet routes for LAN and gigabit networks
+# 5. Enables IP forwarding for subnet routing
+#
+# IMPORTANT: Do NOT advertise k8s CIDRs (10.42.0.0/16, 10.43.0.0/16). Tailscale adds
+# policy routes (table 52) for advertised subnets that hijack pod/service traffic away
+# from Flannel/cni0, breaking k3s pod networking. Services are accessed via Traefik ingress.
+#
+# netfilter-mode is set to "off" because UFW + kube-router already manage iptables.
+# Tailscale's ts-input/ts-forward chains conflict with k3s FORWARD rules.
+#
+# accept-routes is disabled on nodes (only Mac/mobile clients need it). When enabled
+# on subnet routers that share the same LAN, each node adds a table 52 route for
+# every advertised subnet, routing local LAN/pod traffic through tailscale0.
+#
+# accept-dns MUST be disabled on nodes. Tailscale's MagicDNS rewrites /etc/resolv.conf
+# to point at 100.100.100.100 and adds tailnet search domains. CoreDNS inherits this
+# (forward . /etc/resolv.conf), causing all cluster DNS to route through Tailscale,
+# which introduces latency and intermittent failures — resulting in pod liveness probe
+# timeouts and cluster-wide restart cascades.
+#
+# When tailscaled is in group_vars all.yml disabled_services, install/update is skipped and the
+# service is left disabled. Remove it from disabled_services and re-run to enable.
 #
 # After running, all 3 nodes will be subnet routers with automatic failover.
 
@@ -14,15 +35,15 @@
   hosts: raspberry_pi
   become: true
   vars:
-    # Subnets to advertise (LAN + gigabit/Traefik + k8s pod/service networks)
-    # 10.0.0.0/24 = gigabit network, Traefik LoadBalancer (e.g. 10.0.0.3)
-    advertise_routes: "192.168.2.0/24,10.0.0.0/24,10.42.0.0/16,10.43.0.0/16"
+    # Only advertise LAN + gigabit. NOT k8s CIDRs (see header comment).
+    advertise_routes: "192.168.2.0/24,10.0.0.0/24"
+    tailscale_enabled: "{{ 'tailscaled' not in (disabled_services | default([])) }}"
 
   tasks:
     - name: Validate auth key is provided
       ansible.builtin.fail:
         msg: "tailscale_auth_key must be provided via -e 'tailscale_auth_key=tskey-...'"
-      when: tailscale_auth_key is not defined or tailscale_auth_key == ""
+      when: tailscale_enabled and (tailscale_auth_key is not defined or tailscale_auth_key == "")
 
     - name: Check if Tailscale is already installed
       ansible.builtin.stat:
@@ -53,11 +74,46 @@
             name: tailscale
             state: present
 
+    # Systemd drop-in: start after network is online and restart indefinitely on failure.
+    # Prevents tailscaled from failing at boot when WiFi/eth is not ready yet, and ensures
+    # it recovers if it crashes (avoids "last seen" drift when only some nodes stay connected).
+    - name: Create systemd drop-in directory for tailscaled
+      ansible.builtin.file:
+        path: /etc/systemd/system/tailscaled.service.d
+        state: directory
+        mode: "0755"
+      when: tailscale_enabled
+
+    - name: Create tailscaled systemd drop-in for reliable start on boot
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          # Start after network is ready (avoids failure when WiFi/eth not up yet)
+          After=network-online.target
+          Wants=network-online.target
+          [Service]
+          # Restart forever so node reconnects after crash or transient failure
+          Restart=always
+          RestartSec=15
+          StartLimitIntervalSec=0
+        dest: /etc/systemd/system/tailscaled.service.d/pi-fleet-reliable-start.conf
+        mode: "0644"
+        owner: root
+        group: root
+      register: tailscale_dropin_created
+      when: tailscale_enabled
+
+    - name: Reload systemd after tailscaled drop-in change
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: tailscale_enabled and tailscale_dropin_created.changed
+
     - name: Enable and start tailscaled service
       ansible.builtin.systemd:
         name: tailscaled
         enabled: true
         state: started
+      when: tailscale_enabled
 
     - name: Enable IP forwarding (required for subnet routing)
       ansible.posix.sysctl:
@@ -69,32 +125,36 @@
       loop:
         - net.ipv4.ip_forward
         - net.ipv6.conf.all.forwarding
+      when: tailscale_enabled
 
     - name: Check current Tailscale status
       ansible.builtin.command: tailscale status --json
       register: tailscale_status
       changed_when: false
       failed_when: false
+      when: tailscale_enabled
 
     - name: Parse Tailscale status
       ansible.builtin.set_fact:
         ts_logged_in: "{{ (tailscale_status.stdout | from_json).BackendState == 'Running' }}"
-      when: tailscale_status.rc == 0 and tailscale_status.stdout != ""
+      when: tailscale_enabled and tailscale_status.rc == 0 and tailscale_status.stdout != ""
       ignore_errors: true
 
     - name: Set default logged in status
       ansible.builtin.set_fact:
         ts_logged_in: false
-      when: ts_logged_in is not defined
+      when: tailscale_enabled and ts_logged_in is not defined
 
     - name: Authenticate and configure Tailscale as subnet router
       ansible.builtin.command: >
         tailscale up
         --auth-key={{ tailscale_auth_key }}
         --advertise-routes={{ advertise_routes }}
-        --accept-routes
+        --accept-routes=false
+        --accept-dns=false
+        --netfilter-mode=off
         --hostname={{ inventory_hostname }}
-      when: not ts_logged_in
+      when: tailscale_enabled and not ts_logged_in
       register: tailscale_up
       changed_when: "'Success' in tailscale_up.stdout or tailscale_up.rc == 0"
 
@@ -102,15 +162,30 @@
       ansible.builtin.command: >
         tailscale set
         --advertise-routes={{ advertise_routes }}
-        --accept-routes
-      when: ts_logged_in
+        --accept-routes=false
+        --accept-dns=false
+        --netfilter-mode=off
+      when: tailscale_enabled and ts_logged_in
       register: tailscale_set
       changed_when: tailscale_set.rc == 0
+
+    - name: Create k3s resolv.conf to isolate pod DNS from node DNS changes
+      ansible.builtin.copy:
+        content: |
+          nameserver 192.168.2.1
+          nameserver 8.8.8.8
+          search eldertree.local
+        dest: /etc/rancher/k3s/resolv.conf
+        mode: "0644"
+        owner: root
+        group: root
+      when: tailscale_enabled
 
     - name: Get Tailscale IP
       ansible.builtin.command: tailscale ip -4
       register: tailscale_ip
       changed_when: false
+      when: tailscale_enabled
 
     - name: Display Tailscale status
       ansible.builtin.debug:
@@ -119,12 +194,23 @@
           Tailscale IP: {{ tailscale_ip.stdout }}
           Advertised Routes: {{ advertise_routes }}
           Status: Connected as subnet router
+      when: tailscale_enabled
 
     - name: Verify subnet routes are advertised
       ansible.builtin.command: tailscale status
       register: final_status
       changed_when: false
+      when: tailscale_enabled
 
     - name: Show final status
       ansible.builtin.debug:
         var: final_status.stdout_lines
+      when: tailscale_enabled
+
+    # When Tailscale is disabled via group_vars, ensure service is stopped and disabled
+    - name: Stop and disable tailscaled when in disabled_services
+      ansible.builtin.systemd:
+        name: tailscaled
+        enabled: false
+        state: stopped
+      when: not tailscale_enabled
