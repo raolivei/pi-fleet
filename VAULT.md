@@ -238,8 +238,15 @@ External Secrets Operator syncs secrets from Vault to Kubernetes automatically. 
 
 ## Setting Secrets in Vault
 
-To set secrets in Vault, use the following commands:
+To set secrets in Vault:
 
+**Canopy – save everything in one go (recommended):**
+```bash
+./scripts/operations/save-canopy-secrets-to-vault.sh
+```
+Prompts for each value; optional secrets (Questrade, Wise, GHCR) can be skipped with Enter. For non-interactive use, set env vars: `CANOPY_POSTGRES_PASSWORD`, `CANOPY_SECRET_KEY`, `CANOPY_DATABASE_URL`, `CANOPY_QUESTRADE_REFRESH_TOKEN`, `CANOPY_WISE_API_TOKEN`, `CANOPY_GHCR_TOKEN`.
+
+**Or set secrets manually:**
 ```bash
 # Get Vault pod
 VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}')

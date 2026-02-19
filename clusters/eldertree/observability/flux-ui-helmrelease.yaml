@@ -100,7 +100,7 @@ spec:
         createClusterRole: true
         username: admin
 
-      # OIDC via Dex - enables "Login with OIDC Provider" button
+      # OIDC via Dex - "Login with OIDC Provider" button
       oidcSecret:
         create: true
         issuerURL: https://dex.eldertree.local
@@ -109,10 +109,14 @@ spec:
         redirectURL: https://flux.eldertree.local/oauth2/callback
         cookieDuration: "24h"
 
-      # Trust the Eldertree Local CA for OIDC discovery to Dex
-      # SSL_CERT_FILE tells Go's crypto/x509 to use this as the system cert pool
+      # Trust Eldertree Local CA so OIDC discovery to Dex (HTTPS) succeeds
+      # Go and other libs use these env vars for TLS verification
       envVars:
         - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/eldertree-ca.crt
+        - name: CURL_CA_BUNDLE
+          value: /etc/ssl/certs/eldertree-ca.crt
+        - name: REQUESTS_CA_BUNDLE
           value: /etc/ssl/certs/eldertree-ca.crt
       extraVolumes:
         - name: ca-bundle

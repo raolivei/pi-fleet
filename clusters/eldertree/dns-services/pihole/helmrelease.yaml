@@ -21,5 +21,7 @@ spec:
   values:
     service:
       type: LoadBalancer
+      # Prevents K3s ServiceLB from creating svclb pods (kube-vip handles LB)
+      loadBalancerClass: kube-vip.io/kube-vip
     config:
       clusterIP: 192.168.2.201
