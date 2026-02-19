@@ -12,16 +12,22 @@ spec:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
+  # Longer timeout: Helm waits for LoadBalancer Service to get ingress IP from kube-vip.
+  # Under load or slow kube-vip, 5m default can hit "context deadline exceeded".
   install:
     remediation:
       retries: 3
+    timeout: 15m
   upgrade:
     remediation:
       retries: 3
+    timeout: 15m
   values:
     service:
       type: LoadBalancer
       # Prevents K3s ServiceLB from creating svclb pods (kube-vip handles LB)
       loadBalancerClass: kube-vip.io/kube-vip
+      # Explicit IP so kube-vip assigns 192.168.2.201 (router DNS)
+      loadBalancerIP: 192.168.2.201
     config:
       clusterIP: 192.168.2.201

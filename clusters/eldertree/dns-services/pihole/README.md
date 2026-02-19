@@ -96,6 +96,18 @@ Optimized for Raspberry Pi:
 
 ## Troubleshooting
 
+**HelmRelease upgrade timeout / "Service does not have load balancer ingress IP":**
+
+Helm waits for the Pi-hole LoadBalancer Service to get an ingress IP from kube-vip. If the upgrade times out:
+
+1. Confirm kube-vip is running and has LoadBalancer support:
+   ```bash
+   kubectl get pods -n kube-system -l app=kube-vip
+   kubectl get svc -n pihole pi-hole   # EXTERNAL-IP should become 192.168.2.201
+   ```
+2. The HelmRelease uses a 15m timeout; if the cluster is under load, kube-vip may assign the IP after the release reconciles. Re-run reconcile or wait for the next interval.
+3. As a last resort you can set `spec.upgrade.disableWait: true` in the HelmRelease so Helm does not wait for the LoadBalancer IP (kube-vip will still assign it asynchronously).
+
 **DNS not resolving:**
 ```bash
 # Check pod status
