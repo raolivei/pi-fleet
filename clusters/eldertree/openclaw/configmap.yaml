@@ -64,5 +64,13 @@ data:
             ]
           }
         }
+      },
+      "models": {
+        "mode": "merge",
+        "providers": {
+          "google": {
+            "apiKey": "${GOOGLE_API_KEY}"
+          }
+        }
       }
     }
