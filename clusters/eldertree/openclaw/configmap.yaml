@@ -46,6 +46,12 @@ data:
           "endpoints": {
             "chatCompletions": { "enabled": true }
           }
+        },
+        "controlUi": {
+          "allowedOrigins": [
+            "https://openclaw.eldertree.local",
+            "http://openclaw.eldertree.local"
+          ]
         }
       },
       "agents": {
