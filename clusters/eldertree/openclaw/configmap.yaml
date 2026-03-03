@@ -64,20 +64,5 @@ data:
             ]
           }
         }
-      },
-      "models": {
-        "mode": "merge",
-        "providers": {
-          "google": {
-            "apiKey": "${GOOGLE_API_KEY}"
-          },
-          "groq": {
-            "apiKey": "${GROQ_API_KEY}"
-          },
-          "ollama": {
-            "apiKey": "${OLLAMA_API_KEY}",
-            "baseUrl": "${OLLAMA_BASE_URL}"
-          }
-        }
       }
     }
