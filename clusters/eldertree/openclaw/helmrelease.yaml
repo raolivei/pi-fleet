@@ -88,12 +88,24 @@ spec:
           port: 18789
           liveness: { initialDelaySeconds: 120, periodSeconds: 30, timeoutSeconds: 10 }
           readiness: { initialDelaySeconds: 90, periodSeconds: 10, timeoutSeconds: 5 }
+        initContainers:
+          - name: copy-config
+            image: busybox:1.36
+            command:
+              - sh
+              - -c
+              - |
+                cp /config/config.json /data/openclaw.json
+                echo "Config copied to writable PVC"
+            volumeMounts:
+              - name: openclaw-data
+                mountPath: /data
+              - name: config-file
+                mountPath: /config
+                readOnly: true
         volumeMounts:
           - name: openclaw-data
             mountPath: /home/node/.openclaw
-          - name: config-file
-            mountPath: /home/node/.openclaw/openclaw.json
-            subPath: config.json
           - name: skills
             mountPath: /home/node/.openclaw/skills
             readOnly: true
