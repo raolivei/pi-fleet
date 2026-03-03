@@ -2,8 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- **OpenClaw runbook entries** (eldertree-docs) — OPENCLAW-001: gateway token, config schema, read-only doctor, controlUi allowedOrigins, and "All models failed" (Google/Groq/Ollama auth)
+- **OpenClaw LLM auth from env** — `models.providers` in config with `apiKey: "${GOOGLE_API_KEY}"` (and Groq/Ollama) so the gateway uses secrets; default `OLLAMA_API_KEY=ollama-local` when secret missing; Groq fallback model id updated to `llama-3.3-70b-versatile`
+
 ### Fixed
 
+- **OpenClaw Web UI and pod stability**
+  - Trusted-proxy auth so Web UI works without manual gateway token (Traefik injects `X-Forwarded-User: local`)
+  - Config updated to OpenClaw 2026 schema (`gateway.bind: "lan"`, removed top-level `providers`/`models.default`)
+  - Command override to skip doctor when config is mounted read-only from ConfigMap (avoids EROFS chmod)
+  - `controlUi.allowedOrigins` for `https://openclaw.eldertree.local`
+  - Optional env vars for Groq/Ollama so pods start when those secrets are missing
 - **Cloudflare Tunnel pod anti-affinity** (`clusters/eldertree/cloudflare-tunnel/deployment.yaml`)
   - Changed from `preferredDuringSchedulingIgnoredDuringExecution` to `requiredDuringSchedulingIgnoredDuringExecution`
   - Guarantees 2 cloudflared replicas run on different nodes

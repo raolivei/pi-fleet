@@ -9,3 +9,7 @@ metadata:
 data:
   GROVE_REPO_SYNC_INTERVAL_HOURS: "6"
   GROVE_GITHUB_OWNER: "raolivei"
+  # LLM Orchestrator: Ollama on Mac (update with your Mac's Tailscale IP)
+  GROVE_OLLAMA_BASE_URL: "http://localhost:11434"
+  GROVE_OLLAMA_MODEL: "qwen2.5:14b"
+  GROVE_LLM_TIMEOUT_SECONDS: "30"

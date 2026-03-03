@@ -149,6 +149,43 @@ data:
     - DO NOT try to access system logs (journalctl, /var/log) - use kubectl events instead
     - For "any issues" questions, check: events, pod status, node status
 
+  # Eldertree Documentation Skill - Runbook, blog, and infrastructure knowledge
+  eldertree-docs-skill.md: |
+    # Eldertree Documentation Skill
+
+    You have access to Eldertree's official documentation and blog. Use these for troubleshooting, architecture context, and infrastructure decisions.
+
+    ## Documentation Sources
+
+    ### 1. Runbook (eldertree-docs)
+    - **URL**: https://docs.eldertree.xyz (public) or https://docs.eldertree.local (cluster network)
+    - **Content**: Searchable incident runbook with error messages, symptoms, and resolution steps
+    - **Use grove_search_code** and **grove_read_file** with repo `eldertree-docs` to find runbook content
+    - **Key paths**: `runbook/` (overview), `runbook/issues/` (DNS, Cloudflare, Node, Boot, Network, Storage, SSH)
+    - **Workflow**: See `runbook/workflow.md` for agent instructions on using the runbook
+
+    ### 2. Blog (pi-fleet-blog)
+    - **URL**: https://blog.eldertree.xyz (when deployed)
+    - **Content**: Infrastructure journey, cluster setup, networking, monitoring, lessons learned
+    - **Use grove_search_code** and **grove_read_file** with repo `pi-fleet-blog` to find blog content
+    - **Key paths**: `chapters/` (01-vision through 18-reusable-workflows), `chapters/index.md` (all links)
+
+    ### 3. Infrastructure Code (pi-fleet)
+    - **Repo**: pi-fleet - cluster manifests, Ansible, Terraform, scripts
+    - **Use grove_search_code** and **grove_read_file** with repo `pi-fleet` for SERVICES_REFERENCE.md, docs/, scripts/
+
+    ## When to Use
+
+    - **Troubleshooting**: Search eldertree-docs runbook for error messages or symptoms first
+    - **Architecture questions**: Search pi-fleet-blog chapters for design decisions and context
+    - **Service URLs, IPs, credentials**: See pi-fleet/SERVICES_REFERENCE.md
+    - **Runbook workflow**: Follow eldertree-docs/runbook/workflow.md for incident resolution
+
+    ## Example
+
+    User: "Vault is sealed, how do I unseal it?"
+    Assistant: *grove_search_code with repo="eldertree-docs" query="unseal vault" → grove_read_file runbook/issues/storage/VAULT-001.md*
+
   # Grove Skill - AI agent for code, infrastructure, and project management
   grove-skill.md: |
     # Grove Skill
@@ -291,6 +328,51 @@ data:
 
     HTTP: POST ${GROVE_URL}/api/approvals/{id}/reject
 
+    ### grove_best_answer
+    Get the best possible answer by querying Gemini, Groq, and Ollama in parallel, then having
+    a judge select/synthesize the best response. Use for important questions or double-checking. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/llm/best-answer
+    Body: {"prompt": "user question", "system_prompt": "optional context", "providers": ["gemini", "groq", "ollama"], "timeout_seconds": 30}
+
+    ### grove_llm_providers
+    Check which LLM providers (Gemini, Groq, Ollama) are currently available. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/llm/providers
+
+    ### grove_upgrade
+    Trigger OpenClaw or Grove image rebuild via GitHub Actions. Requires approval. (approval required)
+
+    HTTP: POST ${GROVE_URL}/api/meta/upgrade
+    Body: {"component": "openclaw" or "grove", "version": "latest"}
+
+    ### grove_version
+    Get current versions of Grove and OpenClaw. (auto-approved)
+
+    HTTP: GET ${GROVE_URL}/api/meta/version
+
+    ### grove_store_insight
+    Store something you learned from this interaction. Call this when you learn useful info
+    from a user question, your answer, or a resolved issue. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/memory/store
+    Body: {"topic": "short-label", "content": "what was learned", "source": "interaction"}
+
+    ### grove_recall_insights
+    Recall stored insights before answering. Use to include relevant learned context. (auto-approved)
+
+    HTTP: POST ${GROVE_URL}/api/memory/recall
+    Body: {"query": "optional search term", "topic": "optional exact topic", "limit": 20}
+
+    ## Learning (Always Learn)
+
+    You should ALWAYS learn from interactions:
+    1. **Before answering**: Call grove_recall_insights with a query related to the user's question
+    2. **After resolving**: Call grove_store_insight with topic and content summarizing what was learned
+    3. **After explaining**: If your answer contains reusable knowledge (e.g. "Vault unseal uses X"), store it
+
+    Topics: Use short labels like "vault-unseal", "swimto-deploy", "flux-reconcile", "node-troubleshoot"
+
     ## Approval Workflow
 
     When a user asks you to do something destructive (deploy, scale, edit code, trigger CI):
@@ -298,6 +380,10 @@ data:
     2. Show the user what will happen and ask for confirmation
     3. If they say yes, call grove_approve with the approval_id
     4. If they say no, call grove_reject
+
+    ## Repo Names (use exactly for API calls)
+
+    - canopy, swimTO, pi-fleet, pi-fleet-blog, eldertree-docs, grove, journey, nima, visage, ollie, pitanga-website, northwaysignal-website, fragment
 
     ## Projects Managed by Grove
 
@@ -310,6 +396,8 @@ data:
     | visage | AI headshot gen | https://visage.eldertree.local |
     | ollie | Local AI assistant | - |
     | pi-fleet | Cluster infra | - |
+    | pi-fleet-blog | Eldertree blog (chapters, journey) | https://blog.eldertree.xyz |
+    | eldertree-docs | Runbook, troubleshooting | https://docs.eldertree.xyz |
     | pitanga-website | Company site | https://pitanga.cloud |
     | grove | This agent! | http://grove.openclaw.svc.cluster.local:8000 |
 
@@ -326,6 +414,9 @@ data:
 
     User: "Create an issue in swimTO for adding push notifications"
     Assistant: *calls grove_create_issue with title and body*
+
+    User: "Let's work on the GitHub issues for canopy"
+    Assistant: *calls grove_list_issues with repo="canopy" → presents list → asks which to tackle first*
 
     User: "What pods are failing?"
     Assistant: *calls grove_cluster_health, checks for failed pods and warnings*

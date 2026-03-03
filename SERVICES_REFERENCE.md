@@ -182,27 +182,28 @@ dig @192.168.2.201 grafana.eldertree.local
 
 ### OpenClaw (AI Assistant)
 
-| Property         | Value                                              |
-| ---------------- | -------------------------------------------------- |
-| **Local URL**    | `https://openclaw.eldertree.local`                 |
-| **Telegram Bot** | `@eldertree_assistant_bot`                         |
-| **Namespace**    | `openclaw`                                         |
-| **Gateway Port** | 18789                                              |
-| **AI Provider**  | Google Gemini 1.5 Flash (free tier)                |
-| **Features**     | SwimTO integration, cluster monitoring, web search |
-| **Credentials**  | Stored in Vault: `secret/openclaw/*`               |
-| **Setup Script** | `./scripts/setup-openclaw.sh`                      |
+| Property         | Value                                                                 |
+| ---------------- | --------------------------------------------------------------------- |
+| **Local URL**    | `https://openclaw.eldertree.local`                                    |
+| **Telegram Bot** | `@eldertree_assistant_bot`                                            |
+| **Namespace**    | `openclaw`                                                            |
+| **Gateway Port** | 18789                                                                 |
+| **AI Providers** | Gemini (primary), Groq, Ollama (fallback); Ollama runs on Mac via LAN |
+| **Features**     | SwimTO, cluster monitoring, web search, Grove best-of-three orchestrator |
+| **Credentials**  | Stored in Vault: `secret/openclaw/*`                                 |
+| **Setup Script** | `./scripts/setup-openclaw.sh`                                         |
 
 ### Grove (AI Agent)
 
-| Property         | Value                                              |
-| ---------------- | -------------------------------------------------- |
-| **Local URL**    | `https://grove.eldertree.local`                    |
-| **Swagger Docs** | `https://grove.eldertree.local/docs`               |
-| **Namespace**    | `openclaw`                                         |
-| **API Port**     | 8006                                               |
-| **Role**         | AI agent sidecar for cluster management & code ops |
-| **Credentials**  | Stored in Vault: `secret/grove/*`                  |
+| Property         | Value                                                                 |
+| ---------------- | --------------------------------------------------------------------- |
+| **Local URL**    | `https://grove.eldertree.local`                                       |
+| **Swagger Docs** | `https://grove.eldertree.local/docs`                                  |
+| **Namespace**    | `openclaw`                                                            |
+| **API Port**     | 8006                                                                  |
+| **Role**         | Cluster ops, code, GitHub, LLM orchestrator, META (upgrade/version)   |
+| **Credentials**  | Stored in Vault: `secret/grove/*`                                     |
+| **GitHub App**   | Install at org level (raolivei) — see [grove/README.md](../grove/README.md#github-app-setup) |
 
 ---
 
@@ -328,6 +329,8 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 - `secret/journey/database` - Journey database URL
 - `secret/openclaw/telegram` - OpenClaw Telegram bot token
 - `secret/openclaw/gemini` - OpenClaw Google AI Studio API key
+- `secret/openclaw/groq` - OpenClaw Groq API key (multi-provider fallback)
+- `secret/openclaw/ollama` - OpenClaw Ollama config (api-key, base-url for Mac)
 - `secret/openclaw/gateway` - OpenClaw gateway authentication token
 - `secret/openclaw/brave` - OpenClaw Brave Search API key (web search)
 - `secret/grove/github-app` - Grove GitHub App credentials (app-id, installation-id, private-key)

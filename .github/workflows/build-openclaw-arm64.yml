@@ -1,3 +1,8 @@
+# Optional: migrate to raolivei/github-workflows reusable docker-build.yml with:
+#   context: clusters/eldertree/openclaw/docker
+#   image-name: openclaw
+#   dockerfile: Dockerfile
+# Add VERSION in that directory for semver tags.
 name: Build OpenClaw ARM64
 
 on:

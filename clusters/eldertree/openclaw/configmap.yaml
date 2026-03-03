@@ -59,9 +59,24 @@ data:
           "model": {
             "primary": "google/gemini-1.5-flash",
             "fallbacks": [
-              "groq/llama-3.1-70b-versatile",
+              "groq/llama-3.3-70b-versatile",
               "ollama/qwen2.5:14b"
             ]
+          }
+        }
+      },
+      "models": {
+        "mode": "merge",
+        "providers": {
+          "google": {
+            "apiKey": "${GOOGLE_API_KEY}"
+          },
+          "groq": {
+            "apiKey": "${GROQ_API_KEY}"
+          },
+          "ollama": {
+            "apiKey": "${OLLAMA_API_KEY}",
+            "baseUrl": "${OLLAMA_BASE_URL}"
           }
         }
       }

@@ -65,6 +65,11 @@ echo ""
 
 read -p "Google AI Studio API Key: " -s GEMINI_API_KEY
 echo ""
+
+read -p "Groq API Key (optional, leave empty to skip): " -s GROQ_API_KEY
+echo ""
+
+read -p "Ollama Base URL (optional, e.g. http://100.x.x.x:11434 for Tailscale Mac): " OLLAMA_BASE_URL
 echo ""
 
 # Generate gateway token (random 32-character hex string)
@@ -78,6 +83,9 @@ if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$GEMINI_API_KEY" ]; then
     echo -e "${RED}Error: Both Telegram token and Gemini API key are required${NC}"
     exit 1
 fi
+
+# Default Ollama base URL if not provided
+OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://localhost:11434}"
 
 # Store secrets in Vault
 echo -e "${YELLOW}Storing secrets in Vault...${NC}"
@@ -94,6 +102,19 @@ echo -e "${GREEN}✓ Gemini API key stored at secret/openclaw/gemini${NC}"
 kubectl exec -n vault $VAULT_POD -- vault kv put secret/openclaw/gateway token="$GATEWAY_TOKEN"
 echo -e "${GREEN}✓ Gateway token stored at secret/openclaw/gateway${NC}"
 
+# Store Groq API key (required for External Secrets sync; use placeholder if not provided)
+if [ -n "$GROQ_API_KEY" ]; then
+    kubectl exec -n vault $VAULT_POD -- vault kv put secret/openclaw/groq api-key="$GROQ_API_KEY"
+    echo -e "${GREEN}✓ Groq API key stored at secret/openclaw/groq${NC}"
+else
+    kubectl exec -n vault $VAULT_POD -- vault kv put secret/openclaw/groq api-key="not-configured"
+    echo -e "${YELLOW}⚠ Groq API key not provided; stored placeholder (update later for multi-provider)${NC}"
+fi
+
+# Store Ollama config (required for multi-provider fallback)
+kubectl exec -n vault $VAULT_POD -- vault kv put secret/openclaw/ollama api-key="ollama-local" base-url="$OLLAMA_BASE_URL"
+echo -e "${GREEN}✓ Ollama config stored at secret/openclaw/ollama (base-url: $OLLAMA_BASE_URL)${NC}"
+
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}Secrets stored successfully!${NC}"
@@ -105,6 +126,8 @@ echo -e "${YELLOW}Verifying secrets...${NC}"
 kubectl exec -n vault $VAULT_POD -- vault kv get -field=token secret/openclaw/telegram > /dev/null && echo -e "${GREEN}✓ Telegram token verified${NC}"
 kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-key secret/openclaw/gemini > /dev/null && echo -e "${GREEN}✓ Gemini API key verified${NC}"
 kubectl exec -n vault $VAULT_POD -- vault kv get -field=token secret/openclaw/gateway > /dev/null && echo -e "${GREEN}✓ Gateway token verified${NC}"
+kubectl exec -n vault $VAULT_POD -- vault kv get -field=base-url secret/openclaw/ollama > /dev/null && echo -e "${GREEN}✓ Ollama config verified${NC}"
+kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-key secret/openclaw/groq > /dev/null && echo -e "${GREEN}✓ Groq config verified${NC}"
 
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

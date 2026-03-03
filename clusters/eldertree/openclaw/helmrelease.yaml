@@ -43,6 +43,8 @@ spec:
             export CONFIG_FILE=$OPENCLAW_DIR/openclaw.json
             mkdir -p $OPENCLAW_DIR/agents/main/sessions $OPENCLAW_DIR/credentials $OPENCLAW_DIR/workspace
             if [ ! -s "$CONFIG_FILE" ]; then echo "[openclaw] Config missing"; exit 1; fi
+            # Register Ollama provider when secret is missing (OpenClaw requires OLLAMA_API_KEY to be set)
+            export OLLAMA_API_KEY="${OLLAMA_API_KEY:-ollama-local}"
             echo "[openclaw] Skipping doctor (config from ConfigMap)"
             exec node /app/dist/index.js gateway --bind lan
         env:
