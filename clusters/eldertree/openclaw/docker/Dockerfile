@@ -53,6 +53,11 @@ if [ ! -s "$CONFIG_FILE" ]; then
     echo "[entrypoint] Creating initial config..."
     cat > "$CONFIG_FILE" << 'CONFIGEOF'
 {
+  "providers": {
+    "google": { "enabled": true },
+    "groq": { "enabled": true },
+    "ollama": { "enabled": true }
+  },
   "gateway": {
     "mode": "local",
     "port": 18789,
@@ -68,7 +73,11 @@ if [ ! -s "$CONFIG_FILE" ]; then
   "agents": {
     "defaults": {
       "model": {
-        "primary": "google/gemini-1.5-flash"
+        "primary": "google:gemini-1.5-flash",
+        "fallbacks": [
+          "groq:llama-3.1-70b-versatile",
+          "ollama:qwen2.5:14b"
+        ]
       }
     }
   },
@@ -83,9 +92,13 @@ if [ ! -s "$CONFIG_FILE" ]; then
 CONFIGEOF
 fi
 
-# Run doctor to fix any remaining issues (ignore errors)
-echo "[entrypoint] Running doctor --fix..."
-node dist/index.js doctor --fix --yes 2>&1 || true
+# Run doctor only when config is writable (skip when mounted read-only from ConfigMap)
+if [ -w "$CONFIG_FILE" ] 2>/dev/null; then
+  echo "[entrypoint] Running doctor --fix..."
+  node dist/index.js doctor --fix --yes 2>&1 || true
+else
+  echo "[entrypoint] Config is read-only (ConfigMap mount), skipping doctor"
+fi
 
 # Start the gateway (bind to LAN for k8s networking)
 echo "[entrypoint] Starting gateway..."
