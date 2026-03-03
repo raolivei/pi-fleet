@@ -24,34 +24,43 @@ data:
   config.json: |
     {
       "providers": {
-        "google": {
-          "enabled": true
-        }
+        "google": { "enabled": true },
+        "groq": { "enabled": true },
+        "ollama": { "enabled": true }
       },
       "models": {
         "default": "google:gemini-1.5-flash"
       },
       "channels": {
-        "telegram": {
-          "enabled": true
-        }
+        "telegram": { "enabled": true }
       },
       "gateway": {
         "mode": "local",
         "bind": "0.0.0.0",
         "port": 18789,
         "trustedProxies": ["10.42.0.0/16", "10.43.0.0/16"],
+        "auth": {
+          "mode": "trusted-proxy",
+          "trustedProxy": {
+            "userHeader": "x-forwarded-user",
+            "allowUsers": ["local"]
+          }
+        },
         "http": {
           "endpoints": {
-            "chatCompletions": {
-              "enabled": true
-            }
+            "chatCompletions": { "enabled": true }
           }
         }
       },
       "agents": {
         "defaults": {
-          "model": "google:gemini-1.5-flash"
+          "model": {
+            "primary": "google:gemini-1.5-flash",
+            "fallbacks": [
+              "groq:llama-3.1-70b-versatile",
+              "ollama:qwen2.5:14b"
+            ]
+          }
         }
       }
     }

@@ -55,6 +55,21 @@ spec:
               secretKeyRef:
                 name: openclaw-secrets
                 key: BRAVE_API_KEY
+          - name: GROQ_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: GROQ_API_KEY
+          - name: OLLAMA_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: OLLAMA_API_KEY
+          - name: OLLAMA_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: OLLAMA_BASE_URL
           - name: HOME
             value: /home/node
           - name: NODE_OPTIONS
@@ -73,6 +88,9 @@ spec:
         volumeMounts:
           - name: openclaw-data
             mountPath: /home/node/.openclaw
+          - name: config-file
+            mountPath: /home/node/.openclaw/openclaw.json
+            subPath: config.json
           - name: skills
             mountPath: /home/node/.openclaw/skills
             readOnly: true
@@ -80,6 +98,9 @@ spec:
           - name: openclaw-data
             persistentVolumeClaim:
               claimName: openclaw-data
+          - name: config-file
+            configMap:
+              name: openclaw-config-file
           - name: skills
             configMap:
               name: openclaw-skills
@@ -125,6 +146,16 @@ spec:
               secretKeyRef:
                 name: grove-secrets
                 key: GITHUB_APP_PRIVATE_KEY
+          - name: GROVE_GEMINI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: grove-secrets
+                key: GEMINI_API_KEY
+          - name: GROVE_GROQ_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: grove-secrets
+                key: GROQ_API_KEY
         resources:
           requests: { cpu: "250m", memory: "256Mi" }
           limits: { cpu: "500m", memory: "512Mi" }
@@ -147,12 +178,11 @@ spec:
         type: redirectScheme
         scheme: https
         permanent: true
-      add-token-header:
+      add-trusted-proxy-user:
         type: headers
         headers:
           customRequestHeaders:
-            X-OpenClaw-Token: "851da3d676fec9cacfc9cc5ea6233b2126a28f815c5757b40c5a5d71857b1a41"
-            Authorization: "Bearer 851da3d676fec9cacfc9cc5ea6233b2126a28f815c5757b40c5a5d71857b1a41"
+            X-Forwarded-User: "local"
 
     # -- Ingress
     ingress:
@@ -162,7 +192,7 @@ spec:
         port: 18789
         middlewares:
           - openclaw-redirect-https@kubernetescrd
-          - openclaw-add-token-header@kubernetescrd
+          - openclaw-add-trusted-proxy-user@kubernetescrd
         tls:
           secretName: openclaw-tls
           certManager: true
