@@ -16,7 +16,8 @@ spec:
       interval: 12h
   targetNamespace: openclaw
   upgrade:
-    cleanupOnFail: true
+    cleanupOnFail: false
+    timeout: 10m
   values:
     # ============================================================
     # OpenClaw - LLM gateway + Grove AI agent
@@ -86,8 +87,8 @@ spec:
         probes:
           path: /health
           port: 18789
-          liveness: { initialDelaySeconds: 120, periodSeconds: 30, timeoutSeconds: 10 }
-          readiness: { initialDelaySeconds: 90, periodSeconds: 10, timeoutSeconds: 5 }
+          liveness: { initialDelaySeconds: 180, periodSeconds: 30, timeoutSeconds: 10 }
+          readiness: { initialDelaySeconds: 150, periodSeconds: 10, timeoutSeconds: 5 }
         initContainers:
           - name: copy-config
             image: busybox:1.36
