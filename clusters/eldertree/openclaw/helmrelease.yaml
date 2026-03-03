@@ -60,16 +60,19 @@ spec:
               secretKeyRef:
                 name: openclaw-secrets
                 key: GROQ_API_KEY
+                optional: true
           - name: OLLAMA_API_KEY
             valueFrom:
               secretKeyRef:
                 name: openclaw-secrets
                 key: OLLAMA_API_KEY
+                optional: true
           - name: OLLAMA_BASE_URL
             valueFrom:
               secretKeyRef:
                 name: openclaw-secrets
                 key: OLLAMA_BASE_URL
+                optional: true
           - name: HOME
             value: /home/node
           - name: NODE_OPTIONS
@@ -151,11 +154,13 @@ spec:
               secretKeyRef:
                 name: grove-secrets
                 key: GEMINI_API_KEY
+                optional: true
           - name: GROVE_GROQ_API_KEY
             valueFrom:
               secretKeyRef:
                 name: grove-secrets
                 key: GROQ_API_KEY
+                optional: true
         resources:
           requests: { cpu: "250m", memory: "256Mi" }
           limits: { cpu: "500m", memory: "512Mi" }
