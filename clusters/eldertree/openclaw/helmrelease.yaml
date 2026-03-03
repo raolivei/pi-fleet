@@ -4,7 +4,7 @@ metadata:
   name: openclaw
   namespace: openclaw
 spec:
-  interval: 30m
+  interval: 5m
   chart:
     spec:
       chart: ./helm/eldertree-app
@@ -34,7 +34,17 @@ spec:
         serviceAccountName: openclaw
         podAnnotations:
           deployment.kubernetes.io/revision: "2026-01-31-v1.0.0"
-        args: ["--bind", "lan"]
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -e
+            export OPENCLAW_DIR=/home/node/.openclaw
+            export CONFIG_FILE=$OPENCLAW_DIR/openclaw.json
+            mkdir -p $OPENCLAW_DIR/agents/main/sessions $OPENCLAW_DIR/credentials $OPENCLAW_DIR/workspace
+            if [ ! -s "$CONFIG_FILE" ]; then echo "[openclaw] Config missing"; exit 1; fi
+            echo "[openclaw] Skipping doctor (config from ConfigMap)"
+            exec node /app/dist/index.js gateway --bind lan
         env:
           - name: GOOGLE_API_KEY
             valueFrom:
@@ -89,24 +99,12 @@ spec:
           port: 18789
           liveness: { initialDelaySeconds: 180, periodSeconds: 30, timeoutSeconds: 10 }
           readiness: { initialDelaySeconds: 150, periodSeconds: 10, timeoutSeconds: 5 }
-        initContainers:
-          - name: copy-config
-            image: busybox:1.36
-            command:
-              - sh
-              - -c
-              - |
-                cp /config/config.json /data/openclaw.json
-                echo "Config copied to writable PVC"
-            volumeMounts:
-              - name: openclaw-data
-                mountPath: /data
-              - name: config-file
-                mountPath: /config
-                readOnly: true
         volumeMounts:
           - name: openclaw-data
             mountPath: /home/node/.openclaw
+          - name: config-file
+            mountPath: /home/node/.openclaw/openclaw.json
+            subPath: config.json
           - name: skills
             mountPath: /home/node/.openclaw/skills
             readOnly: true
