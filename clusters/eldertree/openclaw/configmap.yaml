@@ -69,7 +69,16 @@ data:
         "mode": "merge",
         "providers": {
           "google": {
-            "apiKey": "${GOOGLE_API_KEY}"
+            "baseUrl": "https://generativelanguage.googleapis.com",
+            "apiKey": "${GOOGLE_API_KEY}",
+            "models": [
+              {
+                "id": "gemini-1.5-flash",
+                "name": "Gemini 1.5 Flash",
+                "contextWindow": 1000000,
+                "maxTokens": 8192
+              }
+            ]
           }
         }
       }
