@@ -69,6 +69,7 @@ data:
         "mode": "merge",
         "providers": {
           "google": {
+            "api": "google-generative-ai",
             "baseUrl": "https://generativelanguage.googleapis.com",
             "apiKey": "${GOOGLE_API_KEY}",
             "models": [
@@ -81,6 +82,7 @@ data:
             ]
           },
           "groq": {
+            "api": "openai-completions",
             "baseUrl": "https://api.groq.com/openai/v1",
             "apiKey": "${GROQ_API_KEY}",
             "models": [
@@ -93,6 +95,7 @@ data:
             ]
           },
           "ollama": {
+            "api": "ollama",
             "baseUrl": "${OLLAMA_BASE_URL}",
             "apiKey": "${OLLAMA_API_KEY}",
             "models": [
