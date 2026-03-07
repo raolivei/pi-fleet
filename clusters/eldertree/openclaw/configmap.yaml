@@ -70,7 +70,7 @@ data:
         "providers": {
           "google": {
             "api": "google-generative-ai",
-            "baseUrl": "https://generativelanguage.googleapis.com",
+            "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
             "apiKey": "${GOOGLE_API_KEY}",
             "models": [
               {
