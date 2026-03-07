@@ -90,7 +90,7 @@ spec:
           - name: HOME
             value: /home/node
           - name: NODE_OPTIONS
-            value: "--max-old-space-size=1536"
+            value: "--max-old-space-size=1536 --unhandled-rejections=warn"
         envFrom:
           - configMapRef:
               name: openclaw-config

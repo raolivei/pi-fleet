@@ -4,7 +4,6 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
-  # clustersecretstore.yaml - Applied manually after External Secrets Operator is ready
-  # This avoids chicken-and-egg: ClusterSecretStore CRD must exist first
+  - clustersecretstore.yaml
   - externalsecrets/
 
