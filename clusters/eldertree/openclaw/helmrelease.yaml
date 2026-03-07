@@ -20,7 +20,7 @@ spec:
     timeout: 10m
   values:
     # ============================================================
-    # OpenClaw - LLM gateway + Grove AI agent
+    # OpenClaw - LLM gateway + Elder AI agent
     # ============================================================
 
     components:
@@ -122,18 +122,18 @@ spec:
             configMap:
               name: openclaw-skills
 
-      grove:
+      elder:
         image:
           repository: ghcr.io/raolivei/grove
-          tag: v0.2.0 # {"$imagepolicy": "openclaw:grove:tag"}
+          tag: v0.2.0 # {"$imagepolicy": "openclaw:elder:tag"}
           pullPolicy: Always
         port: 8006
         servicePort: 8000
         strategy: Recreate
-        serviceAccountName: grove
+        serviceAccountName: elder
         envFrom:
           - configMapRef:
-              name: grove-config
+              name: elder-config
         env:
           - name: GROVE_PORT
             value: "8006"
@@ -146,33 +146,33 @@ spec:
           - name: GROVE_API_KEY
             valueFrom:
               secretKeyRef:
-                name: grove-secrets
+                name: elder-secrets
                 key: API_KEY
           - name: GROVE_GITHUB_APP_ID
             valueFrom:
               secretKeyRef:
-                name: grove-secrets
+                name: elder-secrets
                 key: GITHUB_APP_ID
           - name: GROVE_GITHUB_APP_INSTALLATION_ID
             valueFrom:
               secretKeyRef:
-                name: grove-secrets
+                name: elder-secrets
                 key: GITHUB_APP_INSTALLATION_ID
           - name: GROVE_GITHUB_APP_PRIVATE_KEY
             valueFrom:
               secretKeyRef:
-                name: grove-secrets
+                name: elder-secrets
                 key: GITHUB_APP_PRIVATE_KEY
           - name: GROVE_GEMINI_API_KEY
             valueFrom:
               secretKeyRef:
-                name: grove-secrets
+                name: elder-secrets
                 key: GEMINI_API_KEY
                 optional: true
           - name: GROVE_GROQ_API_KEY
             valueFrom:
               secretKeyRef:
-                name: grove-secrets
+                name: elder-secrets
                 key: GROQ_API_KEY
                 optional: true
         resources:
@@ -184,12 +184,12 @@ spec:
           liveness: { initialDelaySeconds: 30, periodSeconds: 30, timeoutSeconds: 10 }
           readiness: { initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5 }
         volumeMounts:
-          - name: grove-data
+          - name: elder-data
             mountPath: /data
         volumes:
-          - name: grove-data
+          - name: elder-data
             persistentVolumeClaim:
-              claimName: grove-data
+              claimName: elder-data
 
     # -- Middleware
     middleware:
@@ -218,10 +218,12 @@ spec:
         annotations:
           external-dns.alpha.kubernetes.io/hostname: openclaw.eldertree.local
 
-      grove:
-        host: grove.eldertree.local
-        service: grove
+      elder:
+        host: elder.eldertree.local
+        service: elder
         port: 8000
         tls:
-          secretName: grove-tls
+          secretName: elder-tls
           certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: elder.eldertree.local

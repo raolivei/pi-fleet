@@ -1,6 +1,6 @@
 # OpenClaw Deployment
 
-Personal AI assistant powered by OpenClaw running on eldertree with multi-provider LLM support (Gemini + Groq + Ollama) and Grove for cluster ops, code, and GitHub.
+Personal AI assistant powered by OpenClaw running on eldertree with multi-provider LLM support (Gemini + Groq + Ollama) and Elder for cluster ops, code, and GitHub.
 
 ## ARM64 Build
 
@@ -21,10 +21,10 @@ To rebuild manually:
 
 - **Telegram Integration**: Chat via `@eldertree_assistant_bot`
 - **Multi-Provider LLM**: Gemini (primary) + Groq + Ollama fallback chain
-- **Best-of-Three**: Grove can query all three providers in parallel and judge the best answer
+- **Best-of-Three**: Elder can query all three providers in parallel and judge the best answer
 - **SwimTO Integration**: Query Toronto pool schedules
 - **Kubernetes Access**: Read-only cluster access (pods, logs, events)
-- **Grove Agent**: Code browsing, GitHub issues/PRs, FluxCD, project planning
+- **Elder Agent**: Code browsing, GitHub issues/PRs, FluxCD, project planning
 - **Web Search**: Brave Search API
 - **Web UI**: `https://openclaw.eldertree.local`
 
@@ -39,7 +39,7 @@ To rebuild manually:
                            │
                            ▼
                     ┌──────────────┐     ┌──────────────┐
-                    │    Grove     │────▶│  SwimTO API  │
+                    │    Elder     │────▶│  SwimTO API  │
                     │  (cluster,   │     │  (internal)  │
                     │   code, GH)  │     └──────────────┘
                     └──────────────┘
@@ -47,7 +47,7 @@ To rebuild manually:
 
 **Option A (Resilience):** Normal traffic uses primary (Gemini); if it fails, fallbacks to Groq, then Ollama.
 
-**Option B (Best-of-Three):** For important questions, use `grove_best_answer` to query all three in parallel and get the judged best answer.
+**Option B (Best-of-Three):** For important questions, use `elder_best_answer` to query all three in parallel and get the judged best answer.
 
 ## Quick Start
 
@@ -89,10 +89,10 @@ OpenClaw is enabled in `clusters/eldertree/kustomization.yaml`. Push to trigger 
 
 ## META Actions (Self-Upgrade)
 
-Grove can upgrade itself or OpenClaw:
+Elder can upgrade itself or OpenClaw:
 
-- **grove_upgrade**: Trigger GitHub Actions rebuild (requires approval)
-- **grove_version**: Get current Grove and OpenClaw versions
+- **elder_upgrade**: Trigger GitHub Actions rebuild (requires approval)
+- **elder_version**: Get current Elder and OpenClaw versions
 
 Example: "Upgrade OpenClaw to v1.0.0" → creates approval → user approves → workflow runs → Flux deploys.
 
@@ -117,13 +117,13 @@ export KUBECONFIG=~/.kube/config-eldertree
 # 1. Pods running
 kubectl get pods -n openclaw
 
-# 2. Grove best-answer endpoint (requires GROVE_API_KEY or auth)
-curl -X POST https://grove.eldertree.local/api/llm/best-answer \
+# 2. Elder best-answer endpoint (requires ELDER API key or auth)
+curl -X POST https://elder.eldertree.local/api/llm/best-answer \
   -H "Content-Type: application/json" \
   -d '{"prompt": "What is 2+2?", "providers": ["gemini", "groq"], "judge": false}'
 
 # 3. Provider status
-curl https://grove.eldertree.local/api/llm/providers
+curl https://elder.eldertree.local/api/llm/providers
 ```
 
 ## Monitoring

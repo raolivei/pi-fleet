@@ -95,10 +95,10 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 - `secret/openclaw/gateway` — Gateway auth token
 - `secret/openclaw/brave` — Brave Search API key
 
-### Grove
+### Elder
 
-- `secret/grove/github-app` — app-id, installation-id, private-key
-- `secret/grove/api-key` — API auth key
+- `secret/elder/github-app` — app-id, installation-id, private-key
+- `secret/elder/api-key` — API auth key
 
 ### Other Apps
 
@@ -135,7 +135,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 - **pi-fleet** — Eldertree cluster infrastructure
 - **pi-fleet-blog** — Blog about the cluster
 - **eldertree-docs** — Runbook/docs site
-- **grove** — AI agent (cluster, code, GitHub)
+- **elder** — AI agent (cluster, code, GitHub)
 - **canopy** — Personal finance
 - **swimTO** — Toronto pool schedules
 - **journey** — Career pathfinder

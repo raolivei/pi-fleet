@@ -2,7 +2,7 @@
 apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageUpdateAutomation
 metadata:
-  name: grove-image-updates
+  name: elder-image-updates
   namespace: openclaw
 spec:
   interval: 5m
@@ -18,7 +18,7 @@ spec:
       author:
         email: fluxcdbot@users.noreply.github.com
         name: fluxcdbot
-      messageTemplate: "chore(grove): update image{{range .Changed.Changes}} {{.NewValue}}{{end}}"
+      messageTemplate: "chore(elder): update image{{range .Changed.Changes}} {{.NewValue}}{{end}}"
     push:
       branch: main
   update:

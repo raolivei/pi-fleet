@@ -9,14 +9,13 @@ resources:
   - pvc.yaml
   - configmap.yaml
   - skills-configmap.yaml
-  # Grove
-  - grove-rbac.yaml
-  - grove-externalsecret.yaml
-  - grove-pvc.yaml
-  - grove-configmap.yaml
-  # Helm-managed app (openclaw, grove deployments, services, ingress, middleware)
+  # Elder (AI agent sidecar; image from grove repo until elder image exists)
+  - elder-rbac.yaml
+  - elder-externalsecret.yaml
+  - elder-pvc.yaml
+  - elder-configmap.yaml
+  # Helm-managed app (openclaw gateway + elder deployment, services, ingress)
   - helmrelease.yaml
-  # Image automation (stays separate - FluxCD requirement)
-  - grove-image-repo.yaml
-  - grove-image-policy.yaml
-  - grove-image-update.yaml
+  - elder-image-repo.yaml
+  - elder-image-policy.yaml
+  - elder-image-update.yaml

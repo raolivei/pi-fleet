@@ -189,21 +189,21 @@ dig @192.168.2.201 grafana.eldertree.local
 | **Namespace**    | `openclaw`                                                            |
 | **Gateway Port** | 18789                                                                 |
 | **AI Providers** | Gemini (primary), Groq, Ollama (fallback); Ollama runs on Mac via LAN |
-| **Features**     | SwimTO, cluster monitoring, web search, Grove best-of-three orchestrator |
+| **Features**     | SwimTO, cluster monitoring, web search, Elder best-of-three orchestrator |
 | **Credentials**  | Stored in Vault: `secret/openclaw/*`                                 |
 | **Setup Script** | `./scripts/setup-openclaw.sh`                                         |
 
-### Grove (AI Agent)
+### Elder (AI Agent)
 
 | Property         | Value                                                                 |
 | ---------------- | --------------------------------------------------------------------- |
-| **Local URL**    | `https://grove.eldertree.local`                                       |
-| **Swagger Docs** | `https://grove.eldertree.local/docs`                                  |
+| **Local URL**    | `https://elder.eldertree.local`                                       |
+| **Swagger Docs** | `https://elder.eldertree.local/docs`                                  |
 | **Namespace**    | `openclaw`                                                            |
 | **API Port**     | 8006                                                                  |
 | **Role**         | Cluster ops, code, GitHub, LLM orchestrator, META (upgrade/version)   |
-| **Credentials**  | Stored in Vault: `secret/grove/*`                                     |
-| **GitHub App**   | Install at org level (raolivei) — see [grove/README.md](../grove/README.md#github-app-setup) |
+| **Credentials**  | Stored in Vault: `secret/elder/*`                                     |
+| **GitHub App**   | Install at org level (raolivei) — see [elder/README.md](../elder/README.md#github-app-setup) |
 
 ---
 
@@ -333,8 +333,8 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 - `secret/openclaw/ollama` - OpenClaw Ollama config (api-key, base-url for Mac)
 - `secret/openclaw/gateway` - OpenClaw gateway authentication token
 - `secret/openclaw/brave` - OpenClaw Brave Search API key (web search)
-- `secret/grove/github-app` - Grove GitHub App credentials (app-id, installation-id, private-key)
-- `secret/grove/api-key` - Grove API authentication key
+- `secret/elder/github-app` - Elder GitHub App credentials (app-id, installation-id, private-key)
+- `secret/elder/api-key` - Elder API authentication key
 
 ### Pitanga
 

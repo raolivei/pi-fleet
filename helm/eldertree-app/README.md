@@ -130,7 +130,7 @@ These resources are kept as standalone YAML (not in the HelmRelease):
 | pitanga | pitanga | website, northwaysignal |
 | canopy | canopy | api, frontend, redis |
 | swimto | swimto | api, web |
-| openclaw | openclaw | gateway, grove |
+| openclaw | openclaw | gateway, elder |
 | nima | nima | api, frontend (disabled) |
 | journey | journey | api, frontend |
 

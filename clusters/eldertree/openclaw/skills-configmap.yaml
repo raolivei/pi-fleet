@@ -160,19 +160,19 @@ data:
     ### 1. Runbook (eldertree-docs)
     - **URL**: https://docs.eldertree.xyz (public) or https://docs.eldertree.local (cluster network)
     - **Content**: Searchable incident runbook with error messages, symptoms, and resolution steps
-    - **Use grove_search_code** and **grove_read_file** with repo `eldertree-docs` to find runbook content
+    - **Use elder_search_code** and **elder_read_file** with repo `eldertree-docs` to find runbook content
     - **Key paths**: `runbook/` (overview), `runbook/issues/` (DNS, Cloudflare, Node, Boot, Network, Storage, SSH)
     - **Workflow**: See `runbook/workflow.md` for agent instructions on using the runbook
 
     ### 2. Blog (pi-fleet-blog)
     - **URL**: https://blog.eldertree.xyz (when deployed)
     - **Content**: Infrastructure journey, cluster setup, networking, monitoring, lessons learned
-    - **Use grove_search_code** and **grove_read_file** with repo `pi-fleet-blog` to find blog content
+    - **Use elder_search_code** and **elder_read_file** with repo `pi-fleet-blog` to find blog content
     - **Key paths**: `chapters/` (01-vision through 18-reusable-workflows), `chapters/index.md` (all links)
 
     ### 3. Infrastructure Code (pi-fleet)
     - **Repo**: pi-fleet - cluster manifests, Ansible, Terraform, scripts
-    - **Use grove_search_code** and **grove_read_file** with repo `pi-fleet` for SERVICES_REFERENCE.md, docs/, scripts/
+    - **Use elder_search_code** and **elder_read_file** with repo `pi-fleet` for SERVICES_REFERENCE.md, docs/, scripts/
 
     ## When to Use
 
@@ -184,191 +184,191 @@ data:
     ## Example
 
     User: "Vault is sealed, how do I unseal it?"
-    Assistant: *grove_search_code with repo="eldertree-docs" query="unseal vault" → grove_read_file runbook/issues/storage/VAULT-001.md*
+    Assistant: *elder_search_code with repo="eldertree-docs" query="unseal vault" → elder_read_file runbook/issues/storage/VAULT-001.md*
 
-  # Grove Skill - AI agent for code, infrastructure, and project management
-  grove-skill.md: |
-    # Grove Skill
+  # Elder Skill - AI agent for code, infrastructure, and project management
+  elder-skill.md: |
+    # Elder Skill
 
-    Grove is your AI agent that can browse codebases, manage GitHub issues/PRs,
+    Elder is your AI agent that can browse codebases, manage GitHub issues/PRs,
     monitor Kubernetes, trigger deployments, and plan project features.
-    Grove has its own GitHub App identity ("Grove [bot]").
+    Elder has its own GitHub App identity ("Elder [bot]").
 
     **Auto-approved** operations run immediately. **Approval-required** operations
     return an approval ID — ask the user to confirm before executing.
 
     ## Tools
 
-    ### grove_list_repos
-    List all project repos Grove has cloned. (auto-approved)
+    ### elder_list_repos
+    List all project repos Elder has cloned. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/code/repos
+    HTTP: GET ${ELDER_URL}/api/code/repos
 
-    ### grove_search_code
+    ### elder_search_code
     Search code across all repos using ripgrep. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/code/search
+    HTTP: POST ${ELDER_URL}/api/code/search
     Body: {"query": "search term", "repo": "optional-repo-name", "file_pattern": "*.py", "max_results": 50}
 
     Example: "Search for authentication in SwimTO"
 
-    ### grove_read_file
+    ### elder_read_file
     Read contents of a file from a repo. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/code/read?repo=swimTO&path=backend/main.py
+    HTTP: GET ${ELDER_URL}/api/code/read?repo=swimTO&path=backend/main.py
 
-    ### grove_tree
+    ### elder_tree
     Get directory structure of a repo. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/code/tree?repo=swimTO&path=backend
+    HTTP: GET ${ELDER_URL}/api/code/tree?repo=swimTO&path=backend
 
-    ### grove_edit_file
+    ### elder_edit_file
     Edit a file: creates a branch, commits, and pushes. (approval required)
 
-    HTTP: POST ${GROVE_URL}/api/code/edit
+    HTTP: POST ${ELDER_URL}/api/code/edit
     Body: {"repo": "swimTO", "path": "backend/main.py", "content": "new content", "commit_message": "fix: description"}
 
     Returns an approval_id. Ask the user to approve before executing.
 
-    ### grove_create_pr
-    Create a pull request as Grove [bot]. (approval required)
+    ### elder_create_pr
+    Create a pull request as Elder [bot]. (approval required)
 
-    HTTP: POST ${GROVE_URL}/api/code/pr
-    Body: {"repo": "swimTO", "branch": "grove/fix-123", "title": "fix: description", "body": "PR body"}
+    HTTP: POST ${ELDER_URL}/api/code/pr
+    Body: {"repo": "swimTO", "branch": "elder/fix-123", "title": "fix: description", "body": "PR body"}
 
-    ### grove_list_issues
+    ### elder_list_issues
     List GitHub issues across one or all repos. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/github/issues/list
+    HTTP: POST ${ELDER_URL}/api/github/issues/list
     Body: {"repo": "swimTO", "state": "open", "max_results": 20}
 
-    ### grove_create_issue
-    Create a GitHub issue as Grove [bot]. (auto-approved)
+    ### elder_create_issue
+    Create a GitHub issue as Elder [bot]. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/github/issues
+    HTTP: POST ${ELDER_URL}/api/github/issues
     Body: {"repo": "swimTO", "title": "feat: new feature", "body": "Description", "labels": ["enhancement"]}
 
-    ### grove_trigger_workflow
+    ### elder_trigger_workflow
     Trigger a GitHub Actions workflow. (approval required)
 
-    HTTP: POST ${GROVE_URL}/api/github/trigger-workflow
+    HTTP: POST ${ELDER_URL}/api/github/trigger-workflow
     Body: {"repo": "swimTO", "workflow": "build-and-push.yml", "ref": "main"}
 
-    ### grove_list_pods
+    ### elder_list_pods
     List Kubernetes pods. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/k8s/pods?namespace=swimto
+    HTTP: GET ${ELDER_URL}/api/k8s/pods?namespace=swimto
 
-    ### grove_pod_logs
+    ### elder_pod_logs
     Get pod logs. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/k8s/logs
+    HTTP: POST ${ELDER_URL}/api/k8s/logs
     Body: {"namespace": "swimto", "pod": "swimto-api-xxx", "tail_lines": 100}
 
-    ### grove_events
+    ### elder_events
     List cluster events. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/k8s/events?namespace=swimto
+    HTTP: GET ${ELDER_URL}/api/k8s/events?namespace=swimto
 
-    ### grove_cluster_health
+    ### elder_cluster_health
     Get cluster health summary with FluxCD status. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/k8s/health
+    HTTP: GET ${ELDER_URL}/api/k8s/health
 
-    ### grove_scale
+    ### elder_scale
     Scale a deployment. (approval required)
 
-    HTTP: POST ${GROVE_URL}/api/k8s/scale
+    HTTP: POST ${ELDER_URL}/api/k8s/scale
     Body: {"namespace": "swimto", "deployment": "swimto-api", "replicas": 2}
 
-    ### grove_flux_reconcile
+    ### elder_flux_reconcile
     Trigger FluxCD reconciliation. (approval required)
 
-    HTTP: POST ${GROVE_URL}/api/k8s/flux/reconcile
+    HTTP: POST ${ELDER_URL}/api/k8s/flux/reconcile
     Body: {"kustomization": "flux-system"}
 
-    ### grove_project_status
+    ### elder_project_status
     Get status of all managed projects (versions, health, last commits). (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/projects/status
+    HTTP: GET ${ELDER_URL}/api/projects/status
 
-    ### grove_roadmap
+    ### elder_roadmap
     Aggregate TODO/roadmap items from all projects. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/projects/roadmap
+    HTTP: GET ${ELDER_URL}/api/projects/roadmap
 
-    ### grove_plan_feature
+    ### elder_plan_feature
     Generate a feature plan and optionally create GitHub issues. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/projects/plan
+    HTTP: POST ${ELDER_URL}/api/projects/plan
     Body: {"project": "swimTO", "feature": "Push notifications", "description": "Add web push...", "create_issues": true}
 
-    ### grove_run_tests
+    ### elder_run_tests
     Trigger test workflow. (approval required)
 
-    HTTP: POST ${GROVE_URL}/api/tests/run?repo=swimTO&workflow=python-ci.yml
+    HTTP: POST ${ELDER_URL}/api/tests/run?repo=swimTO&workflow=python-ci.yml
 
-    ### grove_test_status
+    ### elder_test_status
     Get latest test run status. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/tests/status?repo=swimTO
+    HTTP: GET ${ELDER_URL}/api/tests/status?repo=swimTO
 
-    ### grove_pending_approvals
+    ### elder_pending_approvals
     List pending approval requests. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/approvals/pending
+    HTTP: GET ${ELDER_URL}/api/approvals/pending
 
-    ### grove_approve
+    ### elder_approve
     Approve a pending action after user confirms. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/approvals/{id}/approve
+    HTTP: POST ${ELDER_URL}/api/approvals/{id}/approve
 
-    ### grove_reject
+    ### elder_reject
     Reject a pending action. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/approvals/{id}/reject
+    HTTP: POST ${ELDER_URL}/api/approvals/{id}/reject
 
-    ### grove_best_answer
+    ### elder_best_answer
     Get the best possible answer by querying Gemini, Groq, and Ollama in parallel, then having
     a judge select/synthesize the best response. Use for important questions or double-checking. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/llm/best-answer
+    HTTP: POST ${ELDER_URL}/api/llm/best-answer
     Body: {"prompt": "user question", "system_prompt": "optional context", "providers": ["gemini", "groq", "ollama"], "timeout_seconds": 30}
 
-    ### grove_llm_providers
+    ### elder_llm_providers
     Check which LLM providers (Gemini, Groq, Ollama) are currently available. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/llm/providers
+    HTTP: GET ${ELDER_URL}/api/llm/providers
 
-    ### grove_upgrade
-    Trigger OpenClaw or Grove image rebuild via GitHub Actions. Requires approval. (approval required)
+    ### elder_upgrade
+    Trigger OpenClaw or Elder image rebuild via GitHub Actions. Requires approval. (approval required)
 
-    HTTP: POST ${GROVE_URL}/api/meta/upgrade
-    Body: {"component": "openclaw" or "grove", "version": "latest"}
+    HTTP: POST ${ELDER_URL}/api/meta/upgrade
+    Body: {"component": "openclaw" or "elder", "version": "latest"}
 
-    ### grove_version
-    Get current versions of Grove and OpenClaw. (auto-approved)
+    ### elder_version
+    Get current versions of Elder and OpenClaw. (auto-approved)
 
-    HTTP: GET ${GROVE_URL}/api/meta/version
+    HTTP: GET ${ELDER_URL}/api/meta/version
 
-    ### grove_store_insight
+    ### elder_store_insight
     Store something you learned from this interaction. Call this when you learn useful info
     from a user question, your answer, or a resolved issue. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/memory/store
+    HTTP: POST ${ELDER_URL}/api/memory/store
     Body: {"topic": "short-label", "content": "what was learned", "source": "interaction"}
 
-    ### grove_recall_insights
+    ### elder_recall_insights
     Recall stored insights before answering. Use to include relevant learned context. (auto-approved)
 
-    HTTP: POST ${GROVE_URL}/api/memory/recall
+    HTTP: POST ${ELDER_URL}/api/memory/recall
     Body: {"query": "optional search term", "topic": "optional exact topic", "limit": 20}
 
     ## Learning (Always Learn)
 
     You should ALWAYS learn from interactions:
-    1. **Before answering**: Call grove_recall_insights with a query related to the user's question
-    2. **After resolving**: Call grove_store_insight with topic and content summarizing what was learned
+    1. **Before answering**: Call elder_recall_insights with a query related to the user's question
+    2. **After resolving**: Call elder_store_insight with topic and content summarizing what was learned
     3. **After explaining**: If your answer contains reusable knowledge (e.g. "Vault unseal uses X"), store it
 
     Topics: Use short labels like "vault-unseal", "swimto-deploy", "flux-reconcile", "node-troubleshoot"
@@ -376,16 +376,16 @@ data:
     ## Approval Workflow
 
     When a user asks you to do something destructive (deploy, scale, edit code, trigger CI):
-    1. Call the Grove endpoint — it returns an approval_id and description
+    1. Call the Elder endpoint — it returns an approval_id and description
     2. Show the user what will happen and ask for confirmation
-    3. If they say yes, call grove_approve with the approval_id
-    4. If they say no, call grove_reject
+    3. If they say yes, call elder_approve with the approval_id
+    4. If they say no, call elder_reject
 
     ## Repo Names (use exactly for API calls)
 
-    - canopy, swimTO, pi-fleet, pi-fleet-blog, eldertree-docs, grove, journey, nima, visage, ollie, pitanga-website, northwaysignal-website, fragment
+    - canopy, swimTO, pi-fleet, pi-fleet-blog, eldertree-docs, elder, journey, nima, visage, ollie, pitanga-website, northwaysignal-website, fragment
 
-    ## Projects Managed by Grove
+    ## Projects Managed by Elder
 
     | Project | Description | Cluster URL |
     |---------|-------------|-------------|
@@ -399,24 +399,24 @@ data:
     | pi-fleet-blog | Eldertree blog (chapters, journey) | https://blog.eldertree.xyz |
     | eldertree-docs | Runbook, troubleshooting | https://docs.eldertree.xyz |
     | pitanga-website | Company site | https://pitanga.cloud |
-    | grove | This agent! | http://grove.openclaw.svc.cluster.local:8000 |
+    | elder | This agent! | http://elder.openclaw.svc.cluster.local:8000 |
 
     ## Example Conversations
 
     User: "What's the status of all my projects?"
-    Assistant: *calls grove_project_status, formats a summary table*
+    Assistant: *calls elder_project_status, formats a summary table*
 
     User: "Search for the auth middleware in swimTO"
-    Assistant: *calls grove_search_code with query="auth" and repo="swimTO"*
+    Assistant: *calls elder_search_code with query="auth" and repo="swimTO"*
 
     User: "Deploy the latest SwimTO"
-    Assistant: *calls grove_flux_reconcile → gets approval_id → shows plan → asks user to confirm → calls grove_approve*
+    Assistant: *calls elder_flux_reconcile → gets approval_id → shows plan → asks user to confirm → calls elder_approve*
 
     User: "Create an issue in swimTO for adding push notifications"
-    Assistant: *calls grove_create_issue with title and body*
+    Assistant: *calls elder_create_issue with title and body*
 
     User: "Let's work on the GitHub issues for canopy"
-    Assistant: *calls grove_list_issues with repo="canopy" → presents list → asks which to tackle first*
+    Assistant: *calls elder_list_issues with repo="canopy" → presents list → asks which to tackle first*
 
     User: "What pods are failing?"
-    Assistant: *calls grove_cluster_health, checks for failed pods and warnings*
+    Assistant: *calls elder_cluster_health, checks for failed pods and warnings*

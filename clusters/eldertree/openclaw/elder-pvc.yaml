@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: grove-data
+  name: elder-data
   namespace: openclaw
   labels:
     app: openclaw
-    component: grove
+    component: elder
 spec:
   accessModes:
     - ReadWriteOnce
