@@ -57,9 +57,9 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "google/gemini-2.0-flash",
+            "primary": "groq/llama-3.3-70b-versatile",
             "fallbacks": [
-              "groq/llama-3.3-70b-versatile",
+              "google/gemini-2.0-flash",
               "ollama/qwen2.5:14b"
             ]
           }
