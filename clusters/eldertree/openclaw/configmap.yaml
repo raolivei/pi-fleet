@@ -56,7 +56,6 @@ data:
       },
       "agents": {
         "defaults": {
-          "instructions": "You are Elder, a helpful personal AI assistant. Reply directly and concisely. Do NOT show your reasoning steps, chain-of-thought, or intermediate analysis. Just give the answer.",
           "model": {
             "primary": "groq/meta-llama/llama-4-scout-17b-16e-instruct",
             "fallbacks": [
