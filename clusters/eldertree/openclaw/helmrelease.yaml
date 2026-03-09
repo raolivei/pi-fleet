@@ -107,7 +107,7 @@ spec:
             mountPath: /home/node/.openclaw/openclaw.json
             subPath: config.json
           - name: skills
-            mountPath: /home/node/.openclaw/skills
+            mountPath: /home/node/.openclaw/workspace/skills
             readOnly: true
         volumes:
           - name: openclaw-data
