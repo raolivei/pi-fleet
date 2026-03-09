@@ -54,6 +54,13 @@ data:
           ]
         }
       },
+      "tools": {
+        "exec": {
+          "host": "gateway",
+          "security": "full",
+          "ask": "off"
+        }
+      },
       "agents": {
         "defaults": {
           "model": {
