@@ -115,7 +115,7 @@ spec:
 
       elder:
         image:
-          repository: ghcr.io/raolivei/grove
+          repository: ghcr.io/raolivei/elder
           tag: v0.2.0 # {"$imagepolicy": "openclaw:elder:tag"}
           pullPolicy: Always
         port: 8006
@@ -126,41 +126,41 @@ spec:
           - configMapRef:
               name: elder-config
         env:
-          - name: GROVE_PORT
+          - name: ELDER_PORT
             value: "8006"
-          - name: GROVE_K8S_IN_CLUSTER
+          - name: ELDER_K8S_IN_CLUSTER
             value: "true"
-          - name: GROVE_REPOS_DIR
+          - name: ELDER_REPOS_DIR
             value: "/data/repos"
-          - name: GROVE_APPROVAL_DB_PATH
+          - name: ELDER_APPROVAL_DB_PATH
             value: "/data/approvals.db"
-          - name: GROVE_API_KEY
+          - name: ELDER_API_KEY
             valueFrom:
               secretKeyRef:
                 name: elder-secrets
                 key: API_KEY
-          - name: GROVE_GITHUB_APP_ID
+          - name: ELDER_GITHUB_APP_ID
             valueFrom:
               secretKeyRef:
                 name: elder-secrets
                 key: GITHUB_APP_ID
-          - name: GROVE_GITHUB_APP_INSTALLATION_ID
+          - name: ELDER_GITHUB_APP_INSTALLATION_ID
             valueFrom:
               secretKeyRef:
                 name: elder-secrets
                 key: GITHUB_APP_INSTALLATION_ID
-          - name: GROVE_GITHUB_APP_PRIVATE_KEY
+          - name: ELDER_GITHUB_APP_PRIVATE_KEY
             valueFrom:
               secretKeyRef:
                 name: elder-secrets
                 key: GITHUB_APP_PRIVATE_KEY
-          - name: GROVE_GEMINI_API_KEY
+          - name: ELDER_GEMINI_API_KEY
             valueFrom:
               secretKeyRef:
                 name: elder-secrets
                 key: GEMINI_API_KEY
                 optional: true
-          - name: GROVE_GROQ_API_KEY
+          - name: ELDER_GROQ_API_KEY
             valueFrom:
               secretKeyRef:
                 name: elder-secrets

@@ -1,0 +1,73 @@
+---
+# Configure kubelet image garbage collection thresholds on all k3s nodes
+#
+# By default kubelet only GCs images at 85% disk usage. With many app deployments
+# each pushing new images, old versions accumulate and fill the NVMe drives.
+# This sets a lower threshold (60%) so GC runs proactively.
+#
+# Usage: ansible-playbook -i inventory/eldertree.yml playbooks/fix-image-gc.yml
+#
+# Safe to run multiple times (idempotent).
+
+- name: Configure kubelet image GC thresholds
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure /etc/rancher/k3s directory exists
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: "0755"
+
+    - name: Check if image-gc-high-threshold already configured
+      shell: grep -q "image-gc-high-threshold" /etc/rancher/k3s/config.yaml
+      register: gc_configured
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Add image-gc-high-threshold after allowed-unsafe-sysctls line
+      lineinfile:
+        path: /etc/rancher/k3s/config.yaml
+        line: '  - "image-gc-high-threshold=60"'
+        insertafter: 'allowed-unsafe-sysctls'
+        state: present
+      when: gc_configured.rc != 0
+      register: gc_high_added
+
+    - name: Add image-gc-low-threshold after image-gc-high-threshold line
+      lineinfile:
+        path: /etc/rancher/k3s/config.yaml
+        line: '  - "image-gc-low-threshold=50"'
+        insertafter: 'image-gc-high-threshold'
+        state: present
+      when: gc_configured.rc != 0
+      register: gc_low_added
+
+    - name: Show resulting kubelet-arg block
+      shell: grep -A8 'BEGIN ANSIBLE MANAGED - klipper-lb' /etc/rancher/k3s/config.yaml
+      register: kubelet_block
+      changed_when: false
+
+    - name: Display kubelet-arg configuration
+      debug:
+        msg: "{{ kubelet_block.stdout_lines }}"
+
+    - name: Restart k3s to apply new kubelet args
+      systemd:
+        name: k3s
+        state: restarted
+      when: gc_high_added.changed or gc_low_added.changed
+
+    - name: Wait for k3s to be ready after restart
+      command: k3s kubectl get nodes
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 30
+      delay: 5
+      changed_when: false
+      failed_when: false
+      when: gc_high_added.changed or gc_low_added.changed
+
+    - name: Display status
+      debug:
+        msg: "{{ 'Image GC thresholds applied (high=60%, low=50%) — k3s restarted' if (gc_high_added.changed or gc_low_added.changed) else 'Image GC already configured — no changes needed' }}"

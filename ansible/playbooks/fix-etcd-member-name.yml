@@ -1,0 +1,250 @@
+---
+# Fix stale etcd member name on a control-plane node
+#
+# When a node's hostname changes or k3s data is partially wiped, the etcd member
+# can be registered under the old name (e.g. node-0.eldertree.local) while the
+# node runs as node-1.eldertree.local. This causes confusing "too many requests"
+# errors at startup and makes operator tooling unreliable.
+#
+# What this playbook does:
+#   1. Stops k3s on the target node
+#   2. Removes the stale etcd member from the cluster (via a healthy peer node)
+#   3. Backs up and wipes the target node's etcd data + TLS certs
+#   4. Updates config.yaml to rejoin via a healthy peer node
+#   5. Starts k3s — it rejoins with the correct member name
+#   6. Uncordons the node (k3s auto-cordons on rejoin)
+#   7. Deletes the stale k3s node-password secret so it regenerates cleanly
+#
+# Usage:
+#   ansible-playbook -i inventory/eldertree.yml playbooks/fix-etcd-member-name.yml \
+#     --limit node-1 \
+#     -e "peer_node=node-2"
+#
+# Prerequisites:
+#   - At least 2 OTHER healthy etcd members (cluster keeps quorum during fix)
+#   - etcdctl binary available at /usr/local/bin/etcdctl on the peer node
+#     (copy from target if needed: scp node-1:/usr/local/bin/etcdctl node-2:/usr/local/bin/)
+#
+# SAFE: cluster remains fully operational during the fix (2 members maintain quorum)
+
+- name: Fix stale etcd member name
+  hosts: raspberry_pi
+  become: true
+  gather_facts: true
+  serial: 1
+
+  vars:
+    peer_node: "{{ peer_node | default('node-2') }}"
+    peer_node_ip: "{{ hostvars[peer_node]['node_eth0_ip'] | default('10.0.0.2') }}"
+    cluster_token_path: /var/lib/rancher/k3s/server/node-token
+    etcd_certs_base: /var/lib/rancher/k3s/server/tls/etcd
+    etcdctl_cmd: >-
+      /usr/local/bin/etcdctl
+      --cacert {{ etcd_certs_base }}/server-ca.crt
+      --cert {{ etcd_certs_base }}/server-client.crt
+      --key {{ etcd_certs_base }}/server-client.key
+      --endpoints https://127.0.0.1:2379
+
+  tasks:
+    - name: Validate peer node is not the same as target
+      fail:
+        msg: "peer_node ({{ peer_node }}) must be different from target node ({{ inventory_hostname }})"
+      when: peer_node == inventory_hostname
+
+    - name: Show fix plan
+      debug:
+        msg:
+          - "Fixing etcd member name on: {{ inventory_hostname }}"
+          - "Using healthy peer for etcd operations: {{ peer_node }}"
+          - ""
+          - "This will:"
+          - "  1. Stop k3s on {{ inventory_hostname }}"
+          - "  2. Remove {{ inventory_hostname }}'s stale etcd member"
+          - "  3. Wipe etcd data and TLS on {{ inventory_hostname }}"
+          - "  4. Rejoin cluster via {{ peer_node }}"
+
+    # =========================================================================
+    # Step 1: Get cluster token before stopping k3s
+    # =========================================================================
+    - name: Get cluster token from peer node
+      shell: cat {{ cluster_token_path }}
+      register: cluster_token
+      delegate_to: "{{ peer_node }}"
+      changed_when: false
+
+    # =========================================================================
+    # Step 2: Back up config and stop k3s
+    # =========================================================================
+    - name: Back up current k3s config
+      copy:
+        src: /etc/rancher/k3s/config.yaml
+        dest: "/etc/rancher/k3s/config.yaml.backup-etcd-fix-{{ ansible_date_time.iso8601_basic_short }}"
+        remote_src: yes
+        mode: "0600"
+
+    - name: Stop k3s on target node
+      systemd:
+        name: k3s
+        state: stopped
+
+    - name: Wait for k3s to fully stop
+      pause:
+        seconds: 5
+
+    # =========================================================================
+    # Step 3: Find and remove the stale etcd member from the cluster
+    # =========================================================================
+    - name: Get stale etcd member ID for this node IP
+      shell: |
+        {{ etcdctl_cmd }} member list 2>/dev/null \
+          | grep "https://{{ ansible_eth0.ipv4.address | default('10.0.0.1') }}:2380" \
+          | awk -F'|' '{print $1}' \
+          | tr -d ' '
+      register: stale_member_id
+      delegate_to: "{{ peer_node }}"
+      failed_when: false
+      changed_when: false
+
+    - name: Show stale member info
+      debug:
+        msg: "Stale etcd member ID for {{ inventory_hostname }}: '{{ stale_member_id.stdout }}'"
+
+    - name: Remove stale etcd member from cluster
+      shell: "{{ etcdctl_cmd }} member remove {{ stale_member_id.stdout }} 2>&1"
+      delegate_to: "{{ peer_node }}"
+      when:
+        - stale_member_id.stdout is defined
+        - stale_member_id.stdout | length > 0
+      register: member_remove_result
+
+    - name: Show member removal result
+      debug:
+        msg: "{{ member_remove_result.stdout | default('No member found to remove') }}"
+
+    - name: Verify 2-member etcd cluster is healthy
+      shell: "{{ etcdctl_cmd }} member list -w table 2>&1"
+      register: etcd_health
+      delegate_to: "{{ peer_node }}"
+      changed_when: false
+
+    - name: Display etcd cluster state
+      debug:
+        msg: "{{ etcd_health.stdout_lines }}"
+
+    # =========================================================================
+    # Step 4: Wipe etcd data and TLS on target node
+    # =========================================================================
+    - name: Back up etcd data directory
+      shell: |
+        mv /var/lib/rancher/k3s/server/db \
+           /var/lib/rancher/k3s/server/db.bak-etcd-fix-{{ ansible_date_time.iso8601_basic_short }}
+      failed_when: false
+
+    - name: Remove stale TLS certificates
+      file:
+        path: /var/lib/rancher/k3s/server/tls
+        state: absent
+
+    - name: Remove stale credentials
+      shell: rm -f /var/lib/rancher/k3s/server/cred/*
+      failed_when: false
+      changed_when: false
+
+    # =========================================================================
+    # Step 5: Update config to rejoin via peer node
+    # =========================================================================
+    - name: Get current config content
+      slurp:
+        src: /etc/rancher/k3s/config.yaml
+      register: current_config
+
+    - name: Remove any existing server/token lines from config
+      set_fact:
+        clean_config: |
+          {{ (current_config.content | b64decode).split('\n')
+             | reject('match', '^server:')
+             | reject('match', '^token:')
+             | reject('match', '^# Rejoining')
+             | join('\n') }}
+
+    - name: Write config with peer server/token for rejoin
+      copy:
+        content: |
+          # Rejoining via {{ peer_node }} to fix etcd member name
+          server: https://{{ peer_node_ip }}:6443
+          token: {{ cluster_token.stdout }}
+
+          {{ clean_config }}
+        dest: /etc/rancher/k3s/config.yaml
+        mode: "0600"
+        owner: root
+        group: root
+
+    # =========================================================================
+    # Step 6: Start k3s and wait for rejoin
+    # =========================================================================
+    - name: Start k3s to rejoin cluster with correct member name
+      systemd:
+        name: k3s
+        state: started
+        daemon_reload: yes
+
+    - name: Wait for node to rejoin and become Ready
+      shell: k3s kubectl get node {{ inventory_hostname }}.eldertree.local
+      register: node_ready
+      until: "'Ready' in node_ready.stdout"
+      retries: 60
+      delay: 5
+      changed_when: false
+      failed_when: false
+
+    # =========================================================================
+    # Step 7: Verify new etcd member name
+    # =========================================================================
+    - name: Verify new etcd member name
+      shell: "{{ etcdctl_cmd }} member list -w table 2>&1"
+      register: etcd_final
+      delegate_to: "{{ peer_node }}"
+      changed_when: false
+
+    - name: Display final etcd cluster state
+      debug:
+        msg: "{{ etcd_final.stdout_lines }}"
+
+    # =========================================================================
+    # Step 8: Uncordon the node
+    # =========================================================================
+    - name: Uncordon the node (k3s auto-cordons on rejoin)
+      shell: k3s kubectl uncordon {{ inventory_hostname }}.eldertree.local
+      delegate_to: "{{ peer_node }}"
+      register: uncordon_result
+      failed_when: false
+      changed_when: false
+
+    - name: Delete stale node-password secret
+      shell: |
+        k3s kubectl delete secret -n kube-system \
+          {{ inventory_hostname }}.eldertree.local.node-password.k3s 2>&1 || true
+      delegate_to: "{{ peer_node }}"
+      changed_when: false
+
+    - name: Final cluster node status
+      shell: k3s kubectl get nodes -o wide
+      register: final_nodes
+      delegate_to: "{{ peer_node }}"
+      changed_when: false
+
+    - name: Display final cluster state
+      debug:
+        msg: "{{ final_nodes.stdout_lines }}"
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "✅ etcd member name fixed on {{ inventory_hostname }}"
+          - ""
+          - "NOTE: The server/token lines are still in config.yaml for safe future rejoins."
+          - "They are harmless — k3s uses them only if it cannot find itself in etcd."
+          - ""
+          - "If you want to restore the original init-node config (no server/token),"
+          - "run: ansible-playbook playbooks/configure-k3s-gigabit.yml --limit {{ inventory_hostname }}"

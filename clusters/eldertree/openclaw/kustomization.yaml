@@ -9,7 +9,7 @@ resources:
   - pvc.yaml
   - configmap.yaml
   - skills-configmap.yaml
-  # Elder (AI agent sidecar; image from grove repo until elder image exists)
+  # Elder (AI agent sidecar)
   - elder-rbac.yaml
   - elder-externalsecret.yaml
   - elder-pvc.yaml
