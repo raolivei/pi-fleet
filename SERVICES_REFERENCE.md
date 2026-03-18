@@ -328,9 +328,9 @@ cat vault-backup-YYYYMMDD.json | jq '.secrets'
 - `secret/journey/postgres` - Journey PostgreSQL password
 - `secret/journey/database` - Journey database URL
 - `secret/openclaw/telegram` - OpenClaw Telegram bot token
-- `secret/openclaw/gemini` - OpenClaw Google AI Studio API key
-- `secret/openclaw/groq` - OpenClaw Groq API key (multi-provider fallback)
-- `secret/openclaw/ollama` - OpenClaw Ollama config (api-key, base-url for Mac)
+- `secret/openclaw/openrouter` - OpenClaw OpenRouter API key (primary LLM)
+- `secret/openclaw/groq` - OpenClaw Groq API key (fallback)
+- `secret/openclaw/gemini` - Google AI key (Elder best-answer only)
 - `secret/openclaw/gateway` - OpenClaw gateway authentication token
 - `secret/openclaw/brave` - OpenClaw Brave Search API key (web search)
 - `secret/elder/github-app` - Elder GitHub App credentials (app-id, installation-id, private-key)

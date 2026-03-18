@@ -60,13 +60,12 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 
 ### LLM Providers
 
-- **Primary:** Google Gemini 1.5 Flash (cloud, free tier)
-- **Fallback 1:** Groq (cloud, free tier)
-- **Fallback 2:** Ollama (runs on Mac M4 via Tailscale/LAN; not on Pi)
+- **OpenClaw gateway:** OpenRouter (primary), Groq (fallback)
+- **Elder best-answer:** Gemini + Groq in parallel; judge picks best
 
 ### Elder Endpoints
 
-- `POST /api/llm/best-answer` — Query Gemini, Groq, Ollama in parallel; judge picks best
+- `POST /api/llm/best-answer` — Query Gemini, Groq in parallel; judge picks best
 - `GET /api/llm/providers` — Provider availability
 - `POST /api/memory/store` — Store insight
 - `POST /api/memory/recall` — Recall insights
@@ -89,9 +88,9 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 ### OpenClaw
 
 - `secret/openclaw/telegram` — Bot token
-- `secret/openclaw/gemini` — Google AI API key
-- `secret/openclaw/groq` — Groq API key
-- `secret/openclaw/ollama` — api-key, base-url (Mac)
+- `secret/openclaw/openrouter` — OpenRouter API key (primary LLM)
+- `secret/openclaw/groq` — Groq API key (fallback)
+- `secret/openclaw/gemini` — Google AI key (Elder best-answer only)
 - `secret/openclaw/gateway` — Gateway auth token
 - `secret/openclaw/brave` — Brave Search API key
 

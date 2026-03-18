@@ -1,6 +1,6 @@
 # OpenClaw Deployment
 
-Personal AI assistant powered by OpenClaw running on eldertree with multi-provider LLM support (Gemini + Groq + Ollama) and Elder for cluster ops, code, and GitHub.
+Personal AI assistant powered by OpenClaw on eldertree with OpenRouter (primary) and Groq fallback, plus Elder for cluster ops, code, and GitHub.
 
 ## ARM64 Build
 
@@ -20,8 +20,8 @@ To rebuild manually:
 ## Features
 
 - **Telegram Integration**: Chat via `@eldertree_assistant_bot`
-- **Multi-Provider LLM**: Gemini (primary) + Groq + Ollama fallback chain
-- **Best-of-Three**: Elder can query all three providers in parallel and judge the best answer
+- **Multi-Provider LLM**: OpenRouter primary (e.g. Llama, Gemini, Claude) + Groq fallback
+- **Elder best-answer**: Elder can query Gemini + Groq in parallel and judge the best answer
 - **SwimTO Integration**: Query Toronto pool schedules
 - **Kubernetes Access**: Read-only cluster access (pods, logs, events)
 - **Elder Agent**: Code browsing, GitHub issues/PRs, FluxCD, project planning
@@ -32,10 +32,9 @@ To rebuild manually:
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────────────────┐
-│  Telegram   │────▶│   OpenClaw   │────▶│  Gemini (primary)           │
+│  Telegram   │────▶│   OpenClaw   │────▶│  OpenRouter (primary)       │
 │   Web UI    │◀────│   Gateway    │◀────│  Groq (fallback)            │
-└─────────────┘     └──────┬───────┘     │  Ollama (fallback, on Mac)  │
-                           │             └─────────────────────────────┘
+└─────────────┘     └──────┬───────┘     └─────────────────────────────┘
                            │
                            ▼
                     ┌──────────────┐     ┌──────────────┐
@@ -45,18 +44,16 @@ To rebuild manually:
                     └──────────────┘
 ```
 
-**Option A (Resilience):** Normal traffic uses primary (Gemini); if it fails, fallbacks to Groq, then Ollama.
-
-**Option B (Best-of-Three):** For important questions, use `elder_best_answer` to query all three in parallel and get the judged best answer.
+**Resilience:** OpenClaw uses OpenRouter first; if it fails, fallbacks to Groq. Elder can use `elder_best_answer` to query Gemini + Groq in parallel and return the judged best answer.
 
 ## Quick Start
 
 ### 1. Get Credentials
 
 1. **Telegram Bot**: Message [@BotFather](https://t.me/botfather), send `/newbot`
-2. **Gemini API Key**: [aistudio.google.com](https://aistudio.google.com)
-3. **Groq API Key** (optional): [console.groq.com](https://console.groq.com)
-4. **Ollama**: Run on Mac; cluster connects via Tailscale or LAN
+2. **OpenRouter API Key**: [openrouter.ai](https://openrouter.ai) (primary LLM for OpenClaw)
+3. **Groq API Key** (optional): [console.groq.com](https://console.groq.com) (fallback)
+4. **Gemini API Key** (optional): [aistudio.google.com](https://aistudio.google.com) (for Elder best-answer only)
 
 ### 2. Store Secrets
 
@@ -66,24 +63,9 @@ Run the setup script:
 ./scripts/setup-openclaw.sh
 ```
 
-Prompts for: Telegram, Gemini, Groq (optional), Ollama base URL (e.g. `http://100.x.x.x:11434` for Tailscale Mac).
+Prompts for: Telegram, OpenRouter, Groq (optional), Gemini (optional, for Elder).
 
-### 3. Ollama on Mac (for fallback / best-of-three)
-
-Ollama cannot run large models on the Pi cluster (8GB ARM64). Run it on your M4 Mac:
-
-```bash
-# Install Ollama
-brew install ollama
-
-# Start and pull model
-ollama serve   # or run as service
-ollama pull qwen2.5:14b
-```
-
-**Connect from cluster:** Use your Mac's Tailscale IP (e.g. `http://100.86.241.124:11434`) as `OLLAMA_BASE_URL` in the setup script. Ensure Mac firewall allows port 11434 from the cluster network.
-
-### 4. Deploy
+### 3. Deploy
 
 OpenClaw is enabled in `clusters/eldertree/kustomization.yaml`. Push to trigger Flux deployment.
 
@@ -98,14 +80,14 @@ Example: "Upgrade OpenClaw to v1.0.0" → creates approval → user approves →
 
 ## Secrets
 
-| Path                       | Description                                   |
-| -------------------------- | --------------------------------------------- |
-| `secret/openclaw/telegram` | Telegram bot token                            |
-| `secret/openclaw/gemini`   | Google AI Studio API key                      |
-| `secret/openclaw/groq`     | Groq API key (optional)                       |
-| `secret/openclaw/ollama`   | Ollama config: `api-key`, `base-url`          |
-| `secret/openclaw/gateway`  | Gateway authentication token (auto-generated)|
-| `secret/openclaw/brave`    | Brave Search API key (for web search)         |
+| Path                          | Description                                      |
+| ----------------------------- | ------------------------------------------------ |
+| `secret/openclaw/telegram`    | Telegram bot token                               |
+| `secret/openclaw/openrouter`  | OpenRouter API key (primary LLM)                 |
+| `secret/openclaw/groq`        | Groq API key (optional fallback)                 |
+| `secret/openclaw/gemini`      | Google AI key (optional; Elder best-answer only)|
+| `secret/openclaw/gateway`     | Gateway authentication token (auto-generated)    |
+| `secret/openclaw/brave`       | Brave Search API key (for web search)            |
 
 ## Verification (Post-Deploy)
 
@@ -152,15 +134,9 @@ The Web UI uses **trusted-proxy auth**: Traefik injects `X-Forwarded-User: local
 2. Verify secret exists in Vault
 3. `kubectl describe externalsecret openclaw-secrets -n openclaw`
 
-### Ollama unreachable from cluster
-
-- Ensure Ollama is running on Mac: `ollama list`
-- Use Mac's Tailscale IP (not localhost) for `OLLAMA_BASE_URL`
-- Test from a cluster pod: `kubectl run -it --rm debug --image=curlimages/curl -- curl -s http://<mac-ip>:11434/api/tags`
-
 ### API rate limits
 
-Gemini free tier: 60 req/min. Fallbacks (Groq, Ollama) activate automatically when primary fails.
+OpenRouter and Groq have their own limits. Fallback to Groq activates automatically when OpenRouter fails.
 
 ### Web UI "gateway token missing"
 
