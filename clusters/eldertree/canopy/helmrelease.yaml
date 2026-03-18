@@ -66,6 +66,8 @@ spec:
         replicas: 2
         port: 3000
         probesEnabled: false
+        # Sticky sessions so HTML and _next/static chunk requests hit the same pod (avoids 404s when replicas have different build hashes)
+        sessionAffinity: ClientIP
         env:
           - name: NEXT_PUBLIC_API_URL
             value: "http://canopy-api:8000"

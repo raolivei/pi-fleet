@@ -53,6 +53,7 @@ components: {}
 #   replicas: 1
 #   port: 8000                # Container port
 #   targetPort: null          # If service port differs from container port
+#   sessionAffinity: ""       # e.g. ClientIP for sticky sessions (avoids 404s when frontend replicas serve different build hashes)
 #   env: []                   # List of env vars (name/value or name/valueFrom)
 #   envFrom: []               # List of envFrom (configMapRef, secretRef)
 #   command: []               # Container command override

@@ -13,6 +13,14 @@ metadata:
   {{- end }}
 spec:
   type: ClusterIP
+  {{- if $component.sessionAffinity }}
+  sessionAffinity: {{ $component.sessionAffinity }}
+  {{- if eq $component.sessionAffinity "ClientIP" }}
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  {{- end }}
+  {{- end }}
   selector:
     {{- include "eldertree-app.selectorLabels" (dict "releaseName" $.Release.Name "componentName" $name) | nindent 4 }}
   ports:
