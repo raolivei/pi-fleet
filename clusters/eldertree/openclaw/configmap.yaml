@@ -56,9 +56,13 @@ data:
       },
       "tools": {
         "exec": {
-          "host": "gateway",
-          "security": "full",
-          "ask": "off"
+          "enabled": false
+        },
+        "elevated": {
+          "enabled": true,
+          "allowFrom": {
+            "telegram": ["*"]
+          }
         }
       },
       "agents": {
