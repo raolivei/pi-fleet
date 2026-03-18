@@ -9,7 +9,7 @@
 # - KV Secrets Engine (v2) for project secrets
 # - Vault Policies (per-project access control)
 # - Kubernetes Auth Method (for External Secrets Operator)
-# - AppRoles (optional, for CI/CD pipelines)
+# - Optional: secret values (e.g. secret/openclaw/openrouter) when variables are set
 #
 # Prerequisites:
 # - Vault must be deployed and unsealed
@@ -307,6 +307,29 @@ resource "vault_token" "infrastructure_token" {
 
   lifecycle {
     ignore_changes = [ttl]
+  }
+}
+
+# =============================================================================
+# Optional: Store API keys in Vault (when variables are provided)
+# =============================================================================
+# Keys are created at provider dashboards; Terraform only writes them to Vault.
+# Run with -var="openrouter_api_key=sk-or-..." or TF_VAR_openrouter_api_key.
+# Once created, lifecycle.prevent_destroy avoids accidental removal when var is unset (e.g. CI).
+
+resource "vault_kv_secret_v2" "openclaw_openrouter" {
+  count = local.vault_enabled && var.openrouter_api_key != "" ? 1 : 0
+
+  mount = vault_mount.kv_v2[0].path
+  name  = "openclaw/openrouter"
+
+  # data_json_wo is write-only: value is not stored in Terraform state
+  data_json_wo = jsonencode({
+    "api-key" = var.openrouter_api_key
+  })
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
