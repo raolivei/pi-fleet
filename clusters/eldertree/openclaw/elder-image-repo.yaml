@@ -4,7 +4,7 @@ metadata:
   name: elder
   namespace: openclaw
 spec:
-  image: ghcr.io/raolivei/grove
+  image: ghcr.io/raolivei/elder
   interval: 5m
   secretRef:
     name: ghcr-secret

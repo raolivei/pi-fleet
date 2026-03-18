@@ -7,14 +7,8 @@ metadata:
     app: openclaw
     component: elder
 data:
-  # Elder (same app as Grove; binary still reads GROVE_* for now)
   ELDER_REPO_SYNC_INTERVAL_HOURS: "6"
   ELDER_GITHUB_OWNER: "raolivei"
   ELDER_OLLAMA_BASE_URL: "http://localhost:11434"
   ELDER_OLLAMA_MODEL: "qwen2.5:14b"
   ELDER_LLM_TIMEOUT_SECONDS: "30"
-  GROVE_REPO_SYNC_INTERVAL_HOURS: "6"
-  GROVE_GITHUB_OWNER: "raolivei"
-  GROVE_OLLAMA_BASE_URL: "http://localhost:11434"
-  GROVE_OLLAMA_MODEL: "qwen2.5:14b"
-  GROVE_LLM_TIMEOUT_SECONDS: "30"
