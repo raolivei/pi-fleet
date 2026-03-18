@@ -73,18 +73,11 @@ spec:
                 name: openclaw-secrets
                 key: GROQ_API_KEY
                 optional: true
-          - name: OLLAMA_API_KEY
+          - name: OPENROUTER_API_KEY
             valueFrom:
               secretKeyRef:
                 name: openclaw-secrets
-                key: OLLAMA_API_KEY
-                optional: true
-          - name: OLLAMA_BASE_URL
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: OLLAMA_BASE_URL
-                optional: true
+                key: OPENROUTER_API_KEY
           - name: HOME
             value: /home/node
           - name: NODE_OPTIONS
