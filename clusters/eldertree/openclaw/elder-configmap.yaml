@@ -9,6 +9,4 @@ metadata:
 data:
   ELDER_REPO_SYNC_INTERVAL_HOURS: "6"
   ELDER_GITHUB_OWNER: "raolivei"
-  ELDER_OLLAMA_BASE_URL: "http://localhost:11434"
-  ELDER_OLLAMA_MODEL: "qwen2.5:14b"
   ELDER_LLM_TIMEOUT_SECONDS: "30"
