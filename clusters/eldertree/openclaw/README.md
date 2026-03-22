@@ -23,7 +23,7 @@ To rebuild manually:
 - **Multi-Provider LLM**: OpenRouter primary (e.g. Llama, Gemini, Claude) + Groq fallback
 - **Elder best-answer**: Elder can query Gemini + Groq in parallel and judge the best answer
 - **SwimTO Integration**: Query Toronto pool schedules
-- **Kubernetes Access**: Read-only cluster access (pods, logs, events)
+- **Kubernetes Access**: Cluster-wide operator RBAC via in-pod `kubectl` (workloads, Flux, ingress, secrets, etc.); storage (PV/PVC/snapshots/StorageClass) and cluster control-plane APIs are read-only — see [rbac.yaml](rbac.yaml)
 - **Elder Agent**: Code browsing, GitHub issues/PRs, FluxCD, project planning
 - **Web Search**: Brave Search API
 - **Web UI**: `https://openclaw.eldertree.local`

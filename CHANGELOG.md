@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **OpenClaw Kubernetes RBAC** ([`clusters/eldertree/openclaw/rbac.yaml`](clusters/eldertree/openclaw/rbac.yaml))
+  - Cluster-wide create/update/patch/delete for workloads (Deployments, StatefulSets, DaemonSets, Jobs, CronJobs, HPAs, PDBs), Services, ConfigMaps, Secrets, Ingresses, NetworkPolicies, namespace-scoped Roles/RoleBindings, Events, and Flux / cert-manager objects
+  - **Read-only:** PV, PVC, VolumeSnapshots, StorageClass, volume attachments, CSI types, CRDs, APIServices, admission webhooks, ClusterRoles/Bindings (view), PriorityClasses, Longhorn CRDs, IngressClasses, ClusterIssuers
+  - **No namespace delete**; **no node delete**; nodes patch/update allowed (e.g. cordon/taints)
+
 ### Added
 
 - **OpenClaw runbook entries** (eldertree-docs) — OPENCLAW-001: gateway token, config schema, read-only doctor, controlUi allowedOrigins, and "All models failed" (Google/Groq/Ollama auth)
