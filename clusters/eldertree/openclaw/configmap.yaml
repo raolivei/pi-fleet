@@ -55,6 +55,9 @@ data:
         }
       },
       "tools": {
+        "exec": {
+          "ask": "off"
+        },
         "elevated": {
           "enabled": true,
           "allowFrom": {
