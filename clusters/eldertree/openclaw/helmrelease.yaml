@@ -91,6 +91,10 @@ spec:
           - name: config-file
             mountPath: /home/node/.openclaw/openclaw.json
             subPath: config.json
+          - name: exec-approvals
+            mountPath: /home/node/.openclaw/exec-approvals.json
+            subPath: exec-approvals.json
+            readOnly: true
           - name: skills
             mountPath: /home/node/.openclaw/workspace/skills
             readOnly: true
@@ -101,6 +105,9 @@ spec:
           - name: config-file
             configMap:
               name: openclaw-config-file
+          - name: exec-approvals
+            configMap:
+              name: openclaw-exec-approvals
           - name: skills
             configMap:
               name: openclaw-skills

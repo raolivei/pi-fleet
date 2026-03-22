@@ -8,6 +8,7 @@ resources:
   - ghcr-secret-external.yaml
   - pvc.yaml
   - configmap.yaml
+  - exec-approvals-configmap.yaml
   - skills-configmap.yaml
   # Elder (AI agent sidecar)
   - elder-rbac.yaml

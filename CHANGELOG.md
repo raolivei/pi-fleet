@@ -16,6 +16,7 @@
 
 ### Fixed
 
+- **OpenClaw exec `allowlist miss`** — PVC `exec-approvals.json` used `security: allowlist` so `kubectl` was blocked. GitOps ConfigMap [`clusters/eldertree/openclaw/exec-approvals-configmap.yaml`](clusters/eldertree/openclaw/exec-approvals-configmap.yaml) mounted over `~/.openclaw/exec-approvals.json` with `security: full` / `ask: off`; [`configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml) sets `tools.exec.host: gateway`, `security: full`, `ask: off` (exec runs in pod with in-cluster RBAC).
 - **OpenClaw Web UI and pod stability**
   - Trusted-proxy auth so Web UI works without manual gateway token (Traefik injects `X-Forwarded-User: local`)
   - Config updated to OpenClaw 2026 schema (`gateway.bind: "lan"`, removed top-level `providers`/`models.default`)
