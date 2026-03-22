@@ -1,6 +1,6 @@
-# Overrides PVC ~/.openclaw/exec-approvals.json (GitOps).
-# Without this, persisted allowlist mode blocks kubectl with "exec denied: allowlist miss".
-# Policy: gateway host exec = full (RBAC in rbac.yaml is the real boundary).
+# Seeded into ~/.openclaw/exec-approvals.json on each pod start (writable PVC).
+# Do not mount this file directly — OpenClaw updates exec-approvals.json at runtime (EROFS if read-only).
+# Policy: gateway exec security full (cluster boundary = RBAC in rbac.yaml).
 apiVersion: v1
 kind: ConfigMap
 metadata:
