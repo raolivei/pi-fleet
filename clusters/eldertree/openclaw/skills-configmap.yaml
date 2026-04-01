@@ -64,7 +64,12 @@ data:
     # Cluster Ops Skill
 
     Monitor and interact with the eldertree Kubernetes cluster.
-    You have read-only access to the cluster via kubectl.
+    kubectl runs in the OpenClaw pod; permissions follow the `openclaw` Kubernetes RBAC (see pi-fleet `openclaw/rbac.yaml`).
+
+    ## OpenClaw container (eldertree)
+
+    - **Do not run `openclaw update` or `openclaw` CLI** in this pod — the binary is not a supported admin path. To upgrade OpenClaw, trigger the **GitHub Action** that builds `ghcr.io/raolivei/openclaw` and let **Flux** roll the new image (or use Elder `elder_upgrade` if configured).
+    - **Gateway Web UI** uses **token** auth: paste the gateway token from Vault `secret/openclaw/gateway` (property `token` → k8s `OPENCLAW_GATEWAY_TOKEN`) when the Control UI asks; internal tools use the same value via env.
 
     ## How to Use
 

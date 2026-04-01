@@ -116,9 +116,9 @@ kubectl logs -n openclaw -l app=openclaw -f
 kubectl get externalsecret -n openclaw
 ```
 
-## Web UI Access (No Manual Token)
+## Web UI Access (Gateway Token)
 
-The Web UI uses **trusted-proxy auth**: Traefik injects `X-Forwarded-User: local` for all requests. OpenClaw trusts requests from the proxy (pod network) and skips manual token entry. Just open https://openclaw.eldertree.local — no Control UI token needed.
+The gateway uses **`auth.mode: token`** so **in-pod tools** (sessions list, internal WebSocket clients) authenticate with `OPENCLAW_GATEWAY_TOKEN` — trusted-proxy cannot work for those loopback connections (no `X-Forwarded-User`). Open https://openclaw.eldertree.local and **paste the gateway token** when prompted (value from Vault `secret/openclaw/gateway` property `token`, or `kubectl get secret openclaw-secrets -n openclaw -o jsonpath='{.data.OPENCLAW_GATEWAY_TOKEN}' | base64 -d`).
 
 ## Troubleshooting
 
@@ -140,7 +140,4 @@ OpenRouter and Groq have their own limits. Fallback to Groq activates automatica
 
 ### Web UI "gateway token missing"
 
-If you see this error, trusted-proxy auth may not be active. Ensure:
-1. ConfigMap has `gateway.auth.mode: "trusted-proxy"` and `gateway.auth.trustedProxy.userHeader: "x-forwarded-user"`
-2. Ingress uses the `add-trusted-proxy-user` middleware
-3. OpenClaw pod has restarted to pick up config changes
+Paste the token from Vault `secret/openclaw/gateway` (synced into `openclaw-secrets` as `OPENCLAW_GATEWAY_TOKEN`). Ensure `gateway.auth.mode` is `token` and `gateway.auth.token` expands `${OPENCLAW_GATEWAY_TOKEN}` in [`configmap.yaml`](configmap.yaml), then restart the OpenClaw pod.

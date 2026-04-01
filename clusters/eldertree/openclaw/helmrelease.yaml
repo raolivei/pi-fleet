@@ -191,12 +191,6 @@ spec:
         type: redirectScheme
         scheme: https
         permanent: true
-      add-trusted-proxy-user:
-        type: headers
-        headers:
-          customRequestHeaders:
-            X-Forwarded-User: "local"
-
     # -- Ingress
     ingress:
       openclaw-web:
@@ -205,7 +199,6 @@ spec:
         port: 18789
         middlewares:
           - openclaw-redirect-https@kubernetescrd
-          - openclaw-add-trusted-proxy-user@kubernetescrd
         tls:
           secretName: openclaw-tls
           certManager: true
