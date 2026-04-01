@@ -73,6 +73,17 @@ data:
               "groq/meta-llama/llama-4-scout-17b-16e-instruct",
               "openrouter/meta-llama/llama-4-scout"
             ]
+          },
+          "params": {
+            "maxTokens": 3072
+          },
+          "contextTokens": 22000,
+          "compaction": {
+            "mode": "safeguard",
+            "model": "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+            "memoryFlush": {
+              "enabled": false
+            }
           }
         }
       },
@@ -88,19 +99,19 @@ data:
                 "id": "meta-llama/llama-4-scout",
                 "name": "Llama 4 Scout (OpenRouter)",
                 "contextWindow": 131072,
-                "maxTokens": 4096
+                "maxTokens": 3072
               },
               {
                 "id": "google/gemini-2.0-flash-001",
                 "name": "Gemini 2.0 Flash (OpenRouter)",
-                "contextWindow": 1048576,
-                "maxTokens": 4096
+                "contextWindow": 24000,
+                "maxTokens": 3072
               },
               {
                 "id": "anthropic/claude-3.5-haiku",
                 "name": "Claude 3.5 Haiku (OpenRouter)",
                 "contextWindow": 200000,
-                "maxTokens": 4096
+                "maxTokens": 3072
               }
             ]
           },
@@ -113,7 +124,7 @@ data:
                 "id": "meta-llama/llama-4-scout-17b-16e-instruct",
                 "name": "Llama 4 Scout 17B (Groq)",
                 "contextWindow": 131072,
-                "maxTokens": 4096
+                "maxTokens": 3072
               }
             ]
           }
