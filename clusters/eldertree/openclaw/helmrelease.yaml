@@ -78,13 +78,13 @@ spec:
           - name: HOME
             value: /home/node
           - name: NODE_OPTIONS
-            value: "--max-old-space-size=1536 --unhandled-rejections=warn"
+            value: "--max-old-space-size=2048 --unhandled-rejections=warn"
         envFrom:
           - configMapRef:
               name: openclaw-config
         resources:
-          requests: { cpu: "200m", memory: "1Gi" }
-          limits: { cpu: "1000m", memory: "2Gi" }
+          requests: { cpu: "200m", memory: "1536Mi" }
+          limits: { cpu: "1000m", memory: "3Gi" }
         probes:
           path: /health
           port: 18789

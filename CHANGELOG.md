@@ -16,6 +16,8 @@
 
 ### Fixed
 
+- **OpenClaw OOM crash-loop** — Node heap `--max-old-space-size=2048` and pod memory request 1536Mi / limit 3Gi ([`helmrelease.yaml`](clusters/eldertree/openclaw/helmrelease.yaml)); prior ~1.5Gi heap in a 2Gi limit caused `FATAL ERROR: Reached heap limit`.
+- **OpenClaw loopback `trusted_proxy_untrusted_source`** — `gateway.trustedProxies` includes `127.0.0.0/8` and `::1/128` ([`configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml)) so in-pod clients to `ws://127.0.0.1:18789` are trusted.
 - **OpenClaw exec `allowlist miss` / EROFS on exec-approvals** — ConfigMap [`exec-approvals-configmap.yaml`](clusters/eldertree/openclaw/exec-approvals-configmap.yaml) is mounted read-only at `/etc/openclaw-defaults` and **copied** to the PVC on container start ([`helmrelease.yaml`](clusters/eldertree/openclaw/helmrelease.yaml)) so OpenClaw can mutate `exec-approvals.json`. [`configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml) keeps `tools.exec.host: gateway`, `security: full`, `ask: off`.
 - **OpenClaw Web UI and pod stability**
   - Trusted-proxy auth so Web UI works without manual gateway token (Traefik injects `X-Forwarded-User: local`)
