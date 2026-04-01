@@ -1,76 +1,135 @@
 {
   "title": "SwimTO Application Dashboard",
   "uid": "swimto-dashboard",
-  "tags": [
-    "swimto",
-    "applications",
-    "monitoring"
-  ],
+  "tags": ["swimto", "applications", "monitoring"],
   "timezone": "",
   "schemaVersion": 38,
-  "version": 2,
-  "refresh": "30s",
+  "version": 3,
+  "refresh": "5m",
   "panels": [
     {
-      "id": 1,
-      "title": "API Request Rate",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
+      "id": 10,
+      "title": "Web Requests Today",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 50 },
+              { "color": "yellow", "value": 500 }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
       },
       "targets": [
         {
-          "expr": "sum(rate(traefik_service_requests_total{namespace=\"swimto\", service=~\".*swimto-api-service.*\"}[5m])) by (code)",
-          "legendFormat": "HTTP {{code}}"
+          "expr": "sum(increase(traefik_service_requests_total{service=\"swimto-swimto-web-3000@kubernetes\"}[$__range]))",
+          "legendFormat": "Web Requests"
         }
       ]
     },
     {
-      "id": 2,
-      "title": "API Response Time (p95)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
+      "id": 11,
+      "title": "API Requests Today",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 50 },
+              { "color": "yellow", "value": 500 }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{namespace=\"swimto\", service=~\".*swimto-api-service.*\"}[5m])) by (le))",
-          "legendFormat": "p95"
+          "expr": "sum(increase(traefik_service_requests_total{service=\"swimto-swimto-api-8000@kubernetes\"}[$__range]))",
+          "legendFormat": "API Requests"
         }
       ]
     },
     {
-      "id": 3,
-      "title": "Web Request Rate",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
+      "id": 12,
+      "title": "Error Rate (5xx) Today",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
       },
       "targets": [
         {
-          "expr": "sum(rate(traefik_service_requests_total{namespace=\"swimto\", service=~\".*swimto-web-service.*\"}[5m])) by (code)",
-          "legendFormat": "HTTP {{code}}"
+          "expr": "sum(increase(traefik_service_requests_total{service=~\"swimto-swimto-.*\", code=~\"5..\"}[$__range]))",
+          "legendFormat": "5xx Errors"
         }
       ]
     },
     {
       "id": 4,
-      "title": "Pod Status (Web/API)",
+      "title": "Pod Status",
       "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 8
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 2 }
+            ]
+          }
+        }
       },
       "targets": [
         {
@@ -81,13 +140,29 @@
     },
     {
       "id": 5,
-      "title": "PostgreSQL Status",
+      "title": "PostgreSQL",
       "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 8
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "UP" } } },
+            { "type": "value", "options": { "0": { "text": "DOWN" } } }
+          ]
+        }
       },
       "targets": [
         {
@@ -98,13 +173,29 @@
     },
     {
       "id": 6,
-      "title": "Redis Status",
+      "title": "Redis",
       "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 12
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "UP" } } },
+            { "type": "value", "options": { "0": { "text": "DOWN" } } }
+          ]
+        }
       },
       "targets": [
         {
@@ -114,14 +205,146 @@
       ]
     },
     {
-      "id": 7,
-      "title": "CPU Usage",
+      "id": 20,
+      "title": "Daily Requests (Web + API)",
       "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 15 },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(traefik_service_requests_total{service=\"swimto-swimto-web-3000@kubernetes\"}[1d]))",
+          "legendFormat": "Web (swimto.app)"
+        },
+        {
+          "expr": "sum(increase(traefik_service_requests_total{service=\"swimto-swimto-api-8000@kubernetes\"}[1d]))",
+          "legendFormat": "API"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "title": "API Request Rate (by status)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "reqps"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(traefik_service_requests_total{service=\"swimto-swimto-api-8000@kubernetes\"}[5m])) by (code)",
+          "legendFormat": "HTTP {{code}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "API Response Time (p50 / p95 / p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "s"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(traefik_service_request_duration_seconds_bucket{service=\"swimto-swimto-api-8000@kubernetes\"}[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket{service=\"swimto-swimto-api-8000@kubernetes\"}[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(traefik_service_request_duration_seconds_bucket{service=\"swimto-swimto-api-8000@kubernetes\"}[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Web Request Rate (by status)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "reqps"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(traefik_service_requests_total{service=\"swimto-swimto-web-3000@kubernetes\"}[5m])) by (code)",
+          "legendFormat": "HTTP {{code}}"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Bandwidth (bytes in/out)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "binBps"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(traefik_service_requests_bytes_total{service=~\"swimto-swimto-.*\"}[5m])) by (service)",
+          "legendFormat": "↑ {{service}}"
+        },
+        {
+          "expr": "sum(rate(traefik_service_responses_bytes_total{service=~\"swimto-swimto-.*\"}[5m])) by (service)",
+          "legendFormat": "↓ {{service}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "CPU Usage by Pod",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percentunit"
+        }
       },
       "targets": [
         {
@@ -132,13 +355,14 @@
     },
     {
       "id": 8,
-      "title": "Memory Usage",
+      "title": "Memory Usage by Pod",
       "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes"
+        }
       },
       "targets": [
         {
@@ -148,37 +372,11 @@
       ]
     }
   ],
-  "time": {
-    "from": "now-1h",
-    "to": "now"
-  },
+  "time": { "from": "now-7d", "to": "now" },
   "timepicker": {
-    "refresh_intervals": [
-      "5s",
-      "10s",
-      "30s",
-      "1m",
-      "5m",
-      "15m",
-      "30m",
-      "1h",
-      "2h",
-      "1d"
-    ]
+    "refresh_intervals": ["30s", "1m", "5m", "15m", "30m", "1h", "6h", "1d"]
   },
-  "templating": {
-    "list": []
-  },
-  "annotations": {
-    "list": []
-  },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
   "links": []
 }
-
-
-
-
-
-
-
-
