@@ -74,9 +74,6 @@ data:
               "openrouter/meta-llama/llama-4-scout"
             ]
           },
-          "params": {
-            "maxTokens": 3072
-          },
           "contextTokens": 22000,
           "compaction": {
             "mode": "safeguard",
