@@ -67,10 +67,10 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "openrouter/google/gemini-2.0-flash-001",
+            "primary": "groq/meta-llama/llama-4-scout-17b-16e-instruct",
             "fallbacks": [
+              "openrouter/google/gemini-2.0-flash-001",
               "openrouter/anthropic/claude-3.5-haiku",
-              "groq/meta-llama/llama-4-scout-17b-16e-instruct",
               "openrouter/meta-llama/llama-4-scout"
             ]
           },
