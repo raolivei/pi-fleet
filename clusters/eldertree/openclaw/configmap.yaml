@@ -67,18 +67,18 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+            "primary": "groq/llama-3.3-70b-versatile",
             "fallbacks": [
+              "groq/meta-llama/llama-4-scout-17b-16e-instruct",
               "openrouter/google/gemini-2.0-flash-001",
-              "openrouter/anthropic/claude-3.5-haiku",
-              "openrouter/meta-llama/llama-4-scout"
+              "openrouter/anthropic/claude-3.5-haiku"
             ]
           },
           "contextTokens": 22000,
           "compaction": {
             "mode": "safeguard",
             "reserveTokensFloor": 20000,
-            "model": "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+            "model": "groq/llama-3.3-70b-versatile",
             "memoryFlush": {
               "enabled": false
             }
@@ -118,6 +118,12 @@ data:
             "baseUrl": "https://api.groq.com/openai/v1",
             "apiKey": "${GROQ_API_KEY}",
             "models": [
+              {
+                "id": "llama-3.3-70b-versatile",
+                "name": "Llama 3.3 70B Versatile (Groq)",
+                "contextWindow": 131072,
+                "maxTokens": 3072
+              },
               {
                 "id": "meta-llama/llama-4-scout-17b-16e-instruct",
                 "name": "Llama 4 Scout 17B (Groq)",
