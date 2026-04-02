@@ -67,18 +67,18 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "groq/llama-3.3-70b-versatile",
+            "primary": "groq/openai/gpt-oss-120b",
             "fallbacks": [
+              "groq/llama-3.3-70b-versatile",
               "groq/meta-llama/llama-4-scout-17b-16e-instruct",
-              "openrouter/google/gemini-2.0-flash-001",
-              "openrouter/anthropic/claude-3.5-haiku"
+              "openrouter/google/gemini-2.0-flash-001"
             ]
           },
           "contextTokens": 80000,
           "compaction": {
             "mode": "safeguard",
             "reserveTokensFloor": 20000,
-            "model": "groq/llama-3.3-70b-versatile",
+            "model": "groq/openai/gpt-oss-120b",
             "memoryFlush": {
               "enabled": false
             }
@@ -118,6 +118,12 @@ data:
             "baseUrl": "https://api.groq.com/openai/v1",
             "apiKey": "${GROQ_API_KEY}",
             "models": [
+              {
+                "id": "openai/gpt-oss-120b",
+                "name": "GPT OSS 120B (Groq)",
+                "contextWindow": 131072,
+                "maxTokens": 8192
+              },
               {
                 "id": "llama-3.3-70b-versatile",
                 "name": "Llama 3.3 70B Versatile (Groq)",
