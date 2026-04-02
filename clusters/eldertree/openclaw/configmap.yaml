@@ -74,7 +74,7 @@ data:
               "openrouter/anthropic/claude-3.5-haiku"
             ]
           },
-          "contextTokens": 22000,
+          "contextTokens": 80000,
           "compaction": {
             "mode": "safeguard",
             "reserveTokensFloor": 20000,
