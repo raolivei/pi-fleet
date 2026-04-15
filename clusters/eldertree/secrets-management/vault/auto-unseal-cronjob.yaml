@@ -1,0 +1,69 @@
+---
+# Runs every 5 minutes, checks each vault pod, and unseals any that are sealed.
+# Uses unseal keys from the existing vault-unseal-keys secret.
+# No external dependencies — entirely in-cluster.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vault-auto-unseal
+  namespace: vault
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: unseal
+              image: hashicorp/vault:1.17.2
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  for pod in vault-0 vault-1 vault-2; do
+                    ADDR="http://${pod}.vault-internal:8200"
+                    STATUS=$(vault status -address="$ADDR" -format=json 2>/dev/null || true)
+                    if [ -z "$STATUS" ]; then
+                      echo "$pod: not reachable, skipping"
+                      continue
+                    fi
+                    SEALED=$(echo "$STATUS" | grep -o '"sealed":[^,}]*' | grep -o 'true\|false')
+                    if [ "$SEALED" = "true" ]; then
+                      echo "$pod: sealed — unsealing..."
+                      vault operator unseal -address="$ADDR" "$UNSEAL_KEY_1" >/dev/null
+                      vault operator unseal -address="$ADDR" "$UNSEAL_KEY_2" >/dev/null
+                      vault operator unseal -address="$ADDR" "$UNSEAL_KEY_3" >/dev/null
+                      echo "$pod: unsealed"
+                    else
+                      echo "$pod: already unsealed"
+                    fi
+                  done
+              env:
+                - name: UNSEAL_KEY_1
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-unseal-keys
+                      key: UNSEAL_KEY_1
+                - name: UNSEAL_KEY_2
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-unseal-keys
+                      key: UNSEAL_KEY_2
+                - name: UNSEAL_KEY_3
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-unseal-keys
+                      key: UNSEAL_KEY_3
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
