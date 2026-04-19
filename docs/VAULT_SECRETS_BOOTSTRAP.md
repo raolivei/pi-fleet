@@ -99,7 +99,7 @@ kubectl get externalsecrets -A
 
 ### ImageUpdateAutomation: "failed to push to remote: authentication required: No anonymous write access"
 
-Flux ImageUpdateAutomation (e.g. `canopy-updates`) commits new image tags and pushes to the pi-fleet repo. Push uses the same Git credentials as the `flux-system` GitRepository, which come from Vault at `secret/pi-fleet/flux/git` (key: `sshKey`).
+Flux ImageUpdateAutomation (e.g. per-app `*-updates` in namespaces like swimto) commits new image tags and pushes to the pi-fleet repo. Push uses the same Git credentials as the `flux-system` GitRepository, which come from Vault at `secret/pi-fleet/flux/git` (key: `sshKey`).
 
 **Fix:** The SSH key must have **write** access to the GitHub repo. If the deploy key is read-only:
 
@@ -110,7 +110,7 @@ Flux ImageUpdateAutomation (e.g. `canopy-updates`) commits new image tags and pu
    ```
 3. Force External Secrets to refresh: `kubectl annotate externalsecret flux-system -n flux-system force-sync=$(date +%s) --overwrite`
 
-Until the key has write access, image tag updates will not be committed automatically; update tags in `clusters/eldertree/canopy/helmrelease.yaml` manually and push.
+Until the key has write access, image tag updates will not be committed automatically; for apps using ImageUpdateAutomation, bump tags in the relevant `helmrelease.yaml` manually and push (Canopy currently uses **`latest`** in Git without automation).
 
 ### ExternalSecret: "secrets 'canopy-cloudflare-origin-tls' already exists"
 

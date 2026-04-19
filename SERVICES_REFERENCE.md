@@ -139,15 +139,20 @@ dig @192.168.2.201 grafana.eldertree.local
 
 ### Canopy (Personal Finance)
 
-| Property          | Value                                |
-| ----------------- | ------------------------------------ |
-| **Local URL**     | `https://canopy.eldertree.local`     |
-| **API URL**       | `https://canopy.eldertree.local/api` |
-| **Namespace**     | `canopy`                             |
-| **Frontend Port** | 3000                                 |
-| **API Port**      | 8000                                 |
-| **Database**      | PostgreSQL (in cluster)              |
-| **Credentials**   | Stored in Vault: `secret/canopy/*`   |
+| Property          | Value                                                                 |
+| ----------------- | --------------------------------------------------------------------- |
+| **Local URL**     | `https://canopy.eldertree.local`                                      |
+| **Public URL**    | `https://canopy.eldertree.xyz` (Cloudflare Tunnel → Traefik)          |
+| **API URL**       | `https://canopy.eldertree.local/v1` or `https://canopy.eldertree.xyz/v1` |
+| **Namespace**     | `canopy`                                                              |
+| **Frontend Port** | 3000                                                                  |
+| **API Port**      | 8000                                                                  |
+| **Database**      | PostgreSQL (in cluster)                                               |
+| **Credentials**   | Stored in Vault: `secret/canopy/*`                                    |
+| **Basic Auth**    | Vault `secret/canopy/basic-auth` (`users` key, htpasswd). A bare browser visit returns **401** until you sign in — that means the site is up. |
+| **Image releases** | [`helmrelease.yaml`](clusters/eldertree/canopy/helmrelease.yaml) uses **`latest`** on GHCR for solo use; reconcile or rollout pulls current `latest`. (To restore semver + **ImageUpdateAutomation**, recover `image-automation.yaml` from git history.) |
+
+DNS for `canopy.eldertree.xyz` is a **CNAME to the eldertree tunnel** (`cloudflare_record.canopy_eldertree_xyz_tunnel` in [`terraform/cloudflare.tf`](terraform/cloudflare.tf)). Apply Terraform after changes. Ingress `canopy-public` uses `external-dns.alpha.kubernetes.io/exclude: "true"` so External-DNS does not override that record.
 
 ### SwimTO (Toronto Pool Schedules)
 

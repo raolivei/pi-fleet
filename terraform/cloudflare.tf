@@ -406,16 +406,16 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
       service  = "http://10.43.23.214:80"
     }
 
-    # Canopy personal finance routes
+    # Canopy personal finance routes (more-specific paths first)
     ingress_rule {
       hostname = "canopy.eldertree.xyz"
-      path     = "/"
+      path     = "/v1/*"
       service  = "http://10.43.23.214:80"
     }
 
     ingress_rule {
       hostname = "canopy.eldertree.xyz"
-      path     = "/v1/*"
+      path     = "/"
       service  = "http://10.43.23.214:80"
     }
 

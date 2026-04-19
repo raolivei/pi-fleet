@@ -75,7 +75,10 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          # 1.6.x fails provider install with openpgp: key expired (HashiCorp key rotation)
+          terraform_version: 1.10.0
+          # Default wrapper breaks `terraform plan -detailed-exitcode` (returns 0 when changes exist)
+          terraform_wrapper: false
           cli_config_credentials_hostname: app.terraform.io
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -99,7 +102,7 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
 
-      # Redirect to file (not pipe) to avoid EPIPE crash in setup-terraform wrapper
+      # Redirect to file (not pipe) to avoid EPIPE when piping terraform output
       - name: Verify Remote State
         run: |
           if terraform state list > state-list.txt 2>&1; then
@@ -140,6 +143,9 @@ jobs:
           elif [ $PLAN_EXIT_CODE -eq 2 ]; then
             echo "✅ Changes detected"
             grep -A 5 "Plan:" plan-output.txt || true
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "ℹ️ Apply runs only on push to main or workflow_dispatch (apply=true); PRs are plan-only."
+            fi
           else
             echo "❌ Plan failed (exit code $PLAN_EXIT_CODE)"
             exit 1
