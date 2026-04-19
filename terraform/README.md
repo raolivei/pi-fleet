@@ -315,11 +315,18 @@ Do **not** pass LLM or other API keys through Terraform variables: they would be
 kubectl exec -n vault vault-0 -- vault kv put secret/openclaw/openrouter api-key="sk-or-..."
 ```
 
-If this secret was ever created by Terraform (`vault_kv_secret_v2.openclaw_openrouter`), drop it from state after pulling this change (the secret in Vault is unchanged):
+If this secret was ever created by Terraform (`vault_kv_secret_v2.openclaw_openrouter`), **remove that address from remote state** after pulling the code change (the KV secret in Vault stays as-is). GitHub Actions only runs **plan/apply** — it does not run `terraform state rm`.
+
+**One-time (local CLI, same backend as CI):** state is in HCP Terraform org **`eldertree`**, workspace **`pi-fleet-terraform`**. Use a token with access to that workspace (org/team token, or the same capability as repo secret **`TF_API_TOKEN`** used by [`.github/workflows/terraform.yml`](../.github/workflows/terraform.yml)):
 
 ```bash
+cd terraform
+export TF_TOKEN_app_terraform_io="<your-terraform-cloud-token>"
+terraform init -input=false
 terraform state rm 'vault_kv_secret_v2.openclaw_openrouter[0]'
 ```
+
+You do not need Cloudflare or other `TF_VAR_*` values for `state rm`; it only edits the stored state object. If that address is not in state (never applied), the command errors — you can ignore and continue.
 
 ### Prerequisites
 
