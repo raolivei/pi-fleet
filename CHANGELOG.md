@@ -18,6 +18,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Terraform CI** — Bump Actions `setup-terraform` to **1.10.0**; **1.6.0** fails `terraform init` with `openpgp: key expired` when installing HashiCorp-signed providers. Lock file refreshed for extra platform hashes.
 - **OpenClaw** — OpenRouter token/context limits and compaction (`configmap.yaml`: catalog `contextWindow`/`maxTokens`, `agents.defaults.contextTokens`, Groq compaction safeguard); gateway `token` auth (no Traefik `X-Forwarded-User` loopback); lower `maxTokens` for small credits; heap/pod memory for OOM; trusted proxies for loopback; exec-approvals copied to writable path on start.
 - **Cloudflared** — Required pod anti-affinity so two replicas never share one node (WiFi outage had taken down both).
 

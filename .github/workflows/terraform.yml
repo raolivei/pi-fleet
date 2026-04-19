@@ -75,7 +75,8 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          # 1.6.x fails provider install with openpgp: key expired (HashiCorp key rotation)
+          terraform_version: 1.10.0
           cli_config_credentials_hostname: app.terraform.io
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
