@@ -50,10 +50,10 @@ kubectl annotate externalsecret flux-system -n flux-system \
 ## 5. Verify
 
 - **Deploy keys:** https://github.com/raolivei/pi-fleet/settings/keys — you should see the new key with “Write” access.
-- **Flux:** After a few minutes, ImageUpdateAutomation (e.g. `canopy-updates`) should be able to push. Check with:
+- **Flux:** After a few minutes, ImageUpdateAutomation (e.g. `swimto-updates`, `pitanga-website-automation`) should be able to push. Check with:
   ```bash
-  flux get image update canopy -n canopy
-  kubectl get imageupdateautomation -n canopy
+  flux get image update swimto-updates -n swimto
+  kubectl get imageupdateautomation -n swimto
   ```
 
 ## Security note

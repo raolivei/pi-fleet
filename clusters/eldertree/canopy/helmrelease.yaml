@@ -20,13 +20,20 @@ spec:
   values:
     # ============================================================
     # Canopy - Personal finance
+    # Images: `latest` + pullPolicy Always (single-user; always re-resolve digest).
+    # After removing image-automation from Git, delete orphaned Flux image CRs once, e.g.:
+    #   kubectl delete imageupdateautomation/canopy-updates -n canopy --ignore-not-found
+    #   kubectl delete imagepolicy/canopy-api-policy imagepolicy/canopy-frontend-policy -n canopy --ignore-not-found
+    #   kubectl delete imagerepository/canopy-api imagerepository/canopy-frontend -n canopy --ignore-not-found
+    # To pin semver + ImageUpdateAutomation again, restore image-automation.yaml from git history.
     # ============================================================
 
     components:
       canopy-api:
         image:
           repository: ghcr.io/raolivei/canopy-api
-          tag: v0.6.0 # {"$imagepolicy": "canopy:canopy-api-policy:tag"}
+          tag: latest
+          pullPolicy: Always
         replicas: 2
         port: 8000
         env:
@@ -62,7 +69,8 @@ spec:
       canopy-frontend:
         image:
           repository: ghcr.io/raolivei/canopy-frontend
-          tag: v0.6.0 # {"$imagepolicy": "canopy:canopy-frontend-policy:tag"}
+          tag: latest
+          pullPolicy: Always
         replicas: 2
         port: 3000
         probesEnabled: false

@@ -10,5 +10,3 @@ resources:
   - statefulset-postgres.yaml
   # Helm-managed app (api, frontend, redis, ingress, middleware)
   - helmrelease.yaml
-  # Image automation (stays separate - FluxCD requirement)
-  - image-automation.yaml

@@ -152,14 +152,3 @@ variable "kubernetes_host" {
   default     = "https://kubernetes.default.svc"
 }
 
-# -----------------------------------------------------------------------------
-# Optional: API keys to store in Vault (supply at apply time, e.g. TF_VAR_*)
-# Create keys at provider dashboards; Terraform only stores them in Vault.
-# -----------------------------------------------------------------------------
-
-variable "openrouter_api_key" {
-  description = "OpenRouter API key for OpenClaw LLM routing. Create at https://openrouter.ai/keys. Stored in Vault at secret/openclaw/openrouter. Leave empty to skip (e.g. in CI); set when applying to create/update the secret."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
