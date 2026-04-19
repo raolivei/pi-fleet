@@ -305,6 +305,22 @@ Terraform manages Vault configuration declaratively, replacing the shell script 
 - **Kubernetes Auth Roles**: Per-project roles bound to namespaces
 - **Service Tokens**: For External Secrets Operator (stored in `external-secrets` namespace)
 
+### Application secrets (not Terraform)
+
+Do **not** pass LLM or other API keys through Terraform variables: they would be stored in Terraform state. Write KV paths with **Vault UI**, **`vault kv put`**, or **`scripts/setup-openclaw.sh`** (OpenClaw bootstrap).
+
+**OpenRouter (OpenClaw)** — path `secret/openclaw/openrouter`, field `api-key`:
+
+```bash
+kubectl exec -n vault vault-0 -- vault kv put secret/openclaw/openrouter api-key="sk-or-..."
+```
+
+If this secret was ever created by Terraform (`vault_kv_secret_v2.openclaw_openrouter`), drop it from state after pulling this change (the secret in Vault is unchanged):
+
+```bash
+terraform state rm 'vault_kv_secret_v2.openclaw_openrouter[0]'
+```
+
 ### Prerequisites
 
 1. **Vault must be deployed and unsealed**:
