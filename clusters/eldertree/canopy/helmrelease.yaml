@@ -46,6 +46,8 @@ spec:
             value: "redis://canopy-redis:6379/0"
           - name: ENVIRONMENT
             value: "production"
+          - name: CORS_ALLOW_ORIGINS
+            value: "https://canopy.eldertree.xyz,https://canopy.eldertree.local"
           - name: QUESTRADE_REFRESH_TOKEN
             valueFrom:
               secretKeyRef:
@@ -76,9 +78,8 @@ spec:
         probesEnabled: false
         # Sticky sessions so HTML and _next/static chunk requests hit the same pod (avoids 404s when replicas have different build hashes)
         sessionAffinity: ClientIP
-        env:
-          - name: NEXT_PUBLIC_API_URL
-            value: "http://canopy-api:8000"
+        # NEXT_PUBLIC_* is baked at `next build`; runtime cluster DNS (canopy-api) is invalid in the
+        # browser. Omit so the client uses same-origin `/v1/...` behind Traefik (see ingress paths).
         resources:
           requests: { cpu: "100m", memory: "128Mi" }
           limits: { cpu: "200m", memory: "256Mi" }
