@@ -151,6 +151,7 @@ dig @192.168.2.201 grafana.eldertree.local
 | **Credentials**   | Stored in Vault: `secret/canopy/*`                                    |
 | **Basic Auth**    | Vault `secret/canopy/basic-auth` (`users` key, htpasswd). A bare browser visit returns **401** until you sign in — that means the site is up. |
 | **Image releases** | [`helmrelease.yaml`](clusters/eldertree/canopy/helmrelease.yaml) uses **`latest`** on GHCR for solo use; reconcile or rollout pulls current `latest`. (To restore semver + **ImageUpdateAutomation**, recover `image-automation.yaml` from git history.) |
+| **DB migrations** | After upgrading the **canopy-api** image, run Alembic once: `kubectl -n canopy exec deploy/canopy-api -- sh /app/backend/scripts/migrate.sh` (see [canopy README](https://github.com/raolivei/canopy/blob/main/README.md)). Skipping this yields missing tables/columns (e.g. `fx_rates`, `portfolio_reviews`, `liabilities.opening_balance`). |
 
 DNS for `canopy.eldertree.xyz` is a **CNAME to the eldertree tunnel** (`cloudflare_record.canopy_eldertree_xyz_tunnel` in [`terraform/cloudflare.tf`](terraform/cloudflare.tf)). Apply Terraform after changes. Ingress `canopy-public` uses `external-dns.alpha.kubernetes.io/exclude: "true"` so External-DNS does not override that record.
 
