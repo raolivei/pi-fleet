@@ -6,7 +6,7 @@ metadata:
   namespace: pitanga
 spec:
   image: ghcr.io/raolivei/pitanga-website
-  interval: 5m
+  interval: 30m
   secretRef:
     name: ghcr-secret
 ---
@@ -28,7 +28,7 @@ metadata:
   name: pitanga-website-automation
   namespace: pitanga
 spec:
-  interval: 5m
+  interval: 30m
   sourceRef:
     kind: GitRepository
     name: flux-system

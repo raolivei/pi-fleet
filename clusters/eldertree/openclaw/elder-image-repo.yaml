@@ -6,6 +6,6 @@ metadata:
 spec:
   # Same image as Grove (app renamed to Elder; image not yet published as elder)
   image: ghcr.io/raolivei/grove
-  interval: 5m
+  interval: 30m
   secretRef:
     name: ghcr-secret
