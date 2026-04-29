@@ -68,6 +68,10 @@ spec:
         resources:
           requests: { cpu: "250m", memory: "256Mi" }
           limits: { cpu: "500m", memory: "512Mi" }
+        serviceAnnotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "8000"
+          prometheus.io/path: "/metrics"
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: false

@@ -1,0 +1,107 @@
+# Blackbox exporter for synthetic HTTPS / TLS checks (Eldertree public sites).
+# Scraped by Prometheus via blackbox-scrape-config Secret.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackbox-exporter-config
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: blackbox-exporter
+data:
+  blackbox.yaml: |
+    modules:
+      http_2xx:
+        prober: http
+        timeout: 10s
+        http:
+          method: GET
+          valid_status_codes: [200, 204, 301, 302, 401]
+          follow_redirects: true
+          preferred_ip_protocol: "ip4"
+      http_2xx_insecure:
+        prober: http
+        timeout: 10s
+        http:
+          method: GET
+          valid_status_codes: [200, 204, 301, 302, 401]
+          follow_redirects: true
+          tls_config:
+            insecure_skip_verify: true
+          preferred_ip_protocol: "ip4"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackbox-exporter
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: blackbox-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: blackbox-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: blackbox-exporter
+    spec:
+      serviceAccountName: default
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      containers:
+        - name: blackbox-exporter
+          image: quay.io/prometheus/blackbox-exporter:v0.25.0
+          args:
+            - "--config.file=/config/blackbox.yaml"
+          ports:
+            - name: http
+              containerPort: 9115
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: blackbox-exporter-config
+            items:
+              - key: blackbox.yaml
+                path: blackbox.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackbox-exporter
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: blackbox-exporter
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: blackbox-exporter
+  ports:
+    - name: http
+      port: 9115
+      targetPort: http
+      protocol: TCP
