@@ -6,7 +6,7 @@ metadata:
   namespace: journey
 spec:
   image: ghcr.io/raolivei/journey-api
-  interval: 5m
+  interval: 30m
   secretRef:
     name: ghcr-secret
 ---
@@ -17,7 +17,7 @@ metadata:
   namespace: journey
 spec:
   image: ghcr.io/raolivei/journey-frontend
-  interval: 5m
+  interval: 30m
   secretRef:
     name: ghcr-secret
 ---
@@ -51,7 +51,7 @@ metadata:
   name: journey-updates
   namespace: journey
 spec:
-  interval: 5m
+  interval: 30m
   sourceRef:
     kind: GitRepository
     name: flux-system

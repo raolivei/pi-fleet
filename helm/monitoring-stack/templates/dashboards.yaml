@@ -1,5 +1,8 @@
 {{- range $path, $_ := .Files.Glob "dashboards/*.json" }}
 {{- $name := base $path }}
+{{- $base := $name | replace ".json" "" }}
+{{- $foldermap := $.Values.grafana.dashboardFolders | default dict }}
+{{- $folder := index $foldermap $base | default "Platform" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,11 +11,11 @@ metadata:
   labels:
     grafana_dashboard: "1"
     release: {{ $.Release.Name }}
+  annotations:
+    grafana_folder: {{ $folder | quote }}
 data:
   {{ $name }}: |
 {{ $.Files.Get $path | indent 4 }}
 ---
 {{- end }}
-
-
 

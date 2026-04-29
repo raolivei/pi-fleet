@@ -27,7 +27,7 @@ spec:
         cpu: "500m"
         memory: "512Mi"
     # Expose the metrics entrypoint (9100) on the Traefik Service for in-cluster Prometheus
-    # scrape (static additionalScrapeConfigs in observability/monitoring-stack).
+    # scrape: static job in monitoring-stack Helm chart (prometheus.scrapeConfigs.traefik).
     ports:
       metrics:
         expose:

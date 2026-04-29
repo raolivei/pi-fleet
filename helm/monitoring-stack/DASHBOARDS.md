@@ -2,12 +2,51 @@
 
 Grafana: `https://grafana.eldertree.local` (or NodePort from `SERVICES_REFERENCE.md` if you use it).
 
+## Blackbox exporter: what it solves (synthetic HTTP)
+
+[Prometheus Blackbox exporter](https://github.com/prometheus/blackbox_exporter) does **synthetic** HTTPS (and other module-based) checks: Prometheus does not scrape the app’s `/metrics` directly; it scrapes **Blackbox**, and Blackbox requests each configured URL. That yields `probe_success`, latency, and HTTP code metrics for **user-facing** paths, including DNS, TLS, ingress, and Cloudflare in front. It is **not** OpenTelemetry, tracing, or log collection — it is **“does this URL work from the cluster’s perspective?”** while still exercising the real public (or private) name.
+
+On Eldertree, alerts use **`BlackboxProbeFailing`** (`probe_success{job=~"blackbox-.*"} == 0`). The **Eldertree Ops Home** dashboard includes Blackbox + Traefik + a SwimTO product gauge. For target lists, scrape wiring, and how this fits the rest of observability, see **[`docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md`](../../docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md)**.
+
+## Prometheus TSDB, memory, and series count
+
+`prometheus_tsdb_head_series` in Prometheus/Grafana is the number of **active** series in the TSDB head (strongly related to `prometheus-server` RSS). A sudden step up = **new cardinality** (new targets, new pods, or more label combinations on scrape).
+
+**Diagnose (Prometheus):**
+
+- **Steady load / trends:** `prometheus_tsdb_head_series`
+- **After a spike:** correlate the time with Flux syncs, `HelmRelease` upgrades, or new `ServiceMonitor`/`Service` scrape annotations. **Status → Targets** to see new or “large” jobs.
+- **By job (expensive; short range / raise timeout if needed):** e.g. `topk(15, count by (job) (group by(__name__, job) ({__name__=~".+"})))`
+
+**Eldertree mitigations in [`values.yaml`](./values.yaml):** global `scrape_interval` / `evaluation_interval` (60s) to cut scrape rate; **`metric_relabel_configs` on `kubernetes-nodes-cadvisor`** to `labeldrop` cAdvisor’s `id` and `image` (dashboards and alerts use `namespace`, `pod`, `container`). If `kube_state_metrics` dominates, tune kube-state-metric allowlists in a follow-up; do not drop labels you use in a panel without testing.
+
+**Post-change:** re-check `kubectl top pods -n observability` (Prometheus) and `prometheus_tsdb_head_series` after reconciliation.
+
 ## How dashboards get here
 
 | Source | Mechanism |
 |--------|-----------|
 | **Custom JSON** | Files in [`dashboards/`](./dashboards/) are packaged by the chart into ConfigMaps (`dashboard-<name>`) in the Helm release namespace. The Grafana sidecar **only** watches namespace `observability` for `grafana_dashboard: "1"`. |
 | **Grafana.com** | [`values.yaml`](./values.yaml) under `grafana.dashboards.default` (`gnetId` + `revision`). Downloaded by the Grafana subchart on deploy. |
+
+## Folders in the Grafana UI (custom JSON)
+
+Provisioned custom dashboards are grouped by **Grafana folder** using the sidecar’s `FOLDER_ANNOTATION` (`grafana_folder` on each ConfigMap). The mapping from file basename → folder path lives in [`values.yaml`](./values.yaml) under `grafana.dashboardFolders`.
+
+| Area | Folder path | Dashboards (basename) |
+|------|-------------|------------------------|
+| **Applications** | `Applications/SwimTO` | `swimto-dashboard` |
+| | `Applications/Pitanga` | `pitanga-dashboard` |
+| | `Applications/Visage` | `visage-operations`, `visage-training` |
+| **Platform** | `Platform/Overview` | `eldertree-ops-home`, `command-center` |
+| | `Platform/Cluster` | `eldertree-cluster` |
+| | `Platform/Workloads` | `kubernetes-workloads` |
+| | `Platform/Capacity` | `namespace-resources` |
+| | `Platform/Network` | `network-intelligence` |
+| | `Platform/Hardware` | `hardware-health` |
+| | `Platform/Security` | `vault-dashboard` |
+
+**Grafana.com** (`gnetId`) dashboards are still loaded by the Grafana chart into the default file provider; they do not use this annotation and typically appear under **General** (or the chart default) unless reconfigured in the upstream chart.
 
 **Verification (repo):** All **12** `dashboards/*.json` files parse as valid JSON. `visage-training.json` had broken string escaping in three `expr` fields (`job=~"..."`); that is fixed so provisioning does not silently fail.
 
@@ -40,7 +79,7 @@ Use these when adding or editing dashboards for consistent browsing:
 | `applications` | App-specific (swimto, visage, pitanga, …) |
 | `hardware` / `raspberry-pi` | Node temperature, Pi metrics |
 
-Search in Grafana: **Dashboards** → filter by tag.
+Search in Grafana: **Dashboards** → browse by **folder** (Applications vs Platform) or filter by tag.
 
 ---
 

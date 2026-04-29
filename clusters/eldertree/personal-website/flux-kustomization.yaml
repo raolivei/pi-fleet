@@ -4,7 +4,7 @@ metadata:
   name: personal-website
   namespace: flux-system
 spec:
-  interval: 5m
+  interval: 30m
   path: ./clusters/eldertree/personal-website
   prune: true
   sourceRef:

@@ -6,7 +6,7 @@ global:
   clusterIssuer: ca-cluster-issuer
 
 # Prometheus configuration
-# - Static scrape: Traefik (kube-system), blackbox, Pi-hole, Visage, Vault (from Flux Secrets / ConfigMaps).
+# - Static scrape: Traefik, blackbox, postgres/redis (values `scrapeConfigs`); Pi-hole, Visage, Vault (`scrapeConfigFiles` + volume mounts; see `clusters/eldertree/observability/*-scrape-config.yaml`).
 # - `prometheus.io/*` on Services for in-cluster app /metrics.
 prometheus:
   enabled: true
@@ -70,74 +70,38 @@ prometheus:
       annotations:
         cert-manager.io/cluster-issuer: ca-cluster-issuer
     global:
-      scrape_interval: 30s
+      # 60s: halves scrape load vs 30s (RAM/CPU) on Pi; coarser resolution for triage
+      scrape_interval: 60s
       scrape_timeout: 10s
-      evaluation_interval: 30s
-    # Additional scrape configs for exporters and external services
-    additionalScrapeConfigs:
-      # PostgreSQL Exporter
-      - job_name: 'postgres-exporter'
-        static_configs:
-          - targets: ['postgres-exporter.observability.svc.cluster.local:9187']
-        scrape_interval: 30s
-      # Redis Exporter - multi-target mode
-      - job_name: 'redis-exporter'
-        static_configs:
-          - targets:
-              - redis://swimto-redis.swimto.svc.cluster.local:6379
-              - redis://canopy-redis.canopy.svc.cluster.local:6379
-              - redis://visage-redis.visage.svc.cluster.local:6379
-        relabel_configs:
-          - source_labels: [__address__]
-            target_label: __param_target
-          - source_labels: [__param_target]
-            target_label: instance
-          - target_label: __address__
-            replacement: redis-exporter.observability.svc.cluster.local:9121
-        scrape_interval: 30s
-      # Blackbox: HTTPS probes (exporter runs in cluster; see observability/blackbox-*.yaml)
-      - job_name: blackbox-https
-        metrics_path: /probe
-        params:
-          module: [http_2xx]
-        relabel_configs:
-          - source_labels: [__address__]
-            target_label: __param_target
-          - source_labels: [__param_target]
-            target_label: instance
-          - target_label: __address__
-            replacement: blackbox-exporter.observability.svc.cluster.local:9115
-        static_configs:
-          - targets: ["https://swimto.eldertree.xyz", "https://pitanga.cloud"]
-      - job_name: blackbox-https-ca
-        metrics_path: /probe
-        params:
-          module: [http_2xx_insecure]
-        relabel_configs:
-          - source_labels: [__address__]
-            target_label: __param_target
-          - source_labels: [__param_target]
-            target_label: instance
-          - target_label: __address__
-            replacement: blackbox-exporter.observability.svc.cluster.local:9115
-        static_configs:
-          - targets:
-              - "https://grafana.eldertree.local"
-              - "https://prometheus.eldertree.local"
-              - "https://alertmanager.eldertree.local"
-      # Traefik ingress (k3s) — metrics on entrypoint "metrics" / port 9100; Service must expose the port.
-      - job_name: traefik
-        scrape_interval: 30s
-        scrape_timeout: 10s
-        static_configs:
-          - targets: ["traefik.kube-system.svc.cluster.local:9100"]
-            labels:
-              app: traefik
-              namespace: kube-system
+      evaluation_interval: 60s
     # ServiceMonitor and PodMonitor discovery
     serviceMonitorSelectorNilUsesAll: true
     podMonitorSelectorNilUsesAll: true
-  # Override kubernetes-nodes scrape job so metrics get a "node" label (required by Lens IDE)
+    # Extra scrape fragments (prometheus chart 28+): `scrape_config_files` in prometheus.yml
+    # (see also clusters/eldertree/observability/*-scrape-config.yaml).
+    extraSecretMounts:
+      - name: pihole-scrape-file
+        secretName: pihole-scrape-config
+        subPath: pihole-scrape.yaml
+        mountPath: /etc/config/pihole-scrape.yaml
+        readOnly: true
+    extraConfigmapMounts:
+      - name: visage-scrape-file
+        configMap: visage-scrape-config
+        subPath: visage-scrape.yaml
+        mountPath: /etc/config/visage-scrape.yaml
+        readOnly: true
+      - name: vault-scrape-file
+        configMap: vault-scrape-config
+        subPath: vault-scrape.yaml
+        mountPath: /etc/config/vault-scrape.yaml
+        readOnly: true
+  scrapeConfigFiles:
+    - /etc/config/pihole-scrape.yaml
+    - /etc/config/visage-scrape.yaml
+    - /etc/config/vault-scrape.yaml
+  # Scrape config map: merges with chart defaults (prometheus-community >=28). Static jobs:
+  # postgres, redis, blackbox (×2), traefik. Node/cadvisor: Lens "node" relabel + cAdvisor labeldrop.
   scrapeConfigs:
     kubernetes-nodes:
       relabel_configs:
@@ -163,6 +127,68 @@ prometheus:
           replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
         - source_labels: [__meta_kubernetes_node_name]
           target_label: node
+      # Drop cAdvisor label dimensions with extreme cardinality; dashboards use
+      # namespace, pod, container (see DASHBOARDS — Prometheus TSDB & memory).
+      metric_relabel_configs:
+        - action: labeldrop
+          regex: (id|image)
+    postgres-exporter:
+      static_configs:
+        - targets: ["postgres-exporter.observability.svc.cluster.local:9187"]
+      scrape_interval: 60s
+    redis-exporter:
+      static_configs:
+        - targets:
+            - redis://swimto-redis.swimto.svc.cluster.local:6379
+            - redis://canopy-redis.canopy.svc.cluster.local:6379
+            - redis://visage-redis.visage.svc.cluster.local:6379
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: redis-exporter.observability.svc.cluster.local:9121
+      scrape_interval: 60s
+    # Blackbox: HTTPS probes (exporter in cluster; see observability/blackbox-*.yaml)
+    blackbox-https:
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: blackbox-exporter.observability.svc.cluster.local:9115
+      static_configs:
+        - targets: ["https://swimto.eldertree.xyz", "https://pitanga.cloud"]
+    blackbox-https-ca:
+      metrics_path: /probe
+      params:
+        module: [http_2xx_insecure]
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: blackbox-exporter.observability.svc.cluster.local:9115
+      static_configs:
+        - targets:
+            - "https://grafana.eldertree.local"
+            - "https://prometheus.eldertree.local"
+            - "https://alertmanager.eldertree.local"
+    # Traefik: metrics entrypoint (port 9100); Service must expose the port.
+    traefik:
+      scrape_interval: 60s
+      scrape_timeout: 10s
+      static_configs:
+        - targets: ["traefik.kube-system.svc.cluster.local:9100"]
+          labels:
+            app: traefik
+            namespace: kube-system
   # Alertmanager configuration
   serverFiles:
     alerting_rules.yml:
@@ -287,12 +313,32 @@ grafana:
             maxLines: 500
   # Only watch `observability` — `ALL` imports every `grafana_dashboard: "1"` ConfigMap
   # cluster-wide (Kong, Veeam, third-party charts), which clutters Grafana and looks like a breach.
+  # Per-dashboard Grafana folders: basename (no .json) -> folder path. Sidecar uses annotation `grafana_folder`.
+  # See: https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml (sidecar.dashboards.folderAnnotation)
+  dashboardFolders:
+    # —— Applications (one subfolder per app; multiple JSON can share the same path) ——
+    swimto-dashboard: "Applications/SwimTO"
+    pitanga-dashboard: "Applications/Pitanga"
+    visage-operations: "Applications/Visage"
+    visage-training: "Applications/Visage"
+    # —— Platform (cluster, capacity, network, security) ——
+    eldertree-ops-home: "Platform/Overview"
+    command-center: "Platform/Overview"
+    eldertree-cluster: "Platform/Cluster"
+    kubernetes-workloads: "Platform/Workloads"
+    namespace-resources: "Platform/Capacity"
+    network-intelligence: "Platform/Network"
+    hardware-health: "Platform/Hardware"
+    vault-dashboard: "Platform/Security"
   sidecar:
     dashboards:
       enabled: true
       label: grafana_dashboard
       labelValue: "1"
       searchNamespace: observability
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
     datasources:
       enabled: true
       label: grafana_datasource

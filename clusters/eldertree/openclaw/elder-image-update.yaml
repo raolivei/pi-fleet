@@ -5,7 +5,7 @@ metadata:
   name: elder-image-updates
   namespace: openclaw
 spec:
-  interval: 5m
+  interval: 30m
   sourceRef:
     kind: GitRepository
     name: flux-system

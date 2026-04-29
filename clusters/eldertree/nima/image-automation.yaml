@@ -6,7 +6,7 @@ metadata:
   namespace: nima
 spec:
   image: ghcr.io/raolivei/nima-api
-  interval: 5m
+  interval: 30m
   secretRef:
     name: ghcr-secret
 ---
@@ -28,7 +28,7 @@ metadata:
   name: nima-updates
   namespace: nima
 spec:
-  interval: 5m
+  interval: 30m
   sourceRef:
     kind: GitRepository
     name: flux-system

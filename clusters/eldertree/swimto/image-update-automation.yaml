@@ -5,7 +5,7 @@ metadata:
   name: swimto-updates
   namespace: swimto
 spec:
-  interval: 5m
+  interval: 30m
   sourceRef:
     kind: GitRepository
     name: flux-system

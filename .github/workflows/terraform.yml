@@ -51,6 +51,8 @@ jobs:
     name: "Terraform"
     runs-on: ubuntu-latest
     environment: dev
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     services:
       vault:
@@ -73,7 +75,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           # 1.6.x fails provider install with openpgp: key expired (HashiCorp key rotation)
           terraform_version: 1.10.0
@@ -104,18 +106,24 @@ jobs:
 
       # Redirect to file (not pipe) to avoid EPIPE when piping terraform output
       - name: Verify Remote State
+        id: remote_state
         run: |
           if terraform state list > state-list.txt 2>&1; then
             STATE_COUNT=$(wc -l < state-list.txt | tr -d ' ')
+            echo "$STATE_COUNT" > .ci-state-count.txt
+            echo "count=$STATE_COUNT" >> "$GITHUB_OUTPUT"
             echo "✅ Remote state: $STATE_COUNT resources"
             head -20 state-list.txt
             [ "$STATE_COUNT" -gt 20 ] && echo "... and $((STATE_COUNT - 20)) more"
             if [ "$STATE_COUNT" -eq "0" ]; then
               echo "❌ State is empty"
+              echo "::error title=Terraform state::Remote state is empty; nothing to plan against."
               exit 1
             fi
+            echo "::notice title=Remote state::Terraform state list has ${STATE_COUNT} address(es) (not empty)."
           else
             echo "❌ Could not access remote state"
+            echo "::error title=Terraform state::terraform state list failed. Check init and backend auth."
             cat state-list.txt 2>/dev/null || true
             exit 1
           fi
@@ -136,6 +144,8 @@ jobs:
           terraform plan -input=false -refresh=false -detailed-exitcode > plan-output.txt 2>&1
           PLAN_EXIT_CODE=$?
           set -e
+          echo "exitcode=$PLAN_EXIT_CODE" >> "$GITHUB_OUTPUT"
+          echo "$PLAN_EXIT_CODE" > plan-exitcode.txt
           cat plan-output.txt
           echo ""
           if [ $PLAN_EXIT_CODE -eq 0 ]; then
@@ -148,10 +158,17 @@ jobs:
             fi
           else
             echo "❌ Plan failed (exit code $PLAN_EXIT_CODE)"
+            ERR_SNIP=$(head -c 400 < plan-output.txt | tr '\n' ' ' | tr -d '\r')
+            echo "::error title=Terraform plan failed (exit $PLAN_EXIT_CODE)::$ERR_SNIP"
             exit 1
+          fi
+          PLAN_LINE=$(grep -E 'Plan:.*[0-9]+ to (add|change|destroy)' plan-output.txt 2>/dev/null | tail -1 | tr -d '\r' | sed 's/^[[:space:]]*//') || true
+          if [ -n "$PLAN_LINE" ]; then
+            echo "::notice title=Terraform plan::$PLAN_LINE"
           fi
 
       - name: Terraform Apply
+        id: apply
         if: |
           steps.plan.outcome == 'success' &&
           (
@@ -159,3 +176,51 @@ jobs:
             (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
           )
         run: terraform apply -auto-approve -input=false -refresh=false
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Terraform run summary"
+            echo ""
+            echo "- **\`terraform apply\` (this job):** ${{ steps.apply.conclusion }} (skipped = conditions not met or an earlier step failed before apply.)"
+            if [ -f .ci-state-count.txt ]; then
+              SC=$(tr -d ' \n' < .ci-state-count.txt)
+              echo "- **State addresses in remote backend:** $SC"
+            else
+              echo "- **State addresses in remote backend:** (unavailable; list step may have failed.)"
+            fi
+            if [ -f plan-exitcode.txt ]; then
+              PE=$(tr -d ' \n' < plan-exitcode.txt)
+              case "$PE" in
+                0) echo "- **\`terraform plan\` exit code:** 0 (no change)" ;;
+                1) echo "- **\`terraform plan\` exit code:** 1 (error) — see Terraform Plan step log" ;;
+                2) echo "- **\`terraform plan\` exit code:** 2 (changes present)" ;;
+                *) echo "- **\`terraform plan\` exit code:** $PE" ;;
+              esac
+            else
+              echo "- **\`terraform plan\` exit code:** (no plan; a prior step may have failed or been skipped.)"
+            fi
+            if [ -f plan-output.txt ] && [ -n "$(head -1 plan-output.txt 2>/dev/null)" ]; then
+              PLINE=$(grep -E 'Plan:.*[0-9]+ to (add|change|destroy)' plan-output.txt 2>/dev/null | tail -1 | tr -d '\r' | sed 's/^[[:space:]]*//') || true
+              if [ -n "$PLINE" ]; then
+                echo "- **Plan result line:** $PLINE"
+              fi
+            fi
+            echo "- **Event / ref:** \`${{ github.event_name }}\` · \`${{ github.ref }}\`"
+            if [ -d .terraform ] && terraform output -json &>/dev/null; then
+              echo ""
+              echo "### Root module output names (values not printed; many are sensitive)"
+              echo ""
+              echo "\`\`\`"
+              terraform output -json | jq -r 'keys[]' 2>/dev/null | sort | head -40 || true
+              echo "\`\`\`"
+              CNT=$(terraform output -json | jq 'keys | length' 2>/dev/null) || CNT=0
+              echo ""
+              echo "(**$CNT** output(s).)"
+            else
+              echo ""
+              echo "*(\`terraform output\` skipped — no initialized workspace in this run.)*"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=terraform apply::conclusion=${{ steps.apply.conclusion || 'n/a' }}"
