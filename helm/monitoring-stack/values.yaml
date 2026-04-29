@@ -6,8 +6,8 @@ global:
   clusterIssuer: ca-cluster-issuer
 
 # Prometheus configuration
-# Note: External services (Vault, Pi-hole, Visage) are scraped via kubernetes-service-endpoints
-# using prometheus.io/* annotations on their K8s Services, rather than explicit scrape configs.
+# - Static scrape: Traefik (kube-system), blackbox, Pi-hole, Visage, Vault (from Flux Secrets / ConfigMaps).
+# - `prometheus.io/*` on Services for in-cluster app /metrics.
 prometheus:
   enabled: true
   alertmanager:
@@ -95,12 +95,45 @@ prometheus:
           - target_label: __address__
             replacement: redis-exporter.observability.svc.cluster.local:9121
         scrape_interval: 30s
-      # Pushgateway for external services (Mac GPU worker)
-      - job_name: 'pushgateway'
-        honor_labels: true
+      # Blackbox: HTTPS probes (exporter runs in cluster; see observability/blackbox-*.yaml)
+      - job_name: blackbox-https
+        metrics_path: /probe
+        params:
+          module: [http_2xx]
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter.observability.svc.cluster.local:9115
         static_configs:
-          - targets: ['observability-monitoring-stack-prometheus-pushgateway.observability.svc.cluster.local:9091']
-        scrape_interval: 15s
+          - targets: ["https://swimto.eldertree.xyz", "https://pitanga.cloud"]
+      - job_name: blackbox-https-ca
+        metrics_path: /probe
+        params:
+          module: [http_2xx_insecure]
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter.observability.svc.cluster.local:9115
+        static_configs:
+          - targets:
+              - "https://grafana.eldertree.local"
+              - "https://prometheus.eldertree.local"
+              - "https://alertmanager.eldertree.local"
+      # Traefik ingress (k3s) — metrics on entrypoint "metrics" / port 9100; Service must expose the port.
+      - job_name: traefik
+        scrape_interval: 30s
+        scrape_timeout: 10s
+        static_configs:
+          - targets: ["traefik.kube-system.svc.cluster.local:9100"]
+            labels:
+              app: traefik
+              namespace: kube-system
     # ServiceMonitor and PodMonitor discovery
     serviceMonitorSelectorNilUsesAll: true
     podMonitorSelectorNilUsesAll: true
@@ -212,6 +245,16 @@ prometheus:
               annotations:
                 summary: "Low disk space on {{ $labels.instance }}"
                 description: "Disk space is below 15% on {{ $labels.instance }}."
+        - name: blackbox-alerts
+          rules:
+            - alert: BlackboxProbeFailing
+              expr: probe_success{job=~"blackbox-.*"} == 0
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Blackbox probe failing: {{ $labels.instance }}"
+                description: "The HTTPS blackbox check returned probe_success=0 (target unreachable or bad response) for 5+ minutes. URL: {{ $labels.instance }}."
 
 # Grafana configuration
 grafana:
@@ -235,17 +278,26 @@ grafana:
           url: http://observability-monitoring-stack-prometheus-server.observability.svc.cluster.local
           access: proxy
           isDefault: true
+        - name: Loki
+          type: loki
+          url: http://loki.observability.svc.cluster.local:3100
+          access: proxy
+          isDefault: false
+          jsonData:
+            maxLines: 500
+  # Only watch `observability` — `ALL` imports every `grafana_dashboard: "1"` ConfigMap
+  # cluster-wide (Kong, Veeam, third-party charts), which clutters Grafana and looks like a breach.
   sidecar:
     dashboards:
       enabled: true
       label: grafana_dashboard
       labelValue: "1"
-      searchNamespace: ALL
+      searchNamespace: observability
     datasources:
       enabled: true
       label: grafana_datasource
       labelValue: "1"
-      searchNamespace: ALL
+      searchNamespace: observability
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1

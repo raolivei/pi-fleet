@@ -8,6 +8,11 @@ resources:
   - pihole-scrape-config.yaml # Pi-hole Prometheus scrape configuration
   - visage-scrape-config.yaml # Visage metrics scrape configuration
   - vault-scrape-config.yaml # Vault telemetry scrape configuration
+  - traefik-scrape-config.yaml # Traefik ingress (Prometheus metrics) — static job; no PodMonitor
+  - blackbox-exporter.yaml # Blackbox exporter (HTTPS synthetic probes for Alertmanager)
+  - blackbox-scrape-config.yaml # Scrape config for blackbox probers
+  - loki.yaml # Loki 2.9 (filesystem) + Grafana datasource via monitoring stack values
+  - promtail.yaml # Promtail → Loki
   - flux-ui-externalsecret.yaml # Flux UI admin password from Vault
   - flux-ui-helmrelease.yaml # Flux UI (Weave GitOps) for managing FluxCD resources
   - dex-helmrepository.yaml # Dex Helm chart repo (charts.dexidp.io)

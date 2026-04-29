@@ -77,6 +77,7 @@ components: {}
 #   securityContext: {}       # Override global container security context
 #   imagePullSecrets: []      # Override global imagePullSecrets
 #   builtinImage: false       # If true, skip imagePullSecrets (for postgres, redis, etc.)
+#   serviceAnnotations: {}  # e.g. prometheus.io/scrape for /metrics
 #   nodeSelector: {}          # Override global nodeSelector
 
 # -- Ingress rules: each key becomes an Ingress resource

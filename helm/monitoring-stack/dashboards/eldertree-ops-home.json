@@ -1,0 +1,127 @@
+{
+  "id": null,
+  "uid": "eldertree-ops-home",
+  "title": "Eldertree Ops Home",
+  "tags": ["eldertree", "overview", "sre", "featured"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1m",
+  "editable": true,
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "annotations": {
+    "list": []
+  },
+  "templating": { "list": [] },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Quick links",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 1 },
+      "options": {
+        "mode": "markdown",
+        "content": "## Core\n\n- [Command Center](/d/eldertree-command-center) — cluster SLO, resources, top traffic\n- [Eldertree cluster](/d/eldertree-cluster) — 3-node HA, services, Vault row\n- [Network intelligence](/d/network-intelligence) — Traefik ingress, HTTP codes, top services\n- [Kubernetes workloads](/d/kubernetes-workloads) — deploy/statefulset health\n- [Namespace resources](/d/namespace-resources) — quotas and usage by namespace\n\n## Apps (metrics)\n\n- [SwimTO](/d/swimto-dashboard) | [Pitanga](/d/pitanga-dashboard) | [Visage operations](/d/visage-ops) | [Vault](/d/vault-ops)\n\n## Logs (Loki)\n\n**Explore** → **Loki** datasource. Promtail ships node `/var/log/pods` into Loki in `observability`.\n"
+      }
+    },
+    {
+      "id": 3,
+      "type": "row",
+      "title": "Synthetics + ingress",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+      "collapsed": false
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Blackbox HTTPS (min probe_success)",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 8 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "min(probe_success{job=~\"blackbox-.*\"})"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Traefik scrape (up)",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 8 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"traefik\"}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "SwimTO app users (gauge)",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 8 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area"
+      },
+      "fieldConfig": { "defaults": { "mappings": [], "unit": "none" } },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "swimto_db_users_total",
+          "legendFormat": "users"
+        }
+      ]
+    }
+  ]
+}

@@ -1,151 +1,180 @@
 # Grafana Dashboards
 
-Access Grafana at `https://grafana.eldertree.local` (or `:32474` NodePort for Wi-Fi clients)
+Grafana: `https://grafana.eldertree.local` (or NodePort from `SERVICES_REFERENCE.md` if you use it).
+
+## How dashboards get here
+
+| Source | Mechanism |
+|--------|-----------|
+| **Custom JSON** | Files in [`dashboards/`](./dashboards/) are packaged by the chart into ConfigMaps (`dashboard-<name>`) in the Helm release namespace. The Grafana sidecar **only** watches namespace `observability` for `grafana_dashboard: "1"`. |
+| **Grafana.com** | [`values.yaml`](./values.yaml) under `grafana.dashboards.default` (`gnetId` + `revision`). Downloaded by the Grafana subchart on deploy. |
+
+**Verification (repo):** All **12** `dashboards/*.json` files parse as valid JSON. `visage-training.json` had broken string escaping in three `expr` fields (`job=~"..."`); that is fixed so provisioning does not silently fail.
+
+**URL pattern:** `https://grafana.eldertree.local/d/<uid>` (optional slug: `/d/<uid>/<slug>`).
+
+---
 
 ## Access URLs
 
 | Service      | URL                                        | Notes |
 |--------------|--------------------------------------------|-------|
-| Grafana      | `https://grafana.eldertree.local`          | Default admin/admin |
-| Prometheus   | `https://prometheus.eldertree.local`       | No auth |
+| Grafana      | `https://grafana.eldertree.local`          | Admin from Vault / default |
+| Prometheus   | `https://prometheus.eldertree.local`       | Targets, graph |
 | Alertmanager | `https://alertmanager.eldertree.local`     | Alert routing |
-| Pushgateway  | `https://pushgateway.eldertree.local`      | External worker metrics |
-
-> **Note:** kube-vip LoadBalancer IPs (192.168.2.200-210) are directly accessible from Wi-Fi clients.
+| Pushgateway  | `https://pushgateway.eldertree.local`      | External workers (e.g. Visage GPU) |
+| Loki         | In-cluster `loki.observability:3100`     | Use Grafana → Explore (Loki datasource) |
 
 ---
 
-## Dashboard Organization
+## Tag taxonomy (Grafana tags)
 
-### 📁 Folder Structure (Tags)
+Use these when adding or editing dashboards for consistent browsing:
 
-| Tag | Purpose |
+| Tag | Use for |
 |-----|---------|
-| `featured` | Key dashboards to check first |
-| `sre` | SRE/DevOps focused dashboards |
-| `overview` | High-level cluster views |
-| `network` | Network and traffic analysis |
-| `workloads` | Kubernetes workload details |
-| `storage` | Storage and PVC monitoring |
-| `app-*` | Application-specific dashboards |
+| `eldertree` | Any dashboard maintained for this cluster |
+| `featured` | “Open first” (Ops Home, Command Center) |
+| `overview` / `sre` | High-level or on-call panes |
+| `kubernetes` / `workloads` / `network` / `traefik` | Platform layers |
+| `applications` | App-specific (swimto, visage, pitanga, …) |
+| `hardware` / `raspberry-pi` | Node temperature, Pi metrics |
+
+Search in Grafana: **Dashboards** → filter by tag.
 
 ---
 
-## Dashboard Inventory
+## A — Start here (on-call / featured)
 
-### 🌟 Featured Dashboards (Start Here)
+| Dashboard | UID | File | What it shows |
+|-----------|-----|------|----------------|
+| **Eldertree Ops Home** | `eldertree-ops-home` | `eldertree-ops-home.json` | Links to other UIDs, blackbox `probe_success`, Traefik `up`, `swimto_db_users_total` |
+| **Eldertree Command Center** | `eldertree-command-center` | `command-center.json` | Cluster health, resources, Traefik, PVC, top consumers, problem pods |
+| **Eldertree Cluster Overview** | `eldertree-cluster` | `eldertree-cluster.json` | 3-node HA, namespaces, infra + app service rows (summary; not per-app deep dives) |
 
-| Dashboard | File | Description |
-|-----------|------|-------------|
-| **Eldertree Command Center** | `command-center.json` | Single-pane-of-glass for cluster health, resources, and problems |
-| **Eldertree Cluster** | `eldertree-cluster.json` | 3-node HA cluster overview with service status |
-| **Pi Fleet Overview** | `pi-fleet-overview.json` | Resource trends and utilization summary |
+**Direct links:** [`/d/eldertree-ops-home`](https://grafana.eldertree.local/d/eldertree-ops-home) · [`/d/eldertree-command-center`](https://grafana.eldertree.local/d/eldertree-command-center) · [`/d/eldertree-cluster`](https://grafana.eldertree.local/d/eldertree-cluster)
 
-### Infrastructure (17 dashboards)
+---
 
-| Dashboard | Source | ID | Description |
-|-----------|--------|-----|-------------|
-| **Eldertree Command Center** | Custom | - | 🌟 Single-pane-of-glass for cluster health, resources, problems |
-| **Eldertree Cluster** | Custom | - | 3-node HA cluster overview, Vault status, all services |
-| **Pi Fleet Overview** | Custom | - | Cluster health summary, resource trends |
-| **Hardware Health** | Custom | - | Raspberry Pi temperature and hardware |
-| **Network Intelligence** | Custom | - | Deep traffic analysis, latency, error rates |
-| **Kubernetes Workloads** | Custom | - | Deployments, StatefulSets, Jobs status and resources |
-| K8s Views Global | Grafana.com | 15757 | Cluster-wide health, resources, nodes |
-| K8s Views Namespaces | Grafana.com | 15758 | Per-namespace CPU, memory, network |
-| K8s Views Pods | Grafana.com | 15759 | Individual pod metrics |
-| K8s API Server | Grafana.com | 12006 | kube-apiserver health (critical for HA) |
-| K8s Persistent Volumes | Grafana.com | 13646 | Storage usage and PV status |
-| Node Exporter Full | Grafana.com | 1860 | Node-level metrics (CPU, disk, network) |
-| Traefik | Grafana.com | 11462 | Ingress controller metrics |
-| Flux Cluster | Grafana.com | 15991 | GitOps reconciliation status |
-| CoreDNS | Grafana.com | 14981 | k3s DNS health and queries |
-| etcd | Grafana.com | 3070 | HA cluster etcd health |
-| Vault | Grafana.com | 12904 | Vault HA and operations |
+## B — Platform & capacity (custom JSON)
 
-### Applications (12 dashboards)
+| Dashboard | UID | File | What it shows |
+|-----------|-----|------|----------------|
+| **Kubernetes Workloads** | `kubernetes-workloads` | `kubernetes-workloads.json` | Deployments, StatefulSets, Jobs, restarts, CPU/memory request vs use |
+| **Cluster Resource Usage by Namespace** | `namespace-resources` | `namespace-resources.json` | Per-namespace CPU/memory/network, top consumers, trends |
+| **Network Intelligence** | `network-intelligence` | `network-intelligence.json` | Traefik request rates, codes, top services, node network |
+| **Hardware Health** | `hardware-health` | `hardware-health.json` | Raspberry Pi temperature, load, disk, I/O |
 
-| Dashboard | File | Description |
-|-----------|------|-------------|
-| **SwimTO** | `swimto-dashboard.json` | Pool finder - API, Web, Postgres, Redis |
-| **Canopy** | `canopy-dashboard.json` | Personal finance - API, Web, Postgres, Redis |
-| **Journey** | `journey-dashboard.json` | Career pathfinder - API, Frontend, Postgres |
-| **Visage Operations** | `visage-operations.json` | AI headshots - System health, API, resources |
-| **Visage Training** | `visage-training.json` | AI headshots - GPU training progress, loss |
-| **NIMA** | `nima-dashboard.json` | ML platform - API, Frontend metrics |
-| **Ollie** | `ollie-dashboard.json` | AI assistant - Core, Ollama, TTS, Whisper, UI |
-| **iPhone Export** | `iphone-export-dashboard.json` | E-commerce - API, Web, Postgres, Redis |
-| **Pitanga & NorthwaySignal** | `pitanga-dashboard.json` | Company websites traffic and health |
-| **US Law Severity Map** | `us-law-severity-map-dashboard.json` | Legal visualization web app |
+---
 
-### Database & Services (5 dashboards)
+## C — Applications (custom JSON)
 
-| Dashboard | Source | ID | Description |
-|-----------|--------|-----|-------------|
-| PostgreSQL | Grafana.com | 9628 | Connections, queries, replication |
-| Redis | Grafana.com | 763 | Memory, clients, keyspace |
-| Pi-hole | Grafana.com | 10176 | DNS queries, blocking stats |
-| Cert-manager | Grafana.com | 11001 | Certificate status, renewals |
-| External Secrets | Grafana.com | 15159 | Vault sync status |
+| Dashboard | UID | File | What it shows |
+|-----------|-----|------|----------------|
+| **SwimTO** | `swimto-dashboard` | `swimto-dashboard.json` | Traefik + pods + Postgres/Redis for SwimTO |
+| **Pitanga & NorthwaySignal** | `pitanga-dashboard` | `pitanga-dashboard.json` | Traffic and resources for pitanga / NorthwaySignal sites |
+| **Visage Operations** | `visage-ops` | `visage-operations.json` | API, workers, Redis, MinIO, Postgres, GPU worker (Pushgateway) |
+| **Visage Training** | `visage-training` | `visage-training.json` | Training loss, step, progress, images, queue (Pushgateway + cluster) |
+| **Vault Operations** (custom) | `vault-ops` | `vault-dashboard.json` | Vault sealed, raft, tokens, requests — **Eldertree-focused** panels |
 
-### Resource Views (2 dashboards)
+> **Not shipped as separate JSON in this folder:** Canopy, Journey, NIMA, Ollie, iPhone export, US Law map. If those apps need first-class dashboards, add new `dashboards/<app>.json` and a chart version bump, or rely on **Eldertree Cluster** / **K8s Views** until then.
 
-| Dashboard | Source | ID | Description |
-|-----------|--------|-----|-------------|
-| Compute Resources - Namespace | Grafana.com | 15661 | CPU/memory by namespace |
-| Compute Resources - Pod | Grafana.com | 15662 | CPU/memory by pod |
+---
+
+## D — Upstream (Grafana.com) — `values.yaml`
+
+These are **not** files under `dashboards/`; they are pulled by ID at deploy time. Datasource: **Prometheus** unless you add a Loki-based dashboard later.
+
+### Kubernetes (views & control plane)
+
+| Key in values | gnetId | rev | Role |
+|---------------|--------|-----|------|
+| `k8s-views-global` | 15757 | 37 | Cluster-wide K8s health |
+| `k8s-views-namespaces` | 15758 | 34 | Per-namespace |
+| `k8s-views-pods` | 15759 | 28 | Pod-level |
+| `k8s-apiserver` | 12006 | 1 | API server (HA) |
+| `k8s-persistent-volumes` | 13646 | 2 | PV / PVC |
+| `k8s-compute-resources-namespace` | 15661 | 1 | CPU/memory by namespace (alt. view) |
+| `k8s-compute-resources-pod` | 15662 | 1 | CPU/memory by pod (alt. view) |
+
+### Node & ingress & DNS
+
+| Key | gnetId | rev | Role |
+|-----|--------|-----|------|
+| `node-exporter-full` | 1860 | 37 | Node exporter (compare with **Hardware Health** for Pi-focused view) |
+| `traefik` | 11462 | 1 | **Upstream** Traefik template (Eldertree also uses custom **Network Intelligence**) |
+| `coredns` | 14981 | 2 | CoreDNS |
+| `pihole` | 10176 | 1 | Pi-hole |
+
+### GitOps, TLS, external secrets
+
+| Key | gnetId | rev | Role |
+|-----|--------|-----|------|
+| `flux-cluster` | 15991 | 1 | Flux |
+| `cert-manager` | 11001 | 1 | Certificates |
+| `external-secrets` | 15159 | 1 | ESO → Vault sync |
+
+### HA & data stores
+
+| Key | gnetId | rev | Role |
+|-----|--------|-----|------|
+| `etcd` | 3070 | 3 | etcd (k3s control plane) |
+| `vault` | 12904 | 2 | **Generic** Vault dashboard (complements custom **`vault-ops`**) |
+| `postgresql-database` | 9628 | 7 | Generic Postgres |
+| `redis` | 763 | 6 | Generic Redis |
+
+---
+
+## Overlaps (intentional)
+
+| Topic | Custom | Upstream / other |
+|-------|--------|-------------------|
+| Traefik / edge | `network-intelligence.json`, app dashboards | `traefik` (gnet 11462) |
+| Vault | `vault-dashboard.json` (`vault-ops`) | `vault` (gnet 12904) |
+| Node / hardware | `hardware-health.json` | `node-exporter-full` (gnet 1860) |
+| K8s capacity | `namespace-resources.json`, `kubernetes-workloads.json` | k8s-views-* gnet dashboards |
 
 ---
 
 ## Alerting
 
-Alertmanager URL: `https://alertmanager.eldertree.local`
+Alertmanager: `https://alertmanager.eldertree.local`
 
-### Node Alerts
+| Group | Examples |
+|-------|----------|
+| Node | `NodeDown`, `HighCPUUsage`, `HighMemoryUsage`, `HighNodeTemperature` |
+| Kubernetes | `PodCrashLooping`, `PodNotReady`, `DeploymentReplicasMismatch` |
+| Storage | `PVCAlmostFull`, `DiskSpaceLow` |
+| Synthetic | `BlackboxProbeFailing` (`job=~"blackbox-.*"`) |
 
-| Alert | Condition | Severity |
-|-------|-----------|----------|
-| NodeDown | Node unreachable >2m | Critical |
-| HighCPUUsage | CPU >85% for >5m | Warning |
-| HighMemoryUsage | Memory >90% for >5m | Warning |
-| HighNodeTemperature | Temp >75C for >5m | Warning |
-
-### Kubernetes Alerts
-
-| Alert | Condition | Severity |
-|-------|-----------|----------|
-| PodCrashLooping | >5 restarts in 1h | Warning |
-| PodNotReady | Not ready for >10m | Warning |
-| DeploymentReplicasMismatch | Replicas mismatch >10m | Warning |
-
-### Storage Alerts
-
-| Alert | Condition | Severity |
-|-------|-----------|----------|
-| PVCAlmostFull | PVC >85% full | Warning |
-| DiskSpaceLow | Disk <15% available | Warning |
+(Full conditions live in `values.yaml` `prometheus.serverFiles.alerting_rules.yml`.)
 
 ---
 
-## External GPU Worker (Visage)
+## Source of truth (HTTP / app metrics, Traefik v3)
 
-The Visage GPU worker runs on an external Mac with Apple Silicon and pushes metrics via Pushgateway:
+| Signal | Source | Notes |
+|--------|--------|--------|
+| Edge (per service, code) | Traefik `traefik_service_requests_total`, etc. | `service` like `swimto-swimto-api-8000@kubernetes` |
+| App RED | App `/metrics` (e.g. FastAPI `http_requests_total`) | `prometheus.io/*` on the **Service** |
+| Product DB depth (SwimTO) | `swimto_db_users_total` | From API; **Eldertree Ops Home** |
+| Postgres / Redis | Exporters in `observability` | See `postgres-exporter.yaml`, `redis-exporter.yaml` |
 
-```bash
-export PUSHGATEWAY_URL=https://pushgateway.eldertree.local
-```
-
-Metrics available:
-- `visage_training_progress_percent` - Training completion
-- `visage_training_loss` - Current loss value
-- `visage_training_step` - Current step
-- `visage_images_generated_total` - Images generated
+**Traefik scrape:** static target `traefik.kube-system:9100` (see `core-infrastructure/traefik-config.yaml`). **Loki** datasource in `values.yaml`; **Promtail** ships node logs (see cluster observability manifests).
 
 ---
 
-## Useful PromQL Queries
+## External GPU worker (Visage)
 
-### Cluster Health
+Push metrics to Pushgateway: `https://pushgateway.eldertree.local`
+
+- `visage_training_*`, `visage_images_*`, `visage_queue_*` — see **Visage Operations** / **Visage Training** panels.
+
+---
+
+## Useful PromQL
+
+### Cluster health
 
 ```promql
 # Nodes ready (should be 3)
@@ -161,7 +190,7 @@ sum(increase(kube_pod_container_status_restarts_total[1h]))
 sum(kube_pod_status_phase{namespace="vault", pod=~"vault-.*", phase="Running"})
 ```
 
-### Resource Usage
+### Resource usage
 
 ```promql
 # Cluster CPU usage %
@@ -203,7 +232,7 @@ sum(rate(container_network_receive_bytes_total[5m])) by (namespace)
 sum(rate(traefik_service_requests_total[5m])) by (service)
 ```
 
-### Application Metrics
+### Application metrics
 
 ```promql
 # API request rate by app
@@ -234,40 +263,21 @@ avg(node_hwmon_temp_celsius)
 
 ---
 
-## Adding New Dashboards
+## Adding dashboards
 
-### From Grafana.com
+1. **Custom:** Add `dashboards/<name>.json` with a stable **`uid`**, `eldertree` in **`tags`**, and bump the **monitoring-stack** chart version in `Chart.yaml` + `HelmRelease`.
+2. **Grafana.com:** Add a key under `grafana.dashboards.default` in `values.yaml` (`gnetId`, `revision`, `datasource: Prometheus`).
 
-Add to `values.yaml` under `grafana.dashboards.default`:
+### App with `monitoring.yaml` (optional)
 
-```yaml
-my-dashboard:
-  gnetId: 12345
-  revision: 1
-  datasource: Prometheus
-```
-
-### Custom Dashboard
-
-1. Create JSON file in `dashboards/` directory
-2. Include `eldertree` tag for consistency
-3. Use proper UID format: `app-name-dashboard`
-4. Dashboard will be auto-deployed via ConfigMap
-
-### App with monitoring.yaml
-
-1. Add `monitoring.yaml` to app repository
-2. Run generator: `workspace-config/monitoring/generator/generate.sh app-name`
-3. Generated dashboard will be placed in `dashboards/`
+Some apps use `workspace-config/monitoring/generator/generate.sh` — see pi-fleet / workspace-config docs; generated JSON still lands in `dashboards/` when committed.
 
 ---
 
-## Quick Tips
+## Quick tips
 
-- Use time range selectors for historical analysis
-- Alertmanager shows firing alerts - check first during incidents
-- Dashboards are editable - customize for your needs
-- Export custom dashboards via JSON for backup
-- Pushgateway metrics expire after 5 minutes if not refreshed
-- Use `{namespace="app-name"}` to filter by application
-- Temperature >70C triggers throttling on Raspberry Pi
+- **Browse by tag** in Grafana to see featured vs platform vs apps.
+- **Alertmanager** is the first place to check for firing alerts.
+- **Pushgateway** metrics disappear if the worker stops pushing for ~5 minutes.
+- **Temperature** on Pis: throttling can start above ~70–75°C; see **Hardware Health** and node alerts.
+- Re-export custom JSON after big edits in the UI and commit back to `dashboards/` if you want Git to stay canonical.

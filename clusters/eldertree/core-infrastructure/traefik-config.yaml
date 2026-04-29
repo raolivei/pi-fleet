@@ -26,6 +26,17 @@ spec:
       limits:
         cpu: "500m"
         memory: "512Mi"
+    # Expose the metrics entrypoint (9100) on the Traefik Service for in-cluster Prometheus
+    # scrape (static additionalScrapeConfigs in observability/monitoring-stack).
+    ports:
+      metrics:
+        expose:
+          default: true
+    metrics:
+      prometheus:
+        addEntryPointsLabels: true
+        addRoutersLabels: true
+        addServicesLabels: true
     # LoadBalancer configuration for kube-vip
     # VIP 192.168.2.200 is assigned by kube-vip on wlan0 interface
     # ServiceLB (svclb pods) handles traffic forwarding to Traefik pods

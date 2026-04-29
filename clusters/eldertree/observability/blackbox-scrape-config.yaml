@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blackbox-scrape-config
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: blackbox-scrape-config
+    prometheus-scrape-config: "true"
+type: Opaque
+stringData:
+  blackbox-scrape.yaml: |
+    - job_name: blackbox-https
+      metrics_path: /probe
+      scrape_interval: 1m
+      params:
+        module: [http_2xx]
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: blackbox-exporter.observability.svc.cluster.local:9115
+      static_configs:
+        - targets:
+            - "https://swimto.eldertree.xyz"
+            - "https://pitanga.cloud"
+    - job_name: blackbox-https-ca
+      metrics_path: /probe
+      scrape_interval: 1m
+      params:
+        module: [http_2xx_insecure]
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: blackbox-exporter.observability.svc.cluster.local:9115
+      static_configs:
+        - targets:
+            - "https://grafana.eldertree.local"
+            - "https://prometheus.eldertree.local"
+            - "https://alertmanager.eldertree.local"

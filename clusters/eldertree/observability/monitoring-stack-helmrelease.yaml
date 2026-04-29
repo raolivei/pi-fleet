@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: ./helm/monitoring-stack
-      version: "0.2.1"
+      version: "0.2.5"
       sourceRef:
         kind: GitRepository
         name: flux-system
@@ -61,6 +61,10 @@ spec:
             name: visage-scrape-config
           - key: vault-scrape.yaml
             name: vault-scrape-config
+          - key: traefik-scrape.yaml
+            name: traefik-scrape-config
+          - key: blackbox-scrape.yaml
+            name: blackbox-scrape-config
     grafana:
       enabled: true
       adminPassword: admin
