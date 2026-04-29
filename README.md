@@ -104,6 +104,11 @@ helm/              # Custom Helm charts
 scripts/           # Helper scripts (setup-eldertree.sh, etc.)
 ```
 
+## Documentation
+
+- **Synthetic / Blackbox HTTP monitoring (why and how on Eldertree):** [docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md](docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md)
+- **Grafana dashboard inventory and PromQL source of truth:** [helm/monitoring-stack/DASHBOARDS.md](helm/monitoring-stack/DASHBOARDS.md)
+
 ## Helm Charts
 
 Custom charts for cluster components (Helm v4 compatible):

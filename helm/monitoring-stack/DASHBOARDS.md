@@ -2,6 +2,26 @@
 
 Grafana: `https://grafana.eldertree.local` (or NodePort from `SERVICES_REFERENCE.md` if you use it).
 
+## Blackbox exporter: what it solves (synthetic HTTP)
+
+[Prometheus Blackbox exporter](https://github.com/prometheus/blackbox_exporter) does **synthetic** HTTPS (and other module-based) checks: Prometheus does not scrape the app’s `/metrics` directly; it scrapes **Blackbox**, and Blackbox requests each configured URL. That yields `probe_success`, latency, and HTTP code metrics for **user-facing** paths, including DNS, TLS, ingress, and Cloudflare in front. It is **not** OpenTelemetry, tracing, or log collection — it is **“does this URL work from the cluster’s perspective?”** while still exercising the real public (or private) name.
+
+On Eldertree, alerts use **`BlackboxProbeFailing`** (`probe_success{job=~"blackbox-.*"} == 0`). The **Eldertree Ops Home** dashboard includes Blackbox + Traefik + a SwimTO product gauge. For target lists, scrape wiring, and how this fits the rest of observability, see **[`docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md`](../../docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md)**.
+
+## Prometheus TSDB, memory, and series count
+
+`prometheus_tsdb_head_series` in Prometheus/Grafana is the number of **active** series in the TSDB head (strongly related to `prometheus-server` RSS). A sudden step up = **new cardinality** (new targets, new pods, or more label combinations on scrape).
+
+**Diagnose (Prometheus):**
+
+- **Steady load / trends:** `prometheus_tsdb_head_series`
+- **After a spike:** correlate the time with Flux syncs, `HelmRelease` upgrades, or new `ServiceMonitor`/`Service` scrape annotations. **Status → Targets** to see new or “large” jobs.
+- **By job (expensive; short range / raise timeout if needed):** e.g. `topk(15, count by (job) (group by(__name__, job) ({__name__=~".+"})))`
+
+**Eldertree mitigations in [`values.yaml`](./values.yaml):** global `scrape_interval` / `evaluation_interval` (60s) to cut scrape rate; **`metric_relabel_configs` on `kubernetes-nodes-cadvisor`** to `labeldrop` cAdvisor’s `id` and `image` (dashboards and alerts use `namespace`, `pod`, `container`). If `kube_state_metrics` dominates, tune kube-state-metric allowlists in a follow-up; do not drop labels you use in a panel without testing.
+
+**Post-change:** re-check `kubectl top pods -n observability` (Prometheus) and `prometheus_tsdb_head_series` after reconciliation.
+
 ## How dashboards get here
 
 | Source | Mechanism |

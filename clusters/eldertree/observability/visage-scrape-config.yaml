@@ -24,8 +24,9 @@ data:
         - source_labels: [__meta_kubernetes_service_name]
           target_label: service
       metrics_path: /metrics
-      scrape_interval: 30s
+      scrape_interval: 60s
     - job_name: 'visage-redis'
+      scrape_interval: 60s
       static_configs:
         - targets: ['visage-redis.visage.svc.cluster.local:6379']
           labels:

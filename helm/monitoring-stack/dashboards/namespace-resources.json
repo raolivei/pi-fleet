@@ -611,7 +611,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (namespace) (rate(container_network_receive_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[5m]) + rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[5m]))",
+          "expr": "sum by (namespace) (rate(container_network_receive_bytes_total{namespace=~\"$namespace\", namespace!=\"\", pod=~\"$pod\"}[5m]) + rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", namespace!=\"\", pod=~\"$pod\"}[5m]))",
           "legendFormat": "{{namespace}}",
           "refId": "A"
         }
@@ -872,7 +872,7 @@
           "refId": "Pods"
         },
         {
-          "expr": "sum by (namespace) (rate(container_network_receive_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[5m]) + rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[5m]))",
+          "expr": "sum by (namespace) (rate(container_network_receive_bytes_total{namespace=~\"$namespace\", namespace!=\"\", pod=~\"$pod\"}[5m]) + rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", namespace!=\"\", pod=~\"$pod\"}[5m]))",
           "format": "table",
           "instant": true,
           "refId": "Net"
@@ -1220,7 +1220,7 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, sum by (pod, namespace) (rate(container_network_receive_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[5m]) + rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", pod=~\"$pod\"}[5m])))",
+          "expr": "topk($topk, sum by (pod, namespace) (rate(container_network_receive_bytes_total{namespace=~\"$namespace\", namespace!=\"\", pod=~\"$pod\"}[5m]) + rate(container_network_transmit_bytes_total{namespace=~\"$namespace\", namespace!=\"\", pod=~\"$pod\"}[5m])))",
           "legendFormat": "{{namespace}}/{{pod}}",
           "refId": "A"
         }

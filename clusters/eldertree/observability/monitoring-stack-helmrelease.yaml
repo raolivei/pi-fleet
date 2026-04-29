@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: ./helm/monitoring-stack
-      version: "0.2.5"
+      version: "0.2.7"
       sourceRef:
         kind: GitRepository
         name: flux-system
@@ -53,18 +53,8 @@ spec:
                 - prometheus.eldertree.local
           annotations:
             cert-manager.io/cluster-issuer: ca-cluster-issuer
-        # Additional scrape configs for services
-        additionalScrapeConfigs:
-          - key: pihole-scrape.yaml
-            name: pihole-scrape-config
-          - key: visage-scrape.yaml
-            name: visage-scrape-config
-          - key: vault-scrape.yaml
-            name: vault-scrape-config
-          - key: traefik-scrape.yaml
-            name: traefik-scrape-config
-          - key: blackbox-scrape.yaml
-            name: blackbox-scrape-config
+        # Pi-hole, Visage, Vault scrapes: see helm/monitoring-stack values
+        # (scrapeConfigFiles + server extraSecretMounts / extraConfigmapMounts). Traefik + blackbox: same chart values.
     grafana:
       enabled: true
       adminPassword: admin
