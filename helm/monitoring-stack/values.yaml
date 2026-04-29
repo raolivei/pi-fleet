@@ -313,12 +313,32 @@ grafana:
             maxLines: 500
   # Only watch `observability` — `ALL` imports every `grafana_dashboard: "1"` ConfigMap
   # cluster-wide (Kong, Veeam, third-party charts), which clutters Grafana and looks like a breach.
+  # Per-dashboard Grafana folders: basename (no .json) -> folder path. Sidecar uses annotation `grafana_folder`.
+  # See: https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml (sidecar.dashboards.folderAnnotation)
+  dashboardFolders:
+    # —— Applications (one subfolder per app; multiple JSON can share the same path) ——
+    swimto-dashboard: "Applications/SwimTO"
+    pitanga-dashboard: "Applications/Pitanga"
+    visage-operations: "Applications/Visage"
+    visage-training: "Applications/Visage"
+    # —— Platform (cluster, capacity, network, security) ——
+    eldertree-ops-home: "Platform/Overview"
+    command-center: "Platform/Overview"
+    eldertree-cluster: "Platform/Cluster"
+    kubernetes-workloads: "Platform/Workloads"
+    namespace-resources: "Platform/Capacity"
+    network-intelligence: "Platform/Network"
+    hardware-health: "Platform/Hardware"
+    vault-dashboard: "Platform/Security"
   sidecar:
     dashboards:
       enabled: true
       label: grafana_dashboard
       labelValue: "1"
       searchNamespace: observability
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
     datasources:
       enabled: true
       label: grafana_datasource

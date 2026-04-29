@@ -29,6 +29,25 @@ On Eldertree, alerts use **`BlackboxProbeFailing`** (`probe_success{job=~"blackb
 | **Custom JSON** | Files in [`dashboards/`](./dashboards/) are packaged by the chart into ConfigMaps (`dashboard-<name>`) in the Helm release namespace. The Grafana sidecar **only** watches namespace `observability` for `grafana_dashboard: "1"`. |
 | **Grafana.com** | [`values.yaml`](./values.yaml) under `grafana.dashboards.default` (`gnetId` + `revision`). Downloaded by the Grafana subchart on deploy. |
 
+## Folders in the Grafana UI (custom JSON)
+
+Provisioned custom dashboards are grouped by **Grafana folder** using the sidecar’s `FOLDER_ANNOTATION` (`grafana_folder` on each ConfigMap). The mapping from file basename → folder path lives in [`values.yaml`](./values.yaml) under `grafana.dashboardFolders`.
+
+| Area | Folder path | Dashboards (basename) |
+|------|-------------|------------------------|
+| **Applications** | `Applications/SwimTO` | `swimto-dashboard` |
+| | `Applications/Pitanga` | `pitanga-dashboard` |
+| | `Applications/Visage` | `visage-operations`, `visage-training` |
+| **Platform** | `Platform/Overview` | `eldertree-ops-home`, `command-center` |
+| | `Platform/Cluster` | `eldertree-cluster` |
+| | `Platform/Workloads` | `kubernetes-workloads` |
+| | `Platform/Capacity` | `namespace-resources` |
+| | `Platform/Network` | `network-intelligence` |
+| | `Platform/Hardware` | `hardware-health` |
+| | `Platform/Security` | `vault-dashboard` |
+
+**Grafana.com** (`gnetId`) dashboards are still loaded by the Grafana chart into the default file provider; they do not use this annotation and typically appear under **General** (or the chart default) unless reconfigured in the upstream chart.
+
 **Verification (repo):** All **12** `dashboards/*.json` files parse as valid JSON. `visage-training.json` had broken string escaping in three `expr` fields (`job=~"..."`); that is fixed so provisioning does not silently fail.
 
 **URL pattern:** `https://grafana.eldertree.local/d/<uid>` (optional slug: `/d/<uid>/<slug>`).
@@ -60,7 +79,7 @@ Use these when adding or editing dashboards for consistent browsing:
 | `applications` | App-specific (swimto, visage, pitanga, …) |
 | `hardware` / `raspberry-pi` | Node temperature, Pi metrics |
 
-Search in Grafana: **Dashboards** → filter by tag.
+Search in Grafana: **Dashboards** → browse by **folder** (Applications vs Platform) or filter by tag.
 
 ---
 
