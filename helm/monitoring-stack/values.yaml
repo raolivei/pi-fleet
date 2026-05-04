@@ -320,6 +320,18 @@ grafana:
   # cluster-wide (Kong, Veeam, third-party charts), which clutters Grafana and looks like a breach.
   # Per-dashboard Grafana folders: basename (no .json) -> folder path. Sidecar uses annotation `grafana_folder`.
   # See: https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml (sidecar.dashboards.folderAnnotation)
+  #
+  # Dashboard folder organization (Applications/* for products, Platform/* for infrastructure)
+  # Add your dashboard JSON to dashboards/ directory, then map its basename here.
+  # Missing mappings default to "Platform" folder.
+  #
+  # To add a new dashboard:
+  #   1. Create dashboards/my-dashboard.json (ensure uid matches filename)
+  #   2. Add mapping below: my-dashboard: "Category/Subcategory"
+  #   3. Validate: scripts/validate-dashboards.sh
+  #   4. Deploy: helm upgrade monitoring-stack .
+  #
+  # See: README-DASHBOARDS.md for complete documentation
   dashboardFolders:
     # —— Applications (one subfolder per app; multiple JSON can share the same path) ——
     swimto-dashboard: "Applications/SwimTO"
