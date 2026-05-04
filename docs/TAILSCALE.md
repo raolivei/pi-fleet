@@ -136,7 +136,22 @@ A separate kubeconfig is available for remote access:
 | Location   | kubeconfig                        | API Server          |
 | ---------- | --------------------------------- | ------------------- |
 | Home (LAN) | `~/.kube/config-eldertree`        | 192.168.2.100:6443  |
-| Remote     | `~/.kube/config-eldertree-remote` | 100.86.241.124:6443 |
+| Remote     | `~/.kube/config-eldertree-remote` | 100.86.241.124:6443 (default = node-1; see failover below) |
+
+**Failover when node-1’s Tailscale path is broken:** On your Mac, `tailscale status` may show **node-1** with `rx 0` or only a **relay** while **node-2** shows `direct` and non-zero `rx`. The default remote kubeconfig still points at node-1’s Tailscale IP, so Lens times out with `dial tcp 100.86.241.124:6443: i/o timeout`. Regenerate pointing at node-2 or node-3 (any control plane serves the API):
+
+```bash
+ELDERTREE_TS_API_IP=100.116.185.57 bash scripts/operations/sync-kubeconfig-eldertree-remote.sh
+# or node-3: ELDERTREE_TS_API_IP=100.104.30.105
+```
+
+Discover which IP answers `:6443` from this machine:
+
+```bash
+bash scripts/operations/diagnose-eldertree-tailscale-k8s-api.sh
+```
+
+On the node, if Tailscale is wedged: `sudo systemctl restart tailscaled` (after checking `tailscale status` on the Pi).
 
 **Usage:**
 
@@ -163,7 +178,9 @@ ssh raolivei@100.104.30.105  # node-3
 
 ### Lens IDE Configuration
 
-For guaranteed cluster access in Lens regardless of WiFi VIP issues:
+**Recommended:** one kubeconfig with both VIP and Tailscale contexts — run `scripts/operations/merge-eldertree-kubeconfigs-for-lens.sh` from a pi-fleet checkout, then in Lens add `~/.kube/config-eldertree-lens` and switch context (`eldertree` vs `eldertree-remote`) as needed. Full steps: [`docs/LENS_CONNECTION_GUIDE.md`](LENS_CONNECTION_GUIDE.md).
+
+**Alternative** — add only the remote kubeconfig to Lens:
 
 1. **Install Tailscale on your Mac** (if not already): https://tailscale.com/download/mac
 2. **Enable Accept Routes** in Tailscale preferences
@@ -178,11 +195,17 @@ For guaranteed cluster access in Lens regardless of WiFi VIP issues:
 - If the VIP leader node's WiFi fails, the VIP becomes unreachable
 - The remote config uses Tailscale (100.86.241.124) which is more reliable
 
-**Limitation:** The remote config points only to node-1. If node-1 is completely down, you'll need to manually edit the kubeconfig to use node-2 (100.116.185.57) or node-3 (100.104.30.105).
+**Limitation:** The default remote config uses node-1’s Tailscale IP only. If node-1 is down **or** node-1’s Tailscale link from your Mac is unhealthy, set `ELDERTREE_TS_API_IP` to node-2 (100.116.185.57) or node-3 (100.104.30.105) when running `sync-kubeconfig-eldertree-remote.sh` (see failover above).
 
 ### Create Remote kubeconfig (if needed)
 
-If `~/.kube/config-eldertree-remote` doesn't exist:
+From a pi-fleet checkout (keeps certs in sync with `config-eldertree` after rotation):
+
+```bash
+bash scripts/operations/sync-kubeconfig-eldertree-remote.sh
+```
+
+If `~/.kube/config-eldertree-remote` doesn't exist and you prefer a one-liner without the repo:
 
 ```bash
 CLIENT_CERT=$(grep client-certificate-data ~/.kube/config-eldertree | awk '{print $2}')

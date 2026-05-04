@@ -9,6 +9,7 @@ data:
   # Environment variables for OpenClaw
   OPENCLAW_GATEWAY_BIND: "0.0.0.0"
   OPENCLAW_GATEWAY_PORT: "18789"
+  OPENCLAW_DISABLE_BONJOUR: "1"
   TZ: "America/Toronto"
   SWIMTO_API_URL: "http://swimto-api.swimto.svc.cluster.local:8000"
   ELDER_URL: "http://elder.openclaw.svc.cluster.local:8000"
@@ -48,7 +49,8 @@ data:
           "allowedOrigins": [
             "https://openclaw.eldertree.local",
             "http://openclaw.eldertree.local"
-          ]
+          ],
+          "requireDevicePairing": false
         }
       },
       "tools": {

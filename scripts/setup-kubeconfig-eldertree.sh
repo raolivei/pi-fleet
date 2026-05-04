@@ -9,8 +9,12 @@ set -e
 
 NODE_1_IP="192.168.2.101"
 NODE_1_HOSTNAME="node-1.eldertree.local"
+# HA API VIP (kube-vip); see docs/HA_KUBECONFIG_SETUP.md
+KUBE_VIP_IP="192.168.2.100"
 KUBECONFIG_PATH="$HOME/.kube/config-eldertree"
 SSH_KEY="$HOME/.ssh/id_ed25519_raolivei"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REMOTE_SYNC="${SCRIPT_DIR}/operations/sync-kubeconfig-eldertree-remote.sh"
 
 echo "=========================================="
 echo "Setting up kubeconfig for eldertree cluster"
@@ -38,9 +42,9 @@ fi
 # Copy to final location
 cp /tmp/k3s-eldertree.yaml "$KUBECONFIG_PATH"
 
-# Update server URL from 0.0.0.0:6443 to node-1 IP
-echo "2. Updating server URL..."
-sed -i '' "s|server: https://0.0.0.0:6443|server: https://$NODE_1_IP:6443|g" "$KUBECONFIG_PATH"
+# Update server URL from 0.0.0.0:6443 to kube-vip WiFi VIP (HA)
+echo "2. Updating server URL to VIP ($KUBE_VIP_IP)..."
+sed -i '' "s|server: https://0.0.0.0:6443|server: https://$KUBE_VIP_IP:6443|g" "$KUBECONFIG_PATH"
 
 # Rename cluster from "default" to "eldertree"
 echo "3. Renaming cluster to 'eldertree'..."
@@ -72,6 +76,14 @@ echo "  3. Select 'From File' or 'From Kubeconfig'"
 echo "  4. Navigate to: $KUBECONFIG_PATH"
 echo "  OR"
 echo "  5. Lens will automatically detect it if you add it to ~/.kube/config"
+echo ""
+echo "Remote / travel (Tailscale): regenerate $HOME/.kube/config-eldertree-remote:"
+echo "  bash $REMOTE_SYNC"
+echo ""
+if [[ -f "$REMOTE_SYNC" ]]; then
+  echo "Syncing Tailscale remote kubeconfig..."
+  bash "$REMOTE_SYNC" || echo "⚠️  Remote kubeconfig sync failed (optional)."
+fi
 echo ""
 echo "Testing connection..."
 export KUBECONFIG="$KUBECONFIG_PATH"

@@ -4,15 +4,30 @@ This guide explains how to connect Lens (Kubernetes IDE) to the eldertree k3s cl
 
 ## Prerequisites
 
-- ✅ Kubeconfig file created at `~/.kube/config-eldertree`
-- ✅ Cluster accessible from your machine (network connectivity)
+- ✅ Kubeconfig file created at `~/.kube/config-eldertree` (LAN / VIP)
+- ✅ Tailscale on the Mac when you are **not** on the Eldertree LAN (see [`TAILSCALE.md`](TAILSCALE.md): **Accept Routes**)
 - ✅ Lens installed on your machine
 
-## Quick Setup
+## Recommended: one file, two contexts (fixes VIP timeouts)
 
-The kubeconfig has been automatically configured. You can connect Lens using one of the following methods:
+The LAN kubeconfig points at **`https://192.168.2.100:6443`** (kube-vip). That times out in Lens when your Mac cannot reach `192.168.2.0/24` (off Wi‑Fi without working subnet routes).
 
-## Method 1: Import Kubeconfig File (Recommended)
+Generate a **merged** kubeconfig (VIP + Tailscale node-1 API) and add **that** file to Lens:
+
+```bash
+bash ~/WORKSPACE/raolivei/pi-fleet/scripts/operations/merge-eldertree-kubeconfigs-for-lens.sh
+```
+
+Then in Lens: **Add cluster** → **From kubeconfig file** → `~/.kube/config-eldertree-lens`.
+
+- **Context `eldertree-remote`** — API via node-1 Tailscale IP (default after the script). Use when you see `dial tcp 192.168.2.100:6443` timeouts.
+- **Context `eldertree`** — API via VIP (HA). Use at home when subnet routing to `192.168.2.0/24` works.
+
+Switch context in Lens (cluster settings / kubeconfig context) instead of maintaining two separate cluster entries.
+
+## Quick Setup (LAN-only file)
+
+Use this only when you are sure the VIP is reachable from your Mac.
 
 1. **Open Lens**
 2. **Click the "+" icon** in the top left (or go to **File → Add Cluster**)
@@ -21,9 +36,9 @@ The kubeconfig has been automatically configured. You can connect Lens using one
    - Full path: `/Users/roliveira/.kube/config-eldertree`
 5. **Click "Add"** or **"Connect"**
 
-Lens will automatically detect the cluster and context named "eldertree".
+Lens will detect the cluster and context named `eldertree`.
 
-## Method 2: Auto-Detection (Alternative)
+## Alternative: merge into default kubeconfig
 
 Lens automatically detects clusters from `~/.kube/config`. To enable auto-detection:
 
@@ -43,7 +58,7 @@ Lens automatically detects clusters from `~/.kube/config`. To enable auto-detect
 
 3. The eldertree cluster should appear automatically in Lens
 
-## Method 3: Manual Cluster Addition
+## Manual cluster addition
 
 If the above methods don't work, you can add the cluster manually:
 
@@ -71,6 +86,52 @@ After connecting, verify the connection:
 ## Troubleshooting
 
 ### Connection Issues
+
+#### `dial tcp 192.168.2.100:6443: connect: operation timed out`
+
+The LAN kubeconfig points at the kube-vip address `192.168.2.100`. That only works when your Mac can reach the home LAN (same Wi‑Fi/VLAN) **or** Tailscale is up with **Accept Routes** so `192.168.2.0/24` is routed via the cluster.
+
+**Fix (recommended for Lens):** use the merged kubeconfig (VIP + Tailscale in one file) or add the remote file only:
+
+1. Tailscale: connected, **Accept Routes** enabled (`tailscale status`).
+2. **Preferred:** merged file (switch context in Lens):
+
+   ```bash
+   bash ~/WORKSPACE/raolivei/pi-fleet/scripts/operations/merge-eldertree-kubeconfigs-for-lens.sh
+   ```
+
+   Lens → **Add Cluster** → `~/.kube/config-eldertree-lens` → context **`eldertree-remote`**.
+
+3. **Or** regenerate remote only after cert rotation on the LAN config:
+
+   ```bash
+   bash ~/WORKSPACE/raolivei/pi-fleet/scripts/operations/sync-kubeconfig-eldertree-remote.sh
+   ```
+
+   Lens → **From kubeconfig file** → `~/.kube/config-eldertree-remote`.
+
+Details: [`docs/TAILSCALE.md`](TAILSCALE.md) (remote kubeconfig + Lens).
+
+#### `dial tcp 100.x.x.x:6443: i/o timeout` (Tailscale / `eldertree-remote`)
+
+That address is a **node Tailscale IP**, not the VIP. A timeout usually means the **Tailscale data path to that node is unhealthy** (common on node-1 when `tailscale status` shows **`rx 0`** or a stuck **relay** while node-2 shows **direct**).
+
+1. From a pi-fleet checkout:
+
+   ```bash
+   bash scripts/operations/diagnose-eldertree-tailscale-k8s-api.sh
+   ```
+
+2. Regenerate the remote kubeconfig using a node whose `:6443` check passed (often node-2):
+
+   ```bash
+   ELDERTREE_TS_API_IP=100.116.185.57 bash scripts/operations/sync-kubeconfig-eldertree-remote.sh
+   bash scripts/operations/merge-eldertree-kubeconfigs-for-lens.sh
+   ```
+
+3. On the affected Pi (when you can SSH): `sudo systemctl restart tailscaled` and confirm `tailscale status` on the node.
+
+---
 
 If Lens can't connect:
 

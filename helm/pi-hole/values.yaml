@@ -18,11 +18,8 @@ image:
 
 service:
   type: LoadBalancer
-  # Setting a loadBalancerClass prevents K3s built-in ServiceLB (Klipper) from
-  # creating svclb DaemonSet pods for this service. Without this, K3s ServiceLB
-  # tries to bind host port 53 (conflicting with CoreDNS), the svclb pods get
-  # stuck Pending, and the service never gets an EXTERNAL-IP — breaking DNS.
-  loadBalancerClass: kube-vip.io/kube-vip
+  # NOTE: loadBalancerClass removed because kube-vip v0.8.3 ignores services with this field.
+  # K3s ServiceLB should be disabled cluster-wide (--disable servicelb in k3s install) to prevent conflicts.
   # kube-vip will assign this IP via the kube-vip.io/loadbalancerIPs annotation
   # This IP should be configured as the DNS server on your router
   loadBalancerIP: 192.168.2.201

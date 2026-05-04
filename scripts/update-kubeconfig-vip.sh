@@ -104,5 +104,12 @@ echo ""
 echo "Your kubeconfig now uses the VIP ($VIP) which floats between control plane nodes."
 echo "Lens will be able to connect even if node-1 is down!"
 echo ""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REMOTE_SYNC="${SCRIPT_DIR}/operations/sync-kubeconfig-eldertree-remote.sh"
+if [[ -f "$REMOTE_SYNC" ]]; then
+  echo "Syncing Tailscale remote kubeconfig (for Lens off-LAN)..."
+  bash "$REMOTE_SYNC" || echo "⚠️  Remote kubeconfig sync failed (optional)."
+fi
+echo ""
 echo "Location: $KUBECONFIG_PATH"
 

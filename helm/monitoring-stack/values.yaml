@@ -79,27 +79,32 @@ prometheus:
     podMonitorSelectorNilUsesAll: true
     # Extra scrape fragments (prometheus chart 28+): `scrape_config_files` in prometheus.yml
     # (see also clusters/eldertree/observability/*-scrape-config.yaml).
+    # IMPORTANT: mount at /etc/scrape-configs/, NOT under /etc/config/. The kubelet creates
+    # empty placeholder directories inside the config-volume backing store for any subPath mount
+    # that targets a path under /etc/config/. runc then fails to bind-mount the file over that
+    # directory (MS_BIND|MS_REC on a file-to-directory pair → ENOTDIR). Using a separate directory
+    # avoids the collision entirely. See pi-fleet CHANGELOG for details.
     extraSecretMounts:
       - name: pihole-scrape-file
         secretName: pihole-scrape-config
         subPath: pihole-scrape.yaml
-        mountPath: /etc/config/pihole-scrape.yaml
+        mountPath: /etc/scrape-configs/pihole-scrape.yaml
         readOnly: true
     extraConfigmapMounts:
       - name: visage-scrape-file
         configMap: visage-scrape-config
         subPath: visage-scrape.yaml
-        mountPath: /etc/config/visage-scrape.yaml
+        mountPath: /etc/scrape-configs/visage-scrape.yaml
         readOnly: true
       - name: vault-scrape-file
         configMap: vault-scrape-config
         subPath: vault-scrape.yaml
-        mountPath: /etc/config/vault-scrape.yaml
+        mountPath: /etc/scrape-configs/vault-scrape.yaml
         readOnly: true
   scrapeConfigFiles:
-    - /etc/config/pihole-scrape.yaml
-    - /etc/config/visage-scrape.yaml
-    - /etc/config/vault-scrape.yaml
+    - /etc/scrape-configs/pihole-scrape.yaml
+    - /etc/scrape-configs/visage-scrape.yaml
+    - /etc/scrape-configs/vault-scrape.yaml
   # Scrape config map: merges with chart defaults (prometheus-community >=28). Static jobs:
   # postgres, redis, blackbox (×2), traefik. Node/cadvisor: Lens "node" relabel + cAdvisor labeldrop.
   scrapeConfigs:

@@ -53,12 +53,11 @@ fi
 # Copy to final location
 cp /tmp/k3s-eldertree.yaml "$KUBECONFIG_PATH"
 
-# Update server URL - use the first available node's IP
-# For true HA, you should set up a load balancer, but for now we'll use the node we got the config from
-FIRST_AVAILABLE_NODE_IP=$(echo "${NODES[0]}" | cut -d':' -f1)
+# kube-vip WiFi VIP (same as docs/HA_KUBECONFIG_SETUP.md)
+KUBE_VIP_IP="192.168.2.100"
 echo ""
-echo "2. Updating server URL to use $FIRST_AVAILABLE_NODE_IP..."
-sed -i '' "s|server: https://0.0.0.0:6443|server: https://$FIRST_AVAILABLE_NODE_IP:6443|g" "$KUBECONFIG_PATH"
+echo "2. Updating server URL to use HA VIP ($KUBE_VIP_IP)..."
+sed -i '' "s|server: https://0.0.0.0:6443|server: https://$KUBE_VIP_IP:6443|g" "$KUBECONFIG_PATH"
 
 # Rename cluster from "default" to "eldertree"
 echo "3. Renaming cluster to 'eldertree'..."
@@ -78,12 +77,14 @@ chmod 600 "$KUBECONFIG_PATH"
 echo ""
 echo "✅ Kubeconfig updated successfully!"
 echo ""
-echo "⚠️  NOTE: This kubeconfig points to a single node IP."
-echo "   If that node goes down, you'll need to run this script again"
-echo "   to get the kubeconfig from another node."
+echo "Server URL is the kube-vip WiFi VIP ($KUBE_VIP_IP). See docs/HA_KUBECONFIG_SETUP.md."
 echo ""
-echo "   For true HA, consider setting up a load balancer (kube-vip or MetalLB)"
-echo "   See: docs/HA_KUBECONFIG_SETUP.md"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REMOTE_SYNC="${SCRIPT_DIR}/operations/sync-kubeconfig-eldertree-remote.sh"
+if [[ -f "$REMOTE_SYNC" ]]; then
+  echo "Syncing Tailscale remote kubeconfig..."
+  bash "$REMOTE_SYNC" || echo "⚠️  Remote kubeconfig sync failed (optional)."
+fi
 echo ""
 echo "Location: $KUBECONFIG_PATH"
 echo ""
