@@ -25,8 +25,9 @@ spec:
   values:
     service:
       type: LoadBalancer
-      # NOTE: loadBalancerClass removed - kube-vip v0.8.3 ignores services with this field.
-      # K3s ServiceLB is disabled cluster-wide to prevent conflicts.
+      # NOTE: Explicitly set loadBalancerClass to null to remove it from previous releases
+      # kube-vip v0.8.3 ignores services with this field set
+      loadBalancerClass: null
       # Explicit IP so kube-vip assigns 192.168.2.201 (router DNS)
       loadBalancerIP: 192.168.2.201
     config:
