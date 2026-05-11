@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git rebase:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(ssh-keygen -Y:*)"
     ]
   }
 }
