@@ -1,5 +1,7 @@
 # Pi Fleet - AI Assistant Context
 
+> **Note**: This file works with Claude Code. See workspace [CLAUDE.md](../CLAUDE.md) for workspace-wide conventions and memory system details.
+
 ## Quick Reference
 
 - **Project Type**: K3s cluster management on Raspberry Pi
