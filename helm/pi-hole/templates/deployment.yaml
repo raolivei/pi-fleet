@@ -30,6 +30,7 @@ spec:
       initContainers:
         - name: bind-init
           image: "{{ .Values.image.busybox.repository }}:{{ .Values.image.busybox.tag }}"
+          imagePullPolicy: {{ .Values.image.busybox.pullPolicy }}
           command: ["sh", "-c"]
           args:
             - |
@@ -40,6 +41,12 @@ spec:
               TSIG_SECRET=$(cat /etc/bind-tsig/tsig-secret)
               sed "s|TSIG_SECRET_PLACEHOLDER|${TSIG_SECRET}|g" /etc/named/named.conf > /var/named/named.conf
               chmod 644 /var/named/named.conf
+              # Create empty gravity.db stub so Pi-hole skips auto-gravity on first start
+              # (gravity.db is rebuilt by postStart hook once Pi-hole is ready)
+              mkdir -p /etc/pihole
+              if [ ! -f /etc/pihole/gravity.db ]; then
+                touch /etc/pihole/gravity.db
+              fi
           volumeMounts:
             - name: bind-config
               mountPath: /etc/named
@@ -48,6 +55,8 @@ spec:
             - name: bind-tsig-secret
               mountPath: /etc/bind-tsig
               readOnly: true
+            - name: pihole-data
+              mountPath: /etc/pihole
       containers:
         - name: pihole
           image: "{{ .Values.image.pihole.repository }}:{{ .Values.image.pihole.tag }}"
@@ -106,7 +115,8 @@ spec:
           lifecycle:
             postStart:
               exec:
-                command: ["/bin/sh", "-c", "sleep 10 && pihole -g &"]
+                # Rebuild gravity in background after startup; runs non-blocking
+                command: ["/bin/sh", "-c", "sleep 30 && pihole -g &"]
           resources:
             {{- toYaml .Values.resources.pihole | nindent 12 }}
           livenessProbe:
