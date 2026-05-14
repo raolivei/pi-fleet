@@ -103,22 +103,24 @@ spec:
               mountPath: /etc/dnsmasq.d/99-upstream-dns.conf
               subPath: 99-upstream-dns.conf
               readOnly: true
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10 && pihole -g &"]
           resources:
             {{- toYaml .Values.resources.pihole | nindent 12 }}
           livenessProbe:
-            # Use /admin/ endpoint which returns 302 (redirect) instead of 403
-            # The root / path returns 403 Forbidden, causing liveness probe failures
             httpGet:
               path: /admin/
               port: 80
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             tcpSocket:
               port: 53
-            initialDelaySeconds: 60
+            initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
@@ -191,8 +193,12 @@ spec:
             failureThreshold: 3
       volumes:
         - name: pihole-data
+          {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "pi-hole.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         - name: dnsmasq-config
           configMap:
             name: {{ include "pi-hole.fullname" . }}-dnsmasq
