@@ -10,7 +10,7 @@ image:
   busybox:
     repository: busybox
     tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   exporter:
     repository: ekofr/pihole-exporter
     tag: latest
