@@ -187,6 +187,30 @@ spec:
                 name: elder-secrets
                 key: GROQ_API_KEY
                 optional: true
+          - name: ELDER_GMAIL_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: ELDER_GMAIL_CLIENT_ID
+                optional: true
+          - name: ELDER_GMAIL_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: ELDER_GMAIL_CLIENT_SECRET
+                optional: true
+          - name: ELDER_GMAIL_REFRESH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: ELDER_GMAIL_REFRESH_TOKEN
+                optional: true
+          - name: ELDER_GMAIL_USER_EMAIL
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: ELDER_GMAIL_USER_EMAIL
+                optional: true
         resources:
           requests: { cpu: "250m", memory: "256Mi" }
           limits: { cpu: "500m", memory: "512Mi" }
