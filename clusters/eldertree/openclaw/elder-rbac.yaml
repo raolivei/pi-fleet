@@ -10,11 +10,12 @@ kind: ClusterRole
 metadata:
   name: elder-agent
 rules:
+  # Read-only cluster resources (no secrets)
   - apiGroups: [""]
     resources: ["pods", "pods/log"]
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
-    resources: ["services", "configmaps", "secrets", "namespaces"]
+    resources: ["services", "configmaps", "namespaces"]
     verbs: ["get", "list"]
   - apiGroups: ["apps"]
     resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
@@ -38,6 +39,17 @@ rules:
     resources: ["gitrepositories"]
     verbs: ["get", "list", "patch"]
 ---
+# Namespace-scoped role for secrets (openclaw namespace only)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: elder-secrets-reader
+  namespace: openclaw
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -49,4 +61,19 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: elder-agent
+  apiGroup: rbac.authorization.k8s.io
+---
+# Bind secrets access only to openclaw namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: elder-secrets-reader-binding
+  namespace: openclaw
+subjects:
+  - kind: ServiceAccount
+    name: elder
+    namespace: openclaw
+roleRef:
+  kind: Role
+  name: elder-secrets-reader
   apiGroup: rbac.authorization.k8s.io
