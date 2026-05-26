@@ -15,8 +15,8 @@ interval = 5
 # Maximum 1-minute load average before triggering reboot
 max-load-1 = {{ watchdog_max_load }}
 
-# Check k3s service is running
-pidfile = /var/run/k3s.pid
+# Note: pidfile check disabled because k3s doesn't create /var/run/k3s.pid
+# Cluster health is monitored via node pings instead
 
 # Ping cluster nodes via gigabit network for peer health checks
 # These are contacted on 10.0.0.0/24 internal network
