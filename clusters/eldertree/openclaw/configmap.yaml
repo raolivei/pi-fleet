@@ -68,18 +68,17 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "groq/openai/gpt-oss-120b",
+            "primary": "openrouter/google/gemini-2.0-flash-001",
             "fallbacks": [
-              "groq/llama-3.3-70b-versatile",
-              "groq/meta-llama/llama-4-scout-17b-16e-instruct",
-              "openrouter/google/gemini-2.0-flash-001"
+              "openrouter/anthropic/claude-3.5-haiku",
+              "openrouter/meta-llama/llama-4-scout"
             ]
           },
           "contextTokens": 80000,
           "compaction": {
             "mode": "safeguard",
             "reserveTokensFloor": 20000,
-            "model": "groq/openai/gpt-oss-120b",
+            "model": "openrouter/google/gemini-2.0-flash-001",
             "memoryFlush": {
               "enabled": false
             }
