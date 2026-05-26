@@ -24,7 +24,7 @@ spec:
       personal-website:
         image:
           repository: ghcr.io/raolivei/personal-website
-          tag: v0.2.2 # {"$imagepolicy": "personal-website:personal-website-policy:tag"}
+          tag: v0.2.3 # {"$imagepolicy": "personal-website:personal-website-policy:tag"}
           pullPolicy: IfNotPresent
         port: 80
         podSecurityContext:
@@ -32,12 +32,12 @@ spec:
           runAsUser: 101
           fsGroup: 101
         resources:
-          requests: { cpu: "50m", memory: "64Mi" }
-          limits: { cpu: "100m", memory: "128Mi" }
+          requests: {cpu: "50m", memory: "64Mi"}
+          limits: {cpu: "100m", memory: "128Mi"}
         probes:
           path: /
-          liveness: { initialDelaySeconds: 10, periodSeconds: 15 }
-          readiness: { initialDelaySeconds: 5, periodSeconds: 10 }
+          liveness: {initialDelaySeconds: 10, periodSeconds: 15}
+          readiness: {initialDelaySeconds: 5, periodSeconds: 10}
         volumeMounts:
           - name: nginx-cache
             mountPath: /var/cache/nginx
@@ -48,7 +48,6 @@ spec:
             emptyDir: {}
           - name: nginx-run
             emptyDir: {}
-
     ingress:
       personal-website-public:
         host: raolivei.me
