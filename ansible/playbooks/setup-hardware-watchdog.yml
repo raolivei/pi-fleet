@@ -1,0 +1,55 @@
+---
+# Hardware Watchdog - Automatic node recovery from freezes
+# Enables BCM2835 watchdog on Raspberry Pi to auto-reboot if system becomes unresponsive
+# Reference: https://github.com/raolivei/pi-fleet/issues/153
+
+- name: Setup Hardware Watchdog
+  hosts: raspberry_pi
+  become: true
+
+  vars:
+    watchdog_timeout: 15
+    watchdog_max_load: 24
+    watchdog_ping_targets:
+      - "{{ node_1_eth0_ip }}"
+      - "{{ node_2_eth0_ip }}"
+      - "{{ node_3_eth0_ip }}"
+
+  tasks:
+    - name: Install watchdog daemon
+      apt:
+        name: watchdog
+        state: present
+        update_cache: no
+
+    - name: Create watchdog config
+      template:
+        src: watchdog.conf.j2
+        dest: /etc/watchdog.conf
+        owner: root
+        group: root
+        mode: '0644'
+        backup: yes
+      notify: restart watchdog
+
+    - name: Enable watchdog service
+      systemd:
+        name: watchdog
+        enabled: yes
+        state: started
+
+    - name: Verify watchdog is active
+      command: systemctl is-active watchdog
+      register: watchdog_status
+      changed_when: false
+      failed_when: watchdog_status.rc not in [0]
+
+    - name: Display watchdog status
+      debug:
+        msg: "Watchdog daemon is active on {{ inventory_hostname }}"
+
+  handlers:
+    - name: restart watchdog
+      systemd:
+        name: watchdog
+        state: restarted

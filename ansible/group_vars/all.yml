@@ -57,5 +57,14 @@ k3s_bind_address: "0.0.0.0"
 # (Tailscale was previously disabled due to same-LAN routing conflicts; re-enabled as the path to access all services from Mac when Mac is never on gigabit — see docs/TAILSCALE.md)
 disabled_services: []
 
+# Hardware Watchdog Configuration
+# Auto-reboot frozen nodes via BCM2835 watchdog
+watchdog_timeout: 15
+watchdog_max_load: 24
+watchdog_ping_targets:
+  - "{{ node_1_eth0_ip }}"
+  - "{{ node_2_eth0_ip }}"
+  - "{{ node_3_eth0_ip }}"
+
 # Backup Configuration
 backup_mount_default: "/mnt/backup"
