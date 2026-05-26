@@ -1,0 +1,37 @@
+# Watchdog configuration for Raspberry Pi K3s cluster
+# Automatically reboots node if system becomes unresponsive
+# See: https://github.com/raolivei/pi-fleet/issues/153
+
+# Hardware watchdog device (BCM2835 on Raspberry Pi)
+watchdog-device = /dev/watchdog
+
+# Timeout before reboot (seconds)
+# Set to 15s - allows time for safe shutdown before forced reboot
+watchdog-timeout = {{ watchdog_timeout }}
+
+# Daemon interval to kick watchdog (seconds)
+interval = 5
+
+# Maximum 1-minute load average before triggering reboot
+max-load-1 = {{ watchdog_max_load }}
+
+# Check k3s service is running
+pidfile = /var/run/k3s.pid
+
+# Ping cluster nodes via gigabit network for peer health checks
+# These are contacted on 10.0.0.0/24 internal network
+{% for ping_target in watchdog_ping_targets %}
+ping = {{ ping_target }}
+{% endfor %}
+
+# Fork into background
+daemonize = yes
+
+# Log file
+logfile = /var/log/watchdog.log
+
+# Repair processes instead of killing them
+repair-binary = /usr/bin/systemctl
+
+# Verbose logging
+verbose = yes
