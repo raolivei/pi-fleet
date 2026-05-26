@@ -49,8 +49,7 @@ data:
           "allowedOrigins": [
             "https://openclaw.eldertree.local",
             "http://openclaw.eldertree.local"
-          ],
-          "requireDevicePairing": false
+          ]
         }
       },
       "tools": {

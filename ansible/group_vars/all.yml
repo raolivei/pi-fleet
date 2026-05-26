@@ -66,5 +66,10 @@ watchdog_ping_targets:
   - "{{ node_2_eth0_ip }}"
   - "{{ node_3_eth0_ip }}"
 
+<<<<<<< HEAD
+# Boot Loop Protection
+watchdog_max_boot_attempts: 5
+watchdog_successful_boot_time: 600  # 10 minutes
+>>>>>>> origin/main
 # Backup Configuration
 backup_mount_default: "/mnt/backup"

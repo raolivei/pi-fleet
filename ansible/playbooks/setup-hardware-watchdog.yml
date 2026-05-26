@@ -7,14 +7,6 @@
   hosts: raspberry_pi
   become: true
 
-  vars:
-    watchdog_timeout: 15
-    watchdog_max_load: 24
-    watchdog_ping_targets:
-      - "{{ node_1_eth0_ip }}"
-      - "{{ node_2_eth0_ip }}"
-      - "{{ node_3_eth0_ip }}"
-
   tasks:
     - name: Install watchdog daemon
       apt:
@@ -24,13 +16,12 @@
 
     - name: Create watchdog config
       template:
-        src: watchdog.conf.j2
+        src: ../templates/watchdog.conf.j2
         dest: /etc/watchdog.conf
         owner: root
         group: root
         mode: '0644'
         backup: yes
-      notify: restart watchdog
 
     - name: Enable watchdog service
       systemd:
@@ -48,8 +39,76 @@
       debug:
         msg: "Watchdog daemon is active on {{ inventory_hostname }}"
 
+<<<<<<< HEAD
+    # Boot Loop Protection
+    - name: Create boot guard script
+      template:
+        src: ../templates/watchdog-boot-guard.sh.j2
+        dest: /usr/local/bin/watchdog-boot-guard.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create boot guard systemd service
+      template:
+        src: ../templates/watchdog-boot-guard.service.j2
+        dest: /etc/systemd/system/watchdog-boot-guard.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Create boot guard reset service
+      template:
+        src: ../templates/watchdog-boot-guard-reset.service.j2
+        dest: /etc/systemd/system/watchdog-boot-guard-reset.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Create boot guard reset timer
+      template:
+        src: ../templates/watchdog-boot-guard-reset.timer.j2
+        dest: /etc/systemd/system/watchdog-boot-guard-reset.timer
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Enable boot guard service
+      systemd:
+        name: watchdog-boot-guard.service
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Enable boot guard reset timer
+      systemd:
+        name: watchdog-boot-guard-reset.timer
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Initialize boot counter if missing
+      copy:
+        content: "0\n"
+        dest: /var/lib/watchdog-boot-count
+        owner: root
+        group: root
+        mode: '0644'
+        force: no
+
+=======
+>>>>>>> origin/main
   handlers:
     - name: restart watchdog
       systemd:
         name: watchdog
         state: restarted
+<<<<<<< HEAD
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+=======
+>>>>>>> origin/main

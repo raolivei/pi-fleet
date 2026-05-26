@@ -16,12 +16,22 @@ See [GitHub Issue #153](https://github.com/raolivei/pi-fleet/issues/153).
 
 ## How It Works
 
+### Watchdog Daemon
+
 The BCM2835 watchdog (Raspberry Pi hardware) monitors system health:
 1. Daemon periodically "kicks" the watchdog (resets timeout)
 2. If daemon stops (system frozen), watchdog counter runs down
 3. When counter reaches zero, hardware forces reboot
 4. System recovers within seconds (vs days with manual intervention)
 
+### Boot Loop Protection
+
+To prevent infinite reboot loops, a boot guard tracks consecutive reboots:
+1. On boot, `watchdog-boot-guard.service` runs before watchdog daemon
+2. Reads boot counter from `/var/lib/watchdog-boot-count`
+3. If counter >= 5: disables watchdog, logs critical alert, requires manual intervention
+4. If counter < 5: increments counter, allows boot to continue
+5. After 10 minutes uptime: timer resets counter to 0 (successful boot)
 ## Configuration
 
 ### Parameters
@@ -33,6 +43,8 @@ The BCM2835 watchdog (Raspberry Pi hardware) monitors system health:
 | `max-load-1` | 24 | Reboot if 1-min load avg exceeds this |
 | `ping` | 10.0.0.x | Check cluster node connectivity via gigabit |
 | `pidfile` | /var/run/k3s.pid | Verify k3s service is running |
+| `watchdog_max_boot_attempts` | 5 | Max consecutive reboots before disabling watchdog |
+| `watchdog_successful_boot_time` | 600s | Time node must stay up to reset boot counter |
 
 ### File Location
 
@@ -93,6 +105,30 @@ ssh raolivei@10.0.0.1 "uptime"
 
 ## Troubleshooting
 
+### Boot Loop (5 Reboots Limit Reached)
+
+If watchdog disabled after 5 consecutive reboots:
+
+1. **Check boot counter**
+   ```bash
+   ssh raolivei@10.0.0.1 "cat /var/lib/watchdog-boot-count"
+   ```
+
+2. **Check boot guard logs**
+   ```bash
+   ssh raolivei@10.0.0.1 "journalctl -u watchdog-boot-guard -n 50"
+   ```
+
+3. **Investigate root cause**
+   - Check system logs: `journalctl -b -n 100`
+   - Check k3s status: `systemctl status k3s`
+   - Check network connectivity to other nodes
+
+4. **Reset counter and re-enable watchdog**
+   ```bash
+   ssh raolivei@10.0.0.1 "echo 0 | sudo tee /var/lib/watchdog-boot-count"
+   ssh raolivei@10.0.0.1 "sudo systemctl enable watchdog && sudo systemctl start watchdog"
+   ```
 ### False Positive Reboots
 
 If nodes reboot unexpectedly:
