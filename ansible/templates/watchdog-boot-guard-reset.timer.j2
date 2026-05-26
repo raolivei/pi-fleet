@@ -1,0 +1,11 @@
+[Unit]
+Description=Watchdog Boot Counter Reset Timer
+Documentation=https://github.com/raolivei/pi-fleet/issues/153
+Requires=watchdog-boot-guard-reset.service
+
+[Timer]
+OnBootSec={{ watchdog_successful_boot_time }}s
+Unit=watchdog-boot-guard-reset.service
+
+[Install]
+WantedBy=timers.target

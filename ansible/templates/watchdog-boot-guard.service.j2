@@ -1,0 +1,15 @@
+[Unit]
+Description=Watchdog Boot Loop Guard
+Documentation=https://github.com/raolivei/pi-fleet/issues/153
+After=local-fs.target
+Before=watchdog.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/watchdog-boot-guard.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

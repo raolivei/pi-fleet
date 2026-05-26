@@ -1,0 +1,40 @@
+#!/bin/bash
+# Watchdog Boot Loop Guard
+# Prevents infinite reboot loops by tracking boot attempts
+# Disables watchdog after {{ watchdog_max_boot_attempts }} consecutive reboots
+
+set -euo pipefail
+
+BOOT_COUNT_FILE="/var/lib/watchdog-boot-count"
+MAX_ATTEMPTS={{ watchdog_max_boot_attempts }}
+WATCHDOG_SERVICE="watchdog.service"
+
+# Ensure boot count file exists
+if [ ! -f "$BOOT_COUNT_FILE" ]; then
+    echo "0" > "$BOOT_COUNT_FILE"
+    chmod 644 "$BOOT_COUNT_FILE"
+fi
+
+# Read current boot count
+BOOT_COUNT=$(cat "$BOOT_COUNT_FILE")
+
+# Increment boot count
+NEW_COUNT=$((BOOT_COUNT + 1))
+echo "$NEW_COUNT" > "$BOOT_COUNT_FILE"
+
+echo "[$(date)] Boot attempt $NEW_COUNT of $MAX_ATTEMPTS"
+
+# Check if max attempts reached
+if [ "$NEW_COUNT" -ge "$MAX_ATTEMPTS" ]; then
+    echo "[$(date)] ERROR: Max boot attempts ($MAX_ATTEMPTS) reached. Disabling watchdog to prevent boot loop."
+    systemctl disable "$WATCHDOG_SERVICE" || true
+    systemctl stop "$WATCHDOG_SERVICE" || true
+
+    # Log alert
+    logger -t watchdog-boot-guard -p user.crit "CRITICAL: Node hit $MAX_ATTEMPTS consecutive reboots. Watchdog disabled. Manual intervention required."
+
+    exit 1
+fi
+
+echo "[$(date)] Boot guard check passed ($NEW_COUNT/$MAX_ATTEMPTS attempts)"
+exit 0

@@ -48,8 +48,70 @@
       debug:
         msg: "Watchdog daemon is active on {{ inventory_hostname }}"
 
+    # Boot Loop Protection
+    - name: Create boot guard script
+      template:
+        src: watchdog-boot-guard.sh.j2
+        dest: /usr/local/bin/watchdog-boot-guard.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create boot guard systemd service
+      template:
+        src: watchdog-boot-guard.service.j2
+        dest: /etc/systemd/system/watchdog-boot-guard.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Create boot guard reset service
+      template:
+        src: watchdog-boot-guard-reset.service.j2
+        dest: /etc/systemd/system/watchdog-boot-guard-reset.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Create boot guard reset timer
+      template:
+        src: watchdog-boot-guard-reset.timer.j2
+        dest: /etc/systemd/system/watchdog-boot-guard-reset.timer
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Enable boot guard service
+      systemd:
+        name: watchdog-boot-guard.service
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Enable boot guard reset timer
+      systemd:
+        name: watchdog-boot-guard-reset.timer
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Initialize boot counter if missing
+      copy:
+        content: "0\n"
+        dest: /var/lib/watchdog-boot-count
+        owner: root
+        group: root
+        mode: '0644'
+        force: no
+
   handlers:
     - name: restart watchdog
       systemd:
         name: watchdog
         state: restarted
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes

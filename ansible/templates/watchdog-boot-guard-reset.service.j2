@@ -1,0 +1,9 @@
+[Unit]
+Description=Watchdog Boot Counter Reset
+Documentation=https://github.com/raolivei/pi-fleet/issues/153
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'echo 0 > /var/lib/watchdog-boot-count && logger -t watchdog-boot-guard "Boot counter reset - node stable for {{ watchdog_successful_boot_time }}s"'
+StandardOutput=journal
+StandardError=journal
