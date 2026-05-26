@@ -21,12 +21,11 @@ spec:
     # ============================================================
     # SwimTO - Toronto pool schedules
     # ============================================================
-
     components:
       swimto-api:
         image:
           repository: ghcr.io/raolivei/swimto-api
-          tag: v0.7.8 # {"$imagepolicy": "swimto:swimto-api-policy:tag"}
+          tag: v0.8.3 # {"$imagepolicy": "swimto:swimto-api-policy:tag"}
           pullPolicy: IfNotPresent
         port: 8000
         env:
@@ -66,8 +65,8 @@ spec:
           - configMapRef:
               name: swimto-config
         resources:
-          requests: { cpu: "250m", memory: "256Mi" }
-          limits: { cpu: "500m", memory: "512Mi" }
+          requests: {cpu: "250m", memory: "256Mi"}
+          limits: {cpu: "500m", memory: "512Mi"}
         serviceAnnotations:
           prometheus.io/scrape: "true"
           prometheus.io/port: "8000"
@@ -79,13 +78,12 @@ spec:
             drop: ["ALL"]
         probes:
           path: /health
-          liveness: { initialDelaySeconds: 30, periodSeconds: 10 }
-          readiness: { initialDelaySeconds: 10, periodSeconds: 5 }
-
+          liveness: {initialDelaySeconds: 30, periodSeconds: 10}
+          readiness: {initialDelaySeconds: 10, periodSeconds: 5}
       swimto-web:
         image:
           repository: ghcr.io/raolivei/swimto-web
-          tag: v0.8.2 # {"$imagepolicy": "swimto:swimto-web-policy:tag"}
+          tag: v0.8.3 # {"$imagepolicy": "swimto:swimto-web-policy:tag"}
           pullPolicy: IfNotPresent
         port: 3000
         probesEnabled: false
@@ -95,8 +93,8 @@ spec:
           capabilities:
             drop: ["ALL"]
         resources:
-          requests: { cpu: "100m", memory: "128Mi" }
-          limits: { cpu: "200m", memory: "256Mi" }
+          requests: {cpu: "100m", memory: "128Mi"}
+          limits: {cpu: "200m", memory: "256Mi"}
         volumeMounts:
           - name: nginx-cache
             mountPath: /var/cache/nginx
@@ -111,7 +109,6 @@ spec:
             emptyDir: {}
           - name: nginx-tmp
             emptyDir: {}
-
     # -- ConfigMaps
     configMaps:
       swimto-config:
@@ -122,7 +119,6 @@ spec:
           LOG_LEVEL: "INFO"
           GOOGLE_REDIRECT_URI: "https://swimto.eldertree.xyz/auth/callback"
           CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","https://swimto.eldertree.local","http://swimto.eldertree.local","https://swimto.eldertree.xyz","http://swimto.eldertree.xyz","https://swimto.local","http://swimto.local"]'
-
     # -- Middleware
     middleware:
       api-path-rewrite:
@@ -133,7 +129,6 @@ spec:
         type: redirectScheme
         scheme: https
         permanent: true
-
     # -- Ingress (10 entries covering local, public, production, IP-based)
     ingress:
       # --- Local (*.eldertree.local) ---
@@ -150,7 +145,6 @@ spec:
           certManager: true
         annotations:
           external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.local
-
       swimto-web:
         host: swimto.eldertree.local
         service: swimto-web
@@ -162,7 +156,6 @@ spec:
           certManager: true
         annotations:
           external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.local
-
       # --- Public (*.eldertree.xyz) ---
       swimto-api-public:
         host: swimto.eldertree.xyz
@@ -175,7 +168,6 @@ spec:
           secretName: swimto-cloudflare-origin-tls
         annotations:
           external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.xyz
-
       swimto-web-public:
         host: swimto.eldertree.xyz
         service: swimto-web
@@ -184,7 +176,6 @@ spec:
           secretName: swimto-cloudflare-origin-tls
         annotations:
           external-dns.alpha.kubernetes.io/hostname: swimto.eldertree.xyz
-
       # --- Production (swimto.app) ---
       swimto-api-swimto-app:
         host: swimto.app
@@ -195,28 +186,24 @@ spec:
           - swimto-api-path-rewrite@kubernetescrd
         tls:
           secretName: swimto-app-tls
-
       swimto-web-swimto-app:
         host: swimto.app
         service: swimto-web
         port: 3000
         tls:
           secretName: swimto-app-tls
-
       swimto-web-www:
         host: www.swimto.app
         service: swimto-web
         port: 3000
         tls:
           secretName: swimto-app-tls
-
       swimto-api-subdomain:
         host: api.swimto.app
         service: swimto-api
         port: 8000
         tls:
           secretName: swimto-app-tls
-
       # --- IP-based (no host, low priority) ---
       swimto-api-ip:
         service: swimto-api
@@ -226,7 +213,6 @@ spec:
           - swimto-api-path-rewrite@kubernetescrd
         annotations:
           traefik.ingress.kubernetes.io/router.priority: "10"
-
       swimto-web-ip:
         service: swimto-web
         port: 3000
