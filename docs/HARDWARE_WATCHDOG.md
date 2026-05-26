@@ -32,7 +32,6 @@ To prevent infinite reboot loops, a boot guard tracks consecutive reboots:
 3. If counter >= 5: disables watchdog, logs critical alert, requires manual intervention
 4. If counter < 5: increments counter, allows boot to continue
 5. After 10 minutes uptime: timer resets counter to 0 (successful boot)
-
 ## Configuration
 
 ### Parameters
@@ -130,7 +129,6 @@ If watchdog disabled after 5 consecutive reboots:
    ssh raolivei@10.0.0.1 "echo 0 | sudo tee /var/lib/watchdog-boot-count"
    ssh raolivei@10.0.0.1 "sudo systemctl enable watchdog && sudo systemctl start watchdog"
    ```
-
 ### False Positive Reboots
 
 If nodes reboot unexpectedly:

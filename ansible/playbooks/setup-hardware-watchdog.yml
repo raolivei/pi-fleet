@@ -39,6 +39,7 @@
       debug:
         msg: "Watchdog daemon is active on {{ inventory_hostname }}"
 
+<<<<<<< HEAD
     # Boot Loop Protection
     - name: Create boot guard script
       template:
@@ -97,12 +98,17 @@
         mode: '0644'
         force: no
 
+=======
+>>>>>>> origin/main
   handlers:
     - name: restart watchdog
       systemd:
         name: watchdog
         state: restarted
+<<<<<<< HEAD
 
     - name: reload systemd
       systemd:
         daemon_reload: yes
+=======
+>>>>>>> origin/main
