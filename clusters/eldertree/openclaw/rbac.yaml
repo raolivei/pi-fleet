@@ -99,17 +99,13 @@ rules:
       - limitranges
       - resourcequotas
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Read-only pod introspection (no exec, eviction, or portforward for security)
   - apiGroups: [""]
     resources:
       - pods/log
-      - pods/exec
-      - pods/portforward
       - pods/proxy
       - services/proxy
-    verbs: ["get", "create"]
-  - apiGroups: [""]
-    resources: ["pods/eviction"]
-    verbs: ["create"]
+    verbs: ["get"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["get", "list", "watch", "create", "patch", "update"]
