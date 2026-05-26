@@ -7,14 +7,6 @@
   hosts: raspberry_pi
   become: true
 
-  vars:
-    watchdog_timeout: 15
-    watchdog_max_load: 24
-    watchdog_ping_targets:
-      - "{{ node_1_eth0_ip }}"
-      - "{{ node_2_eth0_ip }}"
-      - "{{ node_3_eth0_ip }}"
-
   tasks:
     - name: Install watchdog daemon
       apt:
@@ -24,13 +16,12 @@
 
     - name: Create watchdog config
       template:
-        src: watchdog.conf.j2
+        src: ../templates/watchdog.conf.j2
         dest: /etc/watchdog.conf
         owner: root
         group: root
         mode: '0644'
         backup: yes
-      notify: restart watchdog
 
     - name: Enable watchdog service
       systemd:
@@ -51,7 +42,7 @@
     # Boot Loop Protection
     - name: Create boot guard script
       template:
-        src: watchdog-boot-guard.sh.j2
+        src: ../templates/watchdog-boot-guard.sh.j2
         dest: /usr/local/bin/watchdog-boot-guard.sh
         owner: root
         group: root
@@ -59,7 +50,7 @@
 
     - name: Create boot guard systemd service
       template:
-        src: watchdog-boot-guard.service.j2
+        src: ../templates/watchdog-boot-guard.service.j2
         dest: /etc/systemd/system/watchdog-boot-guard.service
         owner: root
         group: root
@@ -68,7 +59,7 @@
 
     - name: Create boot guard reset service
       template:
-        src: watchdog-boot-guard-reset.service.j2
+        src: ../templates/watchdog-boot-guard-reset.service.j2
         dest: /etc/systemd/system/watchdog-boot-guard-reset.service
         owner: root
         group: root
@@ -77,7 +68,7 @@
 
     - name: Create boot guard reset timer
       template:
-        src: watchdog-boot-guard-reset.timer.j2
+        src: ../templates/watchdog-boot-guard-reset.timer.j2
         dest: /etc/systemd/system/watchdog-boot-guard-reset.timer
         owner: root
         group: root

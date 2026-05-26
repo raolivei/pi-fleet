@@ -20,9 +20,9 @@ pidfile = /var/run/k3s.pid
 
 # Ping cluster nodes via gigabit network for peer health checks
 # These are contacted on 10.0.0.0/24 internal network
-{% for ping_target in watchdog_ping_targets %}
-ping = {{ ping_target }}
-{% endfor %}
+ping = 10.0.0.1
+ping = 10.0.0.2
+ping = 10.0.0.3
 
 # Fork into background
 daemonize = yes
