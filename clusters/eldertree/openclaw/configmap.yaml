@@ -68,8 +68,9 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "openrouter/google/gemini-2.0-flash-001",
+            "primary": "ollama/qwen2.5:7b",
             "fallbacks": [
+              "openrouter/google/gemini-2.0-flash-001",
               "openrouter/anthropic/claude-3.5-haiku",
               "openrouter/meta-llama/llama-4-scout"
             ]
@@ -78,7 +79,7 @@ data:
           "compaction": {
             "mode": "safeguard",
             "reserveTokensFloor": 20000,
-            "model": "openrouter/google/gemini-2.0-flash-001",
+            "model": "ollama/qwen2.5:7b",
             "memoryFlush": {
               "enabled": false
             }
@@ -110,6 +111,19 @@ data:
                 "name": "Claude 3.5 Haiku (OpenRouter)",
                 "contextWindow": 200000,
                 "maxTokens": 3072
+              }
+            ]
+          },
+          "ollama": {
+            "api": "openai-completions",
+            "baseUrl": "http://100.97.229.104:11434/v1",
+            "apiKey": "ollama",
+            "models": [
+              {
+                "id": "qwen2.5:7b",
+                "name": "Qwen 2.5 7B (Local Mac)",
+                "contextWindow": 32768,
+                "maxTokens": 2048
               }
             ]
           },
