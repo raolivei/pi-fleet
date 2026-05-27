@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Sync Terraform workflow secrets from Vault to GitHub (Actions + Dependabot).
+# Publish Terraform CI secrets from Vault → GitHub (Actions + Dependabot).
+# Vault is the source of truth; GitHub secrets are a cache for cloud-hosted runners.
+#
+# Bootstrap HCP token in Vault first: ./scripts/setup-terraform-cloud-token.sh
 #
 # Vault paths (KV v2):
 #   secret/pi-fleet/terraform/cloudflare-api-token     -> api-token
@@ -106,16 +109,12 @@ if [[ -f "$TERRAFORM_DIR/terraform.tfvars" ]]; then
   PUBLIC_IP=$(grep '^public_ip' "$TERRAFORM_DIR/terraform.tfvars" 2>/dev/null | sed -n 's/.*= *"\([^"]*\)".*/\1/p' | head -1 || true)
 fi
 
-if [[ -z "$TF_CLOUD" ]]; then
-  TF_CLOUD="${TF_API_TOKEN:-${TF_TOKEN_app_terraform_io:-}}"
-fi
-
-# Optional: persist Terraform Cloud token in Vault when provided via env
-if [[ -n "$TF_CLOUD" ]]; then
+if [[ -z "$TF_CLOUD" && -n "${TF_API_TOKEN:-}" ]]; then
+  echo "Bootstrap: storing TF_API_TOKEN into Vault..."
   kubectl exec -n vault "$VAULT_POD" -- \
     env VAULT_ADDR=http://127.0.0.1:8200 "VAULT_TOKEN=${VAULT_TOKEN}" \
-    vault kv put secret/pi-fleet/terraform/terraform-cloud-token token="${TF_CLOUD}" >/dev/null 2>&1 \
-    && echo "Stored TF token in Vault (secret/pi-fleet/terraform/terraform-cloud-token)" || true
+    vault kv put secret/pi-fleet/terraform/terraform-cloud-token token="${TF_API_TOKEN}" >/dev/null
+  TF_CLOUD="$TF_API_TOKEN"
 fi
 
 if [[ -z "$CF_API" ]]; then
@@ -136,12 +135,11 @@ for app in "${APPS[@]}"; do
 done
 
 if [[ -z "$TF_CLOUD" ]]; then
-  echo "Note: TF_API_TOKEN not in Vault (secret/pi-fleet/terraform/terraform-cloud-token)."
-  echo "      Export TF_API_TOKEN (or TF_TOKEN_app_terraform_io) and re-run this script to sync + store in Vault."
-  echo "      GitHub Actions already has TF_API_TOKEN; Dependabot needs a separate copy:"
-  echo "        TF_API_TOKEN='…' $0 --app dependabot"
-else
-  echo "TF_API_TOKEN synced from Vault."
+  echo "Error: secret/pi-fleet/terraform/terraform-cloud-token missing in Vault." >&2
+  echo "  Run: ./scripts/setup-terraform-cloud-token.sh" >&2
+  exit 1
 fi
+
+echo "Published secrets from Vault to GitHub (${APPS[*]})."
 
 echo "Done."

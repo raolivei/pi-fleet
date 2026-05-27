@@ -12,6 +12,7 @@ resources:
   # - journey-secrets.yaml # DISABLED - journey namespace not created (journey app disabled)
   - external-dns-tsig-secret.yaml
   - external-dns-cloudflare-secret.yaml
+  - terraform-vault-credentials.yaml
   # Note: nima-secrets.yaml not included as NIMA has no secrets currently
   # When secrets are needed, uncomment and add data section
 

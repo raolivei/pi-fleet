@@ -1,3 +1,6 @@
+# Terraform secrets: source of truth is Vault (secret/pi-fleet/terraform/*).
+# GitHub-hosted runners cannot reach vault.eldertree.local — repo secrets are synced via:
+#   ./scripts/sync-github-terraform-secrets-from-vault.sh --app actions --app dependabot
 name: "Terraform"
 
 on:

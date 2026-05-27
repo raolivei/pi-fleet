@@ -86,11 +86,14 @@ Org-wide convention: [workspace-config/docs/PROJECT_CONVENTIONS.md](../workspace
 
 ### GitHub Actions and Dependabot
 
+- **Vault is the source of truth** for Terraform credentials — see [`docs/VAULT_TERRAFORM_SECRETS.md`](docs/VAULT_TERRAFORM_SECRETS.md).
+- **Local / cluster apps** read Vault via `./terraform/run-terraform.sh` or ExternalSecret `pi-fleet-terraform-vault-credentials`.
+- **GitHub-hosted CI** cannot reach `vault.eldertree.local`; after Vault changes run:
+  ```bash
+  ./scripts/sync-github-terraform-secrets-from-vault.sh --app actions --app dependabot
+  ```
+- **New HCP token:** `./scripts/setup-terraform-cloud-token.sh --sync-github` (create token at [HCP API tokens](https://app.terraform.io/app/settings/tokens) first).
 - **`main` Terraform** ([`terraform.yml`](.github/workflows/terraform.yml)) should stay green — badge on [README](README.md).
-- **Dependabot PRs** do not receive Actions secrets. After rotating Cloudflare or Terraform Cloud credentials:
-  1. Update Vault (`secret/pi-fleet/terraform/*`) and/or GitHub Actions secrets.
-  2. Run `./scripts/sync-github-terraform-secrets-from-vault.sh --app dependabot` (Cloudflare from Vault; pass `TF_API_TOKEN=…` for Terraform Cloud — not stored in Vault by default).
-- A red Terraform check on an old Dependabot PR that was **merged anyway** (e.g. `actions/checkout` bump) is safe to ignore if **`main` is green**.
 
 ### Commit Message Convention
 
