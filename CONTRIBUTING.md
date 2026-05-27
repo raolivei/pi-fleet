@@ -56,7 +56,33 @@ git branch -d feat/my-new-feature  # Optional: delete local branch
 - **Keep feature branches** until work is fully complete and tested
 - **Push regularly** to remote for backup and visibility
 - **Merge to main** only when production-ready
-- **Delete branches** after successful merge (optional, but recommended for cleanup)
+- **Delete branches** after successful merge (optional locally; remote is automatic — see below)
+
+### Remote branch cleanup (GitHub)
+
+This repo has **Settings → General → Pull Requests → Automatically delete head branches** enabled (`deleteBranchOnMerge`).
+
+| Event | Remote head branch |
+|-------|-------------------|
+| PR **merged** | Deleted automatically by GitHub |
+| PR **closed** without merge | **Not** deleted — remove manually if obsolete |
+
+```bash
+# After closing a superseded PR, delete the remote branch if you no longer need it:
+git push origin --delete <branch-name>
+
+# Or delete from the PR page: "Delete branch" (shown after merge; for closed PRs use the branches UI)
+```
+
+**Local cleanup** after merge:
+
+```bash
+git checkout main && git pull
+git branch -d feat/my-feature          # safe delete if merged
+git fetch --prune origin               # drop stale remote-tracking refs
+```
+
+Org-wide convention: [workspace-config/docs/PROJECT_CONVENTIONS.md](../workspace-config/docs/PROJECT_CONVENTIONS.md#github-pull-request-branch-cleanup).
 
 ### Commit Message Convention
 
