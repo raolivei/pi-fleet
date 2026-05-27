@@ -174,3 +174,6 @@
     - name: reload systemd
       systemd:
         daemon_reload: yes
+
+- name: Reconcile node scheduling tiers (deprioritize node-1)
+  import_playbook: configure-node-scheduling-tiers.yml

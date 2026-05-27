@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Added
+
+- **Node scheduling tiers** — node-1 deprioritized; Flux reconciler CronJob, Ansible (`configure-node-scheduling-tiers`, host_vars, hooks in setup-cluster/watchdog/install-k3s), `eldertree-app` affinity, vault-auto-unseal on stable nodes; [NODE_SCHEDULING.md](docs/NODE_SCHEDULING.md).
+
 ### Fixed
 
 - **ExternalSecret `pi-fleet-terraform-vault-credentials`** — drop optional `pi-user` Vault key so sync succeeds when that secret is absent.

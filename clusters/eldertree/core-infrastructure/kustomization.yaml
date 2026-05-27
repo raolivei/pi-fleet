@@ -3,6 +3,7 @@ kind: Kustomization
 # Core infrastructure components - TLS certificate management
 # Deploy order: cert-manager first, then issuers
 resources:
+  - node-scheduling # Reconcile node-1 deprioritization (labels/taints via CronJob)
   - cert-manager # TLS certificate management using cert-manager
   - coredns-autoscaler # Auto-scales CoreDNS for HA (min 2 replicas)
   - issuers # ClusterIssuer resources (self-signed certificates)

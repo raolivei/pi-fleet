@@ -239,7 +239,8 @@
           --cluster-init \
           --write-kubeconfig-mode=644 \
           --tls-san={{ k3s_hostname }} \
-          --disable servicelb
+          --disable servicelb \
+          {{ node_k3s_server_args | default('') }}
       args:
         creates: /usr/local/bin/k3s
       register: k3s_install
@@ -257,7 +258,8 @@
           --server {{ ha_control_plane_endpoint }} \
           --write-kubeconfig-mode=644 \
           --tls-san={{ k3s_hostname }} \
-          --disable servicelb
+          --disable servicelb \
+          {{ node_k3s_server_args | default('') }}
       args:
         creates: /usr/local/bin/k3s
       register: k3s_install
@@ -743,3 +745,6 @@
           - "Next steps:"
           - "  kubectl get nodes (from control plane)"
       when: k3s_role == 'worker'
+
+- name: Reconcile node scheduling tiers (Git-declared policy)
+  import_playbook: configure-node-scheduling-tiers.yml

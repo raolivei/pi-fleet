@@ -35,6 +35,18 @@ global:
   nodeSelector:
     kubernetes.io/arch: arm64
 
+  # -- Prefer stable nodes (node-2/3); soft-tainted node-1 still schedulable if needed
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: eldertree.xyz/node-tier
+                operator: NotIn
+                values:
+                  - unstable
+
 # -- Components: each key becomes a Deployment + Service
 # Example:
 #   components:

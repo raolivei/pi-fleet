@@ -18,6 +18,8 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          nodeSelector:
+            eldertree.xyz/node-tier: stable
           containers:
             - name: unseal
               image: hashicorp/vault:1.17.2
