@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: ./helm/monitoring-stack
-      version: "0.2.10"
+      version: "0.2.11"
       sourceRef:
         kind: GitRepository
         name: flux-system

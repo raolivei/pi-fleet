@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Changed
+
+- **Grafana (monitoring-stack 0.2.11)** — `hardware-health` and `eldertree-ops-home` panels for watchdog, freeze signal, OOM, and node uptime/reboot (metrics behind `WatchdogServiceDown`, `NodePingableButNotReady`, `NodeUnexpectedReboot`).
+
 ### Added
 
 - **InfraOPS & o11y standards** — Agent [`eldertree-infraops`](.claude/agents/eldertree-infraops.md); [`docs/ONBOARDING_APP_OBSERVABILITY.md`](docs/ONBOARDING_APP_OBSERVABILITY.md); workspace [`OBSERVABILITY_STANDARDS.md`](../workspace-config/docs/OBSERVABILITY_STANDARDS.md) (DRY monitoring checklist).

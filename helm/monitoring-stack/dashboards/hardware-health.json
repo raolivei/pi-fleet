@@ -9,7 +9,7 @@
     ],
     "timezone": "browser",
     "schemaVersion": 38,
-    "version": 1,
+    "version": 2,
     "refresh": "30s",
     "panels": [
         {
@@ -201,6 +201,357 @@
             "fieldConfig": {
                 "defaults": {
                     "unit": "Bps"
+                }
+            }
+        },
+        {
+            "id": 10,
+            "title": "Watchdog & node stability",
+            "type": "row",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 27
+            },
+            "collapsed": false
+        },
+        {
+            "id": 11,
+            "title": "Node 1 — watchdog.service",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 0,
+                "y": 28
+            },
+            "targets": [
+                {
+                    "expr": "node_systemd_unit_state{instance=\"10.0.0.1:9100\",name=\"watchdog.service\",state=\"active\"}",
+                    "legendFormat": "node-1",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "1": {
+                                    "color": "green",
+                                    "text": "ACTIVE"
+                                }
+                            }
+                        },
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null",
+                                "result": {
+                                    "color": "red",
+                                    "text": "DOWN"
+                                }
+                            }
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    }
+                }
+            },
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "center"
+            }
+        },
+        {
+            "id": 12,
+            "title": "Node 2 — watchdog.service",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 4,
+                "y": 28
+            },
+            "targets": [
+                {
+                    "expr": "node_systemd_unit_state{instance=\"10.0.0.2:9100\",name=\"watchdog.service\",state=\"active\"}",
+                    "legendFormat": "node-2",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "1": {
+                                    "color": "green",
+                                    "text": "ACTIVE"
+                                }
+                            }
+                        },
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null",
+                                "result": {
+                                    "color": "red",
+                                    "text": "DOWN"
+                                }
+                            }
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    }
+                }
+            },
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "center"
+            }
+        },
+        {
+            "id": 13,
+            "title": "Node 3 — watchdog.service",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 8,
+                "y": 28
+            },
+            "targets": [
+                {
+                    "expr": "node_systemd_unit_state{instance=\"10.0.0.3:9100\",name=\"watchdog.service\",state=\"active\"}",
+                    "legendFormat": "node-3",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "1": {
+                                    "color": "green",
+                                    "text": "ACTIVE"
+                                }
+                            }
+                        },
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null",
+                                "result": {
+                                    "color": "red",
+                                    "text": "DOWN"
+                                }
+                            }
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    }
+                }
+            },
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "center"
+            }
+        },
+        {
+            "id": 14,
+            "title": "Pingable but NotReady (freeze signal)",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 12,
+                "y": 28
+            },
+            "targets": [
+                {
+                    "expr": "sum((kube_node_status_condition{condition=\"Ready\",status=\"true\",node=\"node-1.eldertree.local\"} == 0 and up{instance=\"10.0.0.1:9100\"} == 1) or (kube_node_status_condition{condition=\"Ready\",status=\"true\",node=\"node-2.eldertree.local\"} == 0 and up{instance=\"10.0.0.2:9100\"} == 1) or (kube_node_status_condition{condition=\"Ready\",status=\"true\",node=\"node-3.eldertree.local\"} == 0 and up{instance=\"10.0.0.3:9100\"} == 1))",
+                    "legendFormat": "nodes",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "color": "green",
+                                    "text": "OK"
+                                }
+                            }
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 1
+                            }
+                        ]
+                    }
+                }
+            },
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "textMode": "value_and_name"
+            }
+        },
+        {
+            "id": 15,
+            "title": "OOM kills (5m increase)",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 20,
+                "y": 28
+            },
+            "targets": [
+                {
+                    "expr": "sum(increase(node_vmstat_oom_kill[5m]))",
+                    "legendFormat": "kills",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 1
+                            }
+                        ]
+                    }
+                }
+            },
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "center"
+            }
+        },
+        {
+            "id": 16,
+            "title": "Node uptime",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 32
+            },
+            "targets": [
+                {
+                    "expr": "time() - node_boot_time_seconds{instance=~\"10.0.0.[1-3]:9100\"}",
+                    "legendFormat": "{{instance}}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "dtdurations"
+                }
+            }
+        },
+        {
+            "id": 17,
+            "title": "Reboot events (10m)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 32
+            },
+            "targets": [
+                {
+                    "expr": "changes(node_boot_time_seconds{instance=~\"10.0.0.[1-3]:9100\"}[10m])",
+                    "legendFormat": "{{instance}}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "fillOpacity": 80
+                    },
+                    "min": 0,
+                    "max": 2
                 }
             }
         }
