@@ -171,6 +171,103 @@ Common issues:
 - Watchdog device not available: `/dev/watchdog` missing (driver not loaded)
 - Permission denied: Check file ownership of `/etc/watchdog.conf`
 
+### Watchdog Didn't Prevent Hang
+
+**Symptoms**: Node hung and required manual reboot, even though watchdog service was supposed to be running.
+
+**Diagnosis**:
+
+1. Check if watchdog was actually running during hang:
+   ```bash
+   ssh raolivei@10.0.0.X "journalctl -u watchdog --since '<hang-time>'"
+   ```
+
+2. Check what caused the hang (look in previous boot logs):
+   ```bash
+   ssh raolivei@10.0.0.X "journalctl --boot=-1 | grep -i 'oom\|panic\|hang\|lockup\|watchdog'"
+   ```
+
+3. Check boot counter (if ≥5, watchdog auto-disabled):
+   ```bash
+   ssh raolivei@10.0.0.X "cat /var/lib/watchdog-boot-count"
+   ```
+
+4. Verify watchdog was deployed to the node:
+   ```bash
+   ssh raolivei@10.0.0.X "systemctl status watchdog"
+   ssh raolivei@10.0.0.X "cat /etc/watchdog.conf"
+   ```
+
+**Possible Causes**:
+
+- **Boot loop protection triggered**: Watchdog disabled after 5 consecutive reboots
+  - **Fix**: Reset counter: `ssh raolivei@10.0.0.X "echo 0 | sudo tee /var/lib/watchdog-boot-count"`
+  
+- **Watchdog daemon crashed before hang**: Service stopped unexpectedly
+  - **Fix**: Check `journalctl -u watchdog` for crash logs. Add systemd restart policy if needed.
+  
+- **Hang type not covered**: Kernel deadlock, hardware issue, or hang that keeps load low and network up
+  - **Explanation**: Watchdog only triggers on high load (>24) or network failure. Silent hangs may not be detected.
+  - **Mitigation**: Consider lowering max-load threshold or adding application-level health checks.
+  
+- **Network isolation**: If all ping targets (10.0.0.1-3) are unreachable, watchdog detects as local hang
+  - **Explanation**: If gigabit network is down, watchdog can't verify cluster health
+  - **Check**: Verify eth0 connectivity to other nodes
+
+- **Watchdog not deployed**: Playbook may not have run on this specific node
+  - **Fix**: Run `ansible-playbook playbooks/setup-hardware-watchdog.yml --limit node-X`
+
+**Resolution Steps**:
+
+1. Verify watchdog is installed and running:
+   ```bash
+   ssh raolivei@10.0.0.X "systemctl status watchdog"
+   ```
+
+2. Check and reset boot counter if needed:
+   ```bash
+   ssh raolivei@10.0.0.X "cat /var/lib/watchdog-boot-count"
+   ssh raolivei@10.0.0.X "echo 0 | sudo tee /var/lib/watchdog-boot-count"
+   ```
+
+3. Review configuration:
+   ```bash
+   ssh raolivei@10.0.0.X "cat /etc/watchdog.conf | grep -v '^#' | grep -v '^$'"
+   ```
+
+4. Check for watchdog activity in logs:
+   ```bash
+   ssh raolivei@10.0.0.X "journalctl -u watchdog -f"
+   ```
+
+5. If watchdog not deployed, run Ansible playbook:
+   ```bash
+   cd ansible
+   ansible-playbook -i inventory/hosts.yml playbooks/setup-hardware-watchdog.yml --limit node-X
+   ```
+
+6. Test watchdog is responding:
+   ```bash
+   ssh raolivei@10.0.0.X "sudo systemctl restart watchdog && journalctl -u watchdog -f"
+   ```
+
+**Verification**:
+
+Use the verification script to check all nodes:
+```bash
+./scripts/verify-watchdog.sh
+```
+
+Expected output for healthy node:
+```
+--- node-1 (10.0.0.1) ---
+✓ Service: running
+Boot counter: 0
+Watchdog restarts (24h): 0
+System boot time: 2026-05-26 18:33:15
+Watchdog timeout: 15s
+```
+
 ## Disabling
 
 To disable watchdog:

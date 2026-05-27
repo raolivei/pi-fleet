@@ -232,6 +232,30 @@ prometheus:
               annotations:
                 summary: "High temperature on {{ $labels.instance }}"
                 description: "Temperature is above 75°C on {{ $labels.instance }}."
+            - alert: NodeUnexpectedReboot
+              expr: changes(node_boot_time_seconds[10m]) > 0
+              for: 1m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Node {{ $labels.instance }} rebooted unexpectedly"
+                description: "Node {{ $labels.instance }} boot time changed, indicating a reboot. Check watchdog logs and system journals."
+            - alert: NodeHighMemoryPressure
+              expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+              for: 3m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Node {{ $labels.instance }} memory pressure >95%"
+                description: "Node is approaching OOM ({{ printf \"%.1f\" $value }}% used). Investigate memory-hungry pods."
+            - alert: NodeOOMKill
+              expr: increase(node_vmstat_oom_kill[5m]) > 0
+              for: 0m
+              labels:
+                severity: critical
+              annotations:
+                summary: "OOM kill detected on {{ $labels.instance }}"
+                description: "{{ $labels.instance }} killed {{ $value }} process(es) due to out-of-memory. Check pod memory limits and node capacity."
         - name: kubernetes-alerts
           rules:
             - alert: PodCrashLooping
