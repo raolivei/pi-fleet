@@ -47,7 +47,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 | App       | Local URL                         | Namespace | Notes                                      |
 | --------- | --------------------------------- | --------- | ------------------------------------------ |
 | Canopy    | https://canopy.eldertree.local    | canopy    | Personal finance                           |
-| SwimTO    | https://swimto.eldertree.local    | swimto    | Toronto pool schedules; public: swimto.eldertree.xyz |
+| SwimTO    | https://swimto.eldertree.local    | swimto    | Toronto pool schedules (open source, MIT); public: swimto.eldertree.xyz |
 | Journey   | https://journey.eldertree.local   | journey   | Career pathfinder                          |
 | NIMA      | https://nima.eldertree.local      | nima      | AI/ML learning                             |
 | OpenClaw  | https://openclaw.eldertree.local  | openclaw  | AI assistant; Telegram: @eldertree_assistant_bot |
@@ -136,7 +136,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 - **eldertree-docs** — Runbook/docs site
 - **elder** — AI agent (cluster, code, GitHub)
 - **canopy** — Personal finance
-- **swimTO** — Toronto pool schedules
+- **swimTO** — Toronto pool schedules (open source, MIT License)
 - **journey** — Career pathfinder
 - **nima** — AI/ML learning
 - **pitanga** — Company website
