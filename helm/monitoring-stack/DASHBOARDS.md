@@ -88,7 +88,7 @@ Search in Grafana: **Dashboards** → browse by **folder** (Applications vs Plat
 
 | Dashboard | UID | File | What it shows |
 |-----------|-----|------|----------------|
-| **Eldertree Ops Home** | `eldertree-ops-home` | `eldertree-ops-home.json` | Links to other UIDs, blackbox `probe_success`, Traefik `up`, `swimto_db_users_total` |
+| **Eldertree Ops Home** | `eldertree-ops-home` | `eldertree-ops-home.json` | Links to other UIDs, blackbox `probe_success`, Traefik `up`, SwimTO gauge, Pi node row (Ready, watchdog, freeze signal, OOM) |
 | **Eldertree Command Center** | `eldertree-command-center` | `command-center.json` | Cluster health, resources, Traefik, PVC, top consumers, problem pods |
 | **Eldertree Cluster Overview** | `eldertree-cluster` | `eldertree-cluster.json` | 3-node HA, namespaces, infra + app service rows (summary; not per-app deep dives) |
 
@@ -103,7 +103,7 @@ Search in Grafana: **Dashboards** → browse by **folder** (Applications vs Plat
 | **Kubernetes Workloads** | `kubernetes-workloads` | `kubernetes-workloads.json` | Deployments, StatefulSets, Jobs, restarts, CPU/memory request vs use |
 | **Cluster Resource Usage by Namespace** | `namespace-resources` | `namespace-resources.json` | Per-namespace CPU/memory/network, top consumers, trends |
 | **Network Intelligence** | `network-intelligence` | `network-intelligence.json` | Traefik request rates, codes, top services, node network |
-| **Hardware Health** | `hardware-health` | `hardware-health.json` | Raspberry Pi temperature, load, disk, I/O |
+| **Hardware Health** | `hardware-health` | `hardware-health.json` | Pi temperature, load, disk, I/O; **watchdog.service** per node (`node_systemd_unit_state`), freeze signal, OOM, uptime / reboot (`node_boot_time_seconds`) — aligns with `WatchdogServiceDown`, `NodePingableButNotReady`, `NodeUnexpectedReboot` alerts |
 
 ---
 
