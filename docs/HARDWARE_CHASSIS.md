@@ -1,6 +1,6 @@
 # ElderTree physical chassis
 
-Cluster **software and operations** are documented in this repo. **Mechanical CAD** (OpenSCAD, prints, assembly) lives in the separate [**eldertree-chassis**](https://github.com/raolivei/eldertree-chassis) repository.
+Cluster **software and operations** are documented in this repo. **Mechanical CAD** (OpenSCAD, prints, assembly) lives in [**eldertree-chassis**](https://github.com/raolivei/eldertree-chassis).
 
 ## Hardware summary
 
@@ -20,9 +20,10 @@ Cluster **software and operations** are documented in this repo. **Mechanical CA
 | Topic | Location |
 |-------|----------|
 | Dimensions, BOM, prints | [eldertree-chassis/docs/](https://github.com/raolivei/eldertree-chassis/tree/main/docs) |
-| Parametric source | [eldertree-chassis/cad/openscad/config.scad](https://github.com/raolivei/eldertree-chassis/blob/main/cad/openscad/config.scad) |
-| Assembly / power-on | [eldertree-chassis/docs/assembly.md](https://github.com/raolivei/eldertree-chassis/blob/main/docs/assembly.md) |
+| Parametric source | [config.scad](https://github.com/raolivei/eldertree-chassis/blob/main/cad/openscad/config.scad) |
+| Assembly / power-on | [assembly.md](https://github.com/raolivei/eldertree-chassis/blob/main/docs/assembly.md) |
+| Runbook (physical) | [eldertree-docs runbook](https://docs.eldertree.xyz/runbook/hardware/chassis) |
 
-## Legacy note
+## Cluster switch
 
-Some pi-fleet docs still mention **TP-Link SG105** (non-PoE). The chassis design standardizes on **TL-SG1008MP** for PoE+; update operational docs when the physical switch is swapped.
+The eldertree **eth0** fabric uses an isolated **TP-Link TL-SG1008MP** (PoE+, 153 W budget). Older pi-fleet docs referenced a non-PoE **SG105** during bring-up; treat SG1008MP as current for chassis and eth0 cabling.
