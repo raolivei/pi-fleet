@@ -15,6 +15,7 @@ K3s cluster on Raspberry Pi, managed with Ansible and Terraform.
 - Raspberry Pi 5 (8GB, ARM64)
 - Debian 12 Bookworm
 - Physical tower (CAD / BOM): [**eldertree-chassis**](https://github.com/raolivei/eldertree-chassis) — [docs/HARDWARE_CHASSIS.md](docs/HARDWARE_CHASSIS.md)
+- **Project hub:** [docs/ELDERTREE.md](docs/ELDERTREE.md) · Grafana [ops home](https://grafana.eldertree.local/d/eldertree-ops-home) · `./scripts/operations/eldertree-open.sh`
 
 ## Cluster Nodes
 

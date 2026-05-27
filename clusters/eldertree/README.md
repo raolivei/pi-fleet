@@ -1,22 +1,30 @@
-# Eldertree Cluster
+# Eldertree cluster (K3s)
 
-K3s control plane with embedded etcd.
+3-node HA control plane on Raspberry Pi 5. GitOps path: `clusters/eldertree/`.
 
-## Status
+## See the project
 
-✅ Control plane ready (eldertree)
+| Resource | Link |
+|----------|------|
+| **Project hub** | [docs/ELDERTREE.md](../../docs/ELDERTREE.md) |
+| **Live dashboards** | https://grafana.eldertree.local/d/eldertree-ops-home |
+| **Docs site** | https://docs.eldertree.xyz/project |
+| **Quick open** | `../../scripts/operations/eldertree-open.sh` |
 
-## Deploy Apps
+```bash
+export KUBECONFIG=~/.kube/config-eldertree
+kubectl get nodes
+```
+
+## Deploy apps
 
 ```bash
 export KUBECONFIG=~/.kube/config-eldertree
 kubectl apply -f your-app.yaml
 ```
 
-## Add Workers
+Flux reconciles manifests under this directory on the cluster.
 
-```bash
-cat ../../ansible/k3s-node-token
-# On worker (fleet-worker-01, fleet-worker-02, etc.):
-# curl -sfL https://get.k3s.io | K3S_URL=https://eldertree:6443 K3S_TOKEN=<token> sh -
-```
+## Physical hardware
+
+Portable tower CAD: [eldertree-chassis](https://github.com/raolivei/eldertree-chassis) · [HARDWARE_CHASSIS.md](../../docs/HARDWARE_CHASSIS.md)
