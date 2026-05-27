@@ -9,7 +9,7 @@ Complete guide for adding a new Raspberry Pi as a worker node to your k3s cluste
 - ✅ Raspberry Pi 5 (8GB recommended, ARM64)
 - ✅ MicroSD card (32GB+ recommended, Class 10 or better)
 - ✅ Power supply for Raspberry Pi 5
-- ✅ Ethernet cable (connected to TP-Link SG105 switch)
+- ✅ Ethernet cable (connected to TP-Link TL-SG1008MP PoE+ switch on eth0 fabric)
 - ✅ SD card reader/adapter for your Mac
 
 ### 2. Software Requirements
@@ -64,7 +64,7 @@ Complete guide for adding a new Raspberry Pi as a worker node to your k3s cluste
 
 7. **Boot the Pi**:
    - Insert microSD card into Raspberry Pi
-   - Connect Ethernet cable to TP-Link SG105 switch
+   - Connect Ethernet cable to TL-SG1008MP switch (eth0 / `10.0.0.0/24`)
    - Connect power supply
    - Wait for boot (30-60 seconds)
    - The Pi will automatically get an IP address via DHCP
@@ -94,7 +94,7 @@ ping raspberrypi.local
 
 ### Option 4: Check Switch/Network
 
-Since both Pis are on the TP-Link SG105 switch, check which IPs are active:
+Since nodes share the isolated cluster switch (TL-SG1008MP), check which eth0 IPs are active:
 
 ```bash
 # Check which IPs respond to ping
