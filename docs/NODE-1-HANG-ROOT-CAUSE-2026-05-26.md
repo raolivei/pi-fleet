@@ -141,32 +141,41 @@ After implementing fix:
 
 ## Action Items
 
-- [x] Fix node-1 systemd watchdog conflict - **ATTEMPTED, NOT SUCCESSFUL**
-- [ ] **BLOCKER**: systemd ignores RuntimeWatchdogSec=0, uses both /dev/watchdog and /dev/watchdog0
-- [ ] **WORKAROUND NEEDED**: Disable systemd watchdog at kernel level or modify systemd service files
+- [x] Fix node-1 systemd watchdog conflict - **RESOLVED**
+- [x] Identified Raspberry Pi specific drop-in file causing conflict
+- [x] Removed `/usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf`
+- [x] Verified watchdog daemon now has device access
 - [ ] Add systemd watchdog check to verification script
-- [ ] Investigate why node-1 has different systemd config than node-2/3  
-- [ ] Update Ansible playbook to ensure consistent watchdog configuration
-- [x] Merge PR #182 (monitoring alerts + verification script)
+- [ ] Check node-2 and node-3 for same file (preventive)
+- [ ] Update Ansible playbook to remove this file on all nodes
+- [ ] Merge PR #182 (monitoring alerts + verification script)
+- [ ] Document fix in eldertree-docs runbook
 
-## Current Status
+## Resolution - FIXED ✅
 
-**Node-1 still unprotected**: Despite two reboots and configuration changes, systemd continues to claim the watchdog devices. Our watchdog daemon cannot access `/dev/watchdog` or `/dev/watchdog0`.
+**Root Cause Identified**: Raspberry Pi specific systemd drop-in configuration file:
+```
+/usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf
+```
 
-**Attempted Fix**:
-- Added `RuntimeWatchdogSec=0` under `[Manager]` section in `/etc/systemd/system.conf`
-- Rebooted twice
-- Tried both `/dev/watchdog` and `/dev/watchdog0` devices
-- systemd still shows: `Using hardware watchdog 'Broadcom BCM2835 Watchdog timer'`
+This file contains:
+```
+[Manager]
+RuntimeWatchdogSec=1m
+RebootWatchdogSec=2m
+```
 
-**Why systemd ignores the setting**: Unknown. Possible reasons:
-1. Raspbian/Debian default enables watchdog regardless of config
-2. K3s or another service re-enables it
-3. Compiled-in default that overrides config file
-4. Need to disable via kernel command line parameter
+**Why node-2 and node-3 worked**: They don't have this file (likely from different OS installation or update path).
 
-**Recommendation**: Since node-2 and node-3 work correctly (systemd NOT using watchdog), compare:
-- `/etc/systemd/system.conf` across all nodes
-- Kernel command line (`cat /proc/cmdline`)
-- systemd version and build flags
-- Installation history (was node-1 set up differently?)
+**Fix Applied**:
+1. Moved `/usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf` to `/tmp/`
+2. Rebooted node-1 (4th reboot)
+3. Verified systemd no longer using watchdog: `dmesg | grep systemd.*watchdog` returns nothing
+4. Verified watchdog daemon successfully opened device: `lsof /dev/watchdog` shows PID 2054 (watchdog)
+
+**Current Status**: ✅ **Node-1 is now protected**
+- Watchdog daemon running and has `/dev/watchdog` open
+- No "cannot open" errors in journalctl
+- Hardware watchdog active with 15s timeout
+- Boot loop protection active (max 5 reboots)
+- All 3 nodes Ready in Kubernetes
