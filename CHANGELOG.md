@@ -10,7 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
-- **Hardware watchdog (all nodes)** — Disable Raspberry Pi OS `40-rpi-enable-watchdog.conf` (`RuntimeWatchdogSec=1m`) and set `RuntimeWatchdogSec=0` so the **watchdog daemon** holds `/dev/watchdog` (`alive=/dev/watchdog`). Node-1 was fixed manually on 2026-05-26; node-2/node-3 were still unprotected until 2026-05-27. Ansible playbook and `scripts/verify-watchdog.sh` now check drop-in absence and device ownership (WiFi IP fallback for laptop SSH). **`watchdog-k3s-health.sh`** test-binary checks k3s, kubelet `/healthz`, and API `:6443`; peer-only ping targets per node; persistent journald (`Storage=persistent`, `SystemMaxUse=500M`). Prometheus alerts `WatchdogServiceDown`, `NodePingableButNotReady` (monitoring-stack **0.2.10**).
+- **Hardware watchdog (all nodes)** — Disable Raspberry Pi OS `40-rpi-enable-watchdog.conf` and set `RuntimeWatchdogSec=0` so the watchdog daemon holds `/dev/watchdog`. Add `watchdog-k3s-health.sh` test-binary (k3s, kubelet healthz, API :6443), peer-only ping targets, persistent journald, improved `scripts/verify-watchdog.sh`. Prometheus alerts `WatchdogServiceDown` and `NodePingableButNotReady` (monitoring-stack **0.2.10**). See `docs/NODE-1-HANG-2026-05-26-SECOND.md`.
 
 ### Changed
 
