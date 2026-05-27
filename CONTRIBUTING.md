@@ -84,6 +84,14 @@ git fetch --prune origin               # drop stale remote-tracking refs
 
 Org-wide convention: [workspace-config/docs/PROJECT_CONVENTIONS.md](../workspace-config/docs/PROJECT_CONVENTIONS.md#github-pull-request-branch-cleanup).
 
+### GitHub Actions and Dependabot
+
+- **`main` Terraform** ([`terraform.yml`](.github/workflows/terraform.yml)) should stay green — badge on [README](README.md).
+- **Dependabot PRs** do not receive Actions secrets. After rotating Cloudflare or Terraform Cloud credentials:
+  1. Update Vault (`secret/pi-fleet/terraform/*`) and/or GitHub Actions secrets.
+  2. Run `./scripts/sync-github-terraform-secrets-from-vault.sh --app dependabot` (Cloudflare from Vault; pass `TF_API_TOKEN=…` for Terraform Cloud — not stored in Vault by default).
+- A red Terraform check on an old Dependabot PR that was **merged anyway** (e.g. `actions/checkout` bump) is safe to ignore if **`main` is green**.
+
 ### Commit Message Convention
 
 Follow conventional commits format:

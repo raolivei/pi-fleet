@@ -118,6 +118,8 @@ kubectl exec -n vault vault-0 -- sh -c "export VAULT_ADDR=http://127.0.0.1:8200 
 ### Infrastructure (pi-fleet)
 All infrastructure secrets are organized under `secret/pi-fleet/`:
 - `secret/pi-fleet/terraform/cloudflare-api-token` - Cloudflare API token for Terraform DNS management (`api-token`)
+- `secret/pi-fleet/terraform/cloudflare-origin-ca-key` - Cloudflare Origin CA key (`origin-ca-key`)
+- `secret/pi-fleet/terraform/terraform-cloud-token` - HCP Terraform API token for CI (`token`; optional — GitHub Actions `TF_API_TOKEN` is often the source of truth)
 - `secret/pi-fleet/external-dns/cloudflare-api-token` - Cloudflare API token for External-DNS Cloudflare provider (`api-token`)
 - `secret/pi-fleet/cloudflare-tunnel/token` - Cloudflare Tunnel token for cloudflared connector (`token`)
 - `secret/pi-fleet/terraform/pi-user` - Pi SSH username (optional, defaults to "pi") (`pi-user`)

@@ -17,6 +17,8 @@ This document lists all secrets required for the eldertree cluster to function p
 | `secret/pi-fleet/external-dns/cloudflare-api-token` | `api-token` | Cloudflare API token for DNS | [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens) - needs Zone:DNS:Edit |
 | `secret/pi-fleet/external-dns/tsig-secret` | `secret` | TSIG key for RFC2136 DNS | Generate: `openssl rand -base64 32` |
 | `secret/pi-fleet/terraform/cloudflare-api-token` | `api-token` | Cloudflare API token for Terraform | Same as above or separate token |
+| `secret/pi-fleet/terraform/cloudflare-origin-ca-key` | `origin-ca-key` | Cloudflare Origin CA key for Terraform | Cloudflare dashboard → Origin Server |
+| `secret/pi-fleet/terraform/terraform-cloud-token` | `token` | HCP Terraform / Terraform Cloud API token (`TF_API_TOKEN` in GitHub Actions) | [app.terraform.io](https://app.terraform.io/app/settings/tokens) — optional in Vault; Actions secret is source of truth today |
 
 ### Application Secrets
 

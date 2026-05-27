@@ -317,6 +317,8 @@ kubectl exec -n vault vault-0 -- vault kv put secret/openclaw/openrouter api-key
 
 If this secret was ever created by Terraform (`vault_kv_secret_v2.openclaw_openrouter`), **remove that address from remote state** after pulling the code change (the KV secret in Vault stays as-is). GitHub Actions only runs **plan/apply** — it does not run `terraform state rm`.
 
+**Dependabot PRs:** GitHub Actions secrets are **not** visible to Dependabot workflows. Run **`./scripts/sync-github-terraform-secrets-from-vault.sh --app dependabot`** (Cloudflare from Vault). For **`TF_API_TOKEN`**, export it and re-run (also stores in Vault at `secret/pi-fleet/terraform/terraform-cloud-token`): `TF_API_TOKEN='…' ./scripts/sync-github-terraform-secrets-from-vault.sh --app dependabot`
+
 **One-time (local CLI, same backend as CI):** state is in HCP Terraform org **`eldertree`**, workspace **`pi-fleet-terraform`**. Use a token with access to that workspace (org/team token, or the same capability as repo secret **`TF_API_TOKEN`** used by [`.github/workflows/terraform.yml`](../.github/workflows/terraform.yml)):
 
 ```bash
