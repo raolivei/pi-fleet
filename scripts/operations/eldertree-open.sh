@@ -14,8 +14,7 @@ echo ""
 
 if command -v kubectl >/dev/null 2>&1; then
   if kubectl cluster-info >/dev/null 2>&1; then
-    kubectl get nodes -o custom-columns=NAME:.metadata.name,READY:.status.conditions[-1].type,STATUS:.status.conditions[-1].status,INTERNAL-IP:.status.addresses[?(@.type==\"InternalIP\")].address 2>/dev/null \
-      | head -10 || kubectl get nodes
+    kubectl get nodes -o wide 2>/dev/null || kubectl get nodes
     echo ""
     not_ready="$(kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded -o name 2>/dev/null | wc -l | tr -d ' ')"
     echo "Pods not Running/Succeeded: ${not_ready}"
