@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Added
+
+- **Ollie Grafana dashboard** — `helm/monitoring-stack/dashboards/ollie-dashboard.json` with request rate, latency, ChromaDB hit rate, LLM provider split, error rate, and resource usage panels.
+
 ### Fixed
 
 - **ExternalSecret `pi-fleet-terraform-vault-credentials`** — drop optional `pi-user` Vault key so sync succeeds when that secret is absent.
