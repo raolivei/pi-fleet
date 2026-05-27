@@ -12,75 +12,48 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$SCRIPT_DIR"
 
-# Set kubeconfig
-export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config-eldertree}"
+# shellcheck source=../scripts/lib/load-terraform-secrets-from-vault.sh
+source "${REPO_DIR}/scripts/lib/load-terraform-secrets-from-vault.sh"
 
-# Get Cloudflare API token from Vault
-echo "🔐 Loading Cloudflare API token from Vault..."
-VAULT_POD=$(kubectl get pods -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-
-if [ -z "$VAULT_POD" ]; then
-    echo "❌ Error: Vault pod not found"
-    echo "   Make sure Vault is running: kubectl get pods -n vault"
+echo "🔐 Loading Terraform secrets from Vault..."
+if ! kubectl get pods -n vault -l app.kubernetes.io/name=vault --field-selector=status.phase=Running -o name 2>/dev/null | grep -q .; then
+    echo "❌ Error: no running Vault pod (kubectl get pods -n vault)"
     exit 1
 fi
 
-# Check if Vault is unsealed
-VAULT_STATUS=$(kubectl exec -n vault $VAULT_POD -- vault status 2>&1 | grep "Sealed" | awk '{print $2}' || echo "true")
+load_terraform_secrets_from_vault
 
-if [ "$VAULT_STATUS" = "true" ]; then
-    echo "❌ Error: Vault is sealed. Please unseal it first:"
-    echo "   cd $SCRIPT_DIR/.. && ./scripts/operations/unseal-vault.sh"
-    exit 1
-fi
-
-# Get Cloudflare API token from Vault (optional - Cloudflare resources are optional)
-export TF_VAR_cloudflare_api_token=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=api-token secret/pi-fleet/terraform/cloudflare-api-token 2>/dev/null || echo "")
-
-if [ -z "$TF_VAR_cloudflare_api_token" ]; then
-    echo "⚠️  Cloudflare API token not found in Vault"
-    echo "   Cloudflare resources will be skipped (tunnel, DNS records)"
-    
-    # Check if Cloudflare resources exist in state
+CLOUDFLARE_TOKEN_MISSING=false
+if [ -z "${TF_VAR_cloudflare_api_token:-}" ]; then
+    echo "⚠️  Cloudflare API token not in Vault (secret/pi-fleet/terraform/cloudflare-api-token)"
     CLOUDFLARE_RESOURCES=$(terraform state list 2>/dev/null | grep -E "cloudflare|data.cloudflare" || echo "")
-    
     if [ -n "$CLOUDFLARE_RESOURCES" ]; then
-        echo ""
-        echo "⚠️  WARNING: Cloudflare resources exist in Terraform state but token is missing"
-        echo "   Using -refresh=false to skip refreshing Cloudflare resources (avoids auth errors)"
-        echo "   Cloudflare resources will be removed from state on next apply."
-        echo ""
+        echo "⚠️  Cloudflare resources in state — plan/apply will use -refresh=false"
         CLOUDFLARE_TOKEN_MISSING=true
     fi
-    
-    echo "   To enable Cloudflare:"
-    echo "     1. Store token: kubectl exec -n vault $VAULT_POD -- vault kv put secret/pi-fleet/terraform/cloudflare-api-token api-token='YOUR_TOKEN'"
-    echo "     2. Re-run: $0 $@"
-    echo ""
-    export TF_VAR_cloudflare_api_token=""
 else
-    echo "✅ Cloudflare API token loaded from Vault"
+    echo "✅ Cloudflare API token"
 fi
 
-# Get Cloudflare Origin CA Key from Vault (required for Origin CA certificates)
-export TF_VAR_cloudflare_origin_ca_key=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=origin-ca-key secret/pi-fleet/terraform/cloudflare-origin-ca-key 2>/dev/null || echo "")
-
-if [ -z "$TF_VAR_cloudflare_origin_ca_key" ]; then
-    echo "⚠️  Cloudflare Origin CA Key not found in Vault"
-    echo "   Origin CA certificate resources will be skipped"
-    export TF_VAR_cloudflare_origin_ca_key=""
+if [ -z "${TF_VAR_cloudflare_origin_ca_key:-}" ]; then
+    echo "⚠️  Cloudflare Origin CA key not in Vault"
 else
-    echo "✅ Cloudflare Origin CA Key loaded from Vault"
+    echo "✅ Cloudflare Origin CA key"
 fi
 
-# Get pi_user from Vault (optional, falls back to default "pi")
-export TF_VAR_pi_user=$(kubectl exec -n vault $VAULT_POD -- vault kv get -field=pi-user secret/pi-fleet/terraform/pi-user 2>/dev/null || echo "")
-if [ -n "$TF_VAR_pi_user" ]; then
-    echo "✅ Pi username loaded from Vault"
+if [ -z "${TF_TOKEN_app_terraform_io:-}" ]; then
+    echo "❌ HCP Terraform token not in Vault (secret/pi-fleet/terraform/eldertree-github-2026)"
+    echo "   Run: ${REPO_DIR}/scripts/setup-terraform-cloud-token.sh"
+    exit 1
 else
-    echo "ℹ️  Pi username not found in Vault, will use default or terraform.tfvars"
+    echo "✅ HCP Terraform token (TF_TOKEN_app_terraform_io)"
+fi
+
+if [ -n "${TF_VAR_pi_user:-}" ]; then
+    echo "✅ Pi username"
 fi
 echo ""
 

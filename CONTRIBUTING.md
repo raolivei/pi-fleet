@@ -84,6 +84,17 @@ git fetch --prune origin               # drop stale remote-tracking refs
 
 Org-wide convention: [workspace-config/docs/PROJECT_CONVENTIONS.md](../workspace-config/docs/PROJECT_CONVENTIONS.md#github-pull-request-branch-cleanup).
 
+### GitHub Actions and Dependabot
+
+- **Vault is the source of truth** for Terraform credentials — see [`docs/VAULT_TERRAFORM_SECRETS.md`](docs/VAULT_TERRAFORM_SECRETS.md).
+- **Local / cluster apps** read Vault via `./terraform/run-terraform.sh` or ExternalSecret `pi-fleet-terraform-vault-credentials`.
+- **GitHub-hosted CI** cannot reach `vault.eldertree.local`; after Vault changes run:
+  ```bash
+  ./scripts/sync-github-terraform-secrets-from-vault.sh --app actions --app dependabot
+  ```
+- **New HCP token:** `./scripts/setup-terraform-cloud-token.sh --sync-github` (create token at [HCP API tokens](https://app.terraform.io/app/settings/tokens) first).
+- **`main` Terraform** ([`terraform.yml`](.github/workflows/terraform.yml)) should stay green — badge on [README](README.md).
+
 ### Commit Message Convention
 
 Follow conventional commits format:

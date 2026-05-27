@@ -8,8 +8,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 - **Grafana (monitoring-stack 0.2.11)** — `hardware-health` and `eldertree-ops-home` panels for watchdog, freeze signal, OOM, and node uptime/reboot (metrics behind `WatchdogServiceDown`, `NodePingableButNotReady`, `NodeUnexpectedReboot`).
 
+### Changed
+
+- **HCP token Vault path** — active secret at `secret/pi-fleet/terraform/eldertree-github-2026` (`token`); loaders and ExternalSecret read this path (fallback: `terraform-cloud-token`).
+
 ### Added
 
+- **Vault-first Terraform secrets** — [`docs/VAULT_TERRAFORM_SECRETS.md`](docs/VAULT_TERRAFORM_SECRETS.md); [`scripts/lib/load-terraform-secrets-from-vault.sh`](scripts/lib/load-terraform-secrets-from-vault.sh); [`setup-terraform-cloud-token.sh`](scripts/setup-terraform-cloud-token.sh); ExternalSecret `pi-fleet-terraform-vault-credentials`; `run-terraform.sh` loads HCP token from Vault.
+- **Scripts** — [`sync-github-terraform-secrets-from-vault.sh`](scripts/sync-github-terraform-secrets-from-vault.sh) publishes Vault → GitHub Actions/Dependabot (CI cache).
 - **ElderTree project hub** — [`docs/ELDERTREE.md`](docs/ELDERTREE.md), [`scripts/operations/eldertree-open.sh`](scripts/operations/eldertree-open.sh), updated [`clusters/eldertree/README.md`](clusters/eldertree/README.md).
 - **InfraOPS & o11y standards** — Agent [`eldertree-infraops`](.claude/agents/eldertree-infraops.md); [`docs/ONBOARDING_APP_OBSERVABILITY.md`](docs/ONBOARDING_APP_OBSERVABILITY.md); workspace [`OBSERVABILITY_STANDARDS.md`](../workspace-config/docs/OBSERVABILITY_STANDARDS.md) (DRY monitoring checklist).
 - **Hardware** — [`docs/HARDWARE_CHASSIS.md`](docs/HARDWARE_CHASSIS.md) links mechanical CAD to [eldertree-chassis](https://github.com/raolivei/eldertree-chassis); README hardware section updated.

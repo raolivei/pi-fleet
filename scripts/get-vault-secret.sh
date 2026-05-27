@@ -41,10 +41,13 @@ if ! kubectl exec -n "$VAULT_NAMESPACE" "$VAULT_POD" -- vault status > /dev/null
     exit 1
 fi
 
+# Prefer ESO root token (works when /tmp/vault-init.json is absent in the pod)
+VAULT_TOKEN=$(kubectl get secret vault-token -n external-secrets -o jsonpath='{.data.token}' 2>/dev/null | base64 -d || true)
+
 # Get secret from Vault
 SECRET_VALUE=$(kubectl exec -n "$VAULT_NAMESPACE" "$VAULT_POD" -- \
-    sh -c "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN=\$(cat /tmp/vault-init.json 2>/dev/null | jq -r '.root_token' || echo '') && \
-    vault kv get -format=json \"$SECRET_PATH\" 2>/dev/null | jq -r \".data.data.$KEY_NAME\" || echo ''" 2>/dev/null)
+    env VAULT_ADDR=http://127.0.0.1:8200 "VAULT_TOKEN=${VAULT_TOKEN}" \
+    vault kv get "-field=${KEY_NAME}" "$SECRET_PATH" 2>/dev/null || true)
 
 if [ -z "$SECRET_VALUE" ] || [ "$SECRET_VALUE" = "null" ]; then
     echo "❌ Secret not found at $SECRET_PATH with key $KEY_NAME" >&2
