@@ -41,8 +41,8 @@ To prevent infinite reboot loops, a boot guard tracks consecutive reboots:
 | `watchdog-timeout` | 15s | Hardware timeout before forced reboot |
 | `interval` | 5s | How often daemon kicks watchdog |
 | `max-load-1` | 24 | Reboot if 1-min load avg exceeds this |
-| `ping` | 10.0.0.x | Check cluster node connectivity via gigabit |
-| `pidfile` | /var/run/k3s.pid | Verify k3s service is running |
+| `ping` | peer 10.0.0.x only | Each node pings **other** nodes (not self); reboot if **all** peers unreachable |
+| `test-binary` | `/usr/local/bin/watchdog-k3s-health.sh` | k3s active, kubelet `/healthz`, API `:6443` |
 | `watchdog_max_boot_attempts` | 5 | Max consecutive reboots before disabling watchdog |
 | `watchdog_successful_boot_time` | 600s | Time node must stay up to reset boot counter |
 
@@ -69,9 +69,16 @@ ansible-playbook -i inventory/hosts.yml \
 
 ## Verification
 
+### All nodes (from laptop)
+```bash
+./scripts/verify-watchdog.sh
+```
+Checks: service active, RPI drop-in absent, `watchdog` process holds `/dev/watchdog` (uses WiFi `192.168.2.10x` if gigabit SSH fails).
+
 ### Service Status
 ```bash
-ssh raolivei@10.0.0.1 "systemctl status watchdog"
+ssh raolivei@192.168.2.101 "systemctl status watchdog"
+sudo lsof /dev/watchdog   # must show watchdog daemon, not wd_keepalive alone
 ```
 
 ### Logs

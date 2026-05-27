@@ -1,0 +1,21 @@
+#!/bin/bash
+# Health check for hardware watchdog (test-binary).
+# Exit 0 = healthy; non-zero triggers repair/reboot via watchdog daemon.
+set -euo pipefail
+
+if ! systemctl is-active --quiet k3s; then
+  logger -t watchdog-k3s-health "k3s service not active"
+  exit 1
+fi
+
+if ! curl -sf --max-time 5 http://127.0.0.1:10248/healthz >/dev/null; then
+  logger -t watchdog-k3s-health "kubelet healthz check failed"
+  exit 1
+fi
+
+if ! ss -ltn | grep -q ':6443'; then
+  logger -t watchdog-k3s-health "k3s API not listening on :6443"
+  exit 1
+fi
+
+exit 0

@@ -32,6 +32,10 @@ prometheus:
         cert-manager.io/cluster-issuer: ca-cluster-issuer
   nodeExporter:
     enabled: true
+  prometheus-node-exporter:
+    extraArgs:
+      - --collector.systemd
+      - --collector.systemd.unit-include=watchdog.service
   pushgateway:
     enabled: true
     persistentVolume:
@@ -256,6 +260,32 @@ prometheus:
               annotations:
                 summary: "OOM kill detected on {{ $labels.instance }}"
                 description: "{{ $labels.instance }} killed {{ $value }} process(es) due to out-of-memory. Check pod memory limits and node capacity."
+            - alert: WatchdogServiceDown
+              expr: node_systemd_unit_state{name="watchdog.service",state="active"} != 1
+              for: 3m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Watchdog service not active on {{ $labels.instance }}"
+                description: "watchdog.service is not active on {{ $labels.instance }}. Hardware watchdog may not be armed — run scripts/verify-watchdog.sh."
+            - alert: NodePingableButNotReady
+              expr: |
+                (
+                  (kube_node_status_condition{condition="Ready",status="true",node="node-1.eldertree.local"} == 0
+                   and up{instance="10.0.0.1:9100"} == 1)
+                  or
+                  (kube_node_status_condition{condition="Ready",status="true",node="node-2.eldertree.local"} == 0
+                   and up{instance="10.0.0.2:9100"} == 1)
+                  or
+                  (kube_node_status_condition{condition="Ready",status="true",node="node-3.eldertree.local"} == 0
+                   and up{instance="10.0.0.3:9100"} == 1)
+                )
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Node {{ $labels.node }} metrics up but NotReady"
+                description: "node-exporter is reachable but the node is NotReady for 5m — possible freeze (ICMP up, kubelet dead). Check watchdog and journalctl."
         - name: kubernetes-alerts
           rules:
             - alert: PodCrashLooping
