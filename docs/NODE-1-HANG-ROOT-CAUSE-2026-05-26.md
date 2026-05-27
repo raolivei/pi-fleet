@@ -141,9 +141,32 @@ After implementing fix:
 
 ## Action Items
 
-- [ ] Fix node-1 systemd watchdog conflict (Option 1 recommended)
-- [ ] Verify watchdog daemon successfully opens device after fix
+- [x] Fix node-1 systemd watchdog conflict - **ATTEMPTED, NOT SUCCESSFUL**
+- [ ] **BLOCKER**: systemd ignores RuntimeWatchdogSec=0, uses both /dev/watchdog and /dev/watchdog0
+- [ ] **WORKAROUND NEEDED**: Disable systemd watchdog at kernel level or modify systemd service files
 - [ ] Add systemd watchdog check to verification script
-- [ ] Investigate why node-1 has different systemd config than node-2/3
+- [ ] Investigate why node-1 has different systemd config than node-2/3  
 - [ ] Update Ansible playbook to ensure consistent watchdog configuration
-- [ ] Merge PR #182 (monitoring alerts + verification script)
+- [x] Merge PR #182 (monitoring alerts + verification script)
+
+## Current Status
+
+**Node-1 still unprotected**: Despite two reboots and configuration changes, systemd continues to claim the watchdog devices. Our watchdog daemon cannot access `/dev/watchdog` or `/dev/watchdog0`.
+
+**Attempted Fix**:
+- Added `RuntimeWatchdogSec=0` under `[Manager]` section in `/etc/systemd/system.conf`
+- Rebooted twice
+- Tried both `/dev/watchdog` and `/dev/watchdog0` devices
+- systemd still shows: `Using hardware watchdog 'Broadcom BCM2835 Watchdog timer'`
+
+**Why systemd ignores the setting**: Unknown. Possible reasons:
+1. Raspbian/Debian default enables watchdog regardless of config
+2. K3s or another service re-enables it
+3. Compiled-in default that overrides config file
+4. Need to disable via kernel command line parameter
+
+**Recommendation**: Since node-2 and node-3 work correctly (systemd NOT using watchdog), compare:
+- `/etc/systemd/system.conf` across all nodes
+- Kernel command line (`cat /proc/cmdline`)
+- systemd version and build flags
+- Installation history (was node-1 set up differently?)
