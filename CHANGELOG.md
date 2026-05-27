@@ -4,6 +4,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Added
+
+- **Hardware** — [`docs/HARDWARE_CHASSIS.md`](docs/HARDWARE_CHASSIS.md) links mechanical CAD to [eldertree-chassis](https://github.com/raolivei/eldertree-chassis); README hardware section updated.
+
+### Fixed
+
+- **Hardware watchdog (all nodes)** — Disable Raspberry Pi OS `40-rpi-enable-watchdog.conf` (`RuntimeWatchdogSec=1m`) and set `RuntimeWatchdogSec=0` so the **watchdog daemon** holds `/dev/watchdog` (`alive=/dev/watchdog`). Node-1 was fixed manually on 2026-05-26; node-2/node-3 were still unprotected until 2026-05-27. Ansible playbook and `scripts/verify-watchdog.sh` now check drop-in absence and device ownership (WiFi IP fallback for laptop SSH). **`watchdog-k3s-health.sh`** test-binary checks k3s, kubelet `/healthz`, and API `:6443`; peer-only ping targets per node; persistent journald (`Storage=persistent`, `SystemMaxUse=500M`). Prometheus alerts `WatchdogServiceDown`, `NodePingableButNotReady` (monitoring-stack **0.2.10**).
+
 ### Changed
 
 - **Prometheus (monitoring-stack 0.2.9)** — Moved `extraSecretMounts` / `extraConfigmapMounts` scrape config paths from `/etc/config/*.yaml` to `/etc/scrape-configs/*.yaml`. Root cause: the kubelet creates an empty placeholder directory in the `config-volume` backing store for every subPath mount that targets a path inside `/etc/config/`. runc then fails to bind-mount the file over that directory (`MS_BIND|MS_REC` on a file-vs-directory path → `ENOTDIR`), causing Prometheus CrashLoopBackOff (568 restarts, 47 h) with `not a directory` in the containerd shim error. Using a separate `/etc/scrape-configs/` directory avoids the collision entirely; ClusterIP scrape via Prometheus `scrapeConfigFiles` unchanged. `clusters/eldertree/observability/monitoring-stack-helmrelease.yaml` chart `0.2.9`.
