@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Fixed
+
+- **ExternalSecret `pi-fleet-terraform-vault-credentials`** — drop optional `pi-user` Vault key so sync succeeds when that secret is absent.
+
 ### Changed
 
 - **Grafana (monitoring-stack 0.2.11)** — `hardware-health` and `eldertree-ops-home` panels for watchdog, freeze signal, OOM, and node uptime/reboot (metrics behind `WatchdogServiceDown`, `NodePingableButNotReady`, `NodeUnexpectedReboot`).
