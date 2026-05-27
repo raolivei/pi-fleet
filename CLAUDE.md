@@ -43,6 +43,13 @@
 - **cmdline.txt update** - Must point to `root=/dev/nvme0n1p2`
 - **Root lock prevention** - Unlock root, set password, disable PAM faillock before boot device switch
 
+## Eldertree InfraOPS & observability
+
+- **Agent handoff:** [`.claude/agents/eldertree-infraops.md`](.claude/agents/eldertree-infraops.md) — use **Prometheus/Grafana/Loki first** on every incident.
+- **Workspace o11y standard:** [`../workspace-config/docs/OBSERVABILITY_STANDARDS.md`](../workspace-config/docs/OBSERVABILITY_STANDARDS.md)
+- **New app checklist:** [`docs/ONBOARDING_APP_OBSERVABILITY.md`](docs/ONBOARDING_APP_OBSERVABILITY.md)
+- **Dashboard map:** [`helm/monitoring-stack/DASHBOARDS.md`](helm/monitoring-stack/DASHBOARDS.md)
+
 ## When to Read What
 
 ### Getting Started
