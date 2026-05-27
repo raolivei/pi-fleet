@@ -132,8 +132,8 @@ fi
 
 echo ""
 echo -e "${BLUE}=== Switch Information ===${NC}"
-echo "TP-Link SG105: 5-port Gigabit switch"
-echo "Both Pis should be connected to this switch"
+echo "TP-Link TL-SG1008MP: 8-port Gigabit PoE+ switch (eth0 cluster fabric)"
+echo "Nodes use eth0 on 10.0.0.0/24 — see docs/GIGABIT_NETWORK_SETUP.md"
 echo "Network: $NETWORK"
 echo ""
 
