@@ -45,7 +45,7 @@ else
 fi
 
 if [ -z "${TF_TOKEN_app_terraform_io:-}" ]; then
-    echo "❌ HCP Terraform token not in Vault (secret/pi-fleet/terraform/terraform-cloud-token)"
+    echo "❌ HCP Terraform token not in Vault (secret/pi-fleet/terraform/eldertree-github-2026)"
     echo "   Run: ${REPO_DIR}/scripts/setup-terraform-cloud-token.sh"
     exit 1
 else

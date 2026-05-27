@@ -9,7 +9,8 @@
 # Paths:
 #   secret/pi-fleet/terraform/cloudflare-api-token     (api-token)
 #   secret/pi-fleet/terraform/cloudflare-origin-ca-key (origin-ca-key)
-#   secret/pi-fleet/terraform/terraform-cloud-token    (token)
+#   secret/pi-fleet/terraform/eldertree-github-2026      (token) — active HCP token
+#   secret/pi-fleet/terraform/terraform-cloud-token    (token) — legacy alias
 #   secret/pi-fleet/terraform/pi-user                    (pi-user)
 
 load_terraform_secrets_from_vault() {
@@ -47,8 +48,15 @@ load_terraform_secrets_from_vault() {
   v=$(_vault_field secret/pi-fleet/terraform/cloudflare-origin-ca-key origin-ca-key)
   [[ -n "$v" ]] && export TF_VAR_cloudflare_origin_ca_key="$v"
 
-  v=$(_vault_field secret/pi-fleet/terraform/terraform-cloud-token token)
-  [[ -n "$v" ]] && export TF_TOKEN_app_terraform_io="$v"
+  for hcp_path in \
+    secret/pi-fleet/terraform/eldertree-github-2026 \
+    secret/pi-fleet/terraform/terraform-cloud-token; do
+    v=$(_vault_field "$hcp_path" token)
+    if [[ -n "$v" ]]; then
+      export TF_TOKEN_app_terraform_io="$v"
+      break
+    fi
+  done
 
   v=$(_vault_field secret/pi-fleet/terraform/pi-user pi-user)
   [[ -n "$v" ]] && export TF_VAR_pi_user="$v"

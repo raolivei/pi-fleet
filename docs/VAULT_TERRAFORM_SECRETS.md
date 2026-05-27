@@ -6,7 +6,8 @@ Vault is the **source of truth** for Terraform and HCP Terraform credentials. Ap
 
 | Vault path | Key | Used for |
 |------------|-----|----------|
-| `secret/pi-fleet/terraform/terraform-cloud-token` | `token` | HCP Terraform (`TF_TOKEN_app_terraform_io` / `TF_API_TOKEN`) |
+| `secret/pi-fleet/terraform/eldertree-github-2026` | `token` | HCP Terraform (`TF_TOKEN_app_terraform_io` / `TF_API_TOKEN`) — active |
+| `secret/pi-fleet/terraform/terraform-cloud-token` | `token` | Legacy alias (loader falls back if present) |
 | `secret/pi-fleet/terraform/cloudflare-api-token` | `api-token` | Cloudflare provider |
 | `secret/pi-fleet/terraform/cloudflare-origin-ca-key` | `origin-ca-key` | Origin CA certificates |
 | `secret/pi-fleet/terraform/pi-user` | `pi-user` | Optional SSH user for k3s resources |

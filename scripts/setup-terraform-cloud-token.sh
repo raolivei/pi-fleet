@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ORG="eldertree"
 HOST="app.terraform.io"
-VAULT_PATH="secret/pi-fleet/terraform/terraform-cloud-token"
+VAULT_PATH="${TF_VAULT_HCP_PATH:-secret/pi-fleet/terraform/eldertree-github-2026}"
 
 export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config-eldertree}"
 

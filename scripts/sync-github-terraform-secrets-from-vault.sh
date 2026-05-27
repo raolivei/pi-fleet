@@ -7,7 +7,7 @@
 # Vault paths (KV v2):
 #   secret/pi-fleet/terraform/cloudflare-api-token     -> api-token
 #   secret/pi-fleet/terraform/cloudflare-origin-ca-key -> origin-ca-key
-#   secret/pi-fleet/terraform/terraform-cloud-token    -> token  (optional; not always in Vault)
+#   secret/pi-fleet/terraform/eldertree-github-2026    -> token  (HCP; falls back to terraform-cloud-token)
 #
 # Usage:
 #   ./scripts/sync-github-terraform-secrets-from-vault.sh
@@ -24,11 +24,10 @@ TERRAFORM_DIR="$REPO_DIR/terraform"
 
 export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config-eldertree}"
 
-APPS=(actions)
+APPS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --app)
-      APPS=()
       shift
       while [[ $# -gt 0 && "$1" != --* ]]; do
         APPS+=("$1")
@@ -45,6 +44,9 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+if [[ ${#APPS[@]} -eq 0 ]]; then
+  APPS=(actions)
+fi
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "Error: gh CLI required" >&2
@@ -97,7 +99,13 @@ echo ""
 
 CF_API=$(vault_field secret/pi-fleet/terraform/cloudflare-api-token api-token)
 CF_ORIGIN=$(vault_field secret/pi-fleet/terraform/cloudflare-origin-ca-key origin-ca-key)
-TF_CLOUD=$(vault_field secret/pi-fleet/terraform/terraform-cloud-token token)
+TF_CLOUD=""
+for hcp_path in \
+  secret/pi-fleet/terraform/eldertree-github-2026 \
+  secret/pi-fleet/terraform/terraform-cloud-token; do
+  TF_CLOUD=$(vault_field "$hcp_path" token)
+  [[ -n "$TF_CLOUD" ]] && break
+done
 PI_USER_VAL=$(vault_field secret/pi-fleet/terraform/pi-user pi-user)
 
 CLOUDFLARE_ZONE_ID=""
@@ -135,7 +143,7 @@ for app in "${APPS[@]}"; do
 done
 
 if [[ -z "$TF_CLOUD" ]]; then
-  echo "Error: secret/pi-fleet/terraform/terraform-cloud-token missing in Vault." >&2
+  echo "Error: HCP token missing in Vault (eldertree-github-2026 or terraform-cloud-token)." >&2
   echo "  Run: ./scripts/setup-terraform-cloud-token.sh" >&2
   exit 1
 fi

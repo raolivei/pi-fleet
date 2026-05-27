@@ -8,6 +8,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 - **Grafana (monitoring-stack 0.2.11)** — `hardware-health` and `eldertree-ops-home` panels for watchdog, freeze signal, OOM, and node uptime/reboot (metrics behind `WatchdogServiceDown`, `NodePingableButNotReady`, `NodeUnexpectedReboot`).
 
+### Changed
+
+- **HCP token Vault path** — active secret at `secret/pi-fleet/terraform/eldertree-github-2026` (`token`); loaders and ExternalSecret read this path (fallback: `terraform-cloud-token`).
+
 ### Added
 
 - **Vault-first Terraform secrets** — [`docs/VAULT_TERRAFORM_SECRETS.md`](docs/VAULT_TERRAFORM_SECRETS.md); [`scripts/lib/load-terraform-secrets-from-vault.sh`](scripts/lib/load-terraform-secrets-from-vault.sh); [`setup-terraform-cloud-token.sh`](scripts/setup-terraform-cloud-token.sh); ExternalSecret `pi-fleet-terraform-vault-credentials`; `run-terraform.sh` loads HCP token from Vault.
