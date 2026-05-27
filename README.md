@@ -1,5 +1,11 @@
 # Pi Fleet
 
+![K3s](https://img.shields.io/badge/K3s-1.33+-326CE5.svg?logo=kubernetes)
+![Ansible](https://img.shields.io/badge/Ansible-2.14+-EE0000.svg?logo=ansible)
+![Terraform](https://img.shields.io/badge/Terraform-1.5+-7B42BC.svg?logo=terraform)
+![ARM64](https://img.shields.io/badge/arch-ARM64-orange.svg)
+![Terraform](https://github.com/raolivei/pi-fleet/actions/workflows/terraform.yml/badge.svg)
+
 K3s cluster on Raspberry Pi, managed with Ansible and Terraform.
 
 > **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for git workflow and branching strategy.

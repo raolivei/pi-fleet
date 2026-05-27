@@ -40,6 +40,7 @@ spec:
             export OPENCLAW_DIR=/home/node/.openclaw
             export CONFIG_FILE=$OPENCLAW_DIR/openclaw.json
             mkdir -p $OPENCLAW_DIR/agents/main/sessions $OPENCLAW_DIR/credentials $OPENCLAW_DIR/workspace
+            chown node:node $OPENCLAW_DIR/workspace || true
             # Seed writable openclaw.json from ConfigMap only when CM changes or file missing.
             # Always cp caused OpenClaw "missing-meta-*" noise every restart (it embeds file metadata on PVC).
             CM_SRC=/etc/openclaw-config/config.json
