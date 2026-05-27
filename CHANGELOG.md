@@ -15,6 +15,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Terraform CI (Dependabot)** — Skip init/plan when `github.actor` is `dependabot[bot]` (no `TF_API_TOKEN`); document Dependabot secret access in `terraform/README.md`.
 - **Prometheus scrape config files** — Pi-hole, Visage, and Vault fragments use top-level `scrape_configs:` (fixes CrashLoop `cannot unmarshal !!seq into config.ScrapeConfigs`).
 - **Hardware watchdog (all nodes)** — Disable Raspberry Pi OS `40-rpi-enable-watchdog.conf` and set `RuntimeWatchdogSec=0` so the watchdog daemon holds `/dev/watchdog`. Add `watchdog-k3s-health.sh` test-binary (k3s, kubelet healthz, API :6443), peer-only ping targets, persistent journald, improved `scripts/verify-watchdog.sh`. Prometheus alerts `WatchdogServiceDown` and `NodePingableButNotReady` (monitoring-stack **0.2.10**). See `docs/NODE-1-HANG-2026-05-26-SECOND.md`.
 

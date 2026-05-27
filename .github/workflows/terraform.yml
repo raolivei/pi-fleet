@@ -74,7 +74,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # Dependabot PRs do not receive repository secrets (e.g. TF_API_TOKEN) unless
+      # Settings → Secrets and variables → Actions → Dependabot is enabled.
+      - name: Check Terraform Cloud credentials
+        id: tf_auth
+        working-directory: .
+        run: |
+          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Terraform CI skipped::Dependabot PRs do not receive TF_API_TOKEN. See terraform/README.md (CI/CD)."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Terraform
+        if: steps.tf_auth.outputs.skip != 'true'
         uses: hashicorp/setup-terraform@v4
         with:
           # 1.6.x fails provider install with openpgp: key expired (HashiCorp key rotation)
@@ -87,6 +101,7 @@ jobs:
       # Pre-configure Vault dev server with backends that exist in TF state
       # so the provider doesn't crash during PlanResourceChange calls
       - name: Configure Vault Dev Server
+        if: steps.tf_auth.outputs.skip != 'true'
         run: |
           # Wait for Vault to be ready
           for i in 1 2 3 4 5; do
@@ -102,10 +117,12 @@ jobs:
         working-directory: .
 
       - name: Terraform Init
+        if: steps.tf_auth.outputs.skip != 'true'
         run: terraform init -input=false
 
       # Redirect to file (not pipe) to avoid EPIPE when piping terraform output
       - name: Verify Remote State
+        if: steps.tf_auth.outputs.skip != 'true'
         id: remote_state
         run: |
           if terraform state list > state-list.txt 2>&1; then
@@ -130,14 +147,17 @@ jobs:
           rm -f state-list.txt
 
       - name: Terraform Format Check
+        if: steps.tf_auth.outputs.skip != 'true'
         run: terraform fmt -check -recursive
 
       - name: Terraform Validate
+        if: steps.tf_auth.outputs.skip != 'true'
         run: terraform validate
 
       # -refresh=false: use cached state, don't refresh from providers
       # Vault dev server satisfies provider init; -refresh=false avoids state drift
       - name: Terraform Plan
+        if: steps.tf_auth.outputs.skip != 'true'
         id: plan
         run: |
           set +e
@@ -170,6 +190,7 @@ jobs:
       - name: Terraform Apply
         id: apply
         if: |
+          steps.tf_auth.outputs.skip != 'true' &&
           steps.plan.outcome == 'success' &&
           (
             (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
@@ -177,8 +198,20 @@ jobs:
           )
         run: terraform apply -auto-approve -input=false -refresh=false
 
+      - name: Dependabot skip summary
+        if: steps.tf_auth.outputs.skip == 'true'
+        working-directory: .
+        run: |
+          {
+            echo "## Terraform CI skipped (Dependabot)"
+            echo ""
+            echo "GitHub does not pass repository secrets (including \`TF_API_TOKEN\` for Terraform Cloud) to workflows triggered by Dependabot unless **Settings → Secrets and variables → Actions → Dependabot** is enabled."
+            echo ""
+            echo "For GitHub Actions-only bumps, merge after review if \`main\` is green. For \`terraform/**\` changes, enable Dependabot secrets or push a branch from a human account to run plan."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Job summary
-        if: always()
+        if: always() && steps.tf_auth.outputs.skip != 'true'
         run: |
           {
             echo "## Terraform run summary"

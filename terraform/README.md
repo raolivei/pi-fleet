@@ -392,16 +392,13 @@ terraform import vault_auth_backend.kubernetes[0] kubernetes
 
 ### CI/CD Behavior
 
-In GitHub Actions, Vault resources are **skipped** (`skip_vault_resources=true`) because:
+The [`.github/workflows/terraform.yml`](../.github/workflows/terraform.yml) job:
 
-1. CI doesn't have direct access to Vault
-2. Vault configuration requires authentication tokens
-3. These resources are typically managed locally or via GitOps
+- Uses **Terraform Cloud** backend (`eldertree` / `pi-fleet-terraform`) via repo secret **`TF_API_TOKEN`** (`hashicorp/setup-terraform` + `cli_config_credentials_token`).
+- Starts a **Vault dev server** service container and sets `skip_vault_resources=false` so Vault resources stay in plan (provider talks to `http://127.0.0.1:8200`).
+- Skips **`terraform apply`** on pull requests (plan-only); apply runs on push to `main` or `workflow_dispatch` with `apply=true`.
 
-To manage Vault via CI, you would need to:
-1. Expose Vault via ingress
-2. Store VAULT_TOKEN in GitHub Secrets
-3. Set `skip_vault_resources=false` in the workflow
+**Dependabot PRs:** GitHub does not pass repository secrets (including `TF_API_TOKEN`) to workflows triggered by `dependabot[bot]` unless you enable **Settings → Secrets and variables → Actions → Dependabot**. Without that, `terraform init` fails with *Required token could not be found*. The workflow detects Dependabot and **skips** init/plan with a green job and a step summary explaining why. Safe to merge Actions-only bumps after review when `main` is green; for `terraform/**` changes, enable Dependabot secrets or push a human branch to get a real plan.
 
 ### Migration from Shell Script
 
