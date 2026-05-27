@@ -6,6 +6,8 @@
 - name: Setup Hardware Watchdog
   hosts: raspberry_pi
   become: true
+  vars_files:
+    - ../group_vars/all.yml
 
   tasks:
     - name: Install watchdog daemon
@@ -13,6 +15,38 @@
         name: watchdog
         state: present
         update_cache: no
+
+    # Raspberry Pi OS ships a systemd drop-in that enables RuntimeWatchdogSec=1m.
+    # That claims /dev/watchdog before the watchdog daemon, so the daemon shows
+    # "active" but alive=[none] and the node is not protected (see NODE-1-HANG doc).
+    - name: Stat Raspberry Pi systemd watchdog drop-in
+      stat:
+        path: /usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf
+      register: rpi_watchdog_dropin
+    - name: Disable Raspberry Pi systemd hardware watchdog drop-in (when present)
+      command: mv /usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf /usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf.disabled
+      when: rpi_watchdog_dropin.stat.exists
+      notify:
+        - reload systemd
+        - restart watchdog
+
+    - name: Ensure systemd does not use the hardware watchdog device
+      lineinfile:
+        path: /etc/systemd/system.conf
+        regexp: '^RuntimeWatchdogSec='
+        line: 'RuntimeWatchdogSec=0'
+        insertafter: '^\[Manager\]'
+      notify:
+        - reload systemd
+        - restart watchdog
+
+    - name: Install k3s health check script for watchdog test-binary
+      template:
+        src: ../templates/watchdog-k3s-health.sh.j2
+        dest: /usr/local/bin/watchdog-k3s-health.sh
+        owner: root
+        group: root
+        mode: '0755'
 
     - name: Create watchdog config
       template:
@@ -22,6 +56,21 @@
         group: root
         mode: '0644'
         backup: yes
+      notify: restart watchdog
+
+    - name: Enable persistent systemd journal storage
+      lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: '^#?Storage='
+        line: 'Storage=persistent'
+      notify: restart journald
+
+    - name: Set journal disk usage limit
+      lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: '^#?SystemMaxUse='
+        line: 'SystemMaxUse=500M'
+      notify: restart journald
 
     - name: Enable watchdog service
       systemd:
@@ -38,6 +87,12 @@
     - name: Display watchdog status
       debug:
         msg: "Watchdog daemon is active on {{ inventory_hostname }}"
+
+    - name: Verify watchdog daemon holds /dev/watchdog
+      shell: lsof /dev/watchdog 2>/dev/null | awk 'NR>1 && $1=="watchdog" {found=1} END {exit !found}'
+      register: watchdog_device_holder
+      changed_when: false
+      failed_when: watchdog_device_holder.rc != 0
 
     # Boot Loop Protection
     - name: Create boot guard script
@@ -99,8 +154,21 @@
 
   handlers:
     - name: restart watchdog
+      block:
+        - name: Restart watchdog service
+          systemd:
+            name: watchdog
+            state: restarted
+      rescue:
+        - name: Start watchdog after failed restart
+          systemd:
+            name: watchdog
+            state: started
+            enabled: yes
+
+    - name: restart journald
       systemd:
-        name: watchdog
+        name: systemd-journald
         state: restarted
 
     - name: reload systemd
