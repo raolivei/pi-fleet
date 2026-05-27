@@ -6,6 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Prometheus scrape config files** — Pi-hole, Visage, and Vault files under `/etc/scrape-configs/` must use a top-level `scrape_configs:` key (not a bare YAML list). Fixes Prometheus CrashLoop `cannot unmarshal !!seq into config.ScrapeConfigs` after monitoring-stack 0.2.10.
 - **Hardware watchdog (all nodes)** — Disable Raspberry Pi OS `40-rpi-enable-watchdog.conf` and set `RuntimeWatchdogSec=0` so the watchdog daemon holds `/dev/watchdog`. Add `watchdog-k3s-health.sh` test-binary (k3s, kubelet healthz, API :6443), peer-only ping targets, persistent journald, improved `scripts/verify-watchdog.sh`. Prometheus alerts `WatchdogServiceDown` and `NodePingableButNotReady` (monitoring-stack **0.2.10**). See `docs/NODE-1-HANG-2026-05-26-SECOND.md`.
 
 ### Changed
