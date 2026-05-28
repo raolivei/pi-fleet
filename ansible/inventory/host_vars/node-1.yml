@@ -1,0 +1,6 @@
+---
+# node-1: intermittent freezes — deprioritize app scheduling (see docs/NODE_SCHEDULING.md)
+node_scheduling_tier: unstable
+node_k3s_server_args: >-
+  --node-label eldertree.xyz/node-tier=unstable
+  --node-taint eldertree.xyz/prefer-stable-nodes=true:PreferNoSchedule

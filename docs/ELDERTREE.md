@@ -44,6 +44,8 @@ See [HARDWARE_CHASSIS.md](HARDWARE_CHASSIS.md) and [eldertree-chassis](https://g
 | node-2 | 192.168.2.102 | 10.0.0.2 | node-2.eldertree.local |
 | node-3 | 192.168.2.103 | 10.0.0.3 | node-3.eldertree.local |
 
+**Scheduling:** node-1 is labeled `unstable` and carries a soft taint so new app pods prefer node-2/3 — [NODE_SCHEDULING.md](NODE_SCHEDULING.md).
+
 **VIP:** API `192.168.2.100` · Ingress `192.168.2.200` · DNS `192.168.2.201`
 
 ## Architecture

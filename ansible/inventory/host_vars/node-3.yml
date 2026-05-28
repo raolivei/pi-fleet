@@ -1,0 +1,3 @@
+---
+node_scheduling_tier: stable
+node_k3s_server_args: --node-label eldertree.xyz/node-tier=stable

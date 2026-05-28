@@ -102,6 +102,9 @@
     k3s_token: "{{ hostvars['localhost']['k3s_node_token'] | default('') }}"
   when: inventory_hostname == "node-3"
 
+- name: Apply node scheduling tiers (deprioritize node-1)
+  import_playbook: configure-node-scheduling-tiers.yml
+
 - name: Bootstrap FluxCD (optional)
   import_playbook: bootstrap-flux.yml
   vars:

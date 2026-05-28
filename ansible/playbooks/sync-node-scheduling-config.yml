@@ -1,0 +1,66 @@
+---
+# Generate node-scheduling ConfigMap from Ansible group_vars and apply to cluster.
+# Run after updating node_scheduling_* variables in group_vars/all.yml.
+#
+# Usage (from pi-fleet/ansible):
+#   ansible-playbook playbooks/sync-node-scheduling-config.yml
+
+- name: Sync node scheduling config to Kubernetes
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  vars_files:
+    - ../group_vars/all.yml
+  vars:
+    kubeconfig_path: "{{ lookup('env', 'HOME') }}/.kube/config-eldertree"
+    kubectl_bin: kubectl
+    k8s_node_suffix: ".eldertree.local"
+    configmap_path: "../clusters/eldertree/core-infrastructure/node-scheduling/config.yaml"
+
+  tasks:
+    - name: Require kubeconfig
+      stat:
+        path: "{{ kubeconfig_path }}"
+      register: kubeconfig_stat
+      failed_when: not kubeconfig_stat.stat.exists
+
+    - name: Build stable nodes comma-separated list
+      set_fact:
+        stable_nodes_csv: "{{ (node_scheduling_stable_hosts | map('regex_replace', '^(.*)$', '\\1' + k8s_node_suffix) | list) | join(',') }}"
+
+    - name: Generate ConfigMap YAML
+      copy:
+        content: |
+          ---
+          # Node scheduling tier configuration (synced from Ansible group_vars/all.yml).
+          # DO NOT edit manually — changes will be overwritten by Ansible.
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: node-scheduling-config
+            namespace: kube-system
+            labels:
+              app.kubernetes.io/name: node-scheduling-tier-reconciler
+              app.kubernetes.io/part-of: eldertree
+          data:
+            LABEL_KEY: "{{ node_scheduling_label_key }}"
+            TAINT_KEY: "{{ node_scheduling_taint_key }}"
+            TAINT_VALUE: "{{ node_scheduling_taint_value }}"
+            TAINT_EFFECT: "{{ node_scheduling_taint_effect }}"
+            UNSTABLE_NODE: "{{ node_scheduling_unstable_host }}{{ k8s_node_suffix }}"
+            STABLE_NODES: "{{ stable_nodes_csv }}"
+        dest: "{{ configmap_path }}"
+        mode: '0644'
+
+    - name: Apply ConfigMap to cluster
+      command: >
+        {{ kubectl_bin }} apply -f {{ configmap_path }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: apply_result
+      changed_when: "'configured' in apply_result.stdout or 'created' in apply_result.stdout"
+
+    - name: Show result
+      debug:
+        msg: "ConfigMap synced: {{ apply_result.stdout }}"

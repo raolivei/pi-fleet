@@ -69,5 +69,15 @@ watchdog_ping_targets:
 # Boot Loop Protection
 watchdog_max_boot_attempts: 5
 watchdog_successful_boot_time: 600  # 10 minutes
+
+# Node scheduling tiers (node-1 is deprioritized for app workloads — see docs/NODE_SCHEDULING.md)
+node_scheduling_label_key: "eldertree.xyz/node-tier"
+node_scheduling_taint_key: "eldertree.xyz/prefer-stable-nodes"
+node_scheduling_taint_value: "true"
+node_scheduling_taint_effect: "PreferNoSchedule"
+node_scheduling_unstable_host: "node-1"
+node_scheduling_stable_hosts:
+  - "node-2"
+  - "node-3"
 # Backup Configuration
 backup_mount_default: "/mnt/backup"
