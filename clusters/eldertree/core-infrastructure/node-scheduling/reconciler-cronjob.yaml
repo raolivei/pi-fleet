@@ -33,20 +33,23 @@ spec:
             - name: kubectl
               image: rancher/kubectl:v1.33.5
               imagePullPolicy: IfNotPresent
+              envFrom:
+                - configMapRef:
+                    name: node-scheduling-config
               command:
                 - /bin/sh
                 - -ec
                 - |
                   set -e
-                  LABEL_KEY='eldertree.xyz/node-tier'
-                  TAINT='eldertree.xyz/prefer-stable-nodes=true:PreferNoSchedule'
+                  TAINT="${TAINT_KEY}=${TAINT_VALUE}:${TAINT_EFFECT}"
 
-                  kubectl label node node-1.eldertree.local "${LABEL_KEY}=unstable" --overwrite
-                  kubectl taint nodes node-1.eldertree.local "${TAINT}" --overwrite
+                  kubectl label node "${UNSTABLE_NODE}" "${LABEL_KEY}=unstable" --overwrite
+                  kubectl taint nodes "${UNSTABLE_NODE}" "${TAINT}" --overwrite
 
-                  for n in node-2 node-3; do
-                    kubectl label node "${n}.eldertree.local" "${LABEL_KEY}=stable" --overwrite
-                    kubectl taint nodes "${n}.eldertree.local" eldertree.xyz/prefer-stable-nodes- 2>/dev/null || true
+                  IFS=',' read -ra STABLE_ARRAY <<< "${STABLE_NODES}"
+                  for node in "${STABLE_ARRAY[@]}"; do
+                    kubectl label node "${node}" "${LABEL_KEY}=stable" --overwrite
+                    kubectl taint nodes "${node}" "${TAINT_KEY}-" 2>/dev/null || true
                   done
 
                   echo "node scheduling tiers reconciled"

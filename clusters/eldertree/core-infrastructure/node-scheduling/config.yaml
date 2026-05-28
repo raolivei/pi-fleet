@@ -1,0 +1,18 @@
+---
+# Node scheduling tier configuration (synced from Ansible group_vars/all.yml).
+# DO NOT edit manually — changes will be overwritten by Ansible.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: node-scheduling-config
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: node-scheduling-tier-reconciler
+    app.kubernetes.io/part-of: eldertree
+data:
+  LABEL_KEY: "eldertree.xyz/node-tier"
+  TAINT_KEY: "eldertree.xyz/prefer-stable-nodes"
+  TAINT_VALUE: "true"
+  TAINT_EFFECT: "PreferNoSchedule"
+  UNSTABLE_NODE: "node-1.eldertree.local"
+  STABLE_NODES: "node-2.eldertree.local,node-3.eldertree.local"
