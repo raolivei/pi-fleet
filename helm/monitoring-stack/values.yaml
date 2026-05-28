@@ -392,6 +392,7 @@ grafana:
     pitanga-dashboard: "Applications/Pitanga"
     visage-operations: "Applications/Visage"
     visage-training: "Applications/Visage"
+    ollie-dashboard: "Applications/Ollie"
     # —— Platform (cluster, capacity, network, security) ——
     eldertree-ops-home: "Platform/Overview"
     command-center: "Platform/Overview"
