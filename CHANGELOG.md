@@ -6,7 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
-- **Node scheduling tiers** — node-1 deprioritized; Flux reconciler CronJob (reads from ConfigMap), ConfigMap auto-synced from Ansible group_vars, Ansible (`configure-node-scheduling-tiers`, `sync-node-scheduling-config`, host_vars, hooks in setup-cluster/watchdog/install-k3s), `eldertree-app` affinity, vault-auto-unseal on stable nodes; [NODE_SCHEDULING.md](docs/NODE_SCHEDULING.md). Node names/tiers configurable via `ansible/group_vars/all.yml` — no hardcoded values in CronJob script.
+- **Node scheduling tiers** — node-1 deprioritized; Flux reconciler CronJob (reads from ConfigMap), ConfigMap auto-synced from Ansible group_vars, Ansible (`configure-node-scheduling-tiers`, `sync-node-scheduling-config`, host_vars, hooks in setup-cluster/watchdog/install-k3s), `eldertree-app` affinity, vault-auto-unseal on stable nodes. Node names/tiers configurable via `ansible/group_vars/all.yml` — no hardcoded values in CronJob script. Documentation at [docs.eldertree.xyz/runbook/node-scheduling](https://docs.eldertree.xyz/runbook/node-scheduling).
 - **Ollie Grafana dashboard** — `helm/monitoring-stack/dashboards/ollie-dashboard.json` with request rate, latency, ChromaDB hit rate, LLM provider split, error rate, and resource usage panels.
 
 ### Fixed
