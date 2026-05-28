@@ -2,7 +2,7 @@
 
 Tailscale provides secure, zero-config VPN access to the eldertree cluster from anywhere with automatic high-availability failover.
 
-**Current state:** Tailscale is the intended VPN for accessing **all** Eldertree services (vault, grafana, visage, swimto, minio, etc.) from your Mac. The Mac is never on the gigabit network, so Tailscale (with Accept Routes) plus either **DNS** (192.168.2.201 + 1.1.1.1) or the full **/etc/hosts** block is the canonical path. Use DNS when you can; if you cannot change DNS (e.g. corporate VPN conflicts), use only the `/etc/hosts` block. Tailscale is enabled when `tailscaled` is not in `disabled_services` in ansible `group_vars/all.yml`. If you see routing conflicts when the Mac is on the same LAN (192.168.2.x), you can temporarily add `tailscaled` back to `disabled_services` while at home and use Pi-hole + Traefik (192.168.2.200) directly. See [Enabling Tailscale](#enabling-tailscale) and [Access all services from your Mac](#access-all-services-from-your-mac) below.
+**Current state:** Tailscale is the intended VPN for accessing **all** Eldertree services (vault, grafana, swimto, etc.) from your Mac. The Mac is never on the gigabit network, so Tailscale (with Accept Routes) plus either **DNS** (192.168.2.201 + 1.1.1.1) or the full **/etc/hosts** block is the canonical path. Use DNS when you can; if you cannot change DNS (e.g. corporate VPN conflicts), use only the `/etc/hosts` block. Tailscale is enabled when `tailscaled` is not in `disabled_services` in ansible `group_vars/all.yml`. If you see routing conflicts when the Mac is on the same LAN (192.168.2.x), you can temporarily add `tailscaled` back to `disabled_services` while at home and use Pi-hole + Traefik (192.168.2.200) directly. See [Enabling Tailscale](#enabling-tailscale) and [Access all services from your Mac](#access-all-services-from-your-mac) below.
 
 ## Overview
 
@@ -63,7 +63,7 @@ tailscale status
 
 ## Access all services from your Mac
 
-This is the **canonical way** to reach every `*.eldertree.local` service (vault, grafana, visage, swimto, minio, etc.) from your Mac when it is not on the Eldertree LAN.
+This is the **canonical way** to reach every `*.eldertree.local` service (vault, grafana, swimto, etc.) from your Mac when it is not on the Eldertree LAN.
 
 ### Prerequisites
 
@@ -92,11 +92,11 @@ You do **not** need to change your Mac’s DNS. Use Tailscale + the full `/etc/h
 
 2. **Resolve eldertree.local**
    - **DNS path:** Set Mac DNS to 192.168.2.201 and 1.1.1.1 (Pi-hole resolves `*.eldertree.local`).
-   - **Hosts-only path:** Copy the block from [eldertree-local-hosts-block.txt](eldertree-local-hosts-block.txt), replace `TRAEFIK_LB_IP` with the Traefik EXTERNAL-IP from step 1, and append to `/etc/hosts`. That file is the single source of truth for all `*.eldertree.local` hostnames (vault, grafana, prometheus, pihole, visage, minio, swimto, canopy, pitanga, pushgateway, flux-ui, alertmanager, docs, journey, nima, and node-1/2/3).
+   - **Hosts-only path:** Copy the block from [eldertree-local-hosts-block.txt](eldertree-local-hosts-block.txt), replace `TRAEFIK_LB_IP` with the Traefik EXTERNAL-IP from step 1, and append to `/etc/hosts`. That file is the single source of truth for all `*.eldertree.local` hostnames (vault, grafana, prometheus, pihole, swimto, canopy, pitanga, pushgateway, flux-ui, alertmanager, docs, journey, nima, and node-1/2/3).
 
 3. **Use services**
 
-   Open `https://<service>.eldertree.local` in the browser (e.g. `https://vault.eldertree.local`, `https://visage.eldertree.local`). Accept self-signed certificate warnings when prompted.
+   Open `https://<service>.eldertree.local` in the browser (e.g. `https://vault.eldertree.local`, `https://grafana.eldertree.local`). Accept self-signed certificate warnings when prompted.
 
 ### Quick checks
 

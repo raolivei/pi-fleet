@@ -388,7 +388,7 @@ data:
 
     ## Repo Names (use exactly for API calls)
 
-    - canopy, swimTO, pi-fleet, pi-fleet-blog, eldertree-docs, elder, journey, nima, visage, ollie, pitanga-website, northwaysignal-website, fragment
+    - canopy, swimTO, pi-fleet, pi-fleet-blog, eldertree-docs, elder, journey, nima, ollie, pitanga-website, northwaysignal-website, fragment
 
     ## Projects Managed by Elder
 
@@ -398,7 +398,6 @@ data:
     | swimTO | Toronto pools | https://swimto.eldertree.xyz |
     | journey | AI career pathfinder | https://journey.eldertree.local |
     | nima | ML experiments | https://nima.eldertree.local |
-    | visage | AI headshot gen | https://visage.eldertree.local |
     | ollie | Local AI assistant | - |
     | pi-fleet | Cluster infra | - |
     | pi-fleet-blog | Eldertree blog (chapters, journey) | https://blog.eldertree.xyz |
