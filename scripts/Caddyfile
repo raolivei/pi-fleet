@@ -1,7 +1,8 @@
 # Caddyfile for Eldertree Local Proxy
 # Run with: sudo caddy run --config ~/WORKSPACE/raolivei/pi-fleet/scripts/Caddyfile
 #
-# This proxies *.eldertree.local to the k3s cluster via Traefik NodePort
+# This proxies *.eldertree.local to the k3s cluster via kube-vip Traefik VIP.
+# Use 192.168.2.200:443 — NOT a node LAN IP (node-1 often hits Pi-hole on 443).
 # Allows accessing services without specifying port numbers
 #
 # Only includes DEPLOYED services (as of 2026-01-16)
@@ -14,7 +15,7 @@
 # Grafana (observability)
 grafana.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -25,7 +26,7 @@ grafana.eldertree.local {
 # Vault (secrets management)
 vault.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -36,7 +37,7 @@ vault.eldertree.local {
 # Prometheus (metrics)
 prometheus.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -47,7 +48,7 @@ prometheus.eldertree.local {
 # SwimTO (Toronto pool schedules)
 swimto.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -58,7 +59,7 @@ swimto.eldertree.local {
 # Pitanga (website)
 pitanga.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -69,7 +70,7 @@ pitanga.eldertree.local {
 # Flux UI (GitOps dashboard)
 flux.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -80,7 +81,7 @@ flux.eldertree.local {
 # Pushgateway (metrics push endpoint)
 pushgateway.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -91,7 +92,7 @@ pushgateway.eldertree.local {
 # Elder (AI agent API + Swagger docs)
 elder.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -102,7 +103,7 @@ elder.eldertree.local {
 # Eldertree Control Center (Elder SPA + /api/public/cluster/*)
 control.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -113,7 +114,7 @@ control.eldertree.local {
 # Pi-hole (DNS admin - may not work via ingress)
 pihole.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
