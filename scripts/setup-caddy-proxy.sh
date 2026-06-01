@@ -48,7 +48,6 @@ $MARKER_START
 127.0.0.1  grafana.eldertree.local
 127.0.0.1  vault.eldertree.local
 127.0.0.1  prometheus.eldertree.local
-127.0.0.1  visage.eldertree.local
 127.0.0.1  minio.eldertree.local
 127.0.0.1  swimto.eldertree.local
 127.0.0.1  pitanga.eldertree.local

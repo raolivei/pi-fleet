@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Changed
+
+- **Visage archived (2026-04)** — Detached live monitoring (scrape, dashboards, exporter targets), tunnel/DNS, and hosts/Caddy entries; preserved reference copies under [`docs/archive/visage/`](docs/archive/visage/). See [`workspace-config/docs/PROJECT_DECOMMISSIONING.md`](../workspace-config/docs/PROJECT_DECOMMISSIONING.md).
+
 ### Added
 
 - **Observability retention (NVMe)** — [`docs/OBSERVABILITY_RETENTION.md`](docs/OBSERVABILITY_RETENTION.md): 90d Prometheus metrics (64Gi `local-path-nvme`, `retentionSize: 58GB`), 30d Loki logs (48Gi NVMe, extend to 90d after measure), stable-node affinity, Promtail probe/health log drops, PVC migration runbook. monitoring-stack chart **0.2.13**.

@@ -44,28 +44,6 @@ prometheus.eldertree.local {
     }
 }
 
-# Visage (photo management)
-visage.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.101:32474 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host visage.eldertree.local
-    }
-}
-
-# MinIO (object storage for Visage)
-minio.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.101:32474 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host minio.eldertree.local
-    }
-}
-
 # SwimTO (Toronto pool schedules)
 swimto.eldertree.local {
     tls internal

@@ -30,7 +30,7 @@
       "gridPos": { "h": 6, "w": 24, "x": 0, "y": 1 },
       "options": {
         "mode": "markdown",
-        "content": "## Core\n\n- [Command Center](/d/eldertree-command-center) — cluster SLO, resources, top traffic\n- [Eldertree cluster](/d/eldertree-cluster) — 3-node HA, services, Vault row\n- [Hardware health](/d/hardware-health) — Pi thermals, watchdog, reboots, freeze signal\n- [Network intelligence](/d/network-intelligence) — Traefik ingress, HTTP codes, top services\n- [Kubernetes workloads](/d/kubernetes-workloads) — deploy/statefulset health\n- [Namespace resources](/d/namespace-resources) — quotas and usage by namespace\n\n## Apps (metrics)\n\n- [SwimTO](/d/swimto-dashboard) | [Pitanga](/d/pitanga-dashboard) | [Visage operations](/d/visage-ops) | [Vault](/d/vault-ops)\n\n## Logs (Loki)\n\n**Explore** → **Loki** datasource. Promtail ships node `/var/log/pods` into Loki in `observability`.\n"
+        "content": "## Core\n\n- [Command Center](/d/eldertree-command-center) — cluster SLO, resources, top traffic\n- [Eldertree cluster](/d/eldertree-cluster) — 3-node HA, services, Vault row\n- [Hardware health](/d/hardware-health) — Pi thermals, watchdog, reboots, freeze signal\n- [Network intelligence](/d/network-intelligence) — Traefik ingress, HTTP codes, top services\n- [Kubernetes workloads](/d/kubernetes-workloads) — deploy/statefulset health\n- [Namespace resources](/d/namespace-resources) — quotas and usage by namespace\n\n## Apps (metrics)\n\n- [SwimTO](/d/swimto-dashboard) | [Pitanga](/d/pitanga-dashboard) | [Vault](/d/vault-ops)\n\n## Logs (Loki)\n\n**Explore** → **Loki** datasource. Promtail ships node `/var/log/pods` into Loki in `observability`.\n"
       }
     },
     {

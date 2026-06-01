@@ -17,7 +17,6 @@ Dashboards are organized into two top-level categories:
 ### Applications/
 Product-specific dashboards for deployed applications.
 
-- `Applications/Visage` - Visage ML training and operations
 - `Applications/SwimTO` - SwimTO application
 - `Applications/Pitanga` - Pitanga application
 
@@ -169,8 +168,8 @@ data:
 ```
 
 For each dashboard:
-- Extracts filename (e.g., `visage-operations.json`)
-- Removes `.json` extension to get basename (`visage-operations`)
+- Extracts filename (e.g., `swimto-dashboard.json`)
+- Removes `.json` extension to get basename (`swimto-dashboard`)
 - Looks up folder in `dashboardFolders` map
 - Defaults to `"Platform"` if no mapping found
 - Creates ConfigMap with:
@@ -198,7 +197,7 @@ It:
 - Watches namespace `observability` for ConfigMaps with label `grafana_dashboard: "1"`
 - Reads the `grafana_folder` annotation
 - Provisions the dashboard into the specified folder
-- Creates folder hierarchy automatically (e.g., `Applications/Visage`)
+- Creates folder hierarchy automatically (e.g., `Applications/SwimTO`)
 
 ### 3. Dashboard URL Pattern
 
@@ -208,7 +207,6 @@ https://grafana.eldertree.local/d/<uid>/<optional-slug>
 ```
 
 Example:
-- `https://grafana.eldertree.local/d/visage-ops`
 - `https://grafana.eldertree.local/d/eldertree-command-center`
 
 ## Troubleshooting
@@ -327,8 +325,6 @@ To migrate dashboards:
 3. Deploy Helm chart
 4. Verify dashboards appear in Grafana
 5. Remove old provisioning files
-
-See [`visage/monitoring/grafana/README-MIGRATION.md`](../../visage/monitoring/grafana/README-MIGRATION.md) for the Visage migration example.
 
 ## Best Practices
 

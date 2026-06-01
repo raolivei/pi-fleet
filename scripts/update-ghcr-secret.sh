@@ -11,7 +11,7 @@ set -e
 PAT_TOKEN="$1"
 USERNAME="raolivei"
 EMAIL="raolivei@users.noreply.github.com"
-NAMESPACES=("pitanga" "swimto" "visage")
+NAMESPACES=("pitanga" "swimto")
 
 if [ -z "$PAT_TOKEN" ]; then
   echo "Usage: $0 YOUR_PAT_TOKEN"
