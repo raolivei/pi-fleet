@@ -99,6 +99,17 @@ elder.eldertree.local {
     }
 }
 
+# Eldertree Control Center (Elder SPA + /api/public/cluster/*)
+control.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host control.eldertree.local
+    }
+}
+
 # Pi-hole (DNS admin - may not work via ingress)
 pihole.eldertree.local {
     tls internal
