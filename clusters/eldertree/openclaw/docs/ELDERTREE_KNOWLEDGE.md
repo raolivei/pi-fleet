@@ -52,6 +52,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 | NIMA      | https://nima.eldertree.local      | nima      | AI/ML learning                             |
 | OpenClaw  | https://openclaw.eldertree.local  | openclaw  | AI assistant; Telegram: @eldertree_assistant_bot |
 | Elder     | https://elder.eldertree.local     | openclaw  | AI agent sidecar; Swagger: /docs           |
+| Control Center | https://control.eldertree.local | openclaw  | Live ops topology + health (Elder SPA); LAN/Tailscale |
 | Pitanga   | https://pitanga.eldertree.local    | pitanga   | Company site; public: pitanga.cloud         |
 
 ---

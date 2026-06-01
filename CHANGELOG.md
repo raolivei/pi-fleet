@@ -6,13 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **Local routing sync** — `eldertree-local-hosts-block.txt`, `add-services-to-hosts.sh`, and `Caddyfile` aligned with registry (openclaw, alertmanager, docs, dex, audio, canopy, journey, nima).
 - **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.0` (Control Center SPA + `/api/public/cluster/health`); ImageRepository tracks `elder` instead of legacy `grove`. Ingress `control.eldertree.local` → Elder service.
 - **Visage archived (2026-04)** — Detached live monitoring (scrape, dashboards, exporter targets), tunnel/DNS, and hosts/Caddy entries; preserved reference copies under [`docs/archive/visage/`](docs/archive/visage/). See [`workspace-config/docs/PROJECT_DECOMMISSIONING.md`](../workspace-config/docs/PROJECT_DECOMMISSIONING.md).
 - **Repo layout** — Moved `NETWORK.md`, `VAULT.md`, and `SERVICES_REFERENCE.md` into `docs/`; blog drafts and one-off session notes into `docs/archive/`; removed duplicate `blog/` tree at repo root. Root now holds README, CHANGELOG, CLAUDE, CONTRIBUTING, and `VERSION` only.
 
 ### Added
 
+- **Service routing onboarding** — [`docs/ONBOARDING_APP_ROUTING.md`](docs/ONBOARDING_APP_ROUTING.md): end-to-end LAN checklist; [`docs/eldertree-local-services.yaml`](docs/eldertree-local-services.yaml) registry; [`scripts/check-local-routing-registry.sh`](scripts/check-local-routing-registry.sh) and [`scripts/verify-service-routing.sh`](scripts/verify-service-routing.sh) for cluster + Pi-hole + Mac verification.
 - **Observability retention (NVMe)** — [`docs/OBSERVABILITY_RETENTION.md`](docs/OBSERVABILITY_RETENTION.md): 90d Prometheus metrics (64Gi `local-path-nvme`, `retentionSize: 58GB`), 30d Loki logs (48Gi NVMe, extend to 90d after measure), stable-node affinity, Promtail probe/health log drops, PVC migration runbook. monitoring-stack chart **0.2.13**.
+- **Control Center ops doc** — [`docs/CONTROL_CENTER.md`](docs/CONTROL_CENTER.md): architecture, URLs, API, troubleshooting for `control.eldertree.local`.
 - **Control Center local dev** — `control.eldertree.local` in `scripts/Caddyfile`, `add-services-to-hosts.sh`, `setup-caddy-proxy.sh`, and `docs/eldertree-local-hosts-block.txt` for LAN Caddy testing of the Elder ops console (cluster ingress via OpenClaw HelmRelease).
 
 ### Added

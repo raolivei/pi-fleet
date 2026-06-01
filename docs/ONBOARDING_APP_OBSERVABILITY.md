@@ -1,5 +1,7 @@
 # Onboarding a new Eldertree app to Prometheus & Grafana
 
+**Routing first:** [ONBOARDING_APP_ROUTING.md](ONBOARDING_APP_ROUTING.md) — Ingress, Pi-hole, hosts, Caddy, `./scripts/verify-service-routing.sh`.
+
 Workspace standard: [`workspace-config/docs/OBSERVABILITY_STANDARDS.md`](../../workspace-config/docs/OBSERVABILITY_STANDARDS.md)
 
 ## Checklist (single PR to `pi-fleet`)

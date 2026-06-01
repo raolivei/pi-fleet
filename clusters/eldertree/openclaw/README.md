@@ -25,6 +25,7 @@ To rebuild manually:
 - **SwimTO Integration**: Query Toronto pool schedules
 - **Kubernetes Access**: Cluster-wide operator RBAC via in-pod `kubectl` (workloads, Flux, ingress, secrets, etc.); storage (PV/PVC/snapshots/StorageClass) and cluster control-plane APIs are read-only — see [rbac.yaml](rbac.yaml)
 - **Elder Agent**: Code browsing, GitHub issues/PRs, FluxCD, project planning
+- **Control Center**: Live cluster topology + health at `https://control.eldertree.local` (Elder SPA; LAN/Tailscale) — see [CONTROL_CENTER.md](../../../docs/CONTROL_CENTER.md)
 - **Web Search**: Brave Search API
 - **Web UI**: `https://openclaw.eldertree.local`
 
