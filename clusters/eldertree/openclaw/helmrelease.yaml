@@ -257,3 +257,13 @@ spec:
           certManager: true
         annotations:
           external-dns.alpha.kubernetes.io/hostname: elder.eldertree.local
+
+      control-center:
+        host: control.eldertree.local
+        service: elder
+        port: 8000
+        tls:
+          secretName: control-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: control.eldertree.local
