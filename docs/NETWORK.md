@@ -104,7 +104,6 @@ Add to `/etc/hosts` on all machines:
 192.168.2.200  prometheus.eldertree.local
 192.168.2.200  vault.eldertree.local
 192.168.2.200  canopy.eldertree.local
-192.168.2.200  visage.eldertree.local
 192.168.2.200  minio.eldertree.local
 192.168.2.200  swimto.eldertree.local
 192.168.2.200  pitanga.eldertree.local

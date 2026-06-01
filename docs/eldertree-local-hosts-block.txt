@@ -8,8 +8,6 @@ TRAEFIK_LB_IP  vault.eldertree.local
 TRAEFIK_LB_IP  grafana.eldertree.local
 TRAEFIK_LB_IP  prometheus.eldertree.local
 TRAEFIK_LB_IP  pihole.eldertree.local
-TRAEFIK_LB_IP  visage.eldertree.local
-TRAEFIK_LB_IP  minio.eldertree.local
 TRAEFIK_LB_IP  swimto.eldertree.local
 TRAEFIK_LB_IP  canopy.eldertree.local
 TRAEFIK_LB_IP  pitanga.eldertree.local

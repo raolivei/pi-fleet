@@ -61,10 +61,10 @@ data:
 
     limits_config:
       reject_old_samples: true
-      reject_old_samples_max_age: 168h
+      reject_old_samples_max_age: 720h
       ingestion_rate_mb: 4
       ingestion_burst_size_mb: 6
-      retention_period: 168h
+      retention_period: 720h
 
     chunk_store_config:
       max_look_back_period: 0s
@@ -79,10 +79,10 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
+  storageClassName: local-path-nvme
   resources:
     requests:
-      storage: 8Gi
+      storage: 48Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -103,6 +103,24 @@ spec:
       labels:
         app.kubernetes.io/name: loki
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: eldertree.xyz/node-tier
+                    operator: In
+                    values:
+                      - stable
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: prometheus
+                    app.kubernetes.io/component: server
+                topologyKey: kubernetes.io/hostname
       securityContext:
         runAsUser: 10001
         runAsGroup: 10001
@@ -121,10 +139,10 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
+              memory: 512Mi
             limits:
               cpu: "1"
-              memory: 1Gi
+              memory: 2Gi
           livenessProbe:
             httpGet:
               path: /ready

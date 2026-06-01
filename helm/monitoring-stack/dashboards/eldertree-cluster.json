@@ -778,24 +778,6 @@
       "options": { "colorMode": "value", "graphMode": "none" }
     },
     {
-      "id": 33,
-      "type": "stat",
-      "title": "Visage",
-      "gridPos": { "h": 3, "w": 3, "x": 9, "y": 35 },
-      "targets": [
-        {
-          "expr": "sum(kube_pod_status_phase{namespace=\"visage\", phase=\"Running\"})",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "fixed", "fixedColor": "purple" }
-        }
-      },
-      "options": { "colorMode": "value", "graphMode": "none" }
-    },
-    {
       "id": 34,
       "type": "stat",
       "title": "NIMA",
