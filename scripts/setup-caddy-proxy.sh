@@ -53,6 +53,7 @@ $MARKER_START
 127.0.0.1  pitanga.eldertree.local
 127.0.0.1  flux.eldertree.local
 127.0.0.1  elder.eldertree.local
+127.0.0.1  control.eldertree.local
 127.0.0.1  pushgateway.eldertree.local
 127.0.0.1  pihole.eldertree.local
 
