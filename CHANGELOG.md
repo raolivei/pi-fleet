@@ -6,6 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.0` (Control Center SPA + `/api/public/cluster/health`); ImageRepository tracks `elder` instead of legacy `grove`. Ingress `control.eldertree.local` → Elder service.
 - **Visage archived (2026-04)** — Detached live monitoring (scrape, dashboards, exporter targets), tunnel/DNS, and hosts/Caddy entries; preserved reference copies under [`docs/archive/visage/`](docs/archive/visage/). See [`workspace-config/docs/PROJECT_DECOMMISSIONING.md`](../workspace-config/docs/PROJECT_DECOMMISSIONING.md).
 - **Repo layout** — Moved `NETWORK.md`, `VAULT.md`, and `SERVICES_REFERENCE.md` into `docs/`; blog drafts and one-off session notes into `docs/archive/`; removed duplicate `blog/` tree at repo root. Root now holds README, CHANGELOG, CLAUDE, CONTRIBUTING, and `VERSION` only.
 
@@ -21,6 +22,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Ollie HelmRelease** — remove invalid top-level `spec.imagePullSecrets` (not in `helm.toolkit.fluxcd.io/v2` schema); unblocks `flux-system` kustomization dry-run.
 - **Ollie HelmRelease API** — bump `clusters/eldertree/ollie/helmrelease.yaml` from deprecated `helm.toolkit.fluxcd.io/v2beta1` to `v2` so `flux-system` kustomization dry-run succeeds (cluster CRD no longer serves `v2beta1`).
 - **ExternalSecret `pi-fleet-terraform-vault-credentials`** — drop optional `pi-user` Vault key so sync succeeds when that secret is absent.
 

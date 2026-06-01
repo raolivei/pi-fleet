@@ -47,5 +47,3 @@ spec:
         repository: ghcr.io/raolivei/ollie-frontend
         tag: v0.2.0
         pullPolicy: Always
-  imagePullSecrets:
-    - name: ghcr-secret

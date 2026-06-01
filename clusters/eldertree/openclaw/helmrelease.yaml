@@ -137,8 +137,8 @@ spec:
 
       elder:
         image:
-          repository: ghcr.io/raolivei/grove
-          tag: v0.2.0 # {"$imagepolicy": "openclaw:elder:tag"}
+          repository: ghcr.io/raolivei/elder
+          tag: v0.3.0 # {"$imagepolicy": "openclaw:elder:tag"}
           pullPolicy: Always
         port: 8006
         servicePort: 8000
