@@ -1,6 +1,6 @@
 # Observability retention and storage (Eldertree)
 
-Plan and runbook for **90-day metrics** (Prometheus) and **30-day logs** (Loki) on NVMe-backed `local-path-nvme` PVCs. Extend Loki to 90d after measuring ingest (see [GitHub issue](https://github.com/raolivei/pi-fleet/issues)).
+Plan and runbook for **90-day metrics** (Prometheus) and **30-day logs** (Loki) on NVMe-backed `local-path-nvme` PVCs. Extend Loki to 90d after measuring ingest — track progress in [pi-fleet#199](https://github.com/raolivei/pi-fleet/issues/199).
 
 ## Targets
 
