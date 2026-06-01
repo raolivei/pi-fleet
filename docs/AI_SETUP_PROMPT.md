@@ -30,8 +30,8 @@ pi-fleet/
 ├── terraform/          # K3s installation
 ├── clusters/eldertree/ # Cluster manifests
 ├── helm/              # Custom Helm charts
-├── NETWORK.md         # Network configuration
-├── VAULT.md           # Vault secrets management
+├── docs/NETWORK.md    # Network configuration
+├── docs/VAULT.md      # Vault secrets management
 ├── STATUS.md          # Current state
 └── CHANGELOG.md       # Changes tracking
 ```
@@ -249,7 +249,7 @@ spec:
 3. Unseal Vault using 3 keys: `./scripts/operations/unseal-vault.sh`
 4. After each restart, unseal Vault again
 
-See [VAULT.md](../VAULT.md) and [VAULT_MIGRATION.md](VAULT_MIGRATION.md) for details.
+See [VAULT.md](VAULT.md) and [VAULT_MIGRATION.md](VAULT_MIGRATION.md) for details.
 
 ### 8. Deploy External Secrets Operator
 

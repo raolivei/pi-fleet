@@ -380,6 +380,6 @@ Tailscale is enabled when `tailscaled` is not in `disabled_services` in `ansible
 
 ## Related Documentation
 
-- [NETWORK.md](../NETWORK.md) - Network configuration overview
-- [SERVICES_REFERENCE.md](../SERVICES_REFERENCE.md) - Service access guide
+- [NETWORK.md](NETWORK.md) - Network configuration overview
+- [SERVICES_REFERENCE.md](SERVICES_REFERENCE.md) - Service access guide
 - [Ansible Playbook](../ansible/playbooks/install-tailscale.yml) - Installation automation

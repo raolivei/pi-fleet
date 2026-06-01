@@ -2044,8 +2044,8 @@ This is a production-grade setup on consumer hardware. The cluster went from "ho
 ### Key Documentation
 
 - [pi-fleet README](README.md)
-- [Network Configuration](NETWORK.md)
-- [Vault Guide](VAULT.md)
+- [Network Configuration](../../NETWORK.md)
+- [Vault Guide](../../VAULT.md)
 - [Deployment Summary](DEPLOYMENT_SUMMARY_2025-11-17.md)
 - [Vault Deployment Success](VAULT_DEPLOYMENT_SUCCESS.md)
 

@@ -10,6 +10,8 @@ K3s cluster on Raspberry Pi, managed with Ansible and Terraform.
 
 > **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for git workflow and branching strategy.
 
+**Key docs** (repo root stays minimal): [docs/NETWORK.md](docs/NETWORK.md) · [docs/VAULT.md](docs/VAULT.md) · [docs/SERVICES_REFERENCE.md](docs/SERVICES_REFERENCE.md) · [docs/ELDERTREE.md](docs/ELDERTREE.md) · published runbook [docs.eldertree.xyz](https://docs.eldertree.xyz)
+
 ## Hardware
 
 - Raspberry Pi 5 (8GB, ARM64)
@@ -144,7 +146,7 @@ See [helm/README.md](helm/README.md) for details.
 - Canopy: https://canopy.eldertree.local
 - Pi-hole: https://pihole.eldertree.local
 
-See [NETWORK.md](NETWORK.md) for DNS setup.
+See [docs/NETWORK.md](docs/NETWORK.md) for DNS setup.
 
 ## Ingress and SSL Certificates
 
@@ -173,7 +175,7 @@ See [docs/INGRESS.md](docs/INGRESS.md) for complete documentation on creating in
 
 ## Secrets and Password Management
 
-- Secrets are stored in Vault. See [VAULT.md](VAULT.md).
+- Secrets are stored in Vault. See [docs/VAULT.md](docs/VAULT.md).
 - To manage passwords for scripts and Ansible, see [PASSWORD_MANAGEMENT.md](docs/PASSWORD_MANAGEMENT.md).
 
 ```bash

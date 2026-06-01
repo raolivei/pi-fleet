@@ -84,7 +84,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN:-$(./scripts/get-vault-secret.sh secret/canopy/ghcr
 - **Key**: `secret-key` or `admin-token`
 - **Usage**: Application secret keys
 
-See [VAULT.md](../VAULT.md) for complete list of secret paths.
+See [VAULT.md](VAULT.md) for complete list of secret paths.
 
 ## Setting Secrets in Vault
 
@@ -238,6 +238,6 @@ Make sure you're using the root token or have proper Vault policies configured.
 
 ## References
 
-- [Vault Documentation](../VAULT.md)
+- [Vault Documentation](VAULT.md)
 - [External Secrets Operator](https://external-secrets.io/)
 - [Secret Audit Script](../scripts/audit-secrets.sh)

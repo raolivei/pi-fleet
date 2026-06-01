@@ -331,7 +331,7 @@ To avoid needing recovery:
 
 ## Related Documentation
 
-- [VAULT.md](../VAULT.md) - Complete Vault documentation
-- [VAULT_DEPLOYMENT_SUCCESS.md](../VAULT_DEPLOYMENT_SUCCESS.md) - Deployment details
+- [VAULT.md](VAULT.md) - Complete Vault documentation
+- [VAULT_DEPLOYMENT_SUCCESS.md](archive/sessions/VAULT_DEPLOYMENT_SUCCESS.md) - Deployment details (archive)
 - [VAULT_MIGRATION.md](VAULT_MIGRATION.md) - Migration guide
 

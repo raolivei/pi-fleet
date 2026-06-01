@@ -152,7 +152,7 @@ All changes have been committed and pushed to `main`:
 
 ## 📚 Documentation
 
-- **Vault Guide**: [VAULT.md](VAULT.md)
+- **Vault Guide**: [VAULT.md](../../VAULT.md)
 - **Infrastructure**: [clusters/eldertree/README.md](clusters/eldertree/README.md)
 - **Observability**: [clusters/eldertree/observability/README.md](clusters/eldertree/observability/README.md)
 

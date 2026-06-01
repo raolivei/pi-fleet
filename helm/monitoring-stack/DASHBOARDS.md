@@ -1,6 +1,6 @@
 # Grafana Dashboards
 
-Grafana: `https://grafana.eldertree.local` (or NodePort from `SERVICES_REFERENCE.md` if you use it).
+Grafana: `https://grafana.eldertree.local` (or NodePort from [docs/SERVICES_REFERENCE.md](../../docs/SERVICES_REFERENCE.md) if you use it).
 
 ## Blackbox exporter: what it solves (synthetic HTTP)
 

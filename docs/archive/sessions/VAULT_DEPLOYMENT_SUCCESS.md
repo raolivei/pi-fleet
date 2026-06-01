@@ -121,7 +121,7 @@ kubectl exec -n vault vault-0 -- vault kv put secret/canopy/postgres password=yo
 kubectl exec -n vault vault-0 -- vault kv put secret/canopy/app secret-key=your-secret-key
 ```
 
-See [VAULT.md](VAULT.md) for complete list of secret paths.
+See [VAULT.md](../../VAULT.md) for complete list of secret paths.
 
 ### 3. Setup Vault Policies (Already Completed)
 
@@ -196,7 +196,7 @@ kubectl port-forward -n vault svc/vault 8200:8200
 
 ## 📚 Documentation
 
-- [VAULT.md](VAULT.md) - Complete Vault documentation with policy-based access control
+- [VAULT.md](../../VAULT.md) - Complete Vault documentation with policy-based access control
 - [docs/VAULT_MIGRATION.md](docs/VAULT_MIGRATION.md) - Migration guide
 - [scripts/operations/setup-vault-policies.sh](scripts/operations/setup-vault-policies.sh) - Policy setup script
 

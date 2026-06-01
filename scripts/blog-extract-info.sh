@@ -24,7 +24,7 @@ extract_cluster() {
     echo "## Cluster Information"
     echo ""
     echo "### Control Plane"
-    grep -r "eldertree\|192.168.2" "$PROJECT_ROOT/pi-fleet/README.md" "$PROJECT_ROOT/pi-fleet/NETWORK.md" 2>/dev/null | head -5
+    grep -r "eldertree\|192.168.2" "$PROJECT_ROOT/pi-fleet/README.md" "$PROJECT_ROOT/pi-fleet/docs/NETWORK.md" 2>/dev/null | head -5
     echo ""
     echo "### Kubernetes Version"
     grep -r "K3s\|k3s\|v1\." "$PROJECT_ROOT/pi-fleet/README.md" "$PROJECT_ROOT/pi-fleet/CHANGELOG.md" 2>/dev/null | head -5
@@ -36,7 +36,7 @@ extract_services() {
     echo "## Deployed Services"
     echo ""
     echo "### Services from NETWORK.md:"
-    grep -E "\.eldertree\.local" "$PROJECT_ROOT/pi-fleet/NETWORK.md" 2>/dev/null | head -10
+    grep -E "\.eldertree\.local" "$PROJECT_ROOT/pi-fleet/docs/NETWORK.md" 2>/dev/null | head -10
     echo ""
     echo "### Services from README.md:"
     grep -E "https://.*\.eldertree\.local" "$PROJECT_ROOT/pi-fleet/README.md" 2>/dev/null | head -10
@@ -62,12 +62,12 @@ extract_milestones() {
 extract_vault() {
     echo "## Vault Information"
     echo ""
-    if [ -f "$PROJECT_ROOT/pi-fleet/VAULT.md" ]; then
+    if [ -f "$PROJECT_ROOT/pi-fleet/docs/VAULT.md" ]; then
         echo "### Vault Configuration:"
-        grep -E "Version:|Mode:|Storage:" "$PROJECT_ROOT/pi-fleet/VAULT.md" 2>/dev/null | head -5
+        grep -E "Version:|Mode:|Storage:" "$PROJECT_ROOT/pi-fleet/docs/VAULT.md" 2>/dev/null | head -5
         echo ""
         echo "### Policies:"
-        grep -E "policy|Policy" "$PROJECT_ROOT/pi-fleet/VAULT.md" 2>/dev/null | head -10
+        grep -E "policy|Policy" "$PROJECT_ROOT/pi-fleet/docs/VAULT.md" 2>/dev/null | head -10
         echo ""
     fi
     
@@ -92,12 +92,12 @@ extract_troubleshooting() {
 extract_network() {
     echo "## Network Configuration"
     echo ""
-    if [ -f "$PROJECT_ROOT/pi-fleet/NETWORK.md" ]; then
+    if [ -f "$PROJECT_ROOT/pi-fleet/docs/NETWORK.md" ]; then
         echo "### DNS Setup:"
-        grep -A 5 "DNS\|Pi-hole" "$PROJECT_ROOT/pi-fleet/NETWORK.md" 2>/dev/null | head -10
+        grep -A 5 "DNS\|Pi-hole" "$PROJECT_ROOT/pi-fleet/docs/NETWORK.md" 2>/dev/null | head -10
         echo ""
         echo "### Service Domains:"
-        grep -E "\.eldertree\.local" "$PROJECT_ROOT/pi-fleet/NETWORK.md" 2>/dev/null | head -10
+        grep -E "\.eldertree\.local" "$PROJECT_ROOT/pi-fleet/docs/NETWORK.md" 2>/dev/null | head -10
         echo ""
     fi
 }
