@@ -21,6 +21,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Ollie HelmRelease API** — bump `clusters/eldertree/ollie/helmrelease.yaml` from deprecated `helm.toolkit.fluxcd.io/v2beta1` to `v2` so `flux-system` kustomization dry-run succeeds (cluster CRD no longer serves `v2beta1`).
 - **ExternalSecret `pi-fleet-terraform-vault-credentials`** — drop optional `pi-user` Vault key so sync succeeds when that secret is absent.
 
 ### Changed
