@@ -1,6 +1,6 @@
 ---
 # Redis Exporter for all Redis instances
-# Exports metrics from swimto, canopy, and visage Redis instances
+# Exports metrics from swimto and canopy Redis instances
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -87,4 +87,3 @@ data:
     targets:
       - swimto-redis.swimto.svc.cluster.local:6379
       - canopy-redis.canopy.svc.cluster.local:6379
-      - visage-redis.visage.svc.cluster.local:6379

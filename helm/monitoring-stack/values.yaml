@@ -6,7 +6,7 @@ global:
   clusterIssuer: ca-cluster-issuer
 
 # Prometheus configuration
-# - Static scrape: Traefik, blackbox, postgres/redis (values `scrapeConfigs`); Pi-hole, Visage, Vault (`scrapeConfigFiles` + volume mounts; see `clusters/eldertree/observability/*-scrape-config.yaml`).
+# - Static scrape: Traefik, blackbox, postgres/redis (values `scrapeConfigs`); Pi-hole, Vault (`scrapeConfigFiles` + volume mounts; see `clusters/eldertree/observability/*-scrape-config.yaml`).
 # - `prometheus.io/*` on Services for in-cluster app /metrics.
 prometheus:
   enabled: true
@@ -95,11 +95,6 @@ prometheus:
         mountPath: /etc/scrape-configs/pihole-scrape.yaml
         readOnly: true
     extraConfigmapMounts:
-      - name: visage-scrape-file
-        configMap: visage-scrape-config
-        subPath: visage-scrape.yaml
-        mountPath: /etc/scrape-configs/visage-scrape.yaml
-        readOnly: true
       - name: vault-scrape-file
         configMap: vault-scrape-config
         subPath: vault-scrape.yaml
@@ -107,7 +102,6 @@ prometheus:
         readOnly: true
   scrapeConfigFiles:
     - /etc/scrape-configs/pihole-scrape.yaml
-    - /etc/scrape-configs/visage-scrape.yaml
     - /etc/scrape-configs/vault-scrape.yaml
   # Scrape config map: merges with chart defaults (prometheus-community >=28). Static jobs:
   # postgres, redis, blackbox (×2), traefik. Node/cadvisor: Lens "node" relabel + cAdvisor labeldrop.
@@ -150,7 +144,6 @@ prometheus:
         - targets:
             - redis://swimto-redis.swimto.svc.cluster.local:6379
             - redis://canopy-redis.canopy.svc.cluster.local:6379
-            - redis://visage-redis.visage.svc.cluster.local:6379
       relabel_configs:
         - source_labels: [__address__]
           target_label: __param_target
@@ -390,8 +383,6 @@ grafana:
     # —— Applications (one subfolder per app; multiple JSON can share the same path) ——
     swimto-dashboard: "Applications/SwimTO"
     pitanga-dashboard: "Applications/Pitanga"
-    visage-operations: "Applications/Visage"
-    visage-training: "Applications/Visage"
     ollie-dashboard: "Applications/Ollie"
     # —— Platform (cluster, capacity, network, security) ——
     eldertree-ops-home: "Platform/Overview"

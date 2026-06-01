@@ -53,7 +53,7 @@ spec:
                 - prometheus.eldertree.local
           annotations:
             cert-manager.io/cluster-issuer: ca-cluster-issuer
-        # Pi-hole, Visage, Vault scrapes: see helm/monitoring-stack values
+        # Pi-hole, Vault scrapes: see helm/monitoring-stack values
         # (scrapeConfigFiles + server extraSecretMounts / extraConfigmapMounts). Traefik + blackbox: same chart values.
     grafana:
       enabled: true
