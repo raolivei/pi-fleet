@@ -101,5 +101,5 @@ The cluster successfully:
 ## Related Documentation
 
 - [HA Setup Guide](HA_SETUP.md)
-- [Network Architecture](../NETWORK.md)
+- [Network Architecture](NETWORK.md)
 - [Troubleshooting Guide](NODE_TROUBLESHOOTING.md)

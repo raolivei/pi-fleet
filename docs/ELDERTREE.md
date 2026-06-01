@@ -90,7 +90,7 @@ Full service list: [clusters/eldertree/openclaw/docs/ELDERTREE_KNOWLEDGE.md](../
 
 ## More reading
 
-- [NETWORK.md](../NETWORK.md) — IPs and VIPs
+- [NETWORK.md](NETWORK.md) — IPs and VIPs
 - [GIGABIT_NETWORK_SETUP.md](GIGABIT_NETWORK_SETUP.md) — eth0 isolated switch
 - [helm/monitoring-stack/DASHBOARDS.md](../helm/monitoring-stack/DASHBOARDS.md) — Grafana UIDs
 - [runbook: chassis assembly](https://docs.eldertree.xyz/runbook/hardware/chassis)

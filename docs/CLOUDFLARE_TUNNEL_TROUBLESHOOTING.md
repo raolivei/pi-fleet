@@ -315,4 +315,4 @@ curl -s https://swimto.eldertree.xyz | head -20
 
 - [Cloudflare Tunnel Documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)
 - [External Secrets Operator](https://external-secrets.io/)
-- [Vault Documentation](../VAULT.md)
+- [Vault Documentation](VAULT.md)

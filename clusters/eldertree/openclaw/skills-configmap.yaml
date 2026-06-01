@@ -177,13 +177,13 @@ data:
 
     ### 3. Infrastructure Code (pi-fleet)
     - **Repo**: pi-fleet - cluster manifests, Ansible, Terraform, scripts
-    - **Use elder_search_code** and **elder_read_file** with repo `pi-fleet` for SERVICES_REFERENCE.md, docs/, scripts/
+    - **Use elder_search_code** and **elder_read_file** with repo `pi-fleet` for docs/SERVICES_REFERENCE.md, docs/, scripts/
 
     ## When to Use
 
     - **Troubleshooting**: Search eldertree-docs runbook for error messages or symptoms first
     - **Architecture questions**: Search pi-fleet-blog chapters for design decisions and context
-    - **Service URLs, IPs, credentials**: See pi-fleet/SERVICES_REFERENCE.md
+    - **Service URLs, IPs, credentials**: See pi-fleet/docs/SERVICES_REFERENCE.md
     - **Runbook workflow**: Follow eldertree-docs/runbook/workflow.md for incident resolution
 
     ## Example

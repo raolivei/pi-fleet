@@ -64,13 +64,13 @@
 - **Fresh OS installation?** → [docs/FRESH_INSTALL_MIGRATION.md](docs/FRESH_INSTALL_MIGRATION.md)
 
 ### Network & DNS
-- **Network architecture?** → [NETWORK.md](NETWORK.md)
+- **Network architecture?** → [docs/NETWORK.md](docs/NETWORK.md)
 - **DNS troubleshooting?** → [docs/DNS_TROUBLESHOOTING.md](docs/DNS_TROUBLESHOOTING.md)
 - **Cloudflare setup?** → [docs/CLOUDFLARE_DOMAINS.md](docs/CLOUDFLARE_DOMAINS.md)
 - **Tailscale VPN?** → [docs/TAILSCALE.md](docs/TAILSCALE.md)
 
 ### Secrets & Security
-- **Vault overview?** → [VAULT.md](VAULT.md)
+- **Vault overview?** → [docs/VAULT.md](docs/VAULT.md)
 - **Vault quick reference?** → [docs/VAULT_QUICK_REFERENCE.md](docs/VAULT_QUICK_REFERENCE.md)
 - **Vault recovery?** → [docs/VAULT_RECOVERY.md](docs/VAULT_RECOVERY.md)
 - **Password management?** → [docs/PASSWORD_MANAGEMENT.md](docs/PASSWORD_MANAGEMENT.md)
@@ -107,10 +107,8 @@ pi-fleet/
 │   └── eldertree/        # Control plane cluster configs
 ├── helm/                 # Custom Helm charts
 ├── scripts/              # Utility scripts
-├── docs/                 # Documentation (90+ files)
+├── docs/                 # Documentation (NETWORK, VAULT, SERVICES_REFERENCE, guides)
 ├── CLAUDE.md             # This file - AI assistant entry point
-├── NETWORK.md            # Network and DNS overview
-├── VAULT.md              # Secrets management overview
 └── CONTRIBUTING.md       # Git workflow details
 ```
 
@@ -244,7 +242,7 @@ If runbook doesn't have matching issue:
 
 ## Secrets Management (Vault)
 
-- Secrets stored in HashiCorp Vault (see [VAULT.md](VAULT.md))
+- Secrets stored in HashiCorp Vault (see [docs/VAULT.md](docs/VAULT.md))
 - Use `scripts/sync-vault-to-k8s.sh` to sync secrets to Kubernetes
 - Never commit secrets to git
 - External Secrets Operator automatically syncs from Vault
