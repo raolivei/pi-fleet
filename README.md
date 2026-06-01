@@ -117,6 +117,7 @@ scripts/           # Helper scripts (setup-eldertree.sh, etc.)
 ## Documentation
 
 - **Synthetic / Blackbox HTTP monitoring (why and how on Eldertree):** [docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md](docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md)
+- **Retention & NVMe sizing (90d metrics, 30d logs):** [docs/OBSERVABILITY_RETENTION.md](docs/OBSERVABILITY_RETENTION.md)
 - **Grafana dashboard inventory and PromQL source of truth:** [helm/monitoring-stack/DASHBOARDS.md](helm/monitoring-stack/DASHBOARDS.md)
 
 ## Helm Charts

@@ -24,6 +24,16 @@ data:
       filename: /run/promtail/positions.yaml
     scrape_configs:
       - job_name: kubernetes-logs
+        pipeline_stages:
+          - cri: {}
+          - drop:
+              source: log
+              expression: ".*(/health|/ready|/livez|/metrics).*"
+              drop_counter_reason: probe_or_metrics
+          - drop:
+              source: log
+              expression: ".*kube-probe.*"
+              drop_counter_reason: kube_probe
         static_configs:
           - targets: [localhost]
             labels:
