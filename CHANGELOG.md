@@ -11,7 +11,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
-- **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.5` (incident feed, topology layout, health fixes).
+- **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.6` (kube-vip DaemonSet health, topology layout variants).
 
 ### Fixed
 
