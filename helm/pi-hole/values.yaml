@@ -12,7 +12,8 @@ image:
     tag: latest
     pullPolicy: IfNotPresent
   exporter:
-    repository: ekofr/pihole-exporter
+    # Pi-hole v6 session auth; ekofr/pihole-exporter returns 401 on v6 API
+    repository: ghcr.io/mosher-labs/pihole6-exporter
     tag: latest
     pullPolicy: IfNotPresent
 

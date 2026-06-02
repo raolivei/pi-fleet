@@ -4,7 +4,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Added
+
+- **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).
+
+### Changed
+
+- **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.5` (incident feed, topology layout, health fixes).
+
 ### Fixed
+
+- **Pi-hole (Helm 0.2.2)** — Remove zero-byte `gravity.db` init stub; postStart waits for web UI then runs `pihole -g` when db missing/empty. Metrics sidecar `ghcr.io/mosher-labs/pihole6-exporter` (Pi-hole v6 session auth).
 
 - **Caddy / CoreDNS LAN routing** — `scripts/Caddyfile` proxies to Traefik kube-vip `192.168.2.200:443` (was `192.168.2.101:32474`, which hit Pi-hole on 443). CoreDNS custom hosts add `control.eldertree.local` and `elder.eldertree.local`.
 - **Traefik VIP / Pi-hole 403** — Stop exposing HTTPS (443) on the Pi-hole LoadBalancer Service (`exposeHttpsOnLoadBalancer: false`) so K3s `svclb-traefik` can bind hostPort 443 on `192.168.2.200`; fixes all `*.eldertree.local` URLs (including Control Center) returning Pi-hole HTML.
