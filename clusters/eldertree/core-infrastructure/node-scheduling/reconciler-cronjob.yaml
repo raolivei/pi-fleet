@@ -31,16 +31,23 @@ spec:
             kubernetes.io/arch: arm64
           containers:
             - name: kubectl
-              image: rancher/kubectl:v1.33.5
+              # rancher/kubectl is distroless (no /bin/sh); install kubectl in a shell image.
+              image: debian:bookworm-slim
               imagePullPolicy: IfNotPresent
               envFrom:
                 - configMapRef:
                     name: node-scheduling-config
               command:
-                - /bin/sh
+                - /bin/bash
                 - -ec
                 - |
                   set -e
+                  apt-get update -qq
+                  apt-get install -y -qq curl ca-certificates
+                  curl -sLO "https://dl.k8s.io/release/v1.35.0/bin/linux/arm64/kubectl"
+                  chmod +x kubectl
+                  export PATH="$PWD:$PATH"
+
                   TAINT="${TAINT_KEY}=${TAINT_VALUE}:${TAINT_EFFECT}"
 
                   kubectl label node "${UNSTABLE_NODE}" "${LABEL_KEY}=unstable" --overwrite
@@ -55,8 +62,8 @@ spec:
                   echo "node scheduling tiers reconciled"
               resources:
                 requests:
-                  cpu: 10m
-                  memory: 32Mi
+                  cpu: 50m
+                  memory: 128Mi
                 limits:
-                  cpu: 100m
-                  memory: 64Mi
+                  cpu: 500m
+                  memory: 256Mi

@@ -4,6 +4,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Fixed
+
+- **Caddy / CoreDNS LAN routing** — `scripts/Caddyfile` proxies to Traefik kube-vip `192.168.2.200:443` (was `192.168.2.101:32474`, which hit Pi-hole on 443). CoreDNS custom hosts add `control.eldertree.local` and `elder.eldertree.local`.
+- **Traefik VIP / Pi-hole 403** — Stop exposing HTTPS (443) on the Pi-hole LoadBalancer Service (`exposeHttpsOnLoadBalancer: false`) so K3s `svclb-traefik` can bind hostPort 443 on `192.168.2.200`; fixes all `*.eldertree.local` URLs (including Control Center) returning Pi-hole HTML.
+- **Control Center routing** — Add `docs/eldertree-local-services.yaml`, `check-local-routing-registry.sh`, `verify-service-routing.sh`, and `docs/ONBOARDING_APP_ROUTING.md` / `CONTROL_CENTER.md`; sync hosts registry for `control.eldertree.local`.
+
+### Fixed
+
+- **Ollie GitOps** — Vendor `helm/ollie` chart into pi-fleet (Flux `HelmRelease` path `./helm/ollie`); ExternalSecrets use `ClusterSecretStore` `vault` (not `vault-backend`).
+- **Node scheduling tier reconciler** — Replace distroless `rancher/kubectl` (no `/bin/sh`) with `debian:bookworm-slim` + downloaded `kubectl` for the CronJob shell script.
+
 ### Changed
 
 - **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.0` (Control Center SPA + `/api/public/cluster/health`); ImageRepository tracks `elder` instead of legacy `grove`. Ingress `control.eldertree.local` → Elder service.
