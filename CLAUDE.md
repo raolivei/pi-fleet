@@ -19,6 +19,10 @@
 - **Commit format**: `<type>: <description>` (e.g., `feat: add monitoring`, `fix: dns-config`)
 - **Workflow**: `git checkout main → git pull → git checkout -b <type>/<name>`
 
+### New LAN service (Ollie / agents)
+
+Any new `*.eldertree.local` app **must** include in the same PR: registry entry (`docs/eldertree-local-services.yaml`), Ingress + external-dns, hosts block + `add-services-to-hosts.sh` + `Caddyfile`. Run `./scripts/check-local-routing-registry.sh` before merge and `./scripts/verify-service-routing.sh --host <fqdn>` after deploy. See [ONBOARDING_APP_ROUTING.md](docs/ONBOARDING_APP_ROUTING.md) and `ollie/memory/feedback_eldertree_service_routing_e2e.md`.
+
 ### Versioning & Changes
 - **Git tag versions must match Docker image tags** - Ensure consistency across releases
 - **ANY Docker image changes must update CHANGELOG.md** - Dockerfiles, base images, tags in manifests
@@ -45,10 +49,17 @@
 
 ## Eldertree InfraOPS & observability
 
-- **Agent handoff:** [`.claude/agents/eldertree-infraops.md`](.claude/agents/eldertree-infraops.md) — use **Prometheus/Grafana/Loki first** on every incident.
+- **Agent handoff:** [`.claude/agents/eldertree-infraops.md`](.claude/agents/eldertree-infraops.md) — use **Prometheus/Grafana/Loki first** on every incident; **Control Center** for one-glance topology when on LAN/Tailscale.
+- **Control Center:** [`docs/CONTROL_CENTER.md`](docs/CONTROL_CENTER.md) — `https://control.eldertree.local` (Elder SPA + `/api/public/cluster/health`).
 - **Workspace o11y standard:** [`../workspace-config/docs/OBSERVABILITY_STANDARDS.md`](../workspace-config/docs/OBSERVABILITY_STANDARDS.md)
+- **Retention / NVMe:** [`docs/OBSERVABILITY_RETENTION.md`](docs/OBSERVABILITY_RETENTION.md)
 - **New app checklist:** [`docs/ONBOARDING_APP_OBSERVABILITY.md`](docs/ONBOARDING_APP_OBSERVABILITY.md)
 - **Dashboard map:** [`helm/monitoring-stack/DASHBOARDS.md`](helm/monitoring-stack/DASHBOARDS.md)
+
+### Flux HelmRelease
+
+- Use **`apiVersion: helm.toolkit.fluxcd.io/v2`** only — `v2beta1` blocks `flux-system` reconciliation.
+- Grep: `rg 'v2beta1' clusters/eldertree/` before merge.
 
 ## When to Read What
 
@@ -87,6 +98,7 @@
 
 ### Ingress & Access
 - **Ingress setup?** → [docs/INGRESS.md](docs/INGRESS.md)
+- **New app LAN routing?** → [docs/ONBOARDING_APP_ROUTING.md](docs/ONBOARDING_APP_ROUTING.md)
 - **Lens connection?** → [docs/LENS_CONNECTION_GUIDE.md](docs/LENS_CONNECTION_GUIDE.md)
 
 ### Storage & Backup

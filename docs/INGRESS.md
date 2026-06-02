@@ -2,6 +2,8 @@
 
 Complete guide on configuring and using Traefik Ingress Controller, Cert-Manager, and ExternalDNS in the k3s cluster.
 
+**New app?** Start with **[ONBOARDING_APP_ROUTING.md](ONBOARDING_APP_ROUTING.md)** — end-to-end checklist and `./scripts/verify-service-routing.sh` so Mac/LAN access works before merge.
+
 ## Overview
 
 The cluster uses three main components to manage HTTP/HTTPS traffic and DNS:

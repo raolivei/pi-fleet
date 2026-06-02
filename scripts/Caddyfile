@@ -5,7 +5,7 @@
 # Use 192.168.2.200:443 — NOT a node LAN IP (node-1 often hits Pi-hole on 443).
 # Allows accessing services without specifying port numbers
 #
-# Only includes DEPLOYED services (as of 2026-01-16)
+# Only includes DEPLOYED services — keep in sync with docs/eldertree-local-services.yaml
 
 {
     # Use local self-signed certs
@@ -108,6 +108,105 @@ control.eldertree.local {
             tls_insecure_skip_verify
         }
         header_up Host control.eldertree.local
+    }
+}
+
+# Eldertree Control Center (Elder SPA + /api/public/cluster/*)
+control.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host control.eldertree.local
+    }
+}
+
+# OpenClaw (AI assistant Web UI)
+openclaw.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host openclaw.eldertree.local
+    }
+}
+
+# Alertmanager
+alertmanager.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host alertmanager.eldertree.local
+    }
+}
+
+# Eldertree docs (runbook ingress)
+docs.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host docs.eldertree.local
+    }
+}
+
+# Dex OIDC
+dex.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host dex.eldertree.local
+    }
+}
+
+# Eldertree docs audio ingress
+audio.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host audio.eldertree.local
+    }
+}
+
+# Canopy (personal finance)
+canopy.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host canopy.eldertree.local
+    }
+}
+
+# Journey (career pathfinder)
+journey.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host journey.eldertree.local
+    }
+}
+
+# Nima (ML learning)
+nima.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host nima.eldertree.local
     }
 }
 

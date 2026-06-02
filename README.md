@@ -118,6 +118,8 @@ scripts/           # Helper scripts (setup-eldertree.sh, etc.)
 
 - **Synthetic / Blackbox HTTP monitoring (why and how on Eldertree):** [docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md](docs/OBSERVABILITY_BLACKBOX_AND_SYNTHETIC.md)
 - **Retention & NVMe sizing (90d metrics, 30d logs):** [docs/OBSERVABILITY_RETENTION.md](docs/OBSERVABILITY_RETENTION.md)
+- **Control Center (live topology + health):** [docs/CONTROL_CENTER.md](docs/CONTROL_CENTER.md)
+- **New app routing (LAN end-to-end):** [docs/ONBOARDING_APP_ROUTING.md](docs/ONBOARDING_APP_ROUTING.md)
 - **Grafana dashboard inventory and PromQL source of truth:** [helm/monitoring-stack/DASHBOARDS.md](helm/monitoring-stack/DASHBOARDS.md)
 
 ## Helm Charts

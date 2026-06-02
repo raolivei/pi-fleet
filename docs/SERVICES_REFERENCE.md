@@ -204,12 +204,15 @@ DNS for `canopy.eldertree.xyz` is a **CNAME to the eldertree tunnel** (`cloudfla
 | Property         | Value                                                                 |
 | ---------------- | --------------------------------------------------------------------- |
 | **Local URL**    | `https://elder.eldertree.local`                                       |
+| **Control Center** | `https://control.eldertree.local` (live topology + health SPA)      |
 | **Swagger Docs** | `https://elder.eldertree.local/docs`                                  |
 | **Namespace**    | `openclaw`                                                            |
 | **API Port**     | 8006                                                                  |
-| **Role**         | Cluster ops, code, GitHub, LLM orchestrator, META (upgrade/version)   |
+| **Role**         | Cluster ops, code, GitHub, LLM orchestrator, META (upgrade/version), Control Center host |
+| **Public health API** | `GET /api/public/cluster/health` (no key; LAN/Tailscale)         |
 | **Credentials**  | Stored in Vault: `secret/elder/*`                                     |
 | **GitHub App**   | Install at org level (raolivei) — see [elder/README.md](../elder/README.md#github-app-setup) |
+| **Docs**         | [CONTROL_CENTER.md](CONTROL_CENTER.md) · [elder PUBLIC_CLUSTER_API](https://github.com/raolivei/elder/blob/main/docs/PUBLIC_CLUSTER_API.md) |
 
 ---
 

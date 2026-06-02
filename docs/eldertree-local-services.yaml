@@ -1,0 +1,65 @@
+# Eldertree local routing registry
+#
+# Single source of truth for *.eldertree.local hostnames that must resolve on
+# Rafael's Mac (Pi-hole DNS and/or /etc/hosts + optional Caddy).
+#
+# When onboarding a new LAN-facing service:
+#   1. Add the host here first
+#   2. Wire Ingress in Git (HelmRelease / Ingress manifest)
+#   3. Run: ./scripts/check-local-routing-registry.sh
+#   4. After deploy: ./scripts/verify-service-routing.sh --host <host>
+#
+# See docs/ONBOARDING_APP_ROUTING.md
+
+version: 1
+
+# Pi-hole is primary DNS on LAN; Mac may also use /etc/hosts or Caddy (see TAILSCALE.md)
+pihole_ip: "192.168.2.201"
+
+services:
+  - host: vault.eldertree.local
+    description: Vault UI
+  - host: grafana.eldertree.local
+    description: Grafana
+    blackbox_ca: true
+  - host: prometheus.eldertree.local
+    description: Prometheus UI
+    blackbox_ca: true
+  - host: alertmanager.eldertree.local
+    description: Alertmanager
+    blackbox_ca: true
+  - host: pihole.eldertree.local
+    description: Pi-hole admin
+  - host: flux.eldertree.local
+    description: Flux UI
+  - host: pushgateway.eldertree.local
+    description: Prometheus pushgateway
+  - host: docs.eldertree.local
+    description: Eldertree docs (cluster ingress)
+  - host: audio.eldertree.local
+    description: Eldertree docs audio ingress
+  - host: dex.eldertree.local
+    description: Dex OIDC
+  - host: openclaw.eldertree.local
+    description: OpenClaw Web UI
+  - host: elder.eldertree.local
+    description: Elder API / Swagger
+  - host: control.eldertree.local
+    description: Eldertree Control Center
+    blackbox_ca: true
+  - host: canopy.eldertree.local
+    description: Canopy finance app
+  - host: swimto.eldertree.local
+    description: SwimTO web
+  - host: pitanga.eldertree.local
+    description: Pitanga website
+  - host: journey.eldertree.local
+    description: Journey app
+  - host: nima.eldertree.local
+    description: Nima app
+
+# Files that must list every host above (enforced by check-local-routing-registry.sh)
+sync_targets:
+  - docs/eldertree-local-hosts-block.txt
+  - scripts/add-services-to-hosts.sh
+  - scripts/Caddyfile
