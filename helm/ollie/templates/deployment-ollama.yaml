@@ -1,0 +1,66 @@
+{{- if .Values.ollama.deployOnCluster }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-ollama
+  labels:
+    app: ollie
+    component: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollie
+      component: ollama
+  template:
+    metadata:
+      labels:
+        app: ollie
+        component: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: "{{ .Values.ollama.image.repository }}:{{ .Values.ollama.image.tag }}"
+          imagePullPolicy: {{ .Values.ollama.image.pullPolicy }}
+          ports:
+            - containerPort: 11434
+          volumeMounts:
+            - name: ollama-storage
+              mountPath: /root/.ollama
+            - name: data-storage
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.ollama.resources | nindent 12 }}
+      volumes:
+        - name: ollama-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-ollama-pvc
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-ollama-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.global.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.ollama.storage.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  selector:
+    app: ollie
+    component: ollama
+  ports:
+    - protocol: TCP
+      port: 11434
+      targetPort: 11434
+{{- end }}
