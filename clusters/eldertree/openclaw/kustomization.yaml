@@ -20,3 +20,4 @@ resources:
   - elder-image-repo.yaml
   - elder-image-policy.yaml
   - elder-image-update.yaml
+  - control-cloudflare-origin-cert-external.yaml

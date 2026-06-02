@@ -41,11 +41,10 @@ spec:
               TSIG_SECRET=$(cat /etc/bind-tsig/tsig-secret)
               sed "s|TSIG_SECRET_PLACEHOLDER|${TSIG_SECRET}|g" /etc/named/named.conf > /var/named/named.conf
               chmod 644 /var/named/named.conf
-              # Create empty gravity.db stub so Pi-hole skips auto-gravity on first start
-              # (gravity.db is rebuilt by postStart hook once Pi-hole is ready)
+              # Remove corrupt zero-byte gravity.db (legacy init stub) so Pi-hole can rebuild it
               mkdir -p /etc/pihole
-              if [ ! -f /etc/pihole/gravity.db ]; then
-                touch /etc/pihole/gravity.db
+              if [ -f /etc/pihole/gravity.db ] && [ ! -s /etc/pihole/gravity.db ]; then
+                rm -f /etc/pihole/gravity.db
               fi
           volumeMounts:
             - name: bind-config
@@ -115,8 +114,27 @@ spec:
           lifecycle:
             postStart:
               exec:
-                # Rebuild gravity in background after startup; runs non-blocking
-                command: ["/bin/sh", "-c", "sleep 30 && pihole -g &"]
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    if [ -n "${WEBPASSWORD:-}" ]; then
+                      pihole setpassword "$WEBPASSWORD" >/dev/null 2>&1 || true
+                    fi
+                    (
+                      for i in $(seq 1 60); do
+                        curl -sf http://127.0.0.1/admin/ >/dev/null && break
+                        sleep 5
+                      done
+                      if [ ! -s /etc/pihole/gravity.db ]; then
+                        rm -f /etc/pihole/gravity.db
+                        cp /etc/resolv.conf /tmp/resolv.conf.bak
+                        printf "nameserver 1.1.1.1\nnameserver 1.0.0.1\n" > /etc/resolv.conf
+                        pihole -g
+                        mv /tmp/resolv.conf.bak /etc/resolv.conf
+                        pihole reloadlists
+                      fi
+                    ) &
           resources:
             {{- toYaml .Values.resources.pihole | nindent 12 }}
           livenessProbe:
@@ -166,23 +184,26 @@ spec:
         - name: exporter
           image: "{{ .Values.image.exporter.repository }}:{{ .Values.image.exporter.tag }}"
           imagePullPolicy: {{ .Values.image.exporter.pullPolicy }}
+          args:
+            - "-H"
+            - "127.0.0.1"
+            - "--pihole-port"
+            - "80"
+            - "--protocol"
+            - "http"
+            - "-p"
+            - "{{ .Values.service.metricsPort }}"
           ports:
             - name: metrics
               containerPort: {{ .Values.service.metricsPort }}
               protocol: TCP
           env:
-            - name: PIHOLE_HOSTNAME
-              value: "127.0.0.1"
-            - name: PIHOLE_PORT
-              value: "80"
             - name: PIHOLE_API_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: pihole-secrets
                   key: webpassword
                   optional: true
-            - name: PORT
-              value: "{{ .Values.service.metricsPort }}"
           resources:
             {{- toYaml .Values.resources.exporter | nindent 12 }}
           livenessProbe:
