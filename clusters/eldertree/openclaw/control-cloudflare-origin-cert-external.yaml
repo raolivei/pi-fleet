@@ -18,7 +18,7 @@ spec:
   target:
     name: control-cloudflare-origin-tls
     # Merge updates existing secret (e.g. if created manually); avoids "secret already exists" error
-    creationPolicy: Merge
+    creationPolicy: Owner
     template:
       type: kubernetes.io/tls
       data:
