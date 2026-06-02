@@ -136,7 +136,7 @@ spec:
       elder:
         image:
           repository: ghcr.io/raolivei/elder
-          tag: v0.3.3 # {"$imagepolicy": "openclaw:elder:tag"}
+          tag: v0.3.5 # {"$imagepolicy": "openclaw:elder:tag"}
           pullPolicy: Always
         port: 8006
         servicePort: 8000
@@ -262,3 +262,13 @@ spec:
           certManager: true
         annotations:
           external-dns.alpha.kubernetes.io/hostname: control.eldertree.local
+
+      # --- Public (control.eldertree.xyz) ---
+      control-center-public:
+        host: control.eldertree.xyz
+        service: elder
+        port: 8000
+        tls:
+          secretName: control-cloudflare-origin-tls
+        annotations:
+          external-dns.alpha.kubernetes.io/exclude: "true"

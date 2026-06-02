@@ -54,9 +54,14 @@ $INGRESS_IP  grafana.eldertree.local
 $INGRESS_IP  prometheus.eldertree.local
 $INGRESS_IP  pihole.eldertree.local
 $INGRESS_IP  flux.eldertree.local
+$INGRESS_IP  pushgateway.eldertree.local
+$INGRESS_IP  alertmanager.eldertree.local
 $INGRESS_IP  elder.eldertree.local
 $INGRESS_IP  control.eldertree.local
+$INGRESS_IP  openclaw.eldertree.local
 $INGRESS_IP  docs.eldertree.local
+$INGRESS_IP  audio.eldertree.local
+$INGRESS_IP  dex.eldertree.local
 
 # Applications
 $INGRESS_IP  canopy.eldertree.local

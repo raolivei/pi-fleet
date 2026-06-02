@@ -6,22 +6,36 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
+- **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).
 - **Ollie Helm chart** — Vendor `helm/ollie` from the [ollie](https://github.com/raolivei/ollie) repo so Flux `HelmRelease` path `./helm/ollie` resolves (fixes `InvalidChartReference`).
+
+### Changed
+
+- **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.5` (incident feed, topology layout, health fixes).
 
 ### Fixed
 
-- **Ollie ExternalSecrets** — `ClusterSecretStore` ref `vault-backend` → `vault` (matches live cluster store name).
+- **Pi-hole HelmRelease** — `strategy: Recreate` and 20m upgrade timeout (RollingUpdate dual-pod upgrades caused Helm deadline exceeded).
+- **control.eldertree.xyz DNS** — `scripts/cloudflare-reconcile-control-dns.sh` removes stale `control` A records before Terraform apply; runs in `terraform.yml` on apply.
+- **Pi-hole (Helm 0.2.2)** — Remove zero-byte `gravity.db` init stub; postStart waits for web UI then runs `pihole -g` when db missing/empty. Metrics sidecar `ghcr.io/mosher-labs/pihole6-exporter` (Pi-hole v6 session auth).
+- **Caddy / CoreDNS LAN routing** — `scripts/Caddyfile` proxies to Traefik kube-vip `192.168.2.200:443` (was `192.168.2.101:32474`, which hit Pi-hole on 443). CoreDNS custom hosts add `control.eldertree.local` and `elder.eldertree.local`.
+- **Traefik VIP / Pi-hole 403** — Stop exposing HTTPS (443) on the Pi-hole LoadBalancer Service (`exposeHttpsOnLoadBalancer: false`) so K3s `svclb-traefik` can bind hostPort 443 on `192.168.2.200`; fixes all `*.eldertree.local` URLs (including Control Center) returning Pi-hole HTML.
+- **Control Center routing** — Add `docs/eldertree-local-services.yaml`, `check-local-routing-registry.sh`, `verify-service-routing.sh`, and `docs/ONBOARDING_APP_ROUTING.md` / `CONTROL_CENTER.md`; sync hosts registry for `control.eldertree.local`.
+- **Ollie GitOps** — Vendor `helm/ollie` chart into pi-fleet (Flux `HelmRelease` path `./helm/ollie`); ExternalSecrets `ClusterSecretStore` ref `vault-backend` → `vault` (matches live cluster).
 - **Node scheduling tier reconciler** — Replace distroless `rancher/kubectl` (no `/bin/sh`, StartError) with `debian:bookworm-slim` + downloaded `kubectl v1.35.0` arm64; bump job memory for apt/curl install.
 
 ### Changed
 
+- **Local routing sync** — `eldertree-local-hosts-block.txt`, `add-services-to-hosts.sh`, and `Caddyfile` aligned with registry (openclaw, alertmanager, docs, dex, audio, canopy, journey, nima).
 - **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.0` (Control Center SPA + `/api/public/cluster/health`); ImageRepository tracks `elder` instead of legacy `grove`. Ingress `control.eldertree.local` → Elder service.
 - **Visage archived (2026-04)** — Detached live monitoring (scrape, dashboards, exporter targets), tunnel/DNS, and hosts/Caddy entries; preserved reference copies under [`docs/archive/visage/`](docs/archive/visage/). See [`workspace-config/docs/PROJECT_DECOMMISSIONING.md`](../workspace-config/docs/PROJECT_DECOMMISSIONING.md).
 - **Repo layout** — Moved `NETWORK.md`, `VAULT.md`, and `SERVICES_REFERENCE.md` into `docs/`; blog drafts and one-off session notes into `docs/archive/`; removed duplicate `blog/` tree at repo root. Root now holds README, CHANGELOG, CLAUDE, CONTRIBUTING, and `VERSION` only.
 
 ### Added
 
+- **Service routing onboarding** — [`docs/ONBOARDING_APP_ROUTING.md`](docs/ONBOARDING_APP_ROUTING.md): end-to-end LAN checklist; [`docs/eldertree-local-services.yaml`](docs/eldertree-local-services.yaml) registry; [`scripts/check-local-routing-registry.sh`](scripts/check-local-routing-registry.sh) and [`scripts/verify-service-routing.sh`](scripts/verify-service-routing.sh) for cluster + Pi-hole + Mac verification.
 - **Observability retention (NVMe)** — [`docs/OBSERVABILITY_RETENTION.md`](docs/OBSERVABILITY_RETENTION.md): 90d Prometheus metrics (64Gi `local-path-nvme`, `retentionSize: 58GB`), 30d Loki logs (48Gi NVMe, extend to 90d after measure), stable-node affinity, Promtail probe/health log drops, PVC migration runbook. monitoring-stack chart **0.2.13**.
+- **Control Center ops doc** — [`docs/CONTROL_CENTER.md`](docs/CONTROL_CENTER.md): architecture, URLs, API, troubleshooting for `control.eldertree.local`.
 - **Control Center local dev** — `control.eldertree.local` in `scripts/Caddyfile`, `add-services-to-hosts.sh`, `setup-caddy-proxy.sh`, and `docs/eldertree-local-hosts-block.txt` for LAN Caddy testing of the Elder ops console (cluster ingress via OpenClaw HelmRelease).
 
 ### Added
