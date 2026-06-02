@@ -21,11 +21,12 @@ spec:
   upgrade:
     remediation:
       retries: 3
-    timeout: 15m
+    timeout: 20m
   values:
     persistence:
       enabled: false
-    strategy: RollingUpdate
+    # Recreate avoids two pods during upgrade (RollingUpdate + maxSurge timed out Helm).
+    strategy: Recreate
     service:
       type: LoadBalancer
       loadBalancerClass: null
