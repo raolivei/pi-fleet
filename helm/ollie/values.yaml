@@ -1,0 +1,123 @@
+global:
+  storageClass: "local-path"
+
+# Feature flags
+audio:
+  enabled: false
+
+# Mac Ollama via Tailscale (override per environment)
+ollama:
+  externalUrl: "http://host.docker.internal:11434"
+  deployOnCluster: false
+  image:
+    repository: ghcr.io/raolivei/ollie-ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "1000m"
+    limits:
+      memory: "6Gi"
+      cpu: "4000m"
+  storage:
+    size: "10Gi"
+
+elder:
+  url: "http://elder.openclaw.svc.cluster.local:8000"
+
+monitoring:
+  enabled: true
+  port: "8000"
+  path: "/metrics"
+
+workspace:
+  root: "/workspace"
+  docsDir: "/workspace"
+  hostPath: "/mnt/workspace"
+
+persistence:
+  data:
+    size: "20Gi"
+    accessMode: ReadWriteOnce
+
+whisper:
+  image:
+    repository: ghcr.io/raolivei/ollie-whisper
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+
+tts:
+  image:
+    repository: ghcr.io/raolivei/ollie-tts
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+
+core:
+  image:
+    repository: ghcr.io/raolivei/ollie-core
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  env:
+    ollamaModel: "qwen2.5:7b"
+    audioEnabled: false
+
+ui:
+  image:
+    repository: ghcr.io/raolivei/ollie-ui
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  service:
+    type: NodePort
+    port: 8501
+    nodePort: 30001
+
+frontend:
+  enabled: true
+  image:
+    repository: ghcr.io/raolivei/ollie-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+training:
+  enabled: true
+  image:
+    repository: ghcr.io/raolivei/ollie-training
+    tag: latest
+    pullPolicy: IfNotPresent
+  schedule: "0 2 * * *"
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "4000m"

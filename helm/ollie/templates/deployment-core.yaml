@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-core
+  labels:
+    app: ollie
+    component: core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollie
+      component: core
+  template:
+    metadata:
+      labels:
+        app: ollie
+        component: core
+    spec:
+      containers:
+        - name: core
+          image: "{{ .Values.core.image.repository }}:{{ .Values.core.image.tag }}"
+          imagePullPolicy: {{ .Values.core.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATA_DIR
+              value: "/data"
+            - name: WORKSPACE_ROOT
+              value: {{ .Values.workspace.root | quote }}
+            - name: WORKSPACE_DOCS_DIR
+              value: {{ .Values.workspace.docsDir | quote }}
+            - name: AUDIO_ENABLED
+              value: {{ .Values.audio.enabled | quote }}
+            - name: OLLAMA_URL
+              {{- if .Values.ollama.deployOnCluster }}
+              value: "http://ollama:11434"
+              {{- else }}
+              value: {{ .Values.ollama.externalUrl | quote }}
+              {{- end }}
+            - name: OLLAMA_MODEL
+              value: {{ .Values.core.env.ollamaModel | quote }}
+            - name: ELDER_URL
+              value: {{ .Values.elder.url | quote }}
+            - name: ELDER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: elder-api-key
+                  optional: true
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: openrouter-api-key
+                  optional: true
+            - name: LOCAL_WORKSPACE_TOOLS
+              value: "false"
+            {{- if .Values.audio.enabled }}
+            - name: WHISPER_URL
+              value: "http://whisper:8000"
+            - name: TTS_URL
+              value: "http://tts:8000"
+            {{- end }}
+          volumeMounts:
+            - name: data-storage
+              mountPath: /data
+            - name: workspace-docs
+              mountPath: {{ .Values.workspace.root }}
+              readOnly: true
+          resources:
+            {{- toYaml .Values.core.resources | nindent 12 }}
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data-pvc
+        - name: workspace-docs
+          hostPath:
+            path: {{ .Values.workspace.hostPath | default "/mnt/workspace" }}
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: core
+  {{- if .Values.monitoring.enabled }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.monitoring.port | quote }}
+    prometheus.io/path: {{ .Values.monitoring.path | quote }}
+  {{- end }}
+spec:
+  selector:
+    app: ollie
+    component: core
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

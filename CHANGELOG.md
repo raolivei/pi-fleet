@@ -4,6 +4,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Added
+
+- **Ollie Helm chart** — Vendor `helm/ollie` from the [ollie](https://github.com/raolivei/ollie) repo so Flux `HelmRelease` path `./helm/ollie` resolves (fixes `InvalidChartReference`).
+
+### Fixed
+
+- **Ollie ExternalSecrets** — `ClusterSecretStore` ref `vault-backend` → `vault` (matches live cluster store name).
+- **Node scheduling tier reconciler** — Replace distroless `rancher/kubectl` (no `/bin/sh`, StartError) with `debian:bookworm-slim` + downloaded `kubectl v1.35.0` arm64; bump job memory for apt/curl install.
+
 ### Changed
 
 - **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.0` (Control Center SPA + `/api/public/cluster/health`); ImageRepository tracks `elder` instead of legacy `grove`. Ingress `control.eldertree.local` → Elder service.

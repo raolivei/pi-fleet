@@ -1,0 +1,40 @@
+{{- if .Values.training.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-training
+  labels:
+    app: ollie
+    component: training
+spec:
+  schedule: "{{ .Values.training.schedule }}"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: ollie
+            component: training
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: training
+              image: "{{ .Values.training.image.repository }}:{{ .Values.training.image.tag }}"
+              imagePullPolicy: {{ .Values.training.image.pullPolicy }}
+              env:
+                - name: DATA_DIR
+                  value: "/data"
+                - name: OLLAMA_HOST
+                  value: "http://ollama:11434"
+                - name: BASE_MODEL_PATH
+                  value: "/data/models/Llama-3.1-8B"
+              volumeMounts:
+                - name: data-storage
+                  mountPath: /data
+              resources:
+                {{- toYaml .Values.training.resources | nindent 16 }}
+          volumes:
+            - name: data-storage
+              persistentVolumeClaim:
+                claimName: {{ .Release.Name }}-data-pvc
+{{- end }}

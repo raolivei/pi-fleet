@@ -1,0 +1,43 @@
+{{- if .Values.audio.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-tts
+  labels:
+    app: ollie
+    component: tts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollie
+      component: tts
+  template:
+    metadata:
+      labels:
+        app: ollie
+        component: tts
+    spec:
+      containers:
+        - name: tts
+          image: "{{ .Values.tts.image.repository }}:{{ .Values.tts.image.tag }}"
+          imagePullPolicy: {{ .Values.tts.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          resources:
+            {{- toYaml .Values.tts.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tts
+spec:
+  selector:
+    app: ollie
+    component: tts
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+{{- end }}
+
