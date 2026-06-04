@@ -62,7 +62,7 @@ spec:
             - name: RUNNER_NAME
               value: "eldertree-runner-1"
             - name: RUNNER_WORKDIR
-              value: "/runner/_work"
+              value: "work"
             - name: REPO_URL
               valueFrom:
                 secretKeyRef:
@@ -87,34 +87,45 @@ spec:
             - /bin/bash
             - -c
             - |
+              set -e
+              echo "=== Runner startup script starting ==="
+
               # Wait for Docker daemon
+              echo "Waiting for Docker daemon..."
               timeout=60
               while ! docker info >/dev/null 2>&1; do
-                echo "Waiting for Docker daemon..."
+                echo "  ...still waiting..."
                 sleep 2
                 timeout=$((timeout - 2))
                 if [ $timeout -le 0 ]; then
-                  echo "Docker daemon did not start in time"
+                  echo "ERROR: Docker daemon did not start in time"
                   exit 1
                 fi
               done
-              echo "Docker daemon is ready"
+              echo "✓ Docker daemon is ready"
 
-              # Configure and start runner
-              ./config.sh --url ${REPO_URL} --token ${RUNNER_TOKEN} --name ${RUNNER_NAME} --work ${RUNNER_WORKDIR} --labels ${LABELS} --runnergroup ${RUNNER_GROUP} --unattended --replace
-
-              # Cleanup function
+              # Cleanup function (set trap before config in case config fails)
               cleanup() {
-                echo "Removing runner..."
-                ./config.sh remove --token ${RUNNER_TOKEN}
+                echo "=== Cleanup: Removing runner registration ==="
+                if [ -f .runner ]; then
+                  ./config.sh remove --token ${RUNNER_TOKEN} || true
+                else
+                  echo "No runner config found, skipping removal"
+                fi
               }
               trap cleanup EXIT
 
+              # Configure runner
+              echo "=== Configuring runner ==="
+              ./config.sh --url ${REPO_URL} --token ${RUNNER_TOKEN} --name ${RUNNER_NAME} --work ${RUNNER_WORKDIR} --labels ${LABELS} --runnergroup ${RUNNER_GROUP} --unattended --replace
+              echo "✓ Runner configured"
+
               # Start runner
+              echo "=== Starting runner ==="
               ./run.sh
           volumeMounts:
             - name: workspace
-              mountPath: /runner/_work
+              mountPath: /home/runner/work
             - name: docker-certs
               mountPath: /certs
           resources:
@@ -133,7 +144,7 @@ spec:
               value: "/certs"
           volumeMounts:
             - name: workspace
-              mountPath: /runner/_work
+              mountPath: /home/runner/work
             - name: docker-certs
               mountPath: /certs
             - name: dind-storage
