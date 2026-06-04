@@ -13,10 +13,10 @@ stringData:
         metrics_path: /metrics
         static_configs:
           - targets:
-              - 'pi-hole.pihole.svc.cluster.local:9617'
+              - 'pi-hole.pi-hole.svc.cluster.local:9617'
             labels:
               service: pihole
-              namespace: pihole
+              namespace: pi-hole
 
 
 
