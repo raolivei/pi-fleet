@@ -43,8 +43,6 @@ spec:
       metadata:
         labels:
           workload-type: ci-cd
-        annotations:
-          karpenter.sh/do-not-disrupt: "true"
       spec:
         # Give runners time to finish jobs before termination
         terminationGracePeriodSeconds: 3600
