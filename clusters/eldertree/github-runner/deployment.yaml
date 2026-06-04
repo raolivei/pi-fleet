@@ -5,6 +5,7 @@ metadata:
   namespace: github-runner
   labels:
     app: github-runner
+    workload-type: ci-cd
 spec:
   replicas: 1
   strategy:
@@ -16,9 +17,44 @@ spec:
     metadata:
       labels:
         app: github-runner
+        workload-type: ci-cd
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: node-1.eldertree.local
+      # Prefer node-2 (moderate load), allow node-1 (light) or node-3 (stable) as failover
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - node-2.eldertree.local
+            - weight: 50
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - node-1.eldertree.local
+            - weight: 30
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - node-3.eldertree.local
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
+      tolerations:
+        # Tolerate node-1's prefer-stable-nodes taint (CI/CD can tolerate occasional instability)
+        - key: eldertree.xyz/prefer-stable-nodes
+          operator: Equal
+          value: "true"
+          effect: PreferNoSchedule
       containers:
         - name: runner
           image: ghcr.io/actions/actions-runner:latest

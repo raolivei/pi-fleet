@@ -18,10 +18,33 @@ The GitHub self-hosted runner solves storage limitations of GitHub-hosted runner
 ### Deployment
 
 - **Namespace:** `github-runner`
-- **Runner pod:** Single persistent `Deployment` on `node-1`
-- **Storage:** 20GB `PVC` for runner workspace (`/runner/_work`)
-- **Docker:** Host Docker socket mounted (`/var/run/docker.sock`)
+- **Runner pod:** Single persistent `Deployment` with smart node affinity
+- **Storage:** 20GB `PVC` for runner workspace (`/runner/_work`, local-path storage)
+- **Docker:** Docker-in-Docker (DinD) sidecar for native ARM64 builds
 - **Secrets:** Runner token from Vault via `ExternalSecret`
+
+### Node Selection Strategy
+
+The deployment uses **node affinity + tolerations** for intelligent placement with automatic failover:
+
+**Preference order (weighted):**
+1. **node-2** (weight: 100) — Moderate load (52% memory, 42 pods), no taints, stable
+2. **node-1** (weight: 50) — Light load (27% memory, 8 pods), has `PreferNoSchedule` taint
+3. **node-3** (weight: 30) — Heavier load (62% memory, 36 pods), critical workloads (Vault, Postgres)
+
+**Actual scheduling:**
+- Runner will follow **PVC node affinity** first (local-path storage is node-bound)
+- If PVC is on node-1, runner stays on node-1 for storage locality
+- On fresh deployment or PVC recreation, scheduler uses preference weights
+
+**Tolerations:**
+- Tolerates `eldertree.xyz/prefer-stable-nodes=true:PreferNoSchedule` (node-1's taint)
+- CI/CD workloads can handle occasional node instability
+
+**Failover behavior:**
+- If current node becomes NotReady, pod reschedules to next available node
+- PVC rebinds to new node (data persists, but Docker cache rebuilds)
+- Runner auto-registers with same name on new node
 
 ### Resource Allocation
 
@@ -42,11 +65,17 @@ All manifests are in `clusters/eldertree/github-runner/`:
 ```
 github-runner/
 ├── namespace.yaml          # github-runner namespace
-├── pvc.yaml                # 20GB workspace storage
+├── pvc.yaml                # 20GB workspace storage (local-path, node-affine)
 ├── external-secret.yaml    # Vault integration for runner token
-├── deployment.yaml         # Runner pod with labels
+├── deployment.yaml         # Runner pod with affinity, tolerations, DinD
 └── kustomization.yaml      # FluxCD bundle
 ```
+
+**Key manifest features:**
+- **Node affinity:** Weighted preference (node-2 > node-1 > node-3)
+- **Tolerations:** `eldertree.xyz/prefer-stable-nodes=true:PreferNoSchedule`
+- **Labels:** `app=github-runner`, `workload-type=ci-cd`
+- **Strategy:** `Recreate` (no rolling update, runner must deregister cleanly)
 
 ## Vault Configuration
 
@@ -153,6 +182,41 @@ kubectl patch pvc runner-workspace -n github-runner -p '{"spec":{"resources":{"r
 - Verify PVC is bound and mounted at `/runner/_work`
 - Check Docker buildx cache config in workflow
 - Inspect build logs for cache hit/miss rates
+
+### Testing Failover
+
+To verify automatic failover to another node:
+
+**Option 1: Cordon current node (safe, no downtime)**
+```bash
+# Find current node
+NODE=$(kubectl get pod -n github-runner -l app=github-runner -o jsonpath='{.items[0].spec.nodeName}')
+
+# Cordon node (prevent new scheduling)
+kubectl cordon $NODE
+
+# Delete runner pod (triggers reschedule)
+kubectl delete pod -n github-runner -l app=github-runner
+
+# Wait for pod to reschedule
+kubectl get pods -n github-runner -o wide -w
+
+# Uncordon when done
+kubectl uncordon $NODE
+```
+
+**Expected behavior:**
+- Pod reschedules to next preferred node based on affinity weights
+- PVC may need to rebind (local-path storage recreates on new node)
+- Runner re-registers automatically with same name
+- Docker cache rebuilds (first build after failover is slower)
+
+**Option 2: Drain node (production-like, planned maintenance)**
+```bash
+kubectl drain $NODE --ignore-daemonsets --delete-emptydir-data --timeout=5m
+# ... perform maintenance ...
+kubectl uncordon $NODE
+```
 
 ## Scaling
 
