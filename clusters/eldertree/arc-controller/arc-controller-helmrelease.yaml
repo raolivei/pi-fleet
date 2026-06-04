@@ -2,7 +2,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: arc-controller
-  namespace: arc-system
+  namespace: arc-controller
 spec:
   interval: 30m
   chart:
@@ -14,7 +14,7 @@ spec:
         name: arc-controller
         namespace: flux-system
       interval: 12h
-  targetNamespace: arc-system
+  targetNamespace: arc-controller
   install:
     createNamespace: true
     crds: CreateReplace

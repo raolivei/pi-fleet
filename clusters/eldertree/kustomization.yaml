@@ -14,7 +14,7 @@ resources:
   - autoscaling # KEDA event-driven autoscaling
 
   # CI/CD
-  - arc-system # Actions Runner Controller
+  - arc-controller # Actions Runner Controller
   - arc-runners # GitHub Actions runners (ollie)
 
   # Applications

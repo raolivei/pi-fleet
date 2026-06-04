@@ -8,7 +8,7 @@ Auto-scaling GitHub Actions runners on Eldertree K3s using Actions Runner Contro
 
 ```
 ┌─────────────────────────────────────────┐
-│ arc-system namespace                    │
+│ arc-controller namespace                │
 ├─────────────────────────────────────────┤
 │ • gha-runner-scale-set-controller       │ ← Watches GitHub job queue
 │   - Helm: v0.14.2                       │
@@ -48,7 +48,7 @@ Controller and runner scale set installed via Helm:
 # Controller
 helm install arc-controller \
   oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
-  --namespace arc-system \
+  --namespace arc-controller \
   --version 0.14.2
 
 # Runner scale set (per repo/org)
@@ -81,7 +81,7 @@ kubectl create secret generic ollie-runner-github-secret \
 
 ```bash
 # Controller
-kubectl get pods -n arc-system
+kubectl get pods -n arc-controller
 
 # Listener
 kubectl get pods -n arc-runners
@@ -115,7 +115,7 @@ kubectl logs -n arc-runners -l app.kubernetes.io/component=runner-scale-set-list
 
 **Controller issues:**
 ```bash
-kubectl logs -n arc-system -l app.kubernetes.io/name=gha-rs-controller
+kubectl logs -n arc-controller -l app.kubernetes.io/name=gha-rs-controller
 ```
 
 **Runner pod stuck:**

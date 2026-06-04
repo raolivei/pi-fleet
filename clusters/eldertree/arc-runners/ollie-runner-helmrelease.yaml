@@ -21,7 +21,7 @@ spec:
     cleanupOnFail: true
   dependsOn:
     - name: arc-controller
-      namespace: arc-system
+      namespace: arc-controller
   values:
     # GitHub Configuration
     githubConfigUrl: "https://github.com/raolivei/ollie"
@@ -61,5 +61,5 @@ spec:
 
     # Controller service account reference
     controllerServiceAccount:
-      namespace: arc-system
+      namespace: arc-controller
       name: arc-controller-gha-rs-controller
