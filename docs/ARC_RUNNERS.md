@@ -42,8 +42,20 @@ Auto-scaling GitHub Actions runners on Eldertree K3s using Actions Runner Contro
 
 ## Installation
 
-Controller and runner scale set installed via Helm:
+Deployed via **FluxCD GitOps** (not manual Helm):
 
+**Manifests:**
+- Controller: `clusters/eldertree/arc-controller/`
+- Runners: `clusters/eldertree/arc-runners/`
+
+**Deployment:**
+```bash
+# Commit manifests to git, Flux reconciles automatically
+git push origin main
+flux reconcile kustomization eldertree --with-source
+```
+
+**Manual Helm (reference only, DO NOT USE):**
 ```bash
 # Controller
 helm install arc-controller \
@@ -51,31 +63,26 @@ helm install arc-controller \
   --namespace arc-controller \
   --version 0.14.2
 
-# Runner scale set (per repo/org)
+# Runner scale set
 helm install ollie-runners \
   oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
   --namespace arc-runners \
   --version 0.14.2 \
   --set githubConfigUrl="https://github.com/raolivei/ollie" \
-  --set githubConfigSecret="ollie-runner-github-secret" \
-  --set minRunners=0 \
-  --set maxRunners=3
+  --set githubConfigSecret="ollie-runner-github-secret"
 ```
 
 ## Secrets
 
-**GitHub PAT** stored in Vault:
+**GitHub PAT** stored in Vault and synced via ExternalSecret:
+
 ```
-Path: secret/eldertree/arc-runners/ollie
+Vault Path: secret/eldertree/arc-runners/ollie
 Key: github_token
+ExternalSecret: clusters/eldertree/arc-runners/ollie-external-secret.yaml
 ```
 
-Create Kubernetes secret:
-```bash
-kubectl create secret generic ollie-runner-github-secret \
-  --namespace arc-runners \
-  --from-literal=github_token="ghp_..."
-```
+Vault manages the secret, ExternalSecrets operator syncs to Kubernetes automatically.
 
 ## Monitoring
 
@@ -134,20 +141,58 @@ kubectl logs -n arc-runners <pod-name>
 
 ## Node Placement
 
-Runners prefer node-2, tolerate node-1:
-- node-2: Moderate load, stable
-- node-1: Light load, has stability taint
+**Controller:**
+- Uses `nodeSelector: eldertree.xyz/node-tier: stable`
+- Runs on node-2 or node-3 only
+
+**Runners:**
+- No placement constraints
+- Kubernetes scheduler decides (natural spread across nodes)
+- Ephemeral workload, no affinity needed
 
 ## Adding More Repos
 
-```bash
-helm install <repo-name>-runners \
-  oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
-  --namespace arc-runners \
-  --version 0.14.2 \
-  --set githubConfigUrl="https://github.com/raolivei/<repo>" \
-  --set githubConfigSecret="<repo>-runner-github-secret"
-```
+1. Create ExternalSecret in `clusters/eldertree/arc-runners/`:
+   ```yaml
+   apiVersion: external-secrets.io/v1beta1
+   kind: ExternalSecret
+   metadata:
+     name: <repo>-runner-github-secret
+     namespace: arc-runners
+   spec:
+     secretStoreRef:
+       kind: ClusterSecretStore
+       name: vault
+     target:
+       name: <repo>-runner-github-secret
+     data:
+       - secretKey: github_token
+         remoteRef:
+           key: secret/eldertree/arc-runners/<repo>
+           property: github_token
+   ```
+
+2. Create HelmRelease in `clusters/eldertree/arc-runners/<repo>-runner-helmrelease.yaml`:
+   ```yaml
+   apiVersion: helm.toolkit.fluxcd.io/v2
+   kind: HelmRelease
+   metadata:
+     name: <repo>-runners
+     namespace: arc-runners
+   spec:
+     chart:
+       spec:
+         chart: gha-runner-scale-set
+         version: "0.14.2"
+     values:
+       githubConfigUrl: "https://github.com/raolivei/<repo>"
+       githubConfigSecret: <repo>-runner-github-secret
+       minRunners: 0
+       maxRunners: 3
+   ```
+
+3. Update `clusters/eldertree/arc-runners/kustomization.yaml`
+4. Commit and push — Flux deploys automatically
 
 ## References
 
