@@ -32,7 +32,7 @@ spec:
     core:
       image:
         repository: ghcr.io/raolivei/ollie-core
-        tag: v0.4.0
+        tag: v0.4.5
         pullPolicy: Always
       resources:
         requests:
@@ -42,8 +42,8 @@ spec:
           memory: "1Gi"
           cpu: "1000m"
     frontend:
-      enabled: false
+      enabled: true
       image:
         repository: ghcr.io/raolivei/ollie-frontend
-        tag: v0.2.0
+        tag: v0.4.5
         pullPolicy: Always
