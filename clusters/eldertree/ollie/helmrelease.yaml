@@ -42,7 +42,7 @@ spec:
           memory: "1Gi"
           cpu: "1000m"
     frontend:
-      enabled: true
+      enabled: false
       image:
         repository: ghcr.io/raolivei/ollie-frontend
         tag: v0.2.0
