@@ -47,13 +47,6 @@ spec:
         # Give runners time to finish jobs before termination
         terminationGracePeriodSeconds: 3600
 
-        # Tolerate variable nodes (allows scheduling on node-1 if needed)
-        tolerations:
-          - key: eldertree.xyz/prefer-stable-nodes
-            operator: Equal
-            value: "true"
-            effect: PreferNoSchedule
-
         containers:
           - name: runner
             image: ghcr.io/actions/actions-runner:latest
