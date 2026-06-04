@@ -13,6 +13,9 @@ resources:
   - observability # Monitoring stack (Prometheus, Grafana, Alertmanager)
   - autoscaling # KEDA event-driven autoscaling
 
+  # CI/CD
+  - github-runner # Self-hosted GitHub Actions runner
+
   # Applications
   - canopy # Personal finance dashboard
   - swimto # Toronto pool schedules
