@@ -47,25 +47,7 @@ spec:
         # Give runners time to finish jobs before termination
         terminationGracePeriodSeconds: 3600
 
-        # Node placement preferences
-        affinity:
-          nodeAffinity:
-            preferredDuringSchedulingIgnoredDuringExecution:
-              - weight: 100
-                preference:
-                  matchExpressions:
-                    - key: kubernetes.io/hostname
-                      operator: In
-                      values:
-                        - node-2.eldertree.local
-              - weight: 50
-                preference:
-                  matchExpressions:
-                    - key: kubernetes.io/hostname
-                      operator: In
-                      values:
-                        - node-1.eldertree.local
-
+        # Tolerate variable nodes (allows scheduling on node-1 if needed)
         tolerations:
           - key: eldertree.xyz/prefer-stable-nodes
             operator: Equal

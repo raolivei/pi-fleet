@@ -40,21 +40,6 @@ spec:
       listenerAddr: ":8080"
       listenerEndpoint: "/metrics"
 
-    # Node placement (prefer stable nodes)
-    affinity:
-      nodeAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            preference:
-              matchExpressions:
-                - key: kubernetes.io/hostname
-                  operator: In
-                  values:
-                    - node-2.eldertree.local
-          - weight: 50
-            preference:
-              matchExpressions:
-                - key: kubernetes.io/hostname
-                  operator: In
-                  values:
-                    - node-3.eldertree.local
+    # Node placement (stable nodes only)
+    nodeSelector:
+      eldertree.xyz/node-tier: stable
