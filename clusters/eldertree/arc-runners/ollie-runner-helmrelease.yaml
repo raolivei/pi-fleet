@@ -65,6 +65,11 @@ spec:
                 memory: "4Gi"
 
     # Controller service account reference
+    # Must match the controller's actual SA: the controller HelmRelease is named
+    # `arc-controller-arc-controller`, so the chart renders the SA with the doubled
+    # prefix. A mismatch here makes the rendered gha-rs-manager RoleBinding bind a
+    # non-existent SA, so the controller cannot create JIT secrets/pods (runners
+    # stay Pending) or clean up finished runners (stuck Deleting).
     controllerServiceAccount:
       namespace: arc-controller
-      name: arc-controller-gha-rs-controller
+      name: arc-controller-arc-controller-gha-rs-controller

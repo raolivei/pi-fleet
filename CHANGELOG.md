@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Fixed
+
+- **ARC runners stuck Pending** — `ollie-runners` HelmRelease `controllerServiceAccount.name` was `arc-controller-gha-rs-controller`, but the controller HelmRelease is named `arc-controller-arc-controller`, so its actual SA is `arc-controller-arc-controller-gha-rs-controller`. The mismatch made the chart-rendered `ollie-eldertree-gha-rs-manager` RoleBinding bind a non-existent SA, so the controller could not create JIT secrets/pods (runners stuck Pending) or clean up finished runners (stuck Deleting). Corrected the SA name so the manager RoleBinding binds the real controller SA.
+
 ### Added
 
 - **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).
