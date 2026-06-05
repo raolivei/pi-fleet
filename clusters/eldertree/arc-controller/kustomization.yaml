@@ -5,3 +5,4 @@ resources:
   - namespace.yaml
   - arc-helm-repository.yaml
   - arc-controller-helmrelease.yaml
+  - controller-secrets-clusterrole.yaml
