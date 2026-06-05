@@ -29,7 +29,14 @@ spec:
     strategy: Recreate
     service:
       type: LoadBalancer
-      loadBalancerClass: null
+      # kube-vip.io/kube-vip-class prevents K3s ServiceLB from creating svclb-pi-hole DaemonSet
+      # pods that would bind hostPorts 80/443 and block svclb-traefik on all nodes.
+      # kube-vip handles the VIP assignment via the kube-vip.io/loadbalancerIPs annotation instead.
+      loadBalancerClass: kube-vip.io/kube-vip-class
       loadBalancerIP: 192.168.2.201
     config:
       clusterIP: 192.168.2.201
+    # mosher-labs/pihole6-exporter has no arm64 image; disable until arm64 build is available.
+    # TODO: re-enable once https://github.com/mosher-labs/pihole6-exporter provides arm64 image.
+    monitoring:
+      enabled: false

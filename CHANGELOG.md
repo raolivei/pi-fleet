@@ -4,6 +4,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pi-hole exporter (ARM64)** — `ghcr.io/mosher-labs/pihole6-exporter` has no arm64 image and breaks Pi-hole pod on Raspberry Pi 5 nodes with `ErrImagePull`. Add `monitoring.enabled` flag to pi-hole chart and disable it in the cluster HelmRelease until an arm64 build is available.
+- **Pi-hole LoadBalancer class** — Set `loadBalancerClass: kube-vip.io/kube-vip-class` on pi-hole service so K3s ServiceLB does not create `svclb-pi-hole` DaemonSet pods that bind hostPorts 80 and 443, which blocked `svclb-traefik` from scheduling on all 3 nodes.
+- **Ollie imagePullSecrets** — `ghcr.io/raolivei` images are private; Ollie chart deployments and training CronJob had no `imagePullSecrets` block, causing `401 Unauthorized` image pull failures. Add `imagePullSecrets` to all templates and wire `ghcr-secret` via HelmRelease values.
+
 ### Added
 
 - **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).

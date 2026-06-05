@@ -1,6 +1,11 @@
 global:
   storageClass: "local-path"
 
+# Image pull secrets for ghcr.io/raolivei private images.
+# Must reference a kubernetes.io/dockerconfigjson Secret in the same namespace.
+imagePullSecrets: []
+#  - name: ghcr-secret
+
 # Feature flags
 audio:
   enabled: false

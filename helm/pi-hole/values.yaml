@@ -13,9 +13,15 @@ image:
     pullPolicy: IfNotPresent
   exporter:
     # Pi-hole v6 session auth; ekofr/pihole-exporter returns 401 on v6 API
+    # mosher-labs/pihole6-exporter only publishes amd64 — disable on ARM64 clusters
     repository: ghcr.io/mosher-labs/pihole6-exporter
     tag: latest
     pullPolicy: IfNotPresent
+
+monitoring:
+  # Set to false on ARM64 clusters: mosher-labs/pihole6-exporter has no arm64 image.
+  # Track: https://github.com/mosher-labs/pihole6-exporter/issues (arm64 support)
+  enabled: true
 
 service:
   type: LoadBalancer

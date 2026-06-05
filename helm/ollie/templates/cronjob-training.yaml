@@ -17,6 +17,10 @@ spec:
             component: training
         spec:
           restartPolicy: OnFailure
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           containers:
             - name: training
               image: "{{ .Values.training.image.repository }}:{{ .Values.training.image.tag }}"
