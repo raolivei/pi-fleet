@@ -34,9 +34,10 @@ spec:
     # Runner configuration
     runnerScaleSetName: "ollie-eldertree"
 
-    # Runner labels (must match workflow runs-on)
-    # Jobs with "runs-on: self-hosted" will match this scale set
-    runnerGroup: "Default"
+    # Runner labels - must match workflow runs-on values
+    # Workflows using "runs-on: self-hosted" will match this scale set
+    runnerScaleSetLabels:
+      - self-hosted
 
     # Container mode with DinD
     containerMode:
