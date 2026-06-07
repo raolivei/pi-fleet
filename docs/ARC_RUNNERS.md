@@ -48,6 +48,8 @@ Deployed via **FluxCD GitOps** (not manual Helm):
 - Controller: `clusters/eldertree/arc-controller/`
 - Runners: `clusters/eldertree/arc-runners/`
 
+**Naming:** See [FLUX_HELM_NAMING.md](FLUX_HELM_NAMING.md). Summary: set `releaseName: arc-controller` and `releaseName: ollie-runners` so chart ServiceAccount is `arc-controller-gha-rs-controller` (matches `controllerServiceAccount.name` in runners and `arc-controller-secrets` ClusterRole). HelmRepository for OCI charts is `arc-charts` in `flux-system`.
+
 **Deployment:**
 ```bash
 # Commit manifests to git, Flux reconciles automatically
@@ -172,7 +174,7 @@ kubectl logs -n arc-runners <pod-name>
            property: github_token
    ```
 
-2. Create HelmRelease in `clusters/eldertree/arc-runners/<repo>-runner-helmrelease.yaml`:
+2. Create HelmRelease in `clusters/eldertree/arc-runners/<repo>-runners-helmrelease.yaml`:
    ```yaml
    apiVersion: helm.toolkit.fluxcd.io/v2
    kind: HelmRelease
@@ -188,8 +190,10 @@ kubectl logs -n arc-runners <pod-name>
        githubConfigUrl: "https://github.com/raolivei/<repo>"
        githubConfigSecret: <repo>-runner-github-secret
        minRunners: 0
-       maxRunners: 3
+       maxRunners: 6   # match parallel jobs in the repo workflow
    ```
+
+   **Resource sizing (Pi 5 cluster):** Each runner pod is runner + DinD sidecar. Default chart requests (1 CPU / 2Gi per runner) saturate a 3×4-core cluster before all runners schedule. Ollie uses ~750m CPU / 1.5Gi requests per pod (500m+250m runner/dind) with limits 2.5 CPU / 3.5Gi so up to 6 parallel `build-publish` jobs can schedule on node-2 and node-3 (`node-tier: stable`). Builds may be slower under contention; raise limits only if nodes have headroom.
 
 3. Update `clusters/eldertree/arc-runners/kustomization.yaml`
 4. Commit and push — Flux deploys automatically

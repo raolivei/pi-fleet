@@ -15,6 +15,7 @@ spec:
         namespace: flux-system
       interval: 12h
   targetNamespace: canopy
+  releaseName: canopy
   upgrade:
     cleanupOnFail: true
   values:

@@ -14,6 +14,7 @@ spec:
         namespace: flux-system
   # Longer timeout: Helm waits for LoadBalancer Service to get ingress IP from kube-vip.
   # Under load or slow kube-vip, 5m default can hit "context deadline exceeded".
+  releaseName: pi-hole
   install:
     remediation:
       retries: 3

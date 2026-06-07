@@ -1,0 +1,98 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ollie-runners
+  namespace: arc-runners
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: gha-runner-scale-set
+      version: "0.14.2"
+      sourceRef:
+        kind: HelmRepository
+        name: arc-charts
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: arc-runners
+  releaseName: ollie-runners
+  install:
+    createNamespace: true
+  upgrade:
+    cleanupOnFail: true
+  dependsOn:
+    - name: arc-controller
+      namespace: arc-controller
+  values:
+    # GitHub Configuration
+    githubConfigUrl: "https://github.com/raolivei/ollie"
+    githubConfigSecret: ollie-runner-github-secret
+
+    # Scaling configuration — 6 matches parallel jobs in ollie build-publish.yaml
+    minRunners: 0
+    maxRunners: 6
+
+    # Runner configuration
+    runnerScaleSetName: "ollie-eldertree"
+
+    # Runner labels - must match workflow runs-on values
+    # Workflows using "runs-on: self-hosted" will match this scale set
+    scaleSetLabels:
+      - self-hosted
+
+    # Container mode with DinD
+    containerMode:
+      type: "dind"
+
+    # Template for runner pods
+    template:
+      metadata:
+        labels:
+          workload-type: ci-cd
+      spec:
+        # CI on stable nodes only (node-2, node-3); node-1 is unstable tier
+        nodeSelector:
+          eldertree.xyz/node-tier: stable
+        # Spread runners across nodes when possible (2 stable nodes → up to 3 each)
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                      - key: actions.github.com/scale-set-name
+                        operator: In
+                        values:
+                          - ollie-eldertree
+                  topologyKey: kubernetes.io/hostname
+        # Give runners time to finish jobs before termination
+        terminationGracePeriodSeconds: 3600
+
+        containers:
+          - name: runner
+            image: ghcr.io/actions/actions-runner:latest
+            command: ["/home/runner/run.sh"]
+            resources:
+              # Lean requests so up to 6 runners can schedule on 2× Pi 5 stable nodes
+              # (cluster CPU requests were ~96% allocated at 1 CPU/runner).
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                cpu: 1500m
+                memory: 2Gi
+          - name: dind
+            resources:
+              requests:
+                cpu: 250m
+                memory: 512Mi
+              limits:
+                cpu: 1000m
+                memory: 1536Mi
+
+    # Controller service account — must match {releaseName}-gha-rs-controller from the
+    # arc-controller HelmRelease (releaseName: arc-controller).
+    controllerServiceAccount:
+      namespace: arc-controller
+      name: arc-controller-gha-rs-controller

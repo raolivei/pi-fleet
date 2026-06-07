@@ -4,21 +4,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
-### Fixed
-
-- **ARC runners stuck Pending** — `ollie-runners` HelmRelease `controllerServiceAccount.name` was `arc-controller-gha-rs-controller`, but the controller HelmRelease is named `arc-controller-arc-controller`, so its actual SA is `arc-controller-arc-controller-gha-rs-controller`. The mismatch made the chart-rendered `ollie-eldertree-gha-rs-manager` RoleBinding bind a non-existent SA, so the controller could not create JIT secrets/pods (runners stuck Pending) or clean up finished runners (stuck Deleting). Corrected the SA name so the manager RoleBinding binds the real controller SA.
-
 ### Added
 
+- **Flux Helm naming guide** — [`docs/FLUX_HELM_NAMING.md`](docs/FLUX_HELM_NAMING.md): require explicit `releaseName` on all HelmReleases; migration map for doubled releases.
 - **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).
 - **Ollie Helm chart** — Vendor `helm/ollie` from the [ollie](https://github.com/raolivei/ollie) repo so Flux `HelmRelease` path `./helm/ollie` resolves (fixes `InvalidChartReference`).
 
 ### Changed
 
+- **Helm release names (cluster-wide)** — Set `releaseName: <metadata.name>` on all Eldertree HelmReleases so Flux no longer creates doubled releases (`openclaw-openclaw`, `canopy-canopy`, `observability-monitoring-stack`, etc.). See migration table in `FLUX_HELM_NAMING.md`.
+- **ARC HelmRepository** — Rename `arc-controller` → `arc-charts` in `flux-system` (serves both controller and scale-set OCI charts).
+- **ARC ClusterRole** — Rename `arc-controller-gha-rs-controller-secrets` → `arc-controller-secrets`.
+- **ARC manifests** — Rename `ollie-runner-helmrelease.yaml` → `ollie-runners-helmrelease.yaml`, `arc-helm-repository.yaml` → `arc-charts-helmrepository.yaml`.
+- **ARC ollie-runners** — `maxRunners: 6` (matches ollie `build-publish.yaml` parallel jobs). Right-size runner + DinD resources (750m CPU / 1.5Gi mem requests per pod, down from 1 CPU / 2Gi) so more pods schedule on Pi 5 nodes; pin to `node-tier: stable` and prefer anti-affinity spread across node-2/node-3. Cap limits to reduce cluster-wide oversubscription (was 3 CPU / 4Gi per runner container).
 - **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.6` (kube-vip DaemonSet health, topology layout variants).
 
 ### Fixed
 
+- **ARC runners stuck Pending** — `ollie-runners` HelmRelease `controllerServiceAccount.name` did not match the controller's real ServiceAccount (`arc-controller-gha-rs-controller`). Flux defaulted the controller Helm release name to `arc-controller-arc-controller`, producing SA `arc-controller-arc-controller-gha-rs-controller`. Set `releaseName: arc-controller` on the controller HelmRelease and point runners at `arc-controller-gha-rs-controller`.
 - **Pi-hole HelmRelease** — `strategy: Recreate` and 20m upgrade timeout (RollingUpdate dual-pod upgrades caused Helm deadline exceeded).
 - **control.eldertree.xyz DNS** — `scripts/cloudflare-reconcile-control-dns.sh` removes stale `control` A records before Terraform apply; runs in `terraform.yml` on apply.
 - **Pi-hole (Helm 0.2.2)** — Remove zero-byte `gravity.db` init stub; postStart waits for web UI then runs `pihole -g` when db missing/empty. Metrics sidecar `ghcr.io/mosher-labs/pihole6-exporter` (Pi-hole v6 session auth).

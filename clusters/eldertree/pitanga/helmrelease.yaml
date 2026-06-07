@@ -15,6 +15,7 @@ spec:
         namespace: flux-system
       interval: 12h
   targetNamespace: pitanga
+  releaseName: pitanga
   install:
     createNamespace: true
   upgrade:
