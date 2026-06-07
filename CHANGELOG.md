@@ -13,6 +13,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 - **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).
 - **Ollie Helm chart** — Vendor `helm/ollie` from the [ollie](https://github.com/raolivei/ollie) repo so Flux `HelmRelease` path `./helm/ollie` resolves (fixes `InvalidChartReference`).
 
+### Fixed
+
+- **ARC runner pods Pending** — Drop `node-tier: stable` nodeSelector (node-1 was ~99% free but excluded while node-2 at 98% CPU requests and node-3 NotReady under load). Lower runner requests to 100m CPU / 512Mi.
+
 ### Changed
 
 - **ARC ollie-runners** — Repo-scoped (`githubConfigUrl: https://github.com/raolivei/ollie`); `maxRunners: 1` (serial `build-publish.yaml`). Org scope reverted — requires a GitHub Organization entity.

@@ -148,9 +148,9 @@ kubectl logs -n arc-runners <pod-name>
 - Runs on node-2 or node-3 only
 
 **Runners:**
-- No placement constraints
-- Kubernetes scheduler decides (natural spread across nodes)
-- Ephemeral workload, no affinity needed
+- Prefer stable nodes (node-2, node-3) via cluster scheduling; **no hard nodeSelector** — when stable nodes are saturated, runners may schedule on node-1 (unstable tier, `PreferNoSchedule` taint).
+- Pod anti-affinity spreads runners across hosts when possible.
+- Requests: **100m CPU + 512Mi** per runner container (~150m/pod with dind sidecar values) so multiple runners fit under heavy cluster request pressure.
 
 ## Adding More Repos
 
@@ -168,7 +168,7 @@ Each repo gets a HelmRelease with `githubConfigUrl: https://github.com/raolivei/
 
 2. Create HelmRelease in `clusters/eldertree/arc-runners/<slug>-runners-helmrelease.yaml` — copy an existing release and set unique `metadata.name`, `releaseName`, `runnerScaleSetName`, `githubConfigUrl`, and `maxRunners` (default `1`; `2` for repos with parallel docker-build jobs).
 
-   **Resource sizing (Pi 5 cluster):** Each runner pod is runner + DinD sidecar (~750m CPU / 1.5Gi requests). Pin to `node-tier: stable`. Cluster-wide budget: **4–6 concurrent DinD runners** across all scale sets.
+   **Resource sizing (Pi 5 cluster):** Each runner pod is runner + DinD (~100m+512Mi requests). No `node-tier: stable` nodeSelector — node-1 absorbs overflow when node-2/3 are full. Cluster-wide budget: **4–6 concurrent DinD runners** under normal load; avoid firing all scale sets at once (stress script).
 
 3. Update `clusters/eldertree/arc-runners/kustomization.yaml`
 4. Commit and push — Flux deploys automatically
