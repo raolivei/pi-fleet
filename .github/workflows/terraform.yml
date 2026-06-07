@@ -1,6 +1,7 @@
 # Terraform secrets: source of truth is Vault (secret/pi-fleet/terraform/*).
-# GitHub-hosted runners cannot reach vault.eldertree.local — repo secrets are synced via:
+# GitHub repo secrets are synced via:
 #   ./scripts/sync-github-terraform-secrets-from-vault.sh --app actions --app dependabot
+# CI runs on Eldertree self-hosted runners (runs-on: self-hosted).
 name: "Terraform"
 
 on:
@@ -52,7 +53,7 @@ env:
 jobs:
   terraform:
     name: "Terraform"
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: dev
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
