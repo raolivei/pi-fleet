@@ -6,7 +6,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: swimto-web
-  minReplicaCount: 1 # Keep 1 for fast response
+  minReplicaCount: 2 # HA across node-2/3 while node-1 may reboot
   maxReplicaCount: 3
   pollingInterval: 30
   cooldownPeriod: 300

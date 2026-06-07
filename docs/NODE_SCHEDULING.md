@@ -31,6 +31,20 @@ kubectl get cronjob -n kube-system node-scheduling-tier-reconciler
 kubectl get configmap -n kube-system node-scheduling-config -o yaml
 ```
 
+## Why apps still land on node-1
+
+`PreferNoSchedule` and **preferred** `nodeAffinity` (weight 100 in `eldertree-app` global defaults) are **soft** — Kubernetes may still place pods on node-1 when stable nodes are full or during rollouts.
+
+**Production apps that must survive node-1 reboots** (e.g. SwimTO) should set in their HelmRelease:
+
+- `replicas: 2` (or KEDA `minReplicaCount: 2`)
+- `nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution` — `node-tier NotIn unstable`
+- `podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution` — spread across `kubernetes.io/hostname`
+
+When a node goes **NotReady**, the controller taints it and evicts pods after ~5 minutes; with two replicas on node-2/3, the other stays up during a node-1 watchdog reboot.
+
+**Root cause on node-1 (recurring):** Pi freeze → hardware watchdog reboot → `NodeNotReady` / `Rebooted` events. See `docs/NODE-1-HANG-ROOT-CAUSE-2026-05-26.md`, `docs/HARDWARE_WATCHDOG.md`. Existing alerts: `NodePingableButNotReady`, `NodeUnexpectedReboot`, `WatchdogServiceDown`.
+
 ## Incident: cordon only
 
 If node-1 is actively failing, cordon is still the right **temporary** brake (not stored in Git):

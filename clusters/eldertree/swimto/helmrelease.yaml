@@ -22,8 +22,29 @@ spec:
     # ============================================================
     # SwimTO - Toronto pool schedules
     # ============================================================
+    # HA on stable nodes only (node-2/3). node-1 has intermittent watchdog reboots;
+    # single-replica + soft PreferNoSchedule allowed API to land on node-1 → 503 on swimto.app.
     components:
       swimto-api:
+        replicas: 2
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: eldertree.xyz/node-tier
+                      operator: NotIn
+                      values:
+                        - unstable
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: component
+                      operator: In
+                      values:
+                        - swimto-api
+                topologyKey: kubernetes.io/hostname
         image:
           repository: ghcr.io/raolivei/swimto-api
           tag: v0.8.3 # {"$imagepolicy": "swimto:swimto-api-policy:tag"}
@@ -82,6 +103,25 @@ spec:
           liveness: {initialDelaySeconds: 30, periodSeconds: 10}
           readiness: {initialDelaySeconds: 10, periodSeconds: 5}
       swimto-web:
+        replicas: 2
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: eldertree.xyz/node-tier
+                      operator: NotIn
+                      values:
+                        - unstable
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: component
+                      operator: In
+                      values:
+                        - swimto-web
+                topologyKey: kubernetes.io/hostname
         image:
           repository: ghcr.io/raolivei/swimto-web
           tag: v0.8.3 # {"$imagepolicy": "swimto:swimto-web-policy:tag"}

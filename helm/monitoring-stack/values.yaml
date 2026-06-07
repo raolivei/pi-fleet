@@ -165,7 +165,11 @@ prometheus:
         - target_label: __address__
           replacement: blackbox-exporter.observability.svc.cluster.local:9115
       static_configs:
-        - targets: ["https://swimto.eldertree.xyz", "https://pitanga.cloud"]
+        - targets:
+            - "https://swimto.eldertree.xyz"
+            - "https://swimto.app"
+            - "https://api.swimto.app/health"
+            - "https://pitanga.cloud"
     blackbox-https-ca:
       metrics_path: /probe
       params:
@@ -323,6 +327,48 @@ prometheus:
               annotations:
                 summary: "Low disk space on {{ $labels.instance }}"
                 description: "Disk space is below 15% on {{ $labels.instance }}."
+        - name: swimto-alerts
+          rules:
+            - alert: SwimTOApiReplicasUnavailable
+              expr: |
+                kube_deployment_status_replicas_available{
+                  namespace="swimto", deployment="swimto-api"
+                } < 1
+              for: 2m
+              labels:
+                severity: critical
+                app: swimto
+              annotations:
+                summary: "SwimTO API has no ready replicas"
+                description: "swimto-api available replicas < 1 for 2m — schedule/map on swimto.app will show 503. Check node-1 reboots and pod placement on stable nodes."
+            - alert: SwimTOWebReplicasUnavailable
+              expr: |
+                kube_deployment_status_replicas_available{
+                  namespace="swimto", deployment="swimto-web"
+                } < 1
+              for: 2m
+              labels:
+                severity: critical
+                app: swimto
+              annotations:
+                summary: "SwimTO web has no ready replicas"
+                description: "swimto-web available replicas < 1 for 2m — swimto.app may be unreachable."
+            - alert: SwimTOApiOnUnstableNode
+              expr: |
+                count(
+                  kube_pod_info{
+                    namespace="swimto",
+                    pod=~"swimto-api-.*",
+                    node="node-1.eldertree.local"
+                  }
+                ) > 0
+              for: 5m
+              labels:
+                severity: warning
+                app: swimto
+              annotations:
+                summary: "SwimTO API pod scheduled on node-1 (unstable tier)"
+                description: "swimto-api is running on node-1 despite unstable tier policy — reschedule or fix affinity/KEDA."
         - name: blackbox-alerts
           rules:
             - alert: BlackboxProbeFailing
@@ -333,6 +379,15 @@ prometheus:
               annotations:
                 summary: "Blackbox probe failing: {{ $labels.instance }}"
                 description: "The HTTPS blackbox check returned probe_success=0 (target unreachable or bad response) for 5+ minutes. URL: {{ $labels.instance }}."
+            - alert: SwimTOApiPublicProbeFailing
+              expr: probe_success{job="blackbox-https", instance="https://api.swimto.app/health"} == 0
+              for: 2m
+              labels:
+                severity: critical
+                app: swimto
+              annotations:
+                summary: "SwimTO public API health probe failing"
+                description: "Blackbox cannot reach https://api.swimto.app/health — users see 503 on schedule/map."
 
 # Grafana configuration
 grafana:
