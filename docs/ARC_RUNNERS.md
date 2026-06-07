@@ -154,55 +154,26 @@ kubectl logs -n arc-runners <pod-name>
 
 ## Adding More Repos
 
-**Default (2026-06):** The `ollie-runners` scale set registers at **org** scope (`githubConfigUrl: https://github.com/raolivei`). Any repo in the org can use `runs-on: self-hosted` without a separate HelmRelease.
+**Default (2026-06):** `raolivei` is a **GitHub User** account, not an Organization. Org-level ARC (`githubConfigUrl: https://github.com/raolivei`) is not available — use **one scale set per repo**.
 
-**PAT requirement:** Vault secret `secret/eldertree/arc-runners/ollie` must be a token with permission to register **organization** self-hosted runners (classic: `admin:org` → `manage_runners:org`; or fine-grained org admin).
+Each repo gets a HelmRelease with `githubConfigUrl: https://github.com/raolivei/<repo>`. Workflows use `runs-on: self-hosted`; jobs route only to that repo's listener.
 
-**Per-repo scale sets (optional):** Only needed for isolated quotas, different secrets, or non-`raolivei` repos.
+**PAT requirement:** Vault path `secret/eldertree/arc-runners/ollie` — classic PAT with `repo` + `workflow` scopes (shared across all user-owned repos). Sync via [`scripts/operations/setup-arc-repo-github-pat.sh`](../scripts/operations/setup-arc-repo-github-pat.sh).
 
-1. Create ExternalSecret in `clusters/eldertree/arc-runners/`:
-   ```yaml
-   apiVersion: external-secrets.io/v1beta1
-   kind: ExternalSecret
-   metadata:
-     name: <repo>-runner-github-secret
-     namespace: arc-runners
-   spec:
-     secretStoreRef:
-       kind: ClusterSecretStore
-       name: vault
-     target:
-       name: <repo>-runner-github-secret
-     data:
-       - secretKey: github_token
-         remoteRef:
-           key: secret/eldertree/arc-runners/<repo>
-           property: github_token
-   ```
+**Org scope (future):** Requires a real GitHub Organization entity (free tier works). Transfer repos, then a single org-scoped scale set can serve all repos.
 
-2. Create HelmRelease in `clusters/eldertree/arc-runners/<repo>-runners-helmrelease.yaml`:
-   ```yaml
-   apiVersion: helm.toolkit.fluxcd.io/v2
-   kind: HelmRelease
-   metadata:
-     name: <repo>-runners
-     namespace: arc-runners
-   spec:
-     chart:
-       spec:
-         chart: gha-runner-scale-set
-         version: "0.14.2"
-     values:
-       githubConfigUrl: "https://github.com/raolivei/<repo>"
-       githubConfigSecret: <repo>-runner-github-secret
-       minRunners: 0
-       maxRunners: 6   # match parallel jobs in the repo workflow
-   ```
+**Per-repo scale set:**
 
-   **Resource sizing (Pi 5 cluster):** Each runner pod is runner + DinD sidecar. Default chart requests (1 CPU / 2Gi per runner) saturate a 3×4-core cluster before all runners schedule. Ollie uses ~750m CPU / 1.5Gi requests per pod (500m+250m runner/dind) with limits 2.5 CPU / 3.5Gi so up to 6 parallel `build-publish` jobs can schedule on node-2 and node-3 (`node-tier: stable`). Builds may be slower under contention; raise limits only if nodes have headroom.
+1. Reuse `ollie-runner-github-secret` (shared PAT) or add a repo-specific ExternalSecret.
+
+2. Create HelmRelease in `clusters/eldertree/arc-runners/<slug>-runners-helmrelease.yaml` — copy an existing release and set unique `metadata.name`, `releaseName`, `runnerScaleSetName`, `githubConfigUrl`, and `maxRunners` (default `1`; `2` for repos with parallel docker-build jobs).
+
+   **Resource sizing (Pi 5 cluster):** Each runner pod is runner + DinD sidecar (~750m CPU / 1.5Gi requests). Pin to `node-tier: stable`. Cluster-wide budget: **4–6 concurrent DinD runners** across all scale sets.
 
 3. Update `clusters/eldertree/arc-runners/kustomization.yaml`
 4. Commit and push — Flux deploys automatically
+
+**Load testing:** `scripts/stress-arc-runners.sh` (dispatch workflows) + `scripts/monitor-arc-runners.sh` (live cluster view). Set `ARC_REPOS` to repos with deployed scale sets.
 
 ## References
 

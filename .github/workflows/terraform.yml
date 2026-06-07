@@ -1,7 +1,7 @@
 # Terraform secrets: source of truth is Vault (secret/pi-fleet/terraform/*).
 # GitHub repo secrets are synced via:
 #   ./scripts/sync-github-terraform-secrets-from-vault.sh --app actions --app dependabot
-# CI runs on Eldertree self-hosted runners (runs-on: self-hosted).
+# CI runs on GitHub-hosted until ARC runner has kubeconfig (see ARC_RUNNERS.md).
 name: "Terraform"
 
 on:
@@ -53,7 +53,7 @@ env:
 jobs:
   terraform:
     name: "Terraform"
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: dev
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
