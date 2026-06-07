@@ -25,7 +25,7 @@ spec:
       namespace: arc-controller
   values:
     # GitHub Configuration — org-wide so all raolivei repos can use runs-on: self-hosted
-    githubConfigUrl: "https://github.com/raolivei"
+    githubConfigUrl: "https://github.com/raolivei/ollie"
     githubConfigSecret: ollie-runner-github-secret
 
     # Scaling configuration — 6 matches parallel jobs in ollie build-publish.yaml
