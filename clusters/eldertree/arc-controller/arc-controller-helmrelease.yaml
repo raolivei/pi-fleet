@@ -11,10 +11,13 @@ spec:
       version: "0.14.2"
       sourceRef:
         kind: HelmRepository
-        name: arc-controller
+        name: arc-charts
         namespace: flux-system
       interval: 12h
   targetNamespace: arc-controller
+  # Avoid Flux default release name arc-controller-arc-controller (namespace + metadata.name).
+  # Chart renders ServiceAccount as {releaseName}-gha-rs-controller → arc-controller-gha-rs-controller.
+  releaseName: arc-controller
   install:
     createNamespace: true
     crds: CreateReplace

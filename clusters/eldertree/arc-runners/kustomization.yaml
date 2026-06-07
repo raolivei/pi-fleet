@@ -4,4 +4,4 @@ namespace: arc-runners
 resources:
   - namespace.yaml
   - ollie-external-secret.yaml
-  - ollie-runner-helmrelease.yaml
+  - ollie-runners-helmrelease.yaml
