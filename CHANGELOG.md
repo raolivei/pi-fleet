@@ -12,6 +12,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **ARC ollie-runners** — Register at org scope (`githubConfigUrl: https://github.com/raolivei`) so all org repos can use `runs-on: self-hosted` on the Eldertree scale set.
+- **pi-fleet CI** — Terraform and OpenClaw ARM64 build workflows use Eldertree self-hosted runners.
 - **Helm release names (cluster-wide)** — Set `releaseName: <metadata.name>` on all Eldertree HelmReleases so Flux no longer creates doubled releases (`openclaw-openclaw`, `canopy-canopy`, `observability-monitoring-stack`, etc.). See migration table in `FLUX_HELM_NAMING.md`.
 - **ARC HelmRepository** — Rename `arc-controller` → `arc-charts` in `flux-system` (serves both controller and scale-set OCI charts).
 - **ARC ClusterRole** — Rename `arc-controller-gha-rs-controller-secrets` → `arc-controller-secrets`.

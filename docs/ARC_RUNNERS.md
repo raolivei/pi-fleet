@@ -154,6 +154,12 @@ kubectl logs -n arc-runners <pod-name>
 
 ## Adding More Repos
 
+**Default (2026-06):** The `ollie-runners` scale set registers at **org** scope (`githubConfigUrl: https://github.com/raolivei`). Any repo in the org can use `runs-on: self-hosted` without a separate HelmRelease.
+
+**PAT requirement:** Vault secret `secret/eldertree/arc-runners/ollie` must be a token with permission to register **organization** self-hosted runners (classic: `admin:org` → `manage_runners:org`; or fine-grained org admin).
+
+**Per-repo scale sets (optional):** Only needed for isolated quotas, different secrets, or non-`raolivei` repos.
+
 1. Create ExternalSecret in `clusters/eldertree/arc-runners/`:
    ```yaml
    apiVersion: external-secrets.io/v1beta1
