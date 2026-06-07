@@ -26,7 +26,8 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+    # pi-fleet has no Eldertree scale set yet (see ARC_RUNNERS.md); GitHub-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write

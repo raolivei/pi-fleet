@@ -5,3 +5,12 @@ resources:
   - namespace.yaml
   - ollie-external-secret.yaml
   - ollie-runners-helmrelease.yaml
+  - pi-fleet-blog-runners-helmrelease.yaml
+  - elder-runners-helmrelease.yaml
+  - github-workflows-runners-helmrelease.yaml
+  - canopy-runners-helmrelease.yaml
+  - swimto-runners-helmrelease.yaml
+  - personal-website-runners-helmrelease.yaml
+  - northwaysignal-website-runners-helmrelease.yaml
+  - nima-runners-helmrelease.yaml
+  - eldertree-docs-runners-helmrelease.yaml

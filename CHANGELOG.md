@@ -6,15 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
-- **ARC org PAT setup** — [`scripts/operations/setup-arc-org-github-pat.sh`](scripts/operations/setup-arc-org-github-pat.sh) writes a `manage_runners:org` token to Vault before enabling org-wide scale set.
+- **ARC repo-scoped scale sets** — Per-repo `gha-runner-scale-set` HelmReleases for `pi-fleet-blog`, `elder`, `github-workflows`, `canopy`, `swimTO`, `personal-website`, `northwaysignal-website`, `nima`, `eldertree-docs` (each `githubConfigUrl: https://github.com/raolivei/<repo>`). `raolivei` is a GitHub User, not an Organization, so org-scope ARC is unavailable; each repo needs its own listener. Runner pods right-sized to 250m+100m CPU requests so 4+ schedule concurrently on Pi 5 stable nodes.
+- **ARC repo PAT setup** — [`scripts/operations/setup-arc-repo-github-pat.sh`](scripts/operations/setup-arc-repo-github-pat.sh) writes a `repo`+`workflow` token to Vault and verifies repo-scoped registration. `setup-arc-org-github-pat.sh` now delegates to it.
+- **ARC load-test scripts** — [`scripts/stress-arc-runners.sh`](scripts/stress-arc-runners.sh) (gated to repos with a deployed scale set via `ARC_REPOS`) and [`scripts/monitor-arc-runners.sh`](scripts/monitor-arc-runners.sh) (live runner/listener/node view).
 - **Flux Helm naming guide** — [`docs/FLUX_HELM_NAMING.md`](docs/FLUX_HELM_NAMING.md): require explicit `releaseName` on all HelmReleases; migration map for doubled releases.
 - **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).
 - **Ollie Helm chart** — Vendor `helm/ollie` from the [ollie](https://github.com/raolivei/ollie) repo so Flux `HelmRelease` path `./helm/ollie` resolves (fixes `InvalidChartReference`).
 
 ### Changed
 
-- **ARC ollie-runners (pending #226)** — Register at org scope (`githubConfigUrl: https://github.com/raolivei`) after Vault PAT setup; until then cluster stays on `raolivei/ollie`.
-- **pi-fleet CI** — Terraform and OpenClaw ARM64 build workflows use Eldertree self-hosted runners.
+- **ARC ollie-runners** — Repo-scoped (`githubConfigUrl: https://github.com/raolivei/ollie`); `maxRunners: 1` (serial `build-publish.yaml`). Org scope reverted — requires a GitHub Organization entity.
+- **pi-fleet CI** — Terraform and OpenClaw ARM64 build workflows revert to `ubuntu-latest` (pi-fleet has no scale set; terraform needs `~/.kube/config-eldertree` not present in ARC pods).
+- **`runs-on` standardized to `['self-hosted']`** for repos with a scale set; Tier 4 repos (`repo-template`, `eldertree-chassis`, `fragment`) moved to `ubuntu-latest` (no scale set).
 - **Helm release names (cluster-wide)** — Set `releaseName: <metadata.name>` on all Eldertree HelmReleases so Flux no longer creates doubled releases (`openclaw-openclaw`, `canopy-canopy`, `observability-monitoring-stack`, etc.). See migration table in `FLUX_HELM_NAMING.md`.
 - **ARC HelmRepository** — Rename `arc-controller` → `arc-charts` in `flux-system` (serves both controller and scale-set OCI charts).
 - **ARC ClusterRole** — Rename `arc-controller-gha-rs-controller-secrets` → `arc-controller-secrets`.
