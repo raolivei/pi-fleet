@@ -43,8 +43,6 @@ spec:
         labels:
           workload-type: ci-cd
       spec:
-        nodeSelector:
-          eldertree.xyz/node-tier: stable
         affinity:
           podAntiAffinity:
             preferredDuringSchedulingIgnoredDuringExecution:
@@ -64,18 +62,19 @@ spec:
             image: ghcr.io/actions/actions-runner:latest
             command: ["/home/runner/run.sh"]
             resources:
-              # Lean requests (real CPU usage is low) so 4+ runners fit on stable nodes
+              # Minimal requests — scheduler uses requests; real DinD usage is bursty.
+              # node-1 (unstable) used when node-2/3 stable nodes are full.
               requests:
-                cpu: 250m
-                memory: 768Mi
+                cpu: 100m
+                memory: 512Mi
               limits:
                 cpu: 1500m
                 memory: 2Gi
           - name: dind
             resources:
               requests:
-                cpu: 100m
-                memory: 384Mi
+                cpu: 50m
+                memory: 256Mi
               limits:
                 cpu: 1000m
                 memory: 1536Mi
