@@ -6,7 +6,8 @@ metadata:
 spec:
   scaleTargetRef:
     name: swimto-api
-  minReplicaCount: 2 # Always 2 on stable nodes — API must not scale to zero (swimto.app 503)
+  # TEMP (Rafael scale-to-zero test): revert to 2 before merging PR #221 — see swimto.app/schedule
+  minReplicaCount: 0
   maxReplicaCount: 5
   pollingInterval: 30
   cooldownPeriod: 300
