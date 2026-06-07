@@ -6,37 +6,42 @@ metadata:
   labels:
     app: openclaw
 spec:
-  # Restrict ingress to Elder pod
+  # Restrict ingress to Elder pod (Control Center API)
   policyTypes:
     - Ingress
   podSelector:
     matchLabels:
-      app: elder
+      app: openclaw
+      component: elder
   ingress:
     # Allow from OpenClaw pod (same namespace)
     - from:
         - podSelector:
             matchLabels:
               app: openclaw
+              component: openclaw
       ports:
         - protocol: TCP
-          port: 8000
-    # Allow from Traefik ingress controller
+          port: 8006
+    # Allow from Traefik ingress controller (runs in kube-system)
     - from:
         - namespaceSelector:
             matchLabels:
-              name: traefik
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
-          port: 8000
+          port: 8006
     # Allow health checks from kube-system (kubelet liveness probes)
     - from:
         - namespaceSelector:
             matchLabels:
-              name: kube-system
+              kubernetes.io/metadata.name: kube-system
       ports:
         - protocol: TCP
-          port: 8000
+          port: 8006
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -46,18 +51,22 @@ metadata:
   labels:
     app: openclaw
 spec:
-  # Restrict ingress to OpenClaw pod
+  # Restrict ingress to OpenClaw gateway pod only (not Elder)
   policyTypes:
     - Ingress
   podSelector:
     matchLabels:
       app: openclaw
+      component: openclaw
   ingress:
-    # Allow from Traefik ingress controller only
+    # Allow from Traefik ingress controller (runs in kube-system)
     - from:
         - namespaceSelector:
             matchLabels:
-              name: traefik
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
           port: 18789
@@ -65,7 +74,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              name: kube-system
+              kubernetes.io/metadata.name: kube-system
       ports:
         - protocol: TCP
           port: 18789
