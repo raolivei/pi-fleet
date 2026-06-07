@@ -69,12 +69,16 @@ flux reconcile helmrelease <name> -n <namespace> --with-source
 | `observability-monitoring-stack` | `monitoring-stack` | `observability` |
 | `observability-flux-ui` | `flux-ui` | `observability` |
 
-For ARC only, also delete superseded cluster RBAC after reconcile:
+For ARC only, also delete superseded cluster RBAC and HelmRepository after reconcile:
 
 ```bash
 kubectl delete clusterrole,clusterrolebinding arc-controller-gha-rs-controller-secrets --ignore-not-found
+kubectl delete clusterrole,clusterrolebinding arc-controller-arc-controller-gha-rs-controller --ignore-not-found
 kubectl delete helmrepository arc-controller -n flux-system --ignore-not-found
+kubectl delete helmrepository arc-charts -n arc-controller --ignore-not-found  # misplaced by old kustomize namespace transform
 ```
+
+**Note:** `arc-charts-helmrepository.yaml` lives at `clusters/eldertree/` root (not under `arc-controller/`) so Kustomize does not rewrite its namespace to `arc-controller`.
 
 ## References
 
