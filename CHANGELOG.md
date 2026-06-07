@@ -6,13 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
+- **ARC org PAT setup** — [`scripts/operations/setup-arc-org-github-pat.sh`](scripts/operations/setup-arc-org-github-pat.sh) writes a `manage_runners:org` token to Vault before enabling org-wide scale set.
 - **Flux Helm naming guide** — [`docs/FLUX_HELM_NAMING.md`](docs/FLUX_HELM_NAMING.md): require explicit `releaseName` on all HelmReleases; migration map for doubled releases.
 - **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).
 - **Ollie Helm chart** — Vendor `helm/ollie` from the [ollie](https://github.com/raolivei/ollie) repo so Flux `HelmRelease` path `./helm/ollie` resolves (fixes `InvalidChartReference`).
 
 ### Changed
 
-- **ARC ollie-runners** — Register at org scope (`githubConfigUrl: https://github.com/raolivei`) so all org repos can use `runs-on: self-hosted` on the Eldertree scale set.
+- **ARC ollie-runners (pending #226)** — Register at org scope (`githubConfigUrl: https://github.com/raolivei`) after Vault PAT setup; until then cluster stays on `raolivei/ollie`.
 - **pi-fleet CI** — Terraform and OpenClaw ARM64 build workflows use Eldertree self-hosted runners.
 - **Helm release names (cluster-wide)** — Set `releaseName: <metadata.name>` on all Eldertree HelmReleases so Flux no longer creates doubled releases (`openclaw-openclaw`, `canopy-canopy`, `observability-monitoring-stack`, etc.). See migration table in `FLUX_HELM_NAMING.md`.
 - **ARC HelmRepository** — Rename `arc-controller` → `arc-charts` in `flux-system` (serves both controller and scale-set OCI charts).
