@@ -21,6 +21,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **SwimTO 503 during node-1 reboots** — `node-1` watchdog reboots (hang → NotReady, 5× in 8h on 2026-06-07) took down single `swimto-api` pod scheduled on unstable tier. SwimTO API/web: **2 replicas**, **required** `node-tier != unstable`, **podAntiAffinity** across hosts; KEDA `minReplicaCount` 2 (API was 0). Monitoring-stack **0.2.14**: blackbox probes for `swimto.app` and `api.swimto.app/health`, alerts `SwimTOApiReplicasUnavailable`, `SwimTOApiPublicProbeFailing`, `SwimTOApiOnUnstableNode`.
 - **ARC runners stuck Pending** — `ollie-runners` HelmRelease `controllerServiceAccount.name` did not match the controller's real ServiceAccount (`arc-controller-gha-rs-controller`). Flux defaulted the controller Helm release name to `arc-controller-arc-controller`, producing SA `arc-controller-arc-controller-gha-rs-controller`. Set `releaseName: arc-controller` on the controller HelmRelease and point runners at `arc-controller-gha-rs-controller`.
 - **Pi-hole HelmRelease** — `strategy: Recreate` and 20m upgrade timeout (RollingUpdate dual-pod upgrades caused Helm deadline exceeded).
 - **control.eldertree.xyz DNS** — `scripts/cloudflare-reconcile-control-dns.sh` removes stale `control` A records before Terraform apply; runs in `terraform.yml` on apply.

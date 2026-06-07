@@ -6,7 +6,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: swimto-api
-  minReplicaCount: 0 # Scale to zero in standby
+  minReplicaCount: 2 # Always 2 on stable nodes — API must not scale to zero (swimto.app 503)
   maxReplicaCount: 5
   pollingInterval: 30
   cooldownPeriod: 300
