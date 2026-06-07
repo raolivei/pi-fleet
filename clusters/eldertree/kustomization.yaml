@@ -14,6 +14,7 @@ resources:
   - autoscaling # KEDA event-driven autoscaling
 
   # CI/CD
+  - arc-charts-helmrepository.yaml # ARC OCI charts (flux-system; not under arc-controller ns kustomize)
   - arc-controller # Actions Runner Controller
   - arc-runners # GitHub Actions runners (ollie)
 
