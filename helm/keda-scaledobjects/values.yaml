@@ -2,7 +2,7 @@
 # Global settings
 global:
   prometheus:
-    serverAddress: "http://observability-monitoring-stack-prometheus-server.observability.svc.cluster.local:80"
+    serverAddress: "http://monitoring-stack-prometheus-server.observability.svc.cluster.local:80"
   pollingInterval: 30
   cooldownPeriod: 300 # 5 min cooldown period
   # Keep CPU/Memory for stateful services
@@ -40,7 +40,7 @@ swimto:
   enabled: true
   api:
     enabled: true
-    minReplicas: 0 # Scale to zero in standby
+    minReplicas: 2 # HA across stable nodes (scale-to-zero test used min 0 temporarily)
     maxReplicas: 5
     triggerType: "http-rate"
     httpRateThreshold: "5" # requests/sec to scale up

@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # Repos with deployed scale sets — update as phases roll out
-ARC_REPOS="${ARC_REPOS:-ollie pi-fleet-blog elder canopy swimTO personal-website northwaysignal-website nima eldertree-docs}"
+ARC_REPOS="${ARC_REPOS:-ollie pi-fleet-blog elder github-workflows canopy swimTO personal-website northwaysignal-website nima eldertree-docs}"
 
 has_repo() {
   local want=$1

@@ -15,10 +15,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Grafana/KEDA Prometheus DNS after Helm naming migration** — Grafana datasource, KEDA `serverAddress`, and pushgateway ingress pointed at removed `observability-monitoring-stack-prometheus-server`; updated to `monitoring-stack-prometheus-server`. monitoring-stack chart **0.2.15**.
+- **Ollie training CronJob ImagePullBackOff** — `ghcr.io/raolivei/ollie-training:latest` was never published (not in ollie `build-publish.yaml`). Disable `training.enabled` until the image is built and pushed.
 - **ARC runner pods Pending** — Drop `node-tier: stable` nodeSelector (node-1 was ~99% free but excluded while node-2 at 98% CPU requests and node-3 NotReady under load). Lower runner requests to 100m CPU / 512Mi.
 
 ### Changed
 
+- **`stress-arc-runners.sh`** — include `github-workflows` in default `ARC_REPOS` (repo-scoped scale set deployed in Phase 1).
 - **ARC ollie-runners** — Repo-scoped (`githubConfigUrl: https://github.com/raolivei/ollie`); `maxRunners: 1` (serial `build-publish.yaml`). Org scope reverted — requires a GitHub Organization entity.
 - **pi-fleet CI** — Terraform and OpenClaw ARM64 build workflows revert to `ubuntu-latest` (pi-fleet has no scale set; terraform needs `~/.kube/config-eldertree` not present in ARC pods).
 - **`runs-on` standardized to `['self-hosted']`** for repos with a scale set; Tier 4 repos (`repo-template`, `eldertree-chassis`, `fragment`) moved to `ubuntu-latest` (no scale set).

@@ -28,7 +28,7 @@ Workspace standard: [`workspace-config/docs/OBSERVABILITY_STANDARDS.md`](../../w
 
 ```bash
 # After Flux reconcile or helm upgrade
-kubectl port-forward -n observability svc/observability-monitoring-stack-prometheus-server 9090:80
+kubectl port-forward -n observability svc/monitoring-stack-prometheus-server 9090:80
 # Targets → job for your app should be UP
 
 # Grafana → Dashboards → Applications/<YourApp>
