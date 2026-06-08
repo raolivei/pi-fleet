@@ -18,7 +18,7 @@ To see cluster metrics (CPU, Memory, Network, etc.) directly in Lens for the `el
 - In the **Prometheus Service Address** field, enter:
 
   ```text
-  observability/observability-monitoring-stack-prometheus-server:80
+  observability/monitoring-stack-prometheus-server:80
   ```
 
 - This follows the format `namespace/service-name:port`.

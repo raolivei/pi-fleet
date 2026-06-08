@@ -108,7 +108,8 @@ frontend:
     pullPolicy: IfNotPresent
 
 training:
-  enabled: true
+  # Image never published to GHCR (not in ollie build-publish.yaml). Enable after first push.
+  enabled: false
   image:
     repository: ghcr.io/raolivei/ollie-training
     tag: latest

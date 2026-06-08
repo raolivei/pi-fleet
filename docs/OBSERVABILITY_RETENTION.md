@@ -65,7 +65,7 @@ Perform during a maintenance window. Old data on 8Gi volumes is discarded unless
 
 ```bash
 # Scale down
-kubectl scale deploy -n observability observability-monitoring-stack-prometheus-server --replicas=0
+kubectl scale deploy -n observability monitoring-stack-prometheus-server --replicas=0
 
 # Delete old PVC (after backup if needed)
 kubectl delete pvc -n observability prometheus-server
@@ -73,7 +73,7 @@ kubectl delete pvc -n observability prometheus-server
 # Flux/Helm recreate with new spec — or helm upgrade with new values
 flux reconcile helmrelease monitoring-stack -n observability
 
-kubectl scale deploy -n observability observability-monitoring-stack-prometheus-server --replicas=1
+kubectl scale deploy -n observability monitoring-stack-prometheus-server --replicas=1
 kubectl get pvc -n observability -w
 ```
 
@@ -96,9 +96,9 @@ kubectl get pvc -n observability -o custom-columns=NAME:.metadata.name,SC:.spec.
 
 ```bash
 # Prometheus flags
-kubectl exec -n observability deploy/observability-monitoring-stack-prometheus-server -- \
+kubectl exec -n observability deploy/monitoring-stack-prometheus-server -- \
   prometheus --version 2>/dev/null; \
-kubectl get deploy -n observability observability-monitoring-stack-prometheus-server -o yaml | grep -A2 retention
+kubectl get deploy -n observability monitoring-stack-prometheus-server -o yaml | grep -A2 retention
 
 # Loki retention (720h = 30d)
 kubectl exec -n observability deploy/loki -- cat /etc/loki/loki.yaml | grep retention_period
@@ -139,7 +139,7 @@ Use existing **storage-alerts** in `helm/monitoring-stack/values.yaml`. Confirm 
 The 60GB USB at `/mnt/backup` is **not** sized for continuous 90d observability mirrors. Optional monthly:
 
 ```bash
-kubectl exec -n observability deploy/observability-monitoring-stack-prometheus-server -- \
+kubectl exec -n observability deploy/monitoring-stack-prometheus-server -- \
   promtool tsdb snapshot /data/prometheus
 ```
 

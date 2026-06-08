@@ -48,3 +48,5 @@ spec:
         repository: ghcr.io/raolivei/ollie-frontend
         tag: v0.4.5
         pullPolicy: Always
+    training:
+      enabled: false # ghcr.io/raolivei/ollie-training:latest not published yet
