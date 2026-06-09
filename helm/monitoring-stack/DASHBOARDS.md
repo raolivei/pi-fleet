@@ -141,7 +141,7 @@ These are **not** files under `dashboards/`; they are pulled by ID at deploy tim
 | `node-exporter-full` | 1860 | 37 | Node exporter (compare with **Hardware Health** for Pi-focused view) |
 | `traefik` | 11462 | 1 | **Upstream** Traefik template (Eldertree also uses custom **Network Intelligence**) |
 | `coredns` | 14981 | 2 | CoreDNS |
-| `pihole` | 10176 | 1 | Pi-hole |
+| `bind` | — | 1 | BIND9 LAN DNS |
 
 ### GitOps, TLS, external secrets
 

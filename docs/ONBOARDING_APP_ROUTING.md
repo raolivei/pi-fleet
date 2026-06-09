@@ -14,7 +14,7 @@ Related: [ONBOARDING_APP_OBSERVABILITY.md](ONBOARDING_APP_OBSERVABILITY.md) (met
 flowchart LR
   Browser["Browser on Mac"]
   Caddy["Caddy optional\n:443 local certs"]
-  DNS["Pi-hole DNS\nor /etc/hosts"]
+  DNS["BIND9 LAN DNS\nor /etc/hosts"]
   Traefik["Traefik Ingress"]
   Svc["Service"]
   Pod["Pods"]
@@ -26,7 +26,7 @@ flowchart LR
   Pod --> Svc
 ```
 
-**Cluster-only fixes** (Ingress, pods) do not help if **Pi-hole**, **/etc/hosts**, or **Caddy** on the Mac are stale. That is why routing changes often feel like whack-a-mole.
+**Cluster-only fixes** (Ingress, pods) do not help if **LAN DNS**, **/etc/hosts**, or **Caddy** on the Mac are stale. That is why routing changes often feel like whack-a-mole.
 
 ---
 
@@ -42,7 +42,7 @@ Enforced copies (must list every registry host):
 |------|---------|
 | [`docs/eldertree-local-hosts-block.txt`](eldertree-local-hosts-block.txt) | Tailscale / manual `/etc/hosts` block |
 | [`scripts/add-services-to-hosts.sh`](../scripts/add-services-to-hosts.sh) | `sudo` helper to append hosts |
-| [`scripts/Caddyfile`](../scripts/Caddyfile) | Local HTTPS proxy → Traefik NodePort (when not using Pi-hole-only) |
+| [`scripts/Caddyfile`](../scripts/Caddyfile) | Local HTTPS proxy → Traefik VIP (when not using BIND9-only) |
 
 Also update [`docs/SERVICES_REFERENCE.md`](SERVICES_REFERENCE.md) for humans.
 
@@ -85,7 +85,7 @@ cd pi-fleet
 # 1. Repo files in sync (no cluster needed)
 ./scripts/check-local-routing-registry.sh
 
-# 2. End-to-end (cluster + Pi-hole + Mac)
+# 2. End-to-end (cluster + LAN DNS + Mac)
 export KUBECONFIG=~/.kube/config-eldertree
 ./scripts/verify-service-routing.sh --host <app>.eldertree.local
 ```
@@ -97,7 +97,7 @@ export KUBECONFIG=~/.kube/config-eldertree
 | No Ingress | GitOps not applied; Flux stuck; wrong namespace |
 | No endpoints | Image pull, crash loop, wrong selector |
 | Certificate not Ready | cert-manager issuer, DNS-01/CA config |
-| Pi-hole NXDOMAIN | external-dns annotation; external-dns logs |
+| LAN DNS NXDOMAIN | external-dns annotation; external-dns / BIND9 logs |
 | Traefik NodePort OK, Mac curl fail | hosts/Caddy/DNS on Mac |
 | Mac 503, Traefik 503 | Backend down (not a routing issue) |
 | Missing from Caddyfile | Run registry sync; add stanza |
@@ -120,7 +120,7 @@ curl -sk --resolve "<app>.eldertree.local:443:192.168.2.101" https://<app>.elder
 
 | Access | Mechanism | Verify with |
 |--------|-----------|-------------|
-| **LAN / Tailscale** | Traefik + Pi-hole + hosts/Caddy | `verify-service-routing.sh` |
+| **LAN / Tailscale** | Traefik + BIND9 + hosts/Caddy | `verify-service-routing.sh` |
 | **Public HTTPS** | Cloudflare Tunnel → Traefik ClusterIP | Blackbox `blackbox-https` job; browser off-LAN |
 
 Do not assume LAN routing implies public URL or vice versa.

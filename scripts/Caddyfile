@@ -2,7 +2,7 @@
 # Run with: sudo caddy run --config ~/WORKSPACE/raolivei/pi-fleet/scripts/Caddyfile
 #
 # This proxies *.eldertree.local to the k3s cluster via kube-vip Traefik VIP.
-# Use 192.168.2.200:443 — NOT a node LAN IP (node-1 often hits Pi-hole on 443).
+# Use 192.168.2.200:443 — Traefik kube-vip VIP (not a node LAN IP).
 # Allows accessing services without specifying port numbers
 #
 # Only includes DEPLOYED services — keep in sync with docs/eldertree-local-services.yaml

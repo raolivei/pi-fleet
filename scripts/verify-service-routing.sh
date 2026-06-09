@@ -11,7 +11,7 @@
 #   1. Ingress exists with host rule and backend Service has endpoints
 #   2. TLS Certificate Ready (if Ingress uses TLS)
 #   3. external-dns hostname annotation present
-#   4. Pi-hole DNS resolves host
+#   4. LAN DNS (BIND9 VIP) resolves host
 #   5. Traefik NodePort HTTPS with Host header (bypasses Mac DNS/Caddy)
 #   6. Mac path: curl https://host (uses your DNS + optional Caddy)
 #   7. Registry sync (check-local-routing-registry.sh) for that host
@@ -20,7 +20,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REGISTRY="${ROOT}/docs/eldertree-local-services.yaml"
-PIHOLE_IP="${PIHOLE_IP:-192.168.2.201}"
+DNS_IP="${DNS_IP:-${PIHOLE_IP:-192.168.2.201}}"
 TRAEFIK_HTTPS_NODEPORT="${TRAEFIK_HTTPS_NODEPORT:-}"
 TRAEFIK_NODE_IP="${TRAEFIK_NODE_IP:-192.168.2.101}"
 SKIP_MAC=false
@@ -32,7 +32,8 @@ while [[ $# -gt 0 ]]; do
     --host) HOST="$2"; shift 2 ;;
     --all-local) ALL_LOCAL=true; shift ;;
     --skip-mac) SKIP_MAC=true; shift ;;
-    --pihole-ip) PIHOLE_IP="$2"; shift 2 ;;
+    --dns-ip) DNS_IP="$2"; shift 2 ;;
+    --pihole-ip) DNS_IP="$2"; shift 2 ;;  # deprecated alias
     -h|--help)
       sed -n '2,20p' "$0"
       exit 0
@@ -156,20 +157,20 @@ print('Missing')
   if [[ -n "$edns" ]]; then
     pass "external-dns hostname: $edns"
   else
-    warn "Missing external-dns.alpha.kubernetes.io/hostname (Pi-hole may not auto-update)"
+    warn "Missing external-dns.alpha.kubernetes.io/hostname (external-dns may not auto-update)"
   fi
 
-  # --- Pi-hole DNS ---
+  # --- LAN DNS (BIND9) ---
   if command -v dig >/dev/null 2>&1; then
     local dns_answer
-    dns_answer=$(dig +short "@${PIHOLE_IP}" "$host" A 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+    dns_answer=$(dig +short "@${DNS_IP}" "$host" A 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
     if [[ -n "$dns_answer" ]]; then
-      pass "Pi-hole ($PIHOLE_IP) → $dns_answer"
+      pass "BIND9 LAN DNS ($DNS_IP) → $dns_answer"
     else
-      fail "Pi-hole does not resolve $host (check external-dns / BIND sidecar; is $PIHOLE_IP reachable?)"
+      fail "LAN DNS does not resolve $host (check external-dns / BIND9; is $DNS_IP reachable?)"
     fi
   else
-    warn "dig not installed — skip Pi-hole check"
+    warn "dig not installed — skip LAN DNS check"
   fi
 
   # --- Traefik direct (cluster path) ---

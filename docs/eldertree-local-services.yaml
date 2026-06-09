@@ -1,7 +1,7 @@
 # Eldertree local routing registry
 #
 # Single source of truth for *.eldertree.local hostnames that must resolve on
-# Rafael's Mac (Pi-hole DNS and/or /etc/hosts + optional Caddy).
+# Rafael's Mac (BIND9 LAN DNS and/or /etc/hosts + optional Caddy).
 #
 # When onboarding a new LAN-facing service:
 #   1. Add the host here first

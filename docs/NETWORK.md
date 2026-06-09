@@ -19,7 +19,7 @@ This replaces MetalLB and provides reliable ARP-based IP assignment.
 | ------------- | --------------- | ------------------------------ |
 | 192.168.2.100 | K8s API Server  | HA control plane VIP           |
 | 192.168.2.200 | Traefik Ingress | HTTPS ingress for all services |
-| 192.168.2.201 | Pi-hole         | DNS server                     |
+| 192.168.2.201 | BIND9           | LAN DNS server                 |
 
 **k3s Internal Networks:**
 
@@ -42,16 +42,16 @@ To ensure cluster stability, configure static IP via router DHCP reservation:
 
 ## DNS Setup
 
-### Pi-hole as Network DNS Server (Recommended)
+### BIND9 as Network DNS Server (Recommended)
 
-Pi-hole is configured as a LoadBalancer service (kube-vip) on port 53, making it available as your network-wide DNS server.
+BIND9 (`namespace: bind`) is the authoritative DNS server for `eldertree.local`, exposed as a LoadBalancer (kube-vip) on port 53.
 
 **How it works:**
 
-- kube-vip assigns a virtual IP (`192.168.2.201`) to the Pi-hole service.
-- Pi-hole is configured to resolve `*.eldertree.local` to the Traefik VIP.
-- All cluster services are accessible via their `*.eldertree.local` hostnames.
-- **Router DNS Configuration**: Set your router's DNS server to `192.168.2.201` so all devices on your network automatically use Pi-hole.
+- kube-vip assigns virtual IP `192.168.2.201` to the BIND9 Service.
+- external-dns updates the zone via RFC2136 when Ingress hostnames change.
+- `*.eldertree.local` records point at the Traefik VIP (`192.168.2.200`).
+- **Router DNS:** set primary DNS to `192.168.2.201` so LAN devices resolve Eldertree hostnames.
 
 **Configure Router DNS (Network-Wide):**
 
@@ -115,7 +115,7 @@ Add to `/etc/hosts` on all machines:
 192.168.2.103  node-3.eldertree.local
 ```
 
-> **Note:** Pi-hole (192.168.2.201) handles DNS. Use /etc/hosts only as fallback.
+> **Note:** BIND9 (192.168.2.201) handles LAN DNS. Use /etc/hosts only as fallback.
 
 ## Service Domains
 
@@ -124,8 +124,6 @@ Local services use `.eldertree.local` domain with self-signed TLS:
 - `grafana.eldertree.local` - Monitoring dashboards (admin/admin)
 - `prometheus.eldertree.local` - Metrics endpoint
 - `vault.eldertree.local` - Secrets management
-- `pihole.eldertree.local` - DNS management
-
 ## Accessing Services
 
 Access services via HTTPS (accept self-signed certificate warnings):
@@ -133,7 +131,6 @@ Access services via HTTPS (accept self-signed certificate warnings):
 - `https://grafana.eldertree.local`
 - `https://prometheus.eldertree.local`
 - `https://canopy.eldertree.local`
-- `https://pihole.eldertree.local`
 - `https://vault.eldertree.local`
 
 ## Remote Access
@@ -149,6 +146,7 @@ For secure remote access to your cluster services, use Cloudflare Tunnel. See `c
 **DNS not resolving:**
 
 ```bash
-kubectl get pods -n pihole
-kubectl logs -n pihole deployment/pi-hole -c pihole
+kubectl get pods,svc -n bind
+kubectl logs -n bind deployment/bind9 --tail=50
+dig @192.168.2.201 grafana.eldertree.local +short
 ```

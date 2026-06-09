@@ -132,7 +132,7 @@ backup_kubernetes() {
     kubectl get namespaces -o json > "${BACKUP_ROOT}/kubernetes/namespaces.json" 2>/dev/null || true
     
     # Backup important resources per namespace
-    for namespace in swimto journey canopy nima vault pihole observability wireguard; do
+    for namespace in swimto journey canopy nima vault bind observability wireguard; do
         if kubectl get namespace "${namespace}" &>/dev/null; then
             echo -e "  📋 Backing up namespace: ${namespace}"
             mkdir -p "${BACKUP_ROOT}/kubernetes/${namespace}"

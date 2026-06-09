@@ -137,7 +137,7 @@ See [helm/README.md](helm/README.md) for details.
 
 - 3-node HA K3s cluster (node-1, node-2, node-3)
 - K3s v1.33.6+k3s1 / v1.34.3+k3s1
-- Flux GitOps, cert-manager, Pi-hole DNS
+- Flux GitOps, cert-manager, BIND9 LAN DNS
 - Monitoring: Prometheus + Grafana
 - Storage: Longhorn (distributed)
 - Secrets: HashiCorp Vault (HA)
@@ -147,7 +147,7 @@ See [helm/README.md](helm/README.md) for details.
 - Grafana: https://grafana.eldertree.local (admin/admin)
 - Prometheus: https://prometheus.eldertree.local
 - Canopy: https://canopy.eldertree.local
-- Pi-hole: https://pihole.eldertree.local
+- LAN DNS: `dig @192.168.2.201 grafana.eldertree.local`
 
 See [docs/NETWORK.md](docs/NETWORK.md) for DNS setup.
 

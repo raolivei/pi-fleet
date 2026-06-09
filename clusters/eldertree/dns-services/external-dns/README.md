@@ -79,12 +79,8 @@ External-DNS will automatically create the DNS record.
 
 **DNS records not created:**
 - Check external-dns logs: `kubectl logs -n external-dns deployment/external-dns`
-- Verify TSIG key matches Pi-hole configuration
-- Check Pi-hole accepts RFC2136 updates
-
-**dnsmasq not accepting updates:**
-- Consider BIND backend configuration
-- Or use ConfigMap-based approach (manual/scripted)
+- Verify TSIG key matches BIND9 (`bind-tsig-secret` in namespace `bind`)
+- Check BIND9 accepts RFC2136 updates: `kubectl logs -n bind deployment/bind9`
 
 ## Configuration
 
