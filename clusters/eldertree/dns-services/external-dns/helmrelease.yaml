@@ -40,8 +40,8 @@ spec:
     env:
       - name: EXTERNAL_DNS_RFC2136_HOST
         # Use stable ClusterIP instead of hostname to avoid circular DNS dependency
-        # Verify with: kubectl get svc -n pihole pi-hole -o jsonpath='{.spec.clusterIP}'
-        value: "10.43.117.25"
+        # Verify with: kubectl get svc -n pi-hole pi-hole -o jsonpath='{.spec.clusterIP}'
+        value: "10.43.153.12"
       - name: EXTERNAL_DNS_RFC2136_PORT
         value: "5353"
       - name: EXTERNAL_DNS_RFC2136_ZONE

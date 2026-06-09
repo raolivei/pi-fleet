@@ -15,6 +15,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Pi-hole exporter ImagePullBackOff (arm64)** — `ghcr.io/mosher-labs/pihole6-exporter` has no arm64 manifest; pod stayed 2/3 Ready with **empty Service endpoints**, breaking RFC2136 external-dns. Chart adds `exporter.enabled` (off on Eldertree until arm64 image exists).
+- **external-dns RFC2136 crash loop** — `EXTERNAL_DNS_RFC2136_HOST` pointed at stale Pi-hole ClusterIP `10.43.117.25`; updated to current `10.43.153.12` (`kubectl get svc -n pi-hole pi-hole`).
+- **ExternalSecret Vault path drift** — `ollie`, `personal-website`, and `pitanga` `ghcr-secret` now read `secret/canopy/ghcr-token` (same as swimto/canopy). `ollie-secrets` reads `secret/elder/api-key` and `secret/openclaw/openrouter` instead of missing `secret/pi-fleet/*` paths.
 - **Grafana/KEDA Prometheus DNS after Helm naming migration** — Grafana datasource, KEDA `serverAddress`, and pushgateway ingress pointed at removed `observability-monitoring-stack-prometheus-server`; updated to `monitoring-stack-prometheus-server`. monitoring-stack chart **0.2.15**.
 - **Ollie training CronJob ImagePullBackOff** — `ghcr.io/raolivei/ollie-training:latest` was never published (not in ollie `build-publish.yaml`). Disable `training.enabled` until the image is built and pushed.
 - **ARC runner pods Pending** — Drop `node-tier: stable` nodeSelector (node-1 was ~99% free but excluded while node-2 at 98% CPU requests and node-3 NotReady under load). Lower runner requests to 100m CPU / 512Mi.
