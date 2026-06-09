@@ -17,9 +17,9 @@ image:
     tag: latest
     pullPolicy: IfNotPresent
 
-# ghcr.io/mosher-labs/pihole6-exporter has no arm64 manifest (Pi 5). Disable on Eldertree.
+# ghcr.io/mosher-labs/pihole6-exporter has no arm64 manifest (Pi 5). Disabled by default.
 exporter:
-  enabled: true
+  enabled: false
 
 service:
   type: LoadBalancer
