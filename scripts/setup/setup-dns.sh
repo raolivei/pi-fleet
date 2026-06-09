@@ -1,6 +1,6 @@
 #!/bin/bash
 # Setup DNS for *.eldertree.local domains
-# Supports both Pi-hole DNS and /etc/hosts fallback
+# Supports BIND9 LAN DNS and /etc/hosts fallback
 #
 # NOTE: This script is a convenience wrapper. For better automation, use:
 #   ansible-playbook ansible/playbooks/configure-dns.yml -e configure_hosts_file=true
@@ -11,25 +11,24 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ANSIBLE_DIR="${PROJECT_ROOT}/ansible"
 
-ELDERTREE_IP="${ELDERTREE_IP:-192.168.2.83}"
-PIHOLE_PORT="${PIHOLE_PORT:-30053}"
+TRAEFIK_VIP="${TRAEFIK_VIP:-192.168.2.200}"
+DNS_VIP="${DNS_VIP:-192.168.2.201}"
 
 echo "🔧 DNS Setup for *.eldertree.local"
 echo ""
 
-# Check if Pi-hole is deployed
 export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config-eldertree}"
-if kubectl get deployment pihole -n pihole &> /dev/null; then
-    echo "✅ Pi-hole is deployed"
+if kubectl get deployment bind9 -n bind &> /dev/null; then
+    echo "✅ BIND9 is deployed (namespace bind)"
     echo ""
     echo "Option 1: Router DNS (Recommended - Network-wide)"
-    echo "  Set router DNS to: ${ELDERTREE_IP}:${PIHOLE_PORT}"
+    echo "  Set router primary DNS to: ${DNS_VIP}"
     echo ""
     echo "Option 2: macOS System Settings"
-    echo "  System Settings → Network → DNS → Add: ${ELDERTREE_IP}"
+    echo "  System Settings → Network → DNS → Add: ${DNS_VIP}"
     echo ""
 else
-    echo "⚠️  Pi-hole not deployed, using /etc/hosts fallback"
+    echo "⚠️  BIND9 not deployed, using /etc/hosts fallback"
     echo ""
 fi
 
@@ -41,7 +40,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # Use Ansible playbook for DNS configuration
     cd "${ANSIBLE_DIR}"
     ansible-playbook playbooks/configure-dns.yml \
-      -e "eldertree_ip=${ELDERTREE_IP}" \
+      -e "eldertree_ip=${TRAEFIK_VIP}" \
       -e "configure_hosts_file=true" \
       || {
         echo ""
@@ -50,11 +49,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         
         # Fallback to direct /etc/hosts update
         HOSTS_FILE="/etc/hosts"
-        DOMAINS=("eldertree" "canopy.eldertree.local" "grafana.eldertree.local" "prometheus.eldertree.local" "vault.eldertree.local" "pihole.eldertree.local" "swimto.eldertree.local")
+        DOMAINS=("canopy.eldertree.local" "grafana.eldertree.local" "prometheus.eldertree.local" "vault.eldertree.local" "swimto.eldertree.local")
         
         for domain in "${DOMAINS[@]}"; do
             if ! grep -q "$domain" "$HOSTS_FILE" 2>/dev/null; then
-                echo "${ELDERTREE_IP}  $domain" | sudo tee -a "$HOSTS_FILE" > /dev/null
+                echo "${TRAEFIK_VIP}  $domain" | sudo tee -a "$HOSTS_FILE" > /dev/null
                 echo "✅ Added $domain"
             else
                 echo "✓ $domain already exists"
@@ -72,7 +71,6 @@ echo "  - https://canopy.eldertree.local"
 echo "  - https://grafana.eldertree.local"
 echo "  - https://prometheus.eldertree.local"
 echo "  - https://vault.eldertree.local"
-echo "  - https://pihole.eldertree.local"
 echo "  - https://swimto.eldertree.local"
 echo ""
 

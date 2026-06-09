@@ -1,11 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # DNS and networking services
-# Pi-hole for ad-blocking DNS (network DNS server), External DNS for automation, Cloudflare Tunnel for secure outbound connections
-# WireGuard VPN is disabled - use Cloudflare Tunnel for remote access instead
+# BIND9 authoritative LAN DNS (eldertree.local + RFC2136), External DNS, Cloudflare Tunnel
 resources:
-  - pi-hole # Pi-hole DNS server with ad-blocking and custom DNS rewrites (network DNS server on port 53)
-  - external-dns # Automated DNS record management for external DNS providers
+  - bind # BIND9 replaces Pi-hole — adblock unused; see dns-services/bind/README.md (#232)
+  - external-dns # Automated DNS record management (RFC2136 LAN + Cloudflare public)
   # - wireguard # WireGuard VPN server for secure remote access (DISABLED)
   - cloudflare-tunnel # Cloudflare Tunnel for secure outbound connections (deployed via Helm)
 

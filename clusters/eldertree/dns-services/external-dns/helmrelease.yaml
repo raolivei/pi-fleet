@@ -10,6 +10,8 @@ spec:
       namespace: external-secrets
     - name: cert-manager-issuers
       namespace: flux-system
+    - name: bind9
+      namespace: bind
   chart:
     spec:
       chart: external-dns
@@ -39,11 +41,10 @@ spec:
     provider: rfc2136
     env:
       - name: EXTERNAL_DNS_RFC2136_HOST
-        # Use stable ClusterIP instead of hostname to avoid circular DNS dependency
-        # Verify with: kubectl get svc -n pi-hole pi-hole -o jsonpath='{.spec.clusterIP}'
-        value: "10.43.153.12"
+        # Cluster DNS — *.svc.cluster.local resolves via CoreDNS (no pi-hole dependency)
+        value: "bind9.bind.svc.cluster.local"
       - name: EXTERNAL_DNS_RFC2136_PORT
-        value: "5353"
+        value: "53"
       - name: EXTERNAL_DNS_RFC2136_ZONE
         value: "eldertree.local"
       - name: EXTERNAL_DNS_RFC2136_TSIG_KEYNAME

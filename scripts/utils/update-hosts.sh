@@ -6,7 +6,6 @@ CLUSTER_IP="192.168.2.83"
 # Services to add
 SERVICES=(
     "canopy.eldertree.local"
-    "pihole.eldertree.local"
 )
 
 echo "Updating /etc/hosts with Pi Fleet service entries..."

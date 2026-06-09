@@ -65,7 +65,7 @@ cd pi-fleet
 
 ### setup/setup-dns.sh
 
-Setup DNS for \*.eldertree.local domains (Pi-hole or /etc/hosts).
+Setup DNS for \*.eldertree.local domains (BIND9 LAN DNS or /etc/hosts).
 
 ```bash
 ./scripts/setup/setup-dns.sh

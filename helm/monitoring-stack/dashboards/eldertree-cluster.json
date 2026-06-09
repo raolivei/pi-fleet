@@ -577,11 +577,11 @@
     {
       "id": 22,
       "type": "stat",
-      "title": "Pi-hole",
+      "title": "BIND9 DNS",
       "gridPos": { "h": 3, "w": 3, "x": 3, "y": 31 },
       "targets": [
         {
-          "expr": "sum(kube_pod_status_phase{namespace=\"pihole\", phase=\"Running\"})",
+          "expr": "sum(kube_pod_status_phase{namespace=\"bind\", phase=\"Running\"})",
           "refId": "A"
         }
       ],

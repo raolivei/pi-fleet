@@ -1,8 +1,8 @@
-{{- define "pi-hole.name" -}}
+{{- define "bind9.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "pi-hole.fullname" -}}
+{{- define "bind9.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -15,32 +15,18 @@
 {{- end }}
 {{- end }}
 
-{{- define "pi-hole.chart" -}}
+{{- define "bind9.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "pi-hole.labels" -}}
-helm.sh/chart: {{ include "pi-hole.chart" . }}
-{{ include "pi-hole.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
+{{- define "bind9.labels" -}}
+helm.sh/chart: {{ include "bind9.chart" . }}
+{{ include "bind9.selectorLabels" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
-{{- define "pi-hole.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "pi-hole.name" . }}
+{{- define "bind9.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "bind9.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app: pihole
 {{- end }}
-
-
-
-
-
-
-
-
-
-
-

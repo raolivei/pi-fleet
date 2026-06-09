@@ -238,7 +238,7 @@ Always install via `setup-system.yml`:
 5. **Verify fix** using provided verification commands
 
 ### Common Issue Categories
-- **DNS**: CoreDNS failures, Pi-hole issues, DNS timeouts
+- **DNS**: CoreDNS failures, BIND9 / external-dns issues, DNS timeouts
 - **Cloudflare**: Tunnel DNS timeout, HTTP 530, external access
 - **Node**: Node unreachable, dual IP, cluster membership
 - **Boot**: Boot failures, NVMe boot, emergency mode

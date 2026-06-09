@@ -55,7 +55,6 @@ $MARKER_START
 127.0.0.1  elder.eldertree.local
 127.0.0.1  control.eldertree.local
 127.0.0.1  pushgateway.eldertree.local
-127.0.0.1  pihole.eldertree.local
 
 # Node IPs (direct access)
 192.168.2.101  node-1.eldertree.local

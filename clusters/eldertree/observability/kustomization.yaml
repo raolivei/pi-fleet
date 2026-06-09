@@ -5,7 +5,6 @@ resources:
   - namespace.yaml # Observability namespace
   - weave-gitops-gitrepository.yaml # GitRepository for Weave GitOps charts (from GitHub)
   - monitoring-stack-helmrelease.yaml # Prometheus + Grafana monitoring stack
-  - pihole-scrape-config.yaml # Pi-hole Prometheus scrape configuration
   - vault-scrape-config.yaml # Vault telemetry scrape configuration
   - blackbox-exporter.yaml # Blackbox exporter (HTTPS synthetic probes for Alertmanager)
   # traefik + blackbox scrape jobs: defined in helm/monitoring-stack (avoid duplicate with Secret files)
