@@ -1,0 +1,35 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bind9
+  namespace: bind
+spec:
+  interval: 30m
+  dependsOn:
+    - name: external-secrets
+      namespace: external-secrets
+  chart:
+    spec:
+      chart: ./helm/bind9
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+  releaseName: bind9
+  install:
+    remediation:
+      retries: 3
+    timeout: 15m
+  upgrade:
+    remediation:
+      retries: 3
+    timeout: 20m
+  values:
+    strategy: Recreate
+    service:
+      type: LoadBalancer
+      loadBalancerClass: kube-vip.io/kube-vip-class
+      loadBalancerIP: 192.168.2.201
+    config:
+      traefikVIP: 192.168.2.200
+      dnsVIP: 192.168.2.201

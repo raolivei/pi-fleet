@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bind9.fullname" . }}-config
+  labels:
+    {{- include "bind9.labels" . | nindent 4 }}
+data:
+  named.conf: |
+    options {
+      directory "/var/named";
+      listen-on port 53 { any; };
+      listen-on-v6 port 53 { none; };
+      allow-query { any; };
+      allow-transfer { none; };
+      recursion yes;
+      forwarders {
+        {{- range .Values.config.forwarders }}
+        {{ . }};
+        {{- end }}
+      };
+      forward first;
+      dnssec-validation no;
+    };
+
+    key "{{ .Values.tsig.keyName }}" {
+      algorithm hmac-sha256;
+      secret "TSIG_SECRET_PLACEHOLDER";
+    };
+
+    zone "eldertree.local" IN {
+      type master;
+      file "eldertree.local.zone";
+      allow-update { key "{{ .Values.tsig.keyName }}"; };
+    };
+
+  eldertree.local.zone: |
+    $TTL 300
+    $ORIGIN eldertree.local.
+    @       IN      SOA     ns1.eldertree.local. admin.eldertree.local. (
+                            2026060901  ; serial
+                            3600        ; refresh
+                            1800        ; retry
+                            604800      ; expire
+                            300         ; minimum
+                            )
+            IN      NS      ns1.eldertree.local.
+            IN      A       {{ .Values.config.traefikVIP }}
+    ns1     IN      A       {{ .Values.config.dnsVIP }}
+    blog    IN      CNAME   blog.eldertree.xyz.

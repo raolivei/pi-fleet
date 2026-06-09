@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bind9.fullname" . }}
+  labels:
+    {{- include "bind9.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.service.loadBalancerIP }}
+    kube-vip.io/loadbalancerIPs: {{ .Values.service.loadBalancerIP | quote }}
+    {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  {{- if and (eq .Values.service.type "LoadBalancer") .Values.service.loadBalancerClass }}
+  loadBalancerClass: {{ .Values.service.loadBalancerClass }}
+  {{- end }}
+  {{- if and (eq .Values.service.type "LoadBalancer") .Values.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
+  {{- end }}
+  externalTrafficPolicy: Cluster
+  ports:
+    - name: dns-udp
+      port: {{ .Values.service.dnsPort }}
+      protocol: UDP
+      targetPort: 53
+      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) .Values.service.dnsNodePort }}
+      nodePort: {{ .Values.service.dnsNodePort }}
+      {{- end }}
+    - name: dns-tcp
+      port: {{ .Values.service.dnsPort }}
+      protocol: TCP
+      targetPort: 53
+      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) .Values.service.dnsNodePort }}
+      nodePort: {{ .Values.service.dnsNodePort }}
+      {{- end }}
+  selector:
+    {{- include "bind9.selectorLabels" . | nindent 4 }}

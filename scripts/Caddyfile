@@ -210,13 +210,3 @@ nima.eldertree.local {
     }
 }
 
-# Pi-hole (DNS admin - may not work via ingress)
-pihole.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.200:443 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host pihole.eldertree.local
-    }
-}

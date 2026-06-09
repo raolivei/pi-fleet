@@ -13,7 +13,9 @@
 
 version: 1
 
-# Pi-hole is primary DNS on LAN; Mac may also use /etc/hosts or Caddy (see TAILSCALE.md)
+# BIND9 LAN DNS VIP (kube-vip); Mac may also use /etc/hosts or Caddy (see TAILSCALE.md)
+dns_ip: "192.168.2.201"
+# Legacy key — scripts may still read pihole_ip
 pihole_ip: "192.168.2.201"
 
 services:
@@ -28,8 +30,6 @@ services:
   - host: alertmanager.eldertree.local
     description: Alertmanager
     blackbox_ca: true
-  - host: pihole.eldertree.local
-    description: Pi-hole admin
   - host: flux.eldertree.local
     description: Flux UI
   - host: pushgateway.eldertree.local

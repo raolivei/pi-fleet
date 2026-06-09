@@ -1,0 +1,42 @@
+image:
+  repository: ubuntu/bind9
+  tag: latest
+  pullPolicy: IfNotPresent
+
+init:
+  image:
+    repository: busybox
+    tag: latest
+    pullPolicy: IfNotPresent
+
+replicas: 1
+strategy: Recreate
+
+service:
+  type: LoadBalancer
+  loadBalancerClass: kube-vip.io/kube-vip-class
+  loadBalancerIP: 192.168.2.201
+  dnsPort: 53
+  dnsNodePort: 30053
+
+config:
+  # Traefik VIP — default A for apex; Ingress records come from external-dns RFC2136
+  traefikVIP: 192.168.2.200
+  # NS glue / LAN DNS VIP (this Service LoadBalancer)
+  dnsVIP: 192.168.2.201
+  forwarders:
+    - 10.43.0.10   # CoreDNS (in-cluster)
+    - 1.1.1.1
+    - 1.0.0.1
+
+tsig:
+  secretName: bind-tsig-secret
+  keyName: externaldns-key
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

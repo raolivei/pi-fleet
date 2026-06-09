@@ -52,7 +52,6 @@ cat >> "$HOSTS_FILE" << EOF
 $INGRESS_IP  vault.eldertree.local
 $INGRESS_IP  grafana.eldertree.local
 $INGRESS_IP  prometheus.eldertree.local
-$INGRESS_IP  pihole.eldertree.local
 $INGRESS_IP  flux.eldertree.local
 $INGRESS_IP  pushgateway.eldertree.local
 $INGRESS_IP  alertmanager.eldertree.local
@@ -86,7 +85,6 @@ echo "Added services:"
 echo "  - vault.eldertree.local"
 echo "  - grafana.eldertree.local"
 echo "  - prometheus.eldertree.local"
-echo "  - pihole.eldertree.local"
 echo "  - flux.eldertree.local"
 echo "  - elder.eldertree.local"
 echo "  - control.eldertree.local"

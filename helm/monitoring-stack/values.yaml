@@ -533,11 +533,6 @@ grafana:
         gnetId: 14981
         revision: 2
         datasource: Prometheus
-      # Pi-hole monitoring
-      pihole:
-        gnetId: 10176
-        revision: 1
-        datasource: Prometheus
       # ===================
       # GITOPS & SECRETS
       # ===================
