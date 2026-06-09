@@ -32,7 +32,8 @@ spec:
     strategy: Recreate
     service:
       type: LoadBalancer
-      loadBalancerClass: null
+      # Must match live Service (immutable once set). Do not use null — Helm patch fails.
+      loadBalancerClass: kube-vip.io/kube-vip-class
       loadBalancerIP: 192.168.2.201
     config:
       clusterIP: 192.168.2.201
