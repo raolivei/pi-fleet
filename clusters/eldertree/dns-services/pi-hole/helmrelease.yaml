@@ -24,6 +24,8 @@ spec:
       retries: 3
     timeout: 20m
   values:
+    exporter:
+      enabled: false
     persistence:
       enabled: false
     # Recreate avoids two pods during upgrade (RollingUpdate + maxSurge timed out Helm).

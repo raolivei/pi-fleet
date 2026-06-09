@@ -17,6 +17,10 @@ image:
     tag: latest
     pullPolicy: IfNotPresent
 
+# ghcr.io/mosher-labs/pihole6-exporter has no arm64 manifest (Pi 5). Disable on Eldertree.
+exporter:
+  enabled: true
+
 service:
   type: LoadBalancer
   # NOTE: loadBalancerClass removed because kube-vip v0.8.3 ignores services with this field.

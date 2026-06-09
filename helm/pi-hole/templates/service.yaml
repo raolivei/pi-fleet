@@ -62,9 +62,11 @@ spec:
       {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) .Values.service.httpsNodePort }}
       nodePort: {{ .Values.service.httpsNodePort }}
       {{- end }}
+    {{- if .Values.exporter.enabled }}
     - name: metrics
       port: {{ .Values.service.metricsPort }}
       protocol: TCP
       targetPort: {{ .Values.service.metricsPort }}
+    {{- end }}
   selector:
     {{- include "pi-hole.selectorLabels" . | nindent 4 }}
