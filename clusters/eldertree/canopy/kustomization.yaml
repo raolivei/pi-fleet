@@ -6,6 +6,8 @@ resources:
   - ghcr-secret-external.yaml
   - basic-auth-external.yaml
   - cloudflare-origin-cert-external.yaml
+  # Application secrets (must exist before StatefulSet and HelmRelease)
+  - canopy-secrets-external.yaml
   # PostgreSQL StatefulSet (kept outside Helm - volumeClaimTemplates)
   - statefulset-postgres.yaml
   # Helm-managed app (api, frontend, redis, ingress, middleware)

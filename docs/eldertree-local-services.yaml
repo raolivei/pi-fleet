@@ -49,6 +49,8 @@ services:
     blackbox_ca: true
   - host: canopy.eldertree.local
     description: Canopy finance app
+  - host: monarch.eldertree.local
+    description: Canopy Monarch parity dev
   - host: swimto.eldertree.local
     description: SwimTO web
   - host: pitanga.eldertree.local
