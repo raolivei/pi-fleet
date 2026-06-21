@@ -1,0 +1,92 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: swimto-discover-facilities
+  namespace: swimto
+spec:
+  # Run weekly on Mondays at 6 AM Toronto time (11:00 UTC).
+  # Toronto is UTC-5 in winter / UTC-4 in summer; cluster CronJobs run
+  # in UTC so the wall-clock drifts by one hour across DST. Acceptable
+  # for a discovery report — the daily refresh has the same property.
+  schedule: "0 11 * * 1"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: swimto-discover-facilities
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: discover
+              image: ghcr.io/raolivei/swimto-api:v0.9.0 # {"$imagepolicy": "swimto:swimto-api-policy"}
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  REPORT=/tmp/discovery_report.json
+                  python /data-pipeline/jobs/discover_swim_facilities.py \
+                    --pool-type all \
+                    --out "$REPORT"
+                  python - <<'PY'
+                  import json, os
+                  from loguru import logger
+                  from sqlalchemy import create_engine, text
+
+                  with open("/tmp/discovery_report.json") as f:
+                      report = json.load(f)
+
+                  swim_active = [
+                      loc for loc in report.get("locations", [])
+                      if loc.get("schedule_source") != "no_programs"
+                  ]
+
+                  engine = create_engine(os.environ["DATABASE_URL"])
+                  with engine.connect() as conn:
+                      rows = conn.execute(
+                          text("SELECT toronto_location_id FROM facilities WHERE toronto_location_id IS NOT NULL")
+                      ).fetchall()
+                      known = {str(r[0]) for r in rows}
+
+                  unknown = [
+                      loc for loc in swim_active
+                      if str(loc.get("location_id")) not in known
+                  ]
+
+                  if unknown:
+                      logger.warning(
+                          f"Found {len(unknown)} swim-active location(s) NOT in DB: "
+                          + ", ".join(
+                              f"{loc.get('location_id')} ({loc.get('name') or 'unknown'})"
+                              for loc in unknown
+                          )
+                      )
+                  else:
+                      logger.info(
+                          f"All {len(swim_active)} swim-active location(s) already known in DB."
+                      )
+                  PY
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: swimto-secrets
+                      key: DATABASE_URL
+              envFrom:
+                - configMapRef:
+                    name: swimto-config
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "250m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+          imagePullSecrets:
+            - name: ghcr-secret
