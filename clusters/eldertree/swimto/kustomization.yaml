@@ -15,6 +15,7 @@ resources:
   # CronJobs (different pattern from Deployments)
   - cronjob-refresh.yaml
   - facility-url-validator-cronjob.yaml
+  - cronjob-discover.yaml
   # Image automation (stays separate - FluxCD requirement)
   - image-repositories.yaml
   - image-policies.yaml
