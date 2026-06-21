@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - ghcr-secret-external.yaml
+  - bolao-secrets-external.yaml
+  - postgres-pvc.yaml
+  - postgres-deployment.yaml
+  - helmrelease.yaml
+  - cronjob-results-sync.yaml
+  - cronjob-standings-sync.yaml
+  - cronjob-leaderboard-sync.yaml
+  - cronjob-alceu-feed-sync.yaml

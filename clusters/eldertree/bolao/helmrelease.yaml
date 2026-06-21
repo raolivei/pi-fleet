@@ -1,0 +1,100 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bolao
+  namespace: bolao
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm/eldertree-app
+      version: "0.1.2"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: bolao
+  releaseName: bolao
+  upgrade:
+    cleanupOnFail: true
+  values:
+    components:
+      bolao-web:
+        image:
+          repository: ghcr.io/raolivei/bolao-web
+          tag: v0.1.0
+          pullPolicy: IfNotPresent
+        replicas: 1
+        port: 3000
+        probesEnabled: false
+        sessionAffinity: ClientIP
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: bolao-secrets
+                key: DATABASE_URL
+          - name: AUTH_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-secrets
+                key: AUTH_SECRET
+          - name: AUTH_URL
+            valueFrom:
+              secretKeyRef:
+                name: bolao-secrets
+                key: AUTH_URL
+          - name: GOOGLE_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: bolao-secrets
+                key: GOOGLE_CLIENT_ID
+          - name: GOOGLE_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-secrets
+                key: GOOGLE_CLIENT_SECRET
+          - name: FOOTBALL_DATA_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: bolao-secrets
+                key: FOOTBALL_DATA_API_KEY
+          - name: CRON_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-secrets
+                key: CRON_SECRET
+        resources:
+          requests: { cpu: "100m", memory: "256Mi" }
+          limits: { cpu: "500m", memory: "512Mi" }
+        serviceAnnotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "3000"
+          prometheus.io/path: "/api/metrics"
+    middleware:
+      redirect-https:
+        type: redirectScheme
+        scheme: https
+        permanent: true
+    ingress:
+      bolao-local:
+        host: bolao.eldertree.local
+        service: bolao-web
+        port: 3000
+        middlewares: ["bolao-redirect-https@kubernetescrd"]
+        tls:
+          secretName: bolao-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: bolao.eldertree.local
+      bolao-public:
+        host: bolao.eldertree.xyz
+        service: bolao-web
+        port: 3000
+        middlewares: ["bolao-redirect-https@kubernetescrd"]
+        tls:
+          secretName: bolao-xyz-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: bolao.eldertree.xyz

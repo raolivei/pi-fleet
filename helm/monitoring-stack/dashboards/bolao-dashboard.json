@@ -1,0 +1,47 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "rate(bolao_http_request_duration_seconds_count[5m])",
+          "legendFormat": "requests",
+          "refId": "A"
+        }
+      ],
+      "title": "Bolão HTTP rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "bolao_process_cpu_user_seconds_total",
+          "legendFormat": "cpu",
+          "refId": "A"
+        }
+      ],
+      "title": "Bolão process CPU",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["bolao", "applications"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "Bolão dos Guerreiros",
+  "uid": "bolao-dashboard",
+  "version": 1
+}

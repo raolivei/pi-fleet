@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: bolao-leaderboard-sync
+  namespace: bolao
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sync
+              image: curlimages/curl:8.11.1
+              command: ["/bin/sh", "-c"]
+              args:
+                - 'curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" http://bolao-web:3000/api/internal/cron/leaderboard-sync'
+              env:
+                - name: CRON_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: bolao-secrets
+                      key: CRON_SECRET
