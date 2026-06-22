@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
+- **bolao Cloudflare** — Tunnel ingress + CNAME `bolao.eldertree.xyz`; origin TLS ExternalSecret; public ingress excludes External-DNS (same pattern as canopy/swimTO).
+
 - **bolao Flux wiring** — Register `clusters/eldertree/bolao` in root kustomization; routing registry, postgres-exporter, monitoring-stack 0.2.17 dashboard folder.
 
 - **BIND9 LAN DNS (`helm/bind9`)** — Replaces Pi-hole (#232): authoritative `eldertree.local` on VIP `192.168.2.201`, RFC2136 on port 53. external-dns host `bind9.bind.svc.cluster.local`.

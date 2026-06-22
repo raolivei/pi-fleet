@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - ghcr-secret-external.yaml
+  - cloudflare-origin-cert-eldertree-xyz-external.yaml
   - bolao-secrets-external.yaml
   - postgres-pvc.yaml
   - postgres-deployment.yaml
