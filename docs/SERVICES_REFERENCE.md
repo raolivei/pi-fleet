@@ -169,6 +169,18 @@ DNS for `canopy.eldertree.xyz` is a **CNAME to the eldertree tunnel** (`cloudfla
 | **Cache**         | Redis (in cluster)                                                         |
 | **Credentials**   | Stored in Vault: `secret/swimto/*`                                         |
 
+### Bolão dos Guerreiros (WC 2026 prediction pool)
+
+| Property          | Value                                              |
+| ----------------- | -------------------------------------------------- |
+| **Local URL**     | `https://bolao.eldertree.local`                    |
+| **Public URL**    | `https://bolao.eldertree.xyz`                      |
+| **Namespace**     | `bolao`                                            |
+| **Web Port**      | 3000                                               |
+| **Database**      | PostgreSQL (in cluster)                            |
+| **Credentials**   | Stored in Vault: `secret/bolao/*`                  |
+| **Repo**          | [github.com/raolivei/bolao](https://github.com/raolivei/bolao) |
+
 ### Journey (Career Pathfinder)
 
 | Property        | Value                                           |

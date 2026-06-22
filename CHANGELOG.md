@@ -29,7 +29,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
-- **DNS: Pi-hole → BIND9 (full cutover)** — Remove `helm/pi-hole`, `dns-services/pi-hole`, Pi-hole scrape/ExternalSecrets, `pihole.eldertree.local` from registry/Caddy/hosts. Router DNS VIP unchanged (`192.168.2.201`). Docs, verify scripts, OpenClaw knowledge, monitoring dashboard panel updated.
+- **bolao routing** — Align with SwimTO/pitanga: Caddy stanza next to swimto (Traefik VIP), drop custom localdev Caddy file; ingress keys `bolao-web-local` / `bolao-web-public`; `SERVICES_REFERENCE.md` entry.
+
 - **monitoring-stack 0.2.16** — Drop Pi-hole Prometheus scrape mount; Grafana cluster dashboard shows `bind` namespace.
 - **`stress-arc-runners.sh`** — include `github-workflows` in default `ARC_REPOS` (repo-scoped scale set deployed in Phase 1).
 - **ARC ollie-runners** — Repo-scoped (`githubConfigUrl: https://github.com/raolivei/ollie`); `maxRunners: 1` (serial `build-publish.yaml`). Org scope reverted — requires a GitHub Organization entity.
