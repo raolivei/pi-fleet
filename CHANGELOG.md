@@ -8,6 +8,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 - **bolao Cloudflare** — Tunnel ingress + CNAME `bolao.eldertree.xyz`; origin TLS ExternalSecret; public ingress excludes External-DNS (same pattern as canopy/swimTO).
 
+- **bolao ARC runner** — `gha-runner-scale-set` for `raolivei/bolao` (`bolao-eldertree`).
+
 - **bolao Flux wiring** — Register `clusters/eldertree/bolao` in root kustomization; routing registry, postgres-exporter, monitoring-stack 0.2.17 dashboard folder.
 
 - **BIND9 LAN DNS (`helm/bind9`)** — Replaces Pi-hole (#232): authoritative `eldertree.local` on VIP `192.168.2.201`, RFC2136 on port 53. external-dns host `bind9.bind.svc.cluster.local`.
@@ -20,6 +22,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 - **Ollie Helm chart** — Vendor `helm/ollie` from the [ollie](https://github.com/raolivei/ollie) repo so Flux `HelmRelease` path `./helm/ollie` resolves (fixes `InvalidChartReference`).
 
 ### Fixed
+
+- **bolao public DNS** — Exclude `bolao.eldertree.xyz` from External-DNS on public ingress so Terraform owns the Cloudflare tunnel CNAME (canopy pattern).
 
 - **Pi-hole Helm upgrade stalled (`loadBalancerClass`)** — HelmRelease used `loadBalancerClass: null` but live Service has immutable `kube-vip.io/kube-vip-class`; align values so exporter disable can roll out.
 - **Pi-hole exporter ImagePullBackOff (arm64)** — `ghcr.io/mosher-labs/pihole6-exporter` has no arm64 manifest; pod stayed 2/3 Ready with **empty Service endpoints**, breaking RFC2136 external-dns. Chart adds `exporter.enabled` (off on Eldertree until arm64 image exists).

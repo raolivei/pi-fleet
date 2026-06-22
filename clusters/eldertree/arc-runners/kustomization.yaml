@@ -14,3 +14,4 @@ resources:
   - northwaysignal-website-runners-helmrelease.yaml
   - nima-runners-helmrelease.yaml
   - eldertree-docs-runners-helmrelease.yaml
+  - bolao-runners-helmrelease.yaml
