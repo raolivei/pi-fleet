@@ -92,8 +92,7 @@ spec:
         host: bolao.eldertree.xyz
         service: bolao-web
         port: 3000
-        middlewares: ["bolao-redirect-https@kubernetescrd"]
         tls:
           secretName: bolao-cloudflare-origin-tls
         annotations:
-          external-dns.alpha.kubernetes.io/exclude: "true"
+          external-dns.alpha.kubernetes.io/hostname: bolao.eldertree.xyz
