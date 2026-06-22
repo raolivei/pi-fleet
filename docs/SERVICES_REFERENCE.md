@@ -174,12 +174,16 @@ DNS for `canopy.eldertree.xyz` is a **CNAME to the eldertree tunnel** (`cloudfla
 | Property          | Value                                              |
 | ----------------- | -------------------------------------------------- |
 | **Local URL**     | `https://bolao.eldertree.local`                    |
-| **Public URL**    | `https://bolao.eldertree.xyz`                      |
+| **Public URL**    | `https://bolao.eldertree.xyz` (Cloudflare Tunnel)  |
 | **Namespace**     | `bolao`                                            |
 | **Web Port**      | 3000                                               |
+| **Image**         | `ghcr.io/raolivei/bolao-web`                        |
 | **Database**      | PostgreSQL (in cluster)                            |
-| **Credentials**   | Stored in Vault: `secret/bolao/*`                  |
+| **Credentials**   | Vault: `secret/bolao/postgres`, `secret/bolao/app` |
+| **GHCR pull**     | Vault: `secret/canopy/ghcr-token` (shared)       |
 | **Repo**          | [github.com/raolivei/bolao](https://github.com/raolivei/bolao) |
+
+DNS: CNAME `bolao` → eldertree tunnel in [`terraform/cloudflare.tf`](terraform/cloudflare.tf). Public ingress excludes External-DNS; TLS via shared `*.eldertree.xyz` origin cert in Vault.
 
 ### Journey (Career Pathfinder)
 
