@@ -23,6 +23,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **bolao.eldertree.xyz Terraform DNS** — `cloudflare-reconcile-bolao-dns.sh` deletes stale External-DNS A records before apply (same pattern as `control.eldertree.xyz`)
+
 - **bolao public DNS** — Exclude `bolao.eldertree.xyz` from External-DNS on public ingress so Terraform owns the Cloudflare tunnel CNAME (canopy pattern).
 
 - **Pi-hole Helm upgrade stalled (`loadBalancerClass`)** — HelmRelease used `loadBalancerClass: null` but live Service has immutable `kube-vip.io/kube-vip-class`; align values so exporter disable can roll out.
