@@ -1,10 +1,4 @@
 ---
-# ExternalSecret for *.eldertree.xyz Cloudflare Origin Certificate
-# Reuses the wildcard cert stored in Vault (shared across all *.eldertree.xyz subdomains)
-# Used by bolao-claude.eldertree.xyz for public HTTPS access
-#
-# Vault path: secret/swimto/cloudflare-origin-cert-eldertree
-# (Wildcard cert covers *.eldertree.xyz and eldertree.xyz)
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
@@ -17,8 +11,7 @@ spec:
     kind: ClusterSecretStore
   target:
     name: bolao-claude-cloudflare-origin-tls
-    # Merge updates existing secret (e.g. if created manually); avoids "secret already exists" error
-    creationPolicy: Merge
+    creationPolicy: Owner
     template:
       type: kubernetes.io/tls
       data:
