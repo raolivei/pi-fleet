@@ -28,7 +28,8 @@ spec:
     githubConfigSecret: ollie-runner-github-secret
 
     minRunners: 0
-    maxRunners: 2
+    # PR docker builds queue behind main when maxRunners is too low.
+    maxRunners: 4
 
     runnerScaleSetName: "bolao-eldertree"
 
