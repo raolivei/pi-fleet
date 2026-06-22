@@ -29,7 +29,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
-- **bolao ARC runner DNS** — `dnsConfig` (CoreDNS + 8.8.8.8 fallback) on `bolao-eldertree` DinD pods so Docker build steps can resolve `registry.npmjs.org`
+- **bolao ARC runner DNS** — pod `dnsConfig` plus DinD `daemon.json` DNS on `bolao-eldertree` so buildx containers resolve `registry.npmjs.org`
 - **eldertree-app chart** — optional `dnsConfig` on component deployments
 
 - **bolao.eldertree.xyz Terraform DNS** — `cloudflare-reconcile-bolao-dns.sh` deletes stale External-DNS A records before apply (same pattern as `control.eldertree.xyz`)
