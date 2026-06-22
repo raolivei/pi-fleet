@@ -43,6 +43,15 @@ spec:
         labels:
           workload-type: ci-cd
       spec:
+        # DinD build containers inherit pod DNS; CoreDNS + 8.8.8.8 fallback
+        # fixes registry.npmjs.org EAI_AGAIN during docker build (bolao-web #243).
+        dnsConfig:
+          nameservers:
+            - 10.43.0.10
+            - 8.8.8.8
+          options:
+            - name: ndots
+              value: "2"
         affinity:
           podAntiAffinity:
             preferredDuringSchedulingIgnoredDuringExecution:
