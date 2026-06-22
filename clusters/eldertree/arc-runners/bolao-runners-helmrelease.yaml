@@ -66,6 +66,11 @@ spec:
                   topologyKey: kubernetes.io/hostname
         terminationGracePeriodSeconds: 3600
 
+        volumes:
+          - name: dind-daemon-config
+            configMap:
+              name: bolao-dind-daemon
+
         containers:
           - name: runner
             image: ghcr.io/actions/actions-runner:latest
@@ -78,6 +83,11 @@ spec:
                 cpu: 1500m
                 memory: 2Gi
           - name: dind
+            volumeMounts:
+              - name: dind-daemon-config
+                mountPath: /etc/docker/daemon.json
+                subPath: daemon.json
+                readOnly: true
             resources:
               requests:
                 cpu: 50m

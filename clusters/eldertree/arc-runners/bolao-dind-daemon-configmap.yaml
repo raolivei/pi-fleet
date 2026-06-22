@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bolao-dind-daemon
+  namespace: arc-runners
+data:
+  daemon.json: |
+    {
+      "dns": ["10.43.0.10", "8.8.8.8", "1.1.1.1"]
+    }

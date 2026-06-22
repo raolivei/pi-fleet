@@ -170,7 +170,7 @@ Each repo gets a HelmRelease with `githubConfigUrl: https://github.com/raolivei/
 
    **Resource sizing (Pi 5 cluster):** Each runner pod is runner + DinD (~100m+512Mi requests). No `node-tier: stable` nodeSelector — node-1 absorbs overflow when node-2/3 are full. Cluster-wide budget: **4–6 concurrent DinD runners** under normal load; avoid firing all scale sets at once (stress script).
 
-**DinD + npm/pnpm builds:** If Docker build fails with `getaddrinfo EAI_AGAIN registry.npmjs.org`, add pod `dnsConfig` with CoreDNS (`10.43.0.10`) plus `8.8.8.8` fallback on the scale set `template.spec` (same pattern as `bolao-web` in `clusters/eldertree/bolao/helmrelease.yaml`). DinD build containers inherit the runner pod's resolvers.
+**DinD + npm/pnpm builds:** If Docker build fails with `getaddrinfo EAI_AGAIN registry.npmjs.org`, configure **both** (1) pod `dnsConfig` with CoreDNS (`10.43.0.10`) plus `8.8.8.8` fallback on `template.spec`, and (2) mount a `daemon.json` on the **dind** sidecar with the same DNS servers — buildx containers use the Docker daemon resolver, not the pod's `resolv.conf`. See `bolao-dind-daemon-configmap.yaml` + `bolao-runners-helmrelease.yaml`.
 
 3. Update `clusters/eldertree/arc-runners/kustomization.yaml`
 4. Commit and push — Flux deploys automatically
