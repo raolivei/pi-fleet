@@ -27,6 +27,18 @@ spec:
     components:
       swimto-api:
         replicas: 2
+        # ``maxSurge: 0`` is required because pod-anti-affinity is
+        # ``required`` on hostname topology and only 2 nodes are
+        # schedulable (node-1 is labelled ``unstable``). With surge,
+        # the rolling update would try to land a 3rd pod that has no
+        # legal home and Helm would time out at 5min — see #228.
+        # ``maxUnavailable: 1`` means we drop to a single api pod
+        # briefly during release; acceptable for swimTO's traffic.
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxSurge: 0
+            maxUnavailable: 1
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
