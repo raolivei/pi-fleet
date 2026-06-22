@@ -1,0 +1,12 @@
+# Standalone Caddy config for Bolão local dev only.
+# Run: sudo caddy run --config scripts/caddy-bolao-localdev.caddy
+# Requires: 127.0.0.1 bolao.eldertree.local in /etc/hosts (bolao/scripts/setup-local-hostname.sh)
+
+{
+    local_certs
+}
+
+bolao.eldertree.local {
+    tls internal
+    reverse_proxy localhost:3006
+}

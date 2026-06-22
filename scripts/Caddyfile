@@ -189,9 +189,10 @@ canopy.eldertree.local {
 }
 
 # Bolão dos Guerreiros (WC 2026 prediction pool)
+# Cluster: Traefik kube-vip. For local `pnpm dev`, see scripts/caddy-bolao-localdev.caddy
 bolao.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
