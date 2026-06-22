@@ -6,7 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
-- **bolao Cloudflare** — Tunnel ingress + CNAME `bolao.eldertree.xyz`; origin TLS ExternalSecret; public ingress excludes External-DNS (same pattern as canopy/swimTO).
+- **bolao Flux image automation** — `ImageRepository`, `ImagePolicy`, and `ImageUpdateAutomation` for `ghcr.io/raolivei/bolao-web`; HelmRelease tag setter comment (swimTO pattern).
+
+### Changed
+
+- **`stress-arc-runners.sh`** — include `bolao` in default `ARC_REPOS` (repo-scoped scale set deployed).
+
+### Added
 
 - **bolao ARC runner** — `gha-runner-scale-set` for `raolivei/bolao` (`bolao-eldertree`).
 

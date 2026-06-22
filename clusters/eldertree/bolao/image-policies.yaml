@@ -1,0 +1,12 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: bolao-web-policy
+  namespace: bolao
+spec:
+  imageRepositoryRef:
+    name: bolao-web
+  policy:
+    semver:
+      range: '>=0.1.0 <1.0.0'
