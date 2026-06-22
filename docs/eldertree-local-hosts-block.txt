@@ -9,6 +9,7 @@ TRAEFIK_LB_IP  grafana.eldertree.local
 TRAEFIK_LB_IP  prometheus.eldertree.local
 TRAEFIK_LB_IP  swimto.eldertree.local
 TRAEFIK_LB_IP  canopy.eldertree.local
+TRAEFIK_LB_IP  bolao.eldertree.local
 TRAEFIK_LB_IP  pitanga.eldertree.local
 TRAEFIK_LB_IP  pushgateway.eldertree.local
 TRAEFIK_LB_IP  flux.eldertree.local

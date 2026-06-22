@@ -64,6 +64,7 @@ $INGRESS_IP  dex.eldertree.local
 
 # Applications
 $INGRESS_IP  canopy.eldertree.local
+$INGRESS_IP  bolao.eldertree.local
 $INGRESS_IP  swimto.eldertree.local
 $INGRESS_IP  journey.eldertree.local
 $INGRESS_IP  nima.eldertree.local
@@ -90,6 +91,7 @@ echo "  - elder.eldertree.local"
 echo "  - control.eldertree.local"
 echo "  - docs.eldertree.local"
 echo "  - canopy.eldertree.local"
+echo "  - bolao.eldertree.local"
 echo "  - swimto.eldertree.local"
 echo "  - journey.eldertree.local"
 echo "  - nima.eldertree.local"

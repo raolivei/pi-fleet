@@ -430,6 +430,7 @@ grafana:
   dashboardFolders:
     # —— Applications (one subfolder per app; multiple JSON can share the same path) ——
     swimto-dashboard: "Applications/SwimTO"
+    bolao-dashboard: "Applications/Bolao"
     pitanga-dashboard: "Applications/Pitanga"
     ollie-dashboard: "Applications/Ollie"
     # —— Platform (cluster, capacity, network, security) ——

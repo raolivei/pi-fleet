@@ -188,6 +188,17 @@ canopy.eldertree.local {
     }
 }
 
+# Bolão dos Guerreiros (WC 2026 prediction pool)
+bolao.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host bolao.eldertree.local
+    }
+}
+
 # Journey (career pathfinder)
 journey.eldertree.local {
     tls internal

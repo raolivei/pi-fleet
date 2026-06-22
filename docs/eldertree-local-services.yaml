@@ -49,6 +49,9 @@ services:
     blackbox_ca: true
   - host: canopy.eldertree.local
     description: Canopy finance app
+  - host: bolao.eldertree.local
+    description: Bolão dos Guerreiros — WC 2026 prediction pool
+    blackbox_ca: true
   - host: monarch.eldertree.local
     description: Canopy Monarch parity dev
   - host: swimto.eldertree.local
