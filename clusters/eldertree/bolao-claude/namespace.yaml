@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bolao-claude
+  labels:
+    name: bolao-claude
+    app: bolao-claude

@@ -1,0 +1,95 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bolao-claude
+  namespace: bolao-claude
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm/eldertree-app
+      version: "0.1.2"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: bolao-claude
+  releaseName: bolao-claude
+  upgrade:
+    cleanupOnFail: true
+  values:
+    components:
+      bolao-claude-web:
+        image:
+          repository: ghcr.io/raolivei/bolao-claude-web # {"$imagepolicy": "bolao-claude:bolao-claude-web-policy:tag"}
+          tag: v0.1.0
+          pullPolicy: IfNotPresent
+        replicas: 1
+        port: 3000
+        probesEnabled: false
+        sessionAffinity: ClientIP
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: DATABASE_URL
+          - name: AUTH_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: AUTH_SECRET
+          - name: AUTH_URL
+            value: https://bolao-claude.eldertree.xyz
+          - name: GOOGLE_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: GOOGLE_CLIENT_ID
+          - name: GOOGLE_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: GOOGLE_CLIENT_SECRET
+          - name: FOOTBALL_DATA_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: FOOTBALL_DATA_API_KEY
+          - name: CRON_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: CRON_SECRET
+        resources:
+          requests: { cpu: "100m", memory: "256Mi" }
+          limits: { cpu: "500m", memory: "512Mi" }
+        serviceAnnotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "3000"
+          prometheus.io/path: "/api/metrics"
+    middleware:
+      redirect-https:
+        type: redirectScheme
+        scheme: https
+        permanent: true
+    ingress:
+      bolao-claude-local:
+        host: bolao-claude.eldertree.local
+        service: bolao-claude-web
+        port: 3000
+        middlewares: ["bolao-claude-redirect-https@kubernetescrd"]
+        tls:
+          secretName: bolao-claude-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: bolao-claude.eldertree.local
+      bolao-claude-public:
+        host: bolao-claude.eldertree.xyz
+        service: bolao-claude-web
+        port: 3000
+        tls:
+          secretName: bolao-claude-cloudflare-origin-tls
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: bolao-claude.eldertree.xyz
