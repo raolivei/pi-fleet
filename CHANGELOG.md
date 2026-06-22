@@ -10,6 +10,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **bolao ARC `maxRunners`** — Raise `bolao-eldertree` from 2 to 4 so PR docker builds do not queue behind main.
+
 - **bolao-web `pullPolicy`** — Set `pullPolicy: Always` on `bolao-web` so Flux semver tag updates re-resolve GHCR digests (canopy pattern; alternative is pinning `image.tag` to digest).
 
 - **bolao-web image** — HelmRelease `bolao-web` tag `v0.1.2` (Google OAuth issuer fix; cluster may run sideload until GHCR publishes).
