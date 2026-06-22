@@ -8,6 +8,10 @@ resources:
   - postgres-pvc.yaml
   - postgres-deployment.yaml
   - helmrelease.yaml
+  # Image automation (stays separate - FluxCD requirement)
+  - image-repositories.yaml
+  - image-policies.yaml
+  - image-update-automation.yaml
   - cronjob-results-sync.yaml
   - cronjob-standings-sync.yaml
   - cronjob-leaderboard-sync.yaml
