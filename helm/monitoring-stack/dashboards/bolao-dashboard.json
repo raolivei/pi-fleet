@@ -13,7 +13,7 @@
       "id": 1,
       "targets": [
         {
-          "expr": "rate(bolao_http_request_duration_seconds_count[5m])",
+          "expr": "sum(rate(bolao_http_requests_total[5m]))",
           "legendFormat": "requests",
           "refId": "A"
         }
@@ -27,12 +27,40 @@
       "id": 2,
       "targets": [
         {
-          "expr": "bolao_process_cpu_user_seconds_total",
-          "legendFormat": "cpu",
+          "expr": "bolao_matches_live",
+          "legendFormat": "live matches",
           "refId": "A"
         }
       ],
-      "title": "Bolão process CPU",
+      "title": "Live matches",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(rate(bolao_cron_sync_errors_total[1h]))",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Cron sync errors",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(bolao_cron_sync_duration_seconds_bucket[1h])) by (le, job))",
+          "legendFormat": "{{job}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "Cron duration p95",
       "type": "timeseries"
     }
   ],
@@ -43,5 +71,5 @@
   "timezone": "browser",
   "title": "Bolão dos Guerreiros",
   "uid": "bolao-dashboard",
-  "version": 1
+  "version": 2
 }
