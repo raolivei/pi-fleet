@@ -162,6 +162,7 @@ prometheus:
             - "https://swimto.eldertree.xyz"
             - "https://swimto.app"
             - "https://api.swimto.app/health"
+            - "https://bolao.eldertree.xyz"
             - "https://pitanga.cloud"
     blackbox-https-ca:
       metrics_path: /probe
