@@ -24,7 +24,7 @@ spec:
     - name: arc-controller
       namespace: arc-controller
   values:
-    githubConfigUrl: "https://github.com/raolivei/bolao-claude"
+    githubConfigUrl: "https://github.com/raolivei/bolao"
     githubConfigSecret: ollie-runner-github-secret
 
     minRunners: 0
