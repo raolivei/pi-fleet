@@ -76,6 +76,8 @@ spec:
             value: "GUERREIRO"
           - name: POOL_INVITE_CONTACT_EMAIL
             value: "rafa.oliveira1@gmail.com"
+          - name: POOL_WHATSAPP_GROUP_URL
+            value: "https://chat.whatsapp.com/ImoLIMLQ7IN7eyXy3VIgin"
         dnsConfig:
           nameservers:
             - 10.43.0.10
