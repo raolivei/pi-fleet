@@ -191,6 +191,16 @@ jobs:
         working-directory: .
         run: bash scripts/cloudflare-reconcile-bolao-dns.sh
 
+      - name: Reconcile bolao-claude.eldertree.xyz DNS (tunnel CNAME)
+        if: |
+          steps.plan.outcome == 'success' &&
+          (
+            (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+            (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+          )
+        working-directory: .
+        run: bash scripts/cloudflare-reconcile-bolao-claude-dns.sh
+
       - name: Terraform Apply
         id: apply
         if: |
