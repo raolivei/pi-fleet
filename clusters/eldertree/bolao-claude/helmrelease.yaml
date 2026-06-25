@@ -92,4 +92,4 @@ spec:
         tls:
           secretName: bolao-claude-cloudflare-origin-tls
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: bolao-claude.eldertree.xyz
+          external-dns.alpha.kubernetes.io/exclude: "true"

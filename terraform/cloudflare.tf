@@ -415,6 +415,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
       service  = "http://10.43.23.214:80"
     }
 
+    # Bolão Claude scratch (design variants)
+    ingress_rule {
+      hostname = "bolao-claude.eldertree.xyz"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
     # Catch-all rule (must be last)
     ingress_rule {
       service = "http_status:404"
@@ -474,6 +481,19 @@ resource "cloudflare_record" "bolao_eldertree_xyz_tunnel" {
   proxied         = true
   allow_overwrite = true
   comment         = "bolao.eldertree.xyz - Bolão dos Guerreiros via Cloudflare Tunnel"
+}
+
+# DNS CNAME record for bolao-claude.eldertree.xyz pointing to tunnel
+resource "cloudflare_record" "bolao_claude_eldertree_xyz_tunnel" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "bolao-claude"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1
+  proxied         = true
+  allow_overwrite = true
+  comment         = "bolao-claude.eldertree.xyz - Bolão Claude scratch via Cloudflare Tunnel"
 }
 
 # DNS CNAME record for blog.eldertree.xyz pointing to GitHub Pages
