@@ -24,7 +24,7 @@ spec:
         # Semver tag from ImagePolicy can point at a new GHCR digest; Always re-pull on pod start.
         image:
           repository: ghcr.io/raolivei/bolao-web
-          tag: v0.2.0 # {"$imagepolicy": "bolao:bolao-web-policy:tag"}
+          tag: v0.2.1 # {"$imagepolicy": "bolao:bolao-web-policy:tag"}
           pullPolicy: Always
         replicas: 1
         port: 3000
@@ -68,6 +68,12 @@ spec:
                 key: CRON_SECRET
           - name: AUTH_TRUST_HOST
             value: "true"
+          - name: SEED_ADMIN_EMAIL
+            value: "rafa.oliveira1@gmail.com"
+          - name: NEXT_PUBLIC_WHATSAPP_GROUP_URL
+            value: "https://chat.whatsapp.com/ImoLIMLQ7IN7eyXy3VIgin"
+          - name: NEXT_PUBLIC_ADMIN_CONTACT_EMAIL
+            value: "rafa.oliveira1@gmail.com"
         dnsConfig:
           nameservers:
             - 10.43.0.10
