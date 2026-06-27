@@ -10,6 +10,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **`add-services-to-hosts.sh` (Mac `/etc/hosts`)** — Derive the `*.eldertree.local` service list **live from cluster Ingresses** instead of a hardcoded list (was missing `ollie`/`bolao-claude`, still carried decommissioned `visage`/`minio` and dead `journey`/`nima`). Services point at the Traefik ingress VIP `192.168.2.200` (override via `ELDERTREE_VIP`); re-running strips stale/duplicate entries and rewrites a single managed block. The legacy `scripts/utils/update-hosts.sh` stub is superseded.
+
 - **bolao ARC `maxRunners`** — Raise `bolao-eldertree` from 2 to 4 so PR docker builds do not queue behind main.
 
 - **bolao-web `pullPolicy`** — Set `pullPolicy: Always` on `bolao-web` so Flux semver tag updates re-resolve GHCR digests (canopy pattern; alternative is pinning `image.tag` to digest).
