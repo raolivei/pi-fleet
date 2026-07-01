@@ -59,7 +59,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
         image:
           repository: ghcr.io/raolivei/swimto-api
-          tag: v0.9.4 # {"$imagepolicy": "swimto:swimto-api-policy:tag"}
+          tag: v0.9.5 # {"$imagepolicy": "swimto:swimto-api-policy:tag"}
           pullPolicy: IfNotPresent
         port: 8000
         env:
