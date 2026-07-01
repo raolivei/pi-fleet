@@ -370,6 +370,99 @@
           "legendFormat": "{{pod}}"
         }
       ]
+    },
+    {
+      "id": 30,
+      "title": "Registered Users",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 36 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "targets": [
+        {
+          "expr": "max(swimto_db_users_total)",
+          "legendFormat": "Total accounts"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Signups This Week (Toronto)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 36 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "targets": [
+        {
+          "expr": "max(swimto_db_users_signups_week)",
+          "legendFormat": "This week"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "title": "Signups Today (Toronto)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 36 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "targets": [
+        {
+          "expr": "max(swimto_db_users_signups_today)",
+          "legendFormat": "Today"
+        }
+      ]
     }
   ],
   "time": { "from": "now-7d", "to": "now" },
