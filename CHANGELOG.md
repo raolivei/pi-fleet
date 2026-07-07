@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Removed
+
+- **bolao + bolao-claude** — decommissioned from Eldertree GitOps (`clusters/eldertree/kustomization.yaml`): namespaces, Postgres, cronjobs, ingress, image automation. ARC runners (`bolao-eldertree`, `bolao-claude-eldertree`) removed from `arc-runners`. Postgres exporter and blackbox probe targets dropped.
+
 ### Added
 
 - **OpenClaw cluster-local LLM fallback** — [`clusters/eldertree/openclaw/ollama-fallback.yaml`](clusters/eldertree/openclaw/ollama-fallback.yaml): in-cluster `ollama/ollama` Deployment serving `qwen2.5:3b` on a Pi5 (soft-pinned to node-1), `local-path` PVC, and ingress NetworkPolicy. Always-on local fallback for when the Mac Ollama primary is unreachable; pinned image `ollama/ollama:0.31.1`, keeps the model warm between calls (`OLLAMA_KEEP_ALIVE=30m`).
