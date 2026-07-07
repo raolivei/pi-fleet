@@ -68,8 +68,9 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "ollama/qwen2.5:7b",
+            "primary": "ollama/gemma4:31b-mlx",
             "fallbacks": [
+              "ollama-cluster/qwen2.5:3b",
               "openrouter/google/gemini-2.0-flash-001",
               "openrouter/anthropic/claude-3.5-haiku",
               "openrouter/meta-llama/llama-4-scout"
@@ -120,9 +121,28 @@ data:
             "apiKey": "ollama",
             "models": [
               {
+                "id": "gemma4:31b-mlx",
+                "name": "Gemma 4 31B MLX (Local Mac, primary)",
+                "contextWindow": 131072,
+                "maxTokens": 4096
+              },
+              {
                 "id": "qwen2.5:7b",
-                "name": "Qwen 2.5 7B (Local Mac)",
+                "name": "Qwen 2.5 7B (Local Mac, compaction)",
                 "contextWindow": 32768,
+                "maxTokens": 2048
+              }
+            ]
+          },
+          "ollama-cluster": {
+            "api": "openai-completions",
+            "baseUrl": "http://ollama-fallback.openclaw.svc.cluster.local:11434/v1",
+            "apiKey": "ollama",
+            "models": [
+              {
+                "id": "qwen2.5:3b",
+                "name": "Qwen 2.5 3B (Cluster fallback, Pi5 CPU)",
+                "contextWindow": 16384,
                 "maxTokens": 2048
               }
             ]

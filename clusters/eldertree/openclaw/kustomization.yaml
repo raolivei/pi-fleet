@@ -10,6 +10,7 @@ resources:
   - configmap.yaml
   - exec-approvals-configmap.yaml
   - skills-configmap.yaml
+  - ollama-fallback.yaml
   # Elder (AI agent sidecar)
   - elder-rbac.yaml
   - elder-externalsecret.yaml

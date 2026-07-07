@@ -6,9 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
+- **OpenClaw cluster-local LLM fallback** — [`clusters/eldertree/openclaw/ollama-fallback.yaml`](clusters/eldertree/openclaw/ollama-fallback.yaml): in-cluster `ollama/ollama` Deployment serving `qwen2.5:3b` on a Pi5 (soft-pinned to node-1), `local-path` PVC, and ingress NetworkPolicy. Always-on local fallback for when the Mac Ollama primary is unreachable; pinned image `ollama/ollama:0.31.1`, keeps the model warm between calls (`OLLAMA_KEEP_ALIVE=30m`).
+
 - **bolao Flux image automation** — `ImageRepository`, `ImagePolicy`, and `ImageUpdateAutomation` for `ghcr.io/raolivei/bolao-web`; HelmRelease tag setter comment (swimTO pattern).
 
 ### Changed
+
+- **OpenClaw model chain → local-first** — Primary is now the Mac `ollama/gemma4:31b-mlx` (was `qwen2.5:7b`); fallback chain is cluster `ollama-cluster/qwen2.5:3b` → OpenRouter cloud. Compaction stays on Mac `qwen2.5:7b`. See [`clusters/eldertree/openclaw/configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml).
+
+- **OpenClaw config auto-reload** — Added `configmap.reloader.stakater.com/reload` annotation to the openclaw pod so Stakater Reloader restarts it on `openclaw-config-file` changes (previously the pod kept stale config until a manual restart).
 
 - **bolao ARC `maxRunners`** — Raise `bolao-eldertree` from 2 to 4 so PR docker builds do not queue behind main.
 
