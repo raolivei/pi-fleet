@@ -4,6 +4,7 @@ metadata:
   name: bolao-leaderboard-sync
   namespace: bolao
 spec:
+  suspend: true
   schedule: "*/15 * * * *"
   jobTemplate:
     spec:

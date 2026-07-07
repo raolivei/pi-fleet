@@ -4,6 +4,7 @@ metadata:
   name: bolao-claude-results-sync
   namespace: bolao-claude
 spec:
+  suspend: true
   schedule: "*/10 * * * *"
   jobTemplate:
     spec:

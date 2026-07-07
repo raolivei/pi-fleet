@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Changed
+
+- **bolao + bolao-claude (scale-down)** — web/postgres `replicas: 0`, cronjobs `suspend: true`, ARC runners `maxRunners: 0` (namespaces retained; PVCs not deleted).
+
 ### Removed
 
 - **bolao + bolao-claude** — decommissioned from Eldertree GitOps (`clusters/eldertree/kustomization.yaml`): namespaces, Postgres, cronjobs, ingress, image automation. ARC runners (`bolao-eldertree`, `bolao-claude-eldertree`) removed from `arc-runners`. Postgres exporter and blackbox probe targets dropped.
