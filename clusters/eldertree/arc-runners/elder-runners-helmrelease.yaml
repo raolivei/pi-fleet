@@ -72,12 +72,16 @@ spec:
                 memory: 2Gi
           - name: dind
             resources:
+              # Requests stay minimal (bursty usage); limit raised — 1000m/1536Mi
+              # was too tight for the frontend's npm ci+tsc+vite build (esbuild's
+              # postinstall spawns a subprocess; under CPU/memory pressure this
+              # class of npm bug manifests as "Exit handler never called!").
               requests:
                 cpu: 50m
                 memory: 256Mi
               limits:
-                cpu: 1000m
-                memory: 1536Mi
+                cpu: 2000m
+                memory: 3Gi
 
     controllerServiceAccount:
       namespace: arc-controller
