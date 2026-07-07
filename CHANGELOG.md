@@ -16,7 +16,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
-- **OpenClaw model chain → local-first** — Primary is now the Mac `ollama/gemma4:31b-mlx` (was `qwen2.5:7b`); fallback chain is cluster `ollama-cluster/qwen2.5:3b` → OpenRouter cloud. Compaction stays on Mac `qwen2.5:7b`. See [`clusters/eldertree/openclaw/configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml).
+- **OpenClaw model chain → local-first** — Primary is the Mac `ollama/gemma4:31b-mlx`; fallback chain is cluster `ollama-cluster/qwen2.5:3b` → OpenRouter cloud. See [`clusters/eldertree/openclaw/configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml).
+
+- **OpenClaw compaction fix** — Compaction model was `ollama/qwen2.5:7b`, which no longer exists on the Mac (deleted) → every compaction 404'd, causing "auto-compaction could not recover this turn". Repointed to the fast, present `ollama/qwen2.5:3b`; bumped `reserveTokensFloor` 20000→24000 and gemma4 `maxTokens` 4096→8192 for reasoning/tool-call headroom.
 
 - **OpenClaw config auto-reload** — Added `configmap.reloader.stakater.com/reload` annotation to the openclaw pod so Stakater Reloader restarts it on `openclaw-config-file` changes (previously the pod kept stale config until a manual restart).
 

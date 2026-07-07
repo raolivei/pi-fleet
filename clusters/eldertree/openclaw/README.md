@@ -11,7 +11,7 @@ Configured in [`configmap.yaml`](configmap.yaml) under `agents.defaults.model`:
 | **primary** | `ollama/gemma4:31b-mlx` | Mac Ollama (`100.97.229.104:11434` via Tailscale) | 31B, best quality |
 | **fallback 1** | `ollama-cluster/qwen2.5:3b` | Raspberry Pi 5 in-cluster (`ollama-fallback` svc) | 100% local, always-on; CPU-only, ~3-6 tok/s |
 | **fallback 2+** | `openrouter/*` (Gemini Flash, Claude Haiku, Llama 4 Scout) | Cloud (OpenRouter free tier) | last resort, fast |
-| _compaction_ | `ollama/qwen2.5:7b` | Mac Ollama | context summarization only |
+| _compaction_ | `ollama/qwen2.5:3b` | Mac Ollama | fast context summarization (was `qwen2.5:7b` — deleted from the Mac) |
 
 The **cluster fallback** is deployed by [`ollama-fallback.yaml`](ollama-fallback.yaml): a pinned
 `ollama/ollama:0.31.1` Deployment (soft-pinned to node-1, the node with most free RAM), a `local-path`
@@ -31,7 +31,11 @@ CPU cold-start.
 > **unset** (= `false`) and do **not** enable `thinkingDefault` for this agent — setting `reasoning:true`
 > on an `openai-completions` Ollama endpoint triggers `reasoning_effort` injection that breaks tool
 > calling ([openclaw#33272](https://github.com/openclaw/openclaw/issues/33272)). If gemma ever returns
-> empty content, raise its `maxTokens` (currently 4096) rather than touching `reasoning`.
+> empty content, raise its `maxTokens` (currently 8192) rather than touching `reasoning`.
+>
+> **Latency:** gemma4:31b-mlx runs ~52s to first token and can take 6–10 min for a full
+> openclaw-context reply on this Mac (accepted trade-off for a 31B local brain). Compaction
+> therefore runs on the fast `qwen2.5:3b`, not gemma4.
 
 > **Context caveat:** Ollama caps context at `OLLAMA_CONTEXT_LENGTH` (set to `16384` on the cluster
 > pod, matching the provider's `contextWindow`). For the Mac primary, set `num_ctx`/`OLLAMA_CONTEXT_LENGTH`
