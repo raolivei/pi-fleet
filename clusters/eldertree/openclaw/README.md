@@ -1,6 +1,44 @@
 # OpenClaw Deployment
 
-Personal AI assistant powered by OpenClaw on eldertree with OpenRouter (primary) and Groq fallback, plus Elder for cluster ops, code, and GitHub.
+Personal AI assistant powered by OpenClaw on eldertree. Uses a **local-first** model chain — a large model on the Mac primary, a small cluster-local model as fallback, then free cloud providers — plus Elder for cluster ops, code, and GitHub.
+
+## Model chain (local-first)
+
+Configured in [`configmap.yaml`](configmap.yaml) under `agents.defaults.model`:
+
+| Tier | Model | Runs on | Notes |
+| ---- | ----- | ------- | ----- |
+| **primary** | `ollama/gemma4:31b-mlx` | Mac Ollama (`100.97.229.104:11434` via Tailscale) | 31B, best quality |
+| **fallback 1** | `ollama-cluster/qwen2.5:3b` | Raspberry Pi 5 in-cluster (`ollama-fallback` svc) | 100% local, always-on; CPU-only, ~3-6 tok/s |
+| **fallback 2+** | `openrouter/*` (Gemini Flash, Claude Haiku, Llama 4 Scout) | Cloud (OpenRouter free tier) | last resort, fast |
+| _compaction_ | `ollama/qwen2.5:7b` | Mac Ollama | context summarization only |
+
+The **cluster fallback** is deployed by [`ollama-fallback.yaml`](ollama-fallback.yaml): a pinned
+`ollama/ollama:0.31.1` Deployment (soft-pinned to node-1, the node with most free RAM), a `local-path`
+PVC for the model, and an ingress NetworkPolicy. The model is pulled on first boot and the pod is
+only `Ready` once `qwen2.5:3b` exists. `OLLAMA_KEEP_ALIVE=30m` keeps it warm so a failover isn't a
+CPU cold-start.
+
+> **⚠️ Primary requires the Mac reachable from the cluster.** The primary routes to
+> `100.97.229.104:11434`, a **Tailscale** address — if Tailscale is **stopped** on the Mac, the
+> cluster cannot reach it (`http_code=000`) and every request silently falls through to the fallback
+> tiers. Keep Tailscale **up and persistent** (login item) on the Mac. Alternative: point the `ollama`
+> provider `baseUrl` in [`configmap.yaml`](configmap.yaml) at the Mac's LAN IP (e.g.
+> `http://192.168.2.107:11434/v1`) with a DHCP reservation. Verify the path from inside the cluster:
+> `kubectl -n openclaw exec deploy/openclaw -- curl -s --max-time 8 http://100.97.229.104:11434/api/tags`.
+
+> **Reasoning-model caveat.** `gemma4:31b-mlx` emits a `reasoning` field. Leave its `reasoning`
+> **unset** (= `false`) and do **not** enable `thinkingDefault` for this agent — setting `reasoning:true`
+> on an `openai-completions` Ollama endpoint triggers `reasoning_effort` injection that breaks tool
+> calling ([openclaw#33272](https://github.com/openclaw/openclaw/issues/33272)). If gemma ever returns
+> empty content, raise its `maxTokens` (currently 4096) rather than touching `reasoning`.
+
+> **Context caveat:** Ollama caps context at `OLLAMA_CONTEXT_LENGTH` (set to `16384` on the cluster
+> pod, matching the provider's `contextWindow`). For the Mac primary, set `num_ctx`/`OLLAMA_CONTEXT_LENGTH`
+> on the Mac side if you need the full declared window.
+
+To change the fallback model, edit both `OLLAMA_CONTEXT_LENGTH`/the `ollama pull` line in
+`ollama-fallback.yaml` **and** the `ollama-cluster` provider entry in `configmap.yaml`.
 
 ## ARM64 Build
 
@@ -20,7 +58,7 @@ To rebuild manually:
 ## Features
 
 - **Telegram Integration**: Chat via `@eldertree_assistant_bot`
-- **Multi-Provider LLM**: OpenRouter primary (e.g. Llama, Gemini, Claude) + Groq fallback
+- **Local-first LLM chain**: Mac `gemma4:31b-mlx` primary → cluster `qwen2.5:3b` fallback → OpenRouter/Groq cloud last resort (see [Model chain](#model-chain-local-first))
 - **Elder best-answer**: Elder can query Gemini + Groq in parallel and judge the best answer
 - **SwimTO Integration**: Query Toronto pool schedules
 - **Kubernetes Access**: Cluster-wide operator RBAC via in-pod `kubectl` (workloads, Flux, ingress, secrets, etc.); storage (PV/PVC/snapshots/StorageClass) and cluster control-plane APIs are read-only — see [rbac.yaml](rbac.yaml)
@@ -32,11 +70,11 @@ To rebuild manually:
 ## Architecture
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────────────────┐
-│  Telegram   │────▶│   OpenClaw   │────▶│  OpenRouter (primary)       │
-│   Web UI    │◀────│   Gateway    │◀────│  Groq (fallback)            │
-└─────────────┘     └──────┬───────┘     └─────────────────────────────┘
-                           │
+┌─────────────┐     ┌──────────────┐     ┌──────────────────────────────────────┐
+│  Telegram   │────▶│   OpenClaw   │────▶│  1. Mac gemma4:31b-mlx  (Tailscale)  │
+│   Web UI    │◀────│   Gateway    │◀────│  2. Cluster qwen2.5:3b  (Pi5, local) │
+└─────────────┘     └──────┬───────┘     │  3. OpenRouter/Groq     (cloud)      │
+                           │             └──────────────────────────────────────┘
                            ▼
                     ┌──────────────┐     ┌──────────────┐
                     │    Elder     │────▶│  SwimTO API  │
@@ -45,7 +83,9 @@ To rebuild manually:
                     └──────────────┘
 ```
 
-**Resilience:** OpenClaw uses OpenRouter first; if it fails, fallbacks to Groq. Elder can use `elder_best_answer` to query Gemini + Groq in parallel and return the judged best answer.
+**Resilience:** OpenClaw tries the Mac primary first; if unreachable it falls back to the always-on
+cluster-local `qwen2.5:3b`, then to cloud providers. Elder can use `elder_best_answer` to query
+Gemini + Groq in parallel and return the judged best answer.
 
 ## Quick Start
 
