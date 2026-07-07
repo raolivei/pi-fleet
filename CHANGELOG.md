@@ -16,9 +16,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
-- **OpenClaw model chain → local-first** — Primary is the Mac `ollama/gemma4:31b-mlx`; fallback chain is cluster `ollama-cluster/qwen2.5:3b` → OpenRouter cloud. See [`clusters/eldertree/openclaw/configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml).
+- **OpenClaw model chain → local-first, LAN-primary** — Primary is the Mac `ollama-lan/qwen2.5:32b` reached over LAN (`192.168.2.107`, the Mac is always home on the same network); `ollama-tailscale/qwen2.5:32b` (same model, `100.97.229.104`) is a passive fallback tier for when the Mac leaves the LAN — no manual toggling needed, a dead LAN path fails in ~7ms so failover is instant. Then `ollama-cluster/qwen2.5:3b` → OpenRouter cloud. Replaces the earlier `gemma4:31b-mlx` primary (measured ~52s to first token / 6-10min per reply — too slow; qwen2.5:32b measures ~12s cold load, <1s TTFT). See [`clusters/eldertree/openclaw/configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml).
 
-- **OpenClaw compaction fix** — Compaction model was `ollama/qwen2.5:7b`, which no longer exists on the Mac (deleted) → every compaction 404'd, causing "auto-compaction could not recover this turn". Repointed to the fast, present `ollama/qwen2.5:3b`; bumped `reserveTokensFloor` 20000→24000 and gemma4 `maxTokens` 4096→8192 for reasoning/tool-call headroom.
+- **OpenClaw compaction → cluster** — Compaction model is now `ollama-cluster/qwen2.5:3b` (was `ollama/qwen2.5:7b`, which had been deleted from the Mac → every compaction 404'd, causing "auto-compaction could not recover this turn"). Decoupling compaction from the Mac entirely means it never fails due to the Mac's network path. `reserveTokensFloor` 20000→24000.
+
+- **Elder `elder_best_answer` → opt-in Anthropic/Sonnet-5 escalation** — [raolivei/elder#26](https://github.com/raolivei/elder/pull/26) adds Claude Sonnet 5 (via OpenRouter) as a 4th, opt-in provider for hard multi-hop investigations that local ~30B models don't reliably nail (benchmark evidence: no local MLX model in the 26-35B range matched Sonnet 4.6's root-cause accuracy on a real production debug trace). Default `elder_best_answer` behavior/cost unchanged. Wired `ELDER_OPENROUTER_API_KEY` on the `elder` container in `helmrelease.yaml`, reusing OpenClaw's already-provisioned `openclaw-secrets/OPENROUTER_API_KEY` (no new Vault secret).
 
 - **OpenClaw config auto-reload** — Added `configmap.reloader.stakater.com/reload` annotation to the openclaw pod so Stakater Reloader restarts it on `openclaw-config-file` changes (previously the pod kept stale config until a manual restart).
 
