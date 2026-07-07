@@ -90,4 +90,4 @@ data:
       - swimto-postgres.swimto.svc.cluster.local:5432
       - canopy-postgres.canopy.svc.cluster.local:5432
       - journey-postgres.journey.svc.cluster.local:5432
-      - postgres-service.bolao.svc.cluster.local:5432
+      # - postgres-service.bolao.svc.cluster.local:5432  # DECOMMISSIONED 2026-07-07

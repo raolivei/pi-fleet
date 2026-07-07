@@ -162,7 +162,7 @@ prometheus:
             - "https://swimto.eldertree.xyz"
             - "https://swimto.app"
             - "https://api.swimto.app/health"
-            - "https://bolao.eldertree.xyz"
+            # - "https://bolao.eldertree.xyz"  # DECOMMISSIONED 2026-07-07
             - "https://pitanga.cloud"
     blackbox-https-ca:
       metrics_path: /probe

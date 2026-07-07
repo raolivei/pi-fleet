@@ -14,7 +14,7 @@ resources:
   - northwaysignal-website-runners-helmrelease.yaml
   - nima-runners-helmrelease.yaml
   - eldertree-docs-runners-helmrelease.yaml
-  - bolao-runners-helmrelease.yaml
-  - bolao-claude-runners-helmrelease.yaml
-  - bolao-dind-daemon-configmap.yaml
-  - bolao-claude-dind-daemon-configmap.yaml
+  # - bolao-runners-helmrelease.yaml # DECOMMISSIONED 2026-07-07
+  # - bolao-claude-runners-helmrelease.yaml
+  # - bolao-dind-daemon-configmap.yaml
+  # - bolao-claude-dind-daemon-configmap.yaml
