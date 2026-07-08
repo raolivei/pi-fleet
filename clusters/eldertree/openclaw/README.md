@@ -12,7 +12,7 @@ Configured in [`configmap.yaml`](configmap.yaml) under `agents.defaults.model`:
 | **fallback 1** | `ollama-tailscale/qwen2.5:32b` | Mac Ollama, **Tailscale** (`100.97.229.104:11434`) | same model, in case the Mac ever leaves the LAN. LAN connect-refused fails in ~7ms, so this fires near-instantly — no manual toggling needed. Keep Tailscale running as an always-on login item; it costs nothing when idle. |
 | **fallback 2** | `ollama-cluster/qwen2.5:3b` | Raspberry Pi 5 in-cluster (`ollama-fallback` svc) | 100% local, always-on regardless of the Mac; CPU-only, ~3-6 tok/s |
 | **fallback 3+** | `openrouter/*` (Gemini Flash, Claude Haiku, Llama 4 Scout) | Cloud (OpenRouter free tier) | last resort, fast |
-| _compaction_ | `ollama-cluster/qwen2.5:3b` | Cluster (Pi5) | decoupled from the Mac's network path entirely, so compaction never fails just because the Mac is unreachable |
+| _compaction_ | `ollama-lan/qwen2.5:32b` | Mac (LAN) | **not** the cluster — measured the Pi5's real prefill speed at 14.35 tok/s; OpenClaw's ~180s compaction budget only fits ~2,583 tokens at that rate, far below real conversation sizes (15-16k+ tokens). The Mac processes the same size prompt in ~44s. Moving compaction to the cluster (an earlier fix, see CHANGELOG) *sounded* right — decouple from Mac reachability — but the Pi5's CPU genuinely cannot do this task in time regardless of context-window tuning. Accepted trade-off: compaction now shares the Mac-reachability risk with primary again, but the LAN/Tailscale dual-path makes that risk small in practice. |
 
 Why LAN-primary with Tailscale as a passive fallback tier (not primary): OpenClaw's fallback chain is
 **reliability-based** (tries the next entry only when a call fails/errors), not quality-based — so
