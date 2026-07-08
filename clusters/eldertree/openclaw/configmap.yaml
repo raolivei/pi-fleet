@@ -81,7 +81,7 @@ data:
           "compaction": {
             "mode": "safeguard",
             "reserveTokensFloor": 24000,
-            "model": "ollama-cluster/qwen2.5:3b",
+            "model": "ollama-lan/qwen2.5:32b",
             "memoryFlush": {
               "enabled": false
             }
