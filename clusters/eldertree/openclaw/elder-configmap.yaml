@@ -10,3 +10,11 @@ data:
   ELDER_REPO_SYNC_INTERVAL_HOURS: "6"
   ELDER_GITHUB_OWNER: "raolivei"
   ELDER_LLM_TIMEOUT_SECONDS: "30"
+  # Was defaulting to localhost:11434 (unreachable from inside the pod) with
+  # model qwen2.5:14b (not even pulled on the Mac) -- elder_best_answer's
+  # "ollama"/"ollama-heavy" providers were reporting available=true (a bare
+  # truthy check) but never actually worked. Point at the same Mac LAN IP
+  # OpenClaw's primary uses, and models that are actually present.
+  ELDER_OLLAMA_BASE_URL: "http://192.168.2.107:11434"
+  ELDER_OLLAMA_MODEL: "qwen2.5:32b"
+  ELDER_OLLAMA_HEAVY_MODEL: "qwen3.6:35b-mlx"
