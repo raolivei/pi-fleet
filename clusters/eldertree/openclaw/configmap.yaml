@@ -77,10 +77,11 @@ data:
               "openrouter/meta-llama/llama-4-scout"
             ]
           },
-          "contextTokens": 24000,
+          "contextTokens": 30000,
           "compaction": {
             "mode": "safeguard",
-            "reserveTokensFloor": 8192,
+            "reserveTokens": 8500,
+            "reserveTokensFloor": 8500,
             "model": "ollama-lan/qwen2.5:32b",
             "memoryFlush": {
               "enabled": false
