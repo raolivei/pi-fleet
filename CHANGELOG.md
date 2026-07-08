@@ -4,13 +4,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Changed
+
+- **bolao + bolao-claude (scale-down)** — web/postgres `replicas: 0`, cronjobs `suspend: true`, ARC runners `maxRunners: 0` (namespaces retained; PVCs not deleted).
+
+### Removed
+
+- **bolao + bolao-claude** — decommissioned from Eldertree GitOps (`clusters/eldertree/kustomization.yaml`): namespaces, Postgres, cronjobs, ingress, image automation. ARC runners (`bolao-eldertree`, `bolao-claude-eldertree`) removed from `arc-runners`. Postgres exporter and blackbox probe targets dropped.
+
 ### Added
+
+- **Elder Ollama wiring (was pointing nowhere)** — `elder-configmap.yaml` had no `ELDER_OLLAMA_BASE_URL`, so `elder_best_answer`'s `ollama`/`ollama-heavy` providers defaulted to `localhost:11434` (unreachable from inside the pod) with model `qwen2.5:14b` (never pulled on the Mac) — reported `available: true` (a bare truthy check) but never actually worked. Now points at the Mac's LAN IP (`192.168.2.107`, same as OpenClaw's primary) with models that are actually present (`qwen2.5:32b` fast, `qwen3.6:35b-mlx` heavy — see [raolivei/elder#27](https://github.com/raolivei/elder/pull/27)). Also removes the now-unused `ELDER_OPENROUTER_API_KEY` wiring (elder#27 replaced the Anthropic/OpenRouter escalation provider with a local one).
+
+- **OpenClaw cluster-local LLM fallback** — [`clusters/eldertree/openclaw/ollama-fallback.yaml`](clusters/eldertree/openclaw/ollama-fallback.yaml): in-cluster `ollama/ollama` Deployment serving `qwen2.5:3b` on a Pi5 (soft-pinned to node-1), `local-path` PVC, and ingress NetworkPolicy. Always-on local fallback for when the Mac Ollama primary is unreachable; pinned image `ollama/ollama:0.31.1`, keeps the model warm between calls (`OLLAMA_KEEP_ALIVE=30m`).
 
 - **bolao Flux image automation** — `ImageRepository`, `ImagePolicy`, and `ImageUpdateAutomation` for `ghcr.io/raolivei/bolao-web`; HelmRelease tag setter comment (swimTO pattern).
 
 ### Changed
 
 - **`add-services-to-hosts.sh` (Mac `/etc/hosts`)** — Derive the `*.eldertree.local` service list **live from cluster Ingresses** instead of a hardcoded list (was missing `ollie`/`bolao-claude`, still carried decommissioned `visage`/`minio` and dead `journey`/`nima`). Services point at the Traefik ingress VIP `192.168.2.200` (override via `ELDERTREE_VIP`); re-running strips stale/duplicate entries and rewrites a single managed block. The legacy `scripts/utils/update-hosts.sh` stub is superseded.
+
+- **OpenClaw model chain → local-first, LAN-primary** — Primary is the Mac `ollama-lan/qwen2.5:32b` reached over LAN (`192.168.2.107`, the Mac is always home on the same network); `ollama-tailscale/qwen2.5:32b` (same model, `100.97.229.104`) is a passive fallback tier for when the Mac leaves the LAN — no manual toggling needed, a dead LAN path fails in ~7ms so failover is instant. Then `ollama-cluster/qwen2.5:3b` → OpenRouter cloud. Replaces the earlier `gemma4:31b-mlx` primary (measured ~52s to first token / 6-10min per reply — too slow; qwen2.5:32b measures ~12s cold load, <1s TTFT). See [`clusters/eldertree/openclaw/configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml).
+
+- **OpenClaw compaction → cluster** — Compaction model is now `ollama-cluster/qwen2.5:3b` (was `ollama/qwen2.5:7b`, which had been deleted from the Mac → every compaction 404'd, causing "auto-compaction could not recover this turn"). Decoupling compaction from the Mac entirely means it never fails due to the Mac's network path. `reserveTokensFloor` 20000→24000.
+
+- **Elder `elder_best_answer` → opt-in Anthropic/Sonnet-5 escalation** — [raolivei/elder#26](https://github.com/raolivei/elder/pull/26) adds Claude Sonnet 5 (via OpenRouter) as a 4th, opt-in provider for hard multi-hop investigations that local ~30B models don't reliably nail (benchmark evidence: no local MLX model in the 26-35B range matched Sonnet 4.6's root-cause accuracy on a real production debug trace). Default `elder_best_answer` behavior/cost unchanged. Wired `ELDER_OPENROUTER_API_KEY` on the `elder` container in `helmrelease.yaml`, reusing OpenClaw's already-provisioned `openclaw-secrets/OPENROUTER_API_KEY` (no new Vault secret).
+
+- **OpenClaw config auto-reload** — Added `configmap.reloader.stakater.com/reload` annotation to the openclaw pod so Stakater Reloader restarts it on `openclaw-config-file` changes (previously the pod kept stale config until a manual restart).
 
 - **bolao ARC `maxRunners`** — Raise `bolao-eldertree` from 2 to 4 so PR docker builds do not queue behind main.
 

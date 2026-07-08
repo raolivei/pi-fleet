@@ -68,8 +68,10 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "ollama/qwen2.5:7b",
+            "primary": "ollama-lan/qwen2.5:32b",
             "fallbacks": [
+              "ollama-tailscale/qwen2.5:32b",
+              "ollama-cluster/qwen2.5:3b",
               "openrouter/google/gemini-2.0-flash-001",
               "openrouter/anthropic/claude-3.5-haiku",
               "openrouter/meta-llama/llama-4-scout"
@@ -78,8 +80,8 @@ data:
           "contextTokens": 80000,
           "compaction": {
             "mode": "safeguard",
-            "reserveTokensFloor": 20000,
-            "model": "ollama/qwen2.5:7b",
+            "reserveTokensFloor": 24000,
+            "model": "ollama-cluster/qwen2.5:3b",
             "memoryFlush": {
               "enabled": false
             }
@@ -114,15 +116,41 @@ data:
               }
             ]
           },
-          "ollama": {
+          "ollama-lan": {
+            "api": "openai-completions",
+            "baseUrl": "http://192.168.2.107:11434/v1",
+            "apiKey": "ollama",
+            "models": [
+              {
+                "id": "qwen2.5:32b",
+                "name": "Qwen 2.5 32B (Local Mac, primary, LAN)",
+                "contextWindow": 32768,
+                "maxTokens": 8192
+              }
+            ]
+          },
+          "ollama-tailscale": {
             "api": "openai-completions",
             "baseUrl": "http://100.97.229.104:11434/v1",
             "apiKey": "ollama",
             "models": [
               {
-                "id": "qwen2.5:7b",
-                "name": "Qwen 2.5 7B (Local Mac)",
+                "id": "qwen2.5:32b",
+                "name": "Qwen 2.5 32B (Local Mac, fallback when off-LAN)",
                 "contextWindow": 32768,
+                "maxTokens": 8192
+              }
+            ]
+          },
+          "ollama-cluster": {
+            "api": "openai-completions",
+            "baseUrl": "http://ollama-fallback.openclaw.svc.cluster.local:11434/v1",
+            "apiKey": "ollama",
+            "models": [
+              {
+                "id": "qwen2.5:3b",
+                "name": "Qwen 2.5 3B (Cluster fallback, Pi5 CPU)",
+                "contextWindow": 16384,
                 "maxTokens": 2048
               }
             ]

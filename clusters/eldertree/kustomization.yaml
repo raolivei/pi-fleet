@@ -20,8 +20,8 @@ resources:
 
   # Applications
   - canopy # Personal finance dashboard
-  - bolao # Bolão dos Guerreiros — WC 2026 prediction pool
-  - bolao-claude # Bolão (Claude scratch) — separate namespace; image ghcr.io/raolivei/bolao-claude-web
+  # - bolao # Bolão — DECOMMISSIONED 2026-07-07 (WC pool no longer needed)
+  # - bolao-claude # Bolão Claude scratch — DECOMMISSIONED 2026-07-07
   - swimto # Toronto pool schedules
   - pitanga/flux-kustomization.yaml # Pitanga Cloud (managed by its own Flux Kustomization)
   - ollie # Workspace assistant with RAG and LLM

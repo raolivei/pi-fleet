@@ -32,6 +32,12 @@ spec:
         port: 18789
         strategy: Recreate
         serviceAccountName: openclaw
+        # Stakater Reloader (running in kube-system) restarts this pod whenever the
+        # openclaw-config-file ConfigMap changes, so model-chain edits take effect
+        # without a manual `kubectl rollout restart`. The init script then re-seeds
+        # openclaw.json from the ConfigMap on the resulting fresh container start.
+        podAnnotations:
+          configmap.reloader.stakater.com/reload: "openclaw-config-file"
         command:
           - /bin/sh
           - -c

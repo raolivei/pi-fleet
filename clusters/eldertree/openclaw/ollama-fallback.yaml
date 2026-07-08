@@ -1,0 +1,180 @@
+# ============================================================
+# Cluster-local Ollama fallback for OpenClaw
+# ------------------------------------------------------------
+# Serves qwen2.5:3b on a Raspberry Pi 5 (ARM64, CPU-only) so the
+# assistant keeps answering when the Mac Ollama (primary,
+# gemma4:31b-mlx over Tailscale) is unreachable. Cloud providers
+# (OpenRouter/Groq) remain as the last-resort fallbacks.
+#
+# Sized for a Pi5 8GB: model unloads when idle (OLLAMA_KEEP_ALIVE),
+# soft-pinned to node-1 (most free RAM). Model is pulled on first
+# boot and persisted on a local-path PVC so restarts are fast.
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-fallback
+  namespace: openclaw
+  labels:
+    app: openclaw
+    component: ollama-fallback
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # RWO PVC — only one pod may mount it
+  selector:
+    matchLabels:
+      app: openclaw
+      component: ollama-fallback
+  template:
+    metadata:
+      labels:
+        app: openclaw
+        component: ollama-fallback
+    spec:
+      # Soft-prefer node-1 (most free RAM) for the FIRST schedule. NOTE: the
+      # local-path PVC pins its PV to whichever node binds first, so after that
+      # the pod is effectively hard-pinned to that node on restart (Recreate).
+      # If that node is down/full the fallback tier is unavailable and the cloud
+      # (OpenRouter) tiers below it in configmap.yaml cover the gap.
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - node-1.eldertree.local
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.31.1 # pinned; linux/arm64 verified
+          imagePullPolicy: IfNotPresent
+          # Serve, then pull the fallback model in the background so the
+          # server is up immediately; readiness gates on the model existing.
+          command:
+            - /bin/sh
+            - -c
+            - |
+              ollama serve &
+              pid=$!
+              echo "[ollama] waiting for server..."
+              until ollama list >/dev/null 2>&1; do sleep 2; done
+              echo "[ollama] pulling qwen2.5:3b (first boot may take a few minutes)..."
+              ollama pull qwen2.5:3b || echo "[ollama] pull failed; readiness will keep retrying"
+              wait $pid
+          ports:
+            - containerPort: 11434
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:11434"
+            - name: OLLAMA_KEEP_ALIVE
+              value: "30m" # keep warm longer so a failover isn't a CPU cold-start
+            - name: OLLAMA_MAX_LOADED_MODELS
+              value: "1"
+            - name: OLLAMA_NUM_PARALLEL
+              value: "1"
+            - name: OLLAMA_CONTEXT_LENGTH
+              value: "16384" # match provider contextWindow in configmap.yaml
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /root/.ollama
+          resources:
+            # Measured working set serving qwen2.5:3b @16k ctx = ~2.71Gi (weights
+            # + KV pre-allocated at load). Request 2Gi so the scheduler accounts
+            # for it (512Mi under-request risks node overcommit); limit 4Gi (~28%
+            # headroom over peak — verified, not OOM-tight).
+            requests: {cpu: "250m", memory: "2Gi"}
+            limits: {cpu: "3500m", memory: "4Gi"}
+          # httpGet liveness — Ollama returns "Ollama is running" on /.
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          # Not Ready until the model is actually pulled — keeps OpenClaw
+          # from routing fallback traffic to an empty server.
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "ollama list | grep -q qwen2.5:3b"
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 30 # `ollama list` can lag while CPU is busy generating
+            failureThreshold: 80 # ~20min budget for the first pull
+      volumes:
+        - name: ollama-models
+          persistentVolumeClaim:
+            claimName: ollama-fallback-models
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-fallback-models
+  namespace: openclaw
+  labels:
+    app: openclaw
+    component: ollama-fallback
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path # explicit; no cluster default StorageClass is set
+  resources:
+    requests:
+      storage: 6Gi # qwen2.5:3b ~2GB + headroom
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-fallback
+  namespace: openclaw
+  labels:
+    app: openclaw
+    component: ollama-fallback
+spec:
+  selector:
+    app: openclaw
+    component: ollama-fallback
+  ports:
+    - protocol: TCP
+      port: 11434
+      targetPort: 11434
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ollama-fallback-ingress
+  namespace: openclaw
+  labels:
+    app: openclaw
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app: openclaw
+      component: ollama-fallback
+  ingress:
+    # Allow the OpenClaw gateway pod to reach the model endpoint
+    - from:
+        - podSelector:
+            matchLabels:
+              app: openclaw
+              component: openclaw
+      ports:
+        - protocol: TCP
+          port: 11434
+    # Allow kubelet liveness probes from kube-system
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: 11434

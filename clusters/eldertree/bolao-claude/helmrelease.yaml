@@ -23,9 +23,12 @@ spec:
       bolao-claude-web:
         image:
           repository: ghcr.io/raolivei/bolao-claude-web
-          tag: v0.1.4 # {"$imagepolicy": "bolao-claude:bolao-claude-web-policy:tag"}
-          pullPolicy: IfNotPresent
-        replicas: 1
+          tag: v0.1.7 # {"$imagepolicy": "bolao-claude:bolao-claude-web-policy:tag"}
+          # Always: a tag v0.1.7 foi republicada (build 2026-07-03, digest
+          # sha256:56894949…) sobre uma v0.1.7 anterior — Always garante que o
+          # kubelet re-puxe o digest novo em vez de um cache antigo da tag.
+          pullPolicy: Always
+        replicas: 0
         port: 3000
         probesEnabled: false
         sessionAffinity: ClientIP
@@ -66,6 +69,10 @@ spec:
             value: "true"
           - name: POOL_ENTRY_FEE_CAD
             value: "15"
+          - name: POOL_ADMIN_FEE_PERCENT
+            value: "10"
+          - name: POOL_OPEN_SIGNUP
+            value: "true"
           - name: SEED_ADMIN_EMAIL
             value: "rafa.oliveira1@gmail.com"
           - name: ADMIN_EMAILS
