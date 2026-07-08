@@ -22,6 +22,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **`add-services-to-hosts.sh` (Mac `/etc/hosts`)** — Derive the `*.eldertree.local` service list **live from cluster Ingresses** instead of a hardcoded list (was missing `ollie`/`bolao-claude`, still carried decommissioned `visage`/`minio` and dead `journey`/`nima`). Services point at the Traefik ingress VIP `192.168.2.200` (override via `ELDERTREE_VIP`); re-running strips stale/duplicate entries and rewrites a single managed block. The legacy `scripts/utils/update-hosts.sh` stub is superseded.
+
 - **OpenClaw model chain → local-first, LAN-primary** — Primary is the Mac `ollama-lan/qwen2.5:32b` reached over LAN (`192.168.2.107`, the Mac is always home on the same network); `ollama-tailscale/qwen2.5:32b` (same model, `100.97.229.104`) is a passive fallback tier for when the Mac leaves the LAN — no manual toggling needed, a dead LAN path fails in ~7ms so failover is instant. Then `ollama-cluster/qwen2.5:3b` → OpenRouter cloud. Replaces the earlier `gemma4:31b-mlx` primary (measured ~52s to first token / 6-10min per reply — too slow; qwen2.5:32b measures ~12s cold load, <1s TTFT). See [`clusters/eldertree/openclaw/configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml).
 
 - **OpenClaw compaction → cluster** — Compaction model is now `ollama-cluster/qwen2.5:3b` (was `ollama/qwen2.5:7b`, which had been deleted from the Mac → every compaction 404'd, causing "auto-compaction could not recover this turn"). Decoupling compaction from the Mac entirely means it never fails due to the Mac's network path. `reserveTokensFloor` 20000→24000.
