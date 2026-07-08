@@ -36,17 +36,24 @@ CPU cold-start.
 > too small to hold the baseline system prompt). For the Mac providers, set `num_ctx`/`OLLAMA_CONTEXT_LENGTH`
 > on the Mac side if you need a window other than qwen2.5:32b's default.
 >
-> **`reserveTokensFloor` math (don't set this blindly):** OpenClaw's `safeguard` compaction mode
-> computes usable prompt budget as `provider.contextWindow - reserveTokensFloor`. A prior fix bumped
-> `reserveTokensFloor` 20000→24000 "for headroom" without checking it against the actual providers —
-> against `qwen2.5:32b`'s 32768 window that left only 8768 usable tokens, and the *baseline* system
-> prompt (tools + workspace context, zero conversation) measured ~9748 tokens on its own — meaning
-> **every session, even brand new ones, overflowed immediately** ("Auto-compaction could not recover
-> this turn" on a fresh `/new` session). Now `reserveTokensFloor: 8192` (matches `qwen2.5:32b`'s own
-> `maxTokens`) and global `contextTokens: 24000` (was `80000`, tuned for gemma4's 131072 window and
-> never adjusted after the primary swap) — leaves ~24576 usable tokens per Ollama tier, comfortably
-> above the baseline. Before changing either value, check it against `min(contextWindow across all
-> providers) - reserveTokensFloor > measured baseline prompt size` on a fresh session.
+> **`reserveTokens`/`reserveTokensFloor` math (verified against upstream source, don't set blindly):**
+> `reserveTokensFloor` is only a *minimum* — it does NOT set the actual reserve. If
+> `agents.defaults.compaction.reserveTokens` is left **unset**, OpenClaw falls back to the runtime's
+> current/default reserve value (effectively ~20000, the same number the generic error message
+> suggests) via `max(configuredReserveTokens ?? currentReserveTokens, reserveTokensFloor)` in
+> `applyAgentCompactionSettingsFromConfig()` (`src/agents/agent-settings.ts`) — so lowering
+> `reserveTokensFloor` alone (an earlier fix tried 24000→8192) does **nothing** if it's already below
+> that fallback. There's also a hard safety cap: `minPromptBudget = min(8000, contextTokenBudget*0.5)`
+> (`agent-compaction-constants.ts`) guarantees at least this much prompt room by capping the reserve —
+> which is *why* it didn't overflow-loop forever, but it also meant every session got squeezed to a
+> razor-thin ~8000-token budget against a baseline system prompt (tools + workspace context, zero
+> conversation) measured at **~9748 tokens** — overflowing every fresh `/new` session immediately.
+> Fix: set **both** `reserveTokens` (the actual value, not just the floor) **and** `reserveTokensFloor`
+> explicitly (currently `8500` each) with a large enough `contextTokens` (`30000`, below the smallest
+> real `contextWindow` of `32768` so it stays the binding budget) — usable prompt budget is now
+> `30000 - 8500 = 21500`, comfortably above the ~9748 baseline. Before changing either value: verify
+> against upstream's `resolveCompactionReserveTokensFloor`/`applyAgentCompactionSettingsFromConfig`
+> logic, don't infer the formula from log field names alone (cost real debugging time twice).
 
 To change the primary/fallback Mac model, edit both `ollama-lan` and `ollama-tailscale` provider
 entries in `configmap.yaml` (keep them in sync — same model, different `baseUrl`). To change the
