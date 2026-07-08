@@ -4,6 +4,7 @@ metadata:
   name: bolao-alceu-feed-sync
   namespace: bolao
 spec:
+  suspend: true
   schedule: "*/20 * * * *"
   jobTemplate:
     spec:

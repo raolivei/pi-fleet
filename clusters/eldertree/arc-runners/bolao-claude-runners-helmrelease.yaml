@@ -28,7 +28,7 @@ spec:
     githubConfigSecret: ollie-runner-github-secret
 
     minRunners: 0
-    maxRunners: 2
+    maxRunners: 0
 
     runnerScaleSetName: "bolao-claude-eldertree"
 

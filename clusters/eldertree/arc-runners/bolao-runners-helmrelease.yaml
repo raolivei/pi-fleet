@@ -29,7 +29,7 @@ spec:
 
     minRunners: 0
     # PR docker builds queue behind main when maxRunners is too low.
-    maxRunners: 4
+    maxRunners: 0
 
     runnerScaleSetName: "bolao-eldertree"
 
