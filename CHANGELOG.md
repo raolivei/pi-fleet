@@ -10,6 +10,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
+- **Elder Ollama wiring (was pointing nowhere)** — `elder-configmap.yaml` had no `ELDER_OLLAMA_BASE_URL`, so `elder_best_answer`'s `ollama`/`ollama-heavy` providers defaulted to `localhost:11434` (unreachable from inside the pod) with model `qwen2.5:14b` (never pulled on the Mac) — reported `available: true` (a bare truthy check) but never actually worked. Now points at the Mac's LAN IP (`192.168.2.107`, same as OpenClaw's primary) with models that are actually present (`qwen2.5:32b` fast, `qwen3.6:35b-mlx` heavy — see [raolivei/elder#27](https://github.com/raolivei/elder/pull/27)). Also removes the now-unused `ELDER_OPENROUTER_API_KEY` wiring (elder#27 replaced the Anthropic/OpenRouter escalation provider with a local one).
+
 - **OpenClaw cluster-local LLM fallback** — [`clusters/eldertree/openclaw/ollama-fallback.yaml`](clusters/eldertree/openclaw/ollama-fallback.yaml): in-cluster `ollama/ollama` Deployment serving `qwen2.5:3b` on a Pi5 (soft-pinned to node-1), `local-path` PVC, and ingress NetworkPolicy. Always-on local fallback for when the Mac Ollama primary is unreachable; pinned image `ollama/ollama:0.31.1`, keeps the model warm between calls (`OLLAMA_KEEP_ALIVE=30m`).
 
 - **bolao Flux image automation** — `ImageRepository`, `ImagePolicy`, and `ImageUpdateAutomation` for `ghcr.io/raolivei/bolao-web`; HelmRelease tag setter comment (swimTO pattern).

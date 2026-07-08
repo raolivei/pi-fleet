@@ -193,15 +193,6 @@ spec:
                 name: elder-secrets
                 key: GROQ_API_KEY
                 optional: true
-          - name: ELDER_OPENROUTER_API_KEY
-            valueFrom:
-              secretKeyRef:
-                # Reuses OpenClaw's already-provisioned OpenRouter key (same ns) —
-                # no new Vault secret needed. Powers the opt-in Anthropic/Sonnet-5
-                # provider in elder_best_answer.
-                name: openclaw-secrets
-                key: OPENROUTER_API_KEY
-                optional: true
           - name: ELDER_GMAIL_CLIENT_ID
             valueFrom:
               secretKeyRef:
