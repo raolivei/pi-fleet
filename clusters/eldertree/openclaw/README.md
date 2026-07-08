@@ -31,9 +31,22 @@ PVC for the model, and an ingress NetworkPolicy. The model is pulled on first bo
 only `Ready` once `qwen2.5:3b` exists. `OLLAMA_KEEP_ALIVE=30m` keeps it warm so a failover isn't a
 CPU cold-start.
 
-> **Context caveat:** Ollama caps context at `OLLAMA_CONTEXT_LENGTH` (set to `16384` on the cluster
-> pod, matching the provider's `contextWindow`). For the Mac providers, set `num_ctx`/`OLLAMA_CONTEXT_LENGTH`
+> **Context caveat:** Ollama caps context at `OLLAMA_CONTEXT_LENGTH` (set to `32768` on the cluster
+> pod, matching the provider's `contextWindow` — matches the Mac providers so no tier is structurally
+> too small to hold the baseline system prompt). For the Mac providers, set `num_ctx`/`OLLAMA_CONTEXT_LENGTH`
 > on the Mac side if you need a window other than qwen2.5:32b's default.
+>
+> **`reserveTokensFloor` math (don't set this blindly):** OpenClaw's `safeguard` compaction mode
+> computes usable prompt budget as `provider.contextWindow - reserveTokensFloor`. A prior fix bumped
+> `reserveTokensFloor` 20000→24000 "for headroom" without checking it against the actual providers —
+> against `qwen2.5:32b`'s 32768 window that left only 8768 usable tokens, and the *baseline* system
+> prompt (tools + workspace context, zero conversation) measured ~9748 tokens on its own — meaning
+> **every session, even brand new ones, overflowed immediately** ("Auto-compaction could not recover
+> this turn" on a fresh `/new` session). Now `reserveTokensFloor: 8192` (matches `qwen2.5:32b`'s own
+> `maxTokens`) and global `contextTokens: 24000` (was `80000`, tuned for gemma4's 131072 window and
+> never adjusted after the primary swap) — leaves ~24576 usable tokens per Ollama tier, comfortably
+> above the baseline. Before changing either value, check it against `min(contextWindow across all
+> providers) - reserveTokensFloor > measured baseline prompt size` on a fresh session.
 
 To change the primary/fallback Mac model, edit both `ollama-lan` and `ollama-tailscale` provider
 entries in `configmap.yaml` (keep them in sync — same model, different `baseUrl`). To change the
