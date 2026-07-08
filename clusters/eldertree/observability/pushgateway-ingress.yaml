@@ -16,7 +16,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: observability-monitoring-stack-prometheus-pushgateway
+                name: monitoring-stack-prometheus-pushgateway
                 port:
                   number: 9091
   tls:

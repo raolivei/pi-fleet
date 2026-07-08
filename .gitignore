@@ -24,6 +24,9 @@ kubeconfig*
 *.swo
 *~
 
+# Accidental literal ~ directory (kubeconfig copies)
+~/
+
 # OS
 .DS_Store
 Thumbs.db

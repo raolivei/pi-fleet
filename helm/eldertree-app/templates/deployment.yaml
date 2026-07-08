@@ -19,7 +19,11 @@ spec:
       {{- include "eldertree-app.selectorLabels" (dict "releaseName" $.Release.Name "componentName" $name) | nindent 6 }}
   {{- if $component.strategy }}
   strategy:
+    {{- if kindIs "string" $component.strategy }}
     type: {{ $component.strategy }}
+    {{- else }}
+    {{- toYaml $component.strategy | nindent 4 }}
+    {{- end }}
   {{- end }}
   template:
     metadata:
@@ -46,6 +50,14 @@ spec:
       {{- end }}
       {{- with ($component.nodeSelector | default $.Values.global.nodeSelector) }}
       nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with ($component.affinity | default $.Values.global.affinity) }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $component.dnsConfig }}
+      dnsConfig:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with $component.initContainers }}

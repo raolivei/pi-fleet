@@ -14,6 +14,7 @@ spec:
         name: kedacore
         namespace: keda
       interval: 12h
+  releaseName: keda
   install:
     crds: CreateReplace
     remediation:

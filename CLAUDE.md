@@ -19,6 +19,10 @@
 - **Commit format**: `<type>: <description>` (e.g., `feat: add monitoring`, `fix: dns-config`)
 - **Workflow**: `git checkout main → git pull → git checkout -b <type>/<name>`
 
+### New LAN service (Ollie / agents)
+
+Any new `*.eldertree.local` app **must** include in the same PR: registry entry (`docs/eldertree-local-services.yaml`), Ingress + external-dns, hosts block + `add-services-to-hosts.sh` + `Caddyfile`. Run `./scripts/check-local-routing-registry.sh` before merge and `./scripts/verify-service-routing.sh --host <fqdn>` after deploy. See [ONBOARDING_APP_ROUTING.md](docs/ONBOARDING_APP_ROUTING.md) and `ollie/memory/feedback_eldertree_service_routing_e2e.md`.
+
 ### Versioning & Changes
 - **Git tag versions must match Docker image tags** - Ensure consistency across releases
 - **ANY Docker image changes must update CHANGELOG.md** - Dockerfiles, base images, tags in manifests
@@ -43,6 +47,20 @@
 - **cmdline.txt update** - Must point to `root=/dev/nvme0n1p2`
 - **Root lock prevention** - Unlock root, set password, disable PAM faillock before boot device switch
 
+## Eldertree InfraOPS & observability
+
+- **Agent handoff:** [`.claude/agents/eldertree-infraops.md`](.claude/agents/eldertree-infraops.md) — use **Prometheus/Grafana/Loki first** on every incident; **Control Center** for one-glance topology when on LAN/Tailscale.
+- **Control Center:** [`docs/CONTROL_CENTER.md`](docs/CONTROL_CENTER.md) — `https://control.eldertree.local` (Elder SPA + `/api/public/cluster/health`).
+- **Workspace o11y standard:** [`../workspace-config/docs/OBSERVABILITY_STANDARDS.md`](../workspace-config/docs/OBSERVABILITY_STANDARDS.md)
+- **Retention / NVMe:** [`docs/OBSERVABILITY_RETENTION.md`](docs/OBSERVABILITY_RETENTION.md)
+- **New app checklist:** [`docs/ONBOARDING_APP_OBSERVABILITY.md`](docs/ONBOARDING_APP_OBSERVABILITY.md)
+- **Dashboard map:** [`helm/monitoring-stack/DASHBOARDS.md`](helm/monitoring-stack/DASHBOARDS.md)
+
+### Flux HelmRelease
+
+- Use **`apiVersion: helm.toolkit.fluxcd.io/v2`** only — `v2beta1` blocks `flux-system` reconciliation.
+- Grep: `rg 'v2beta1' clusters/eldertree/` before merge.
+
 ## When to Read What
 
 ### Getting Started
@@ -57,13 +75,13 @@
 - **Fresh OS installation?** → [docs/FRESH_INSTALL_MIGRATION.md](docs/FRESH_INSTALL_MIGRATION.md)
 
 ### Network & DNS
-- **Network architecture?** → [NETWORK.md](NETWORK.md)
+- **Network architecture?** → [docs/NETWORK.md](docs/NETWORK.md)
 - **DNS troubleshooting?** → [docs/DNS_TROUBLESHOOTING.md](docs/DNS_TROUBLESHOOTING.md)
 - **Cloudflare setup?** → [docs/CLOUDFLARE_DOMAINS.md](docs/CLOUDFLARE_DOMAINS.md)
 - **Tailscale VPN?** → [docs/TAILSCALE.md](docs/TAILSCALE.md)
 
 ### Secrets & Security
-- **Vault overview?** → [VAULT.md](VAULT.md)
+- **Vault overview?** → [docs/VAULT.md](docs/VAULT.md)
 - **Vault quick reference?** → [docs/VAULT_QUICK_REFERENCE.md](docs/VAULT_QUICK_REFERENCE.md)
 - **Vault recovery?** → [docs/VAULT_RECOVERY.md](docs/VAULT_RECOVERY.md)
 - **Password management?** → [docs/PASSWORD_MANAGEMENT.md](docs/PASSWORD_MANAGEMENT.md)
@@ -80,6 +98,7 @@
 
 ### Ingress & Access
 - **Ingress setup?** → [docs/INGRESS.md](docs/INGRESS.md)
+- **New app LAN routing?** → [docs/ONBOARDING_APP_ROUTING.md](docs/ONBOARDING_APP_ROUTING.md)
 - **Lens connection?** → [docs/LENS_CONNECTION_GUIDE.md](docs/LENS_CONNECTION_GUIDE.md)
 
 ### Storage & Backup
@@ -100,10 +119,8 @@ pi-fleet/
 │   └── eldertree/        # Control plane cluster configs
 ├── helm/                 # Custom Helm charts
 ├── scripts/              # Utility scripts
-├── docs/                 # Documentation (90+ files)
+├── docs/                 # Documentation (NETWORK, VAULT, SERVICES_REFERENCE, guides)
 ├── CLAUDE.md             # This file - AI assistant entry point
-├── NETWORK.md            # Network and DNS overview
-├── VAULT.md              # Secrets management overview
 └── CONTRIBUTING.md       # Git workflow details
 ```
 
@@ -221,7 +238,7 @@ Always install via `setup-system.yml`:
 5. **Verify fix** using provided verification commands
 
 ### Common Issue Categories
-- **DNS**: CoreDNS failures, Pi-hole issues, DNS timeouts
+- **DNS**: CoreDNS failures, BIND9 / external-dns issues, DNS timeouts
 - **Cloudflare**: Tunnel DNS timeout, HTTP 530, external access
 - **Node**: Node unreachable, dual IP, cluster membership
 - **Boot**: Boot failures, NVMe boot, emergency mode
@@ -237,7 +254,7 @@ If runbook doesn't have matching issue:
 
 ## Secrets Management (Vault)
 
-- Secrets stored in HashiCorp Vault (see [VAULT.md](VAULT.md))
+- Secrets stored in HashiCorp Vault (see [docs/VAULT.md](docs/VAULT.md))
 - Use `scripts/sync-vault-to-k8s.sh` to sync secrets to Kubernetes
 - Never commit secrets to git
 - External Secrets Operator automatically syncs from Vault

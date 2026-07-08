@@ -8,24 +8,58 @@ spec:
   chart:
     spec:
       chart: ./helm/eldertree-app
-      version: "0.1.1"
+      version: "0.1.3"
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
       interval: 12h
   targetNamespace: swimto
+  releaseName: swimto
   upgrade:
     cleanupOnFail: true
   values:
     # ============================================================
     # SwimTO - Toronto pool schedules
     # ============================================================
+    # HA on stable nodes only (node-2/3). node-1 has intermittent watchdog reboots;
+    # single-replica + soft PreferNoSchedule allowed API to land on node-1 → 503 on swimto.app.
     components:
       swimto-api:
+        replicas: 2
+        # ``maxSurge: 0`` is required because pod-anti-affinity is
+        # ``required`` on hostname topology and only 2 nodes are
+        # schedulable (node-1 is labelled ``unstable``). With surge,
+        # the rolling update would try to land a 3rd pod that has no
+        # legal home and Helm would time out at 5min — see #228.
+        # ``maxUnavailable: 1`` means we drop to a single api pod
+        # briefly during release; acceptable for swimTO's traffic.
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxSurge: 0
+            maxUnavailable: 1
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: eldertree.xyz/node-tier
+                      operator: NotIn
+                      values:
+                        - unstable
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: component
+                      operator: In
+                      values:
+                        - swimto-api
+                topologyKey: kubernetes.io/hostname
         image:
           repository: ghcr.io/raolivei/swimto-api
-          tag: v0.8.3 # {"$imagepolicy": "swimto:swimto-api-policy:tag"}
+          tag: v0.9.8 # {"$imagepolicy": "swimto:swimto-api-policy:tag"}
           pullPolicy: IfNotPresent
         port: 8000
         env:
@@ -81,9 +115,28 @@ spec:
           liveness: {initialDelaySeconds: 30, periodSeconds: 10}
           readiness: {initialDelaySeconds: 10, periodSeconds: 5}
       swimto-web:
+        replicas: 2
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: eldertree.xyz/node-tier
+                      operator: NotIn
+                      values:
+                        - unstable
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: component
+                      operator: In
+                      values:
+                        - swimto-web
+                topologyKey: kubernetes.io/hostname
         image:
           repository: ghcr.io/raolivei/swimto-web
-          tag: v0.8.3 # {"$imagepolicy": "swimto:swimto-web-policy:tag"}
+          tag: v0.9.8 # {"$imagepolicy": "swimto:swimto-web-policy:tag"}
           pullPolicy: IfNotPresent
         port: 3000
         probesEnabled: false

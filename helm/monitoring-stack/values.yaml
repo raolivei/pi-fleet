@@ -6,7 +6,7 @@ global:
   clusterIssuer: ca-cluster-issuer
 
 # Prometheus configuration
-# - Static scrape: Traefik, blackbox, postgres/redis (values `scrapeConfigs`); Pi-hole, Visage, Vault (`scrapeConfigFiles` + volume mounts; see `clusters/eldertree/observability/*-scrape-config.yaml`).
+# - Static scrape: Traefik, blackbox, postgres/redis (values `scrapeConfigs`); Vault (`scrapeConfigFiles` + volume mounts; see `clusters/eldertree/observability/vault-scrape-config.yaml`).
 # - `prometheus.io/*` on Services for in-cluster app /metrics.
 prometheus:
   enabled: true
@@ -32,6 +32,10 @@ prometheus:
         cert-manager.io/cluster-issuer: ca-cluster-issuer
   nodeExporter:
     enabled: true
+  prometheus-node-exporter:
+    extraArgs:
+      - --collector.systemd
+      - --collector.systemd.unit-include=watchdog.service
   pushgateway:
     enabled: true
     persistentVolume:
@@ -84,26 +88,13 @@ prometheus:
     # that targets a path under /etc/config/. runc then fails to bind-mount the file over that
     # directory (MS_BIND|MS_REC on a file-to-directory pair → ENOTDIR). Using a separate directory
     # avoids the collision entirely. See pi-fleet CHANGELOG for details.
-    extraSecretMounts:
-      - name: pihole-scrape-file
-        secretName: pihole-scrape-config
-        subPath: pihole-scrape.yaml
-        mountPath: /etc/scrape-configs/pihole-scrape.yaml
-        readOnly: true
     extraConfigmapMounts:
-      - name: visage-scrape-file
-        configMap: visage-scrape-config
-        subPath: visage-scrape.yaml
-        mountPath: /etc/scrape-configs/visage-scrape.yaml
-        readOnly: true
       - name: vault-scrape-file
         configMap: vault-scrape-config
         subPath: vault-scrape.yaml
         mountPath: /etc/scrape-configs/vault-scrape.yaml
         readOnly: true
   scrapeConfigFiles:
-    - /etc/scrape-configs/pihole-scrape.yaml
-    - /etc/scrape-configs/visage-scrape.yaml
     - /etc/scrape-configs/vault-scrape.yaml
   # Scrape config map: merges with chart defaults (prometheus-community >=28). Static jobs:
   # postgres, redis, blackbox (×2), traefik. Node/cadvisor: Lens "node" relabel + cAdvisor labeldrop.
@@ -146,7 +137,6 @@ prometheus:
         - targets:
             - redis://swimto-redis.swimto.svc.cluster.local:6379
             - redis://canopy-redis.canopy.svc.cluster.local:6379
-            - redis://visage-redis.visage.svc.cluster.local:6379
       relabel_configs:
         - source_labels: [__address__]
           target_label: __param_target
@@ -168,7 +158,12 @@ prometheus:
         - target_label: __address__
           replacement: blackbox-exporter.observability.svc.cluster.local:9115
       static_configs:
-        - targets: ["https://swimto.eldertree.xyz", "https://pitanga.cloud"]
+        - targets:
+            - "https://swimto.eldertree.xyz"
+            - "https://swimto.app"
+            - "https://api.swimto.app/health"
+            # - "https://bolao.eldertree.xyz"  # DECOMMISSIONED 2026-07-07
+            - "https://pitanga.cloud"
     blackbox-https-ca:
       metrics_path: /probe
       params:
@@ -256,6 +251,32 @@ prometheus:
               annotations:
                 summary: "OOM kill detected on {{ $labels.instance }}"
                 description: "{{ $labels.instance }} killed {{ $value }} process(es) due to out-of-memory. Check pod memory limits and node capacity."
+            - alert: WatchdogServiceDown
+              expr: node_systemd_unit_state{name="watchdog.service",state="active"} != 1
+              for: 3m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Watchdog service not active on {{ $labels.instance }}"
+                description: "watchdog.service is not active on {{ $labels.instance }}. Hardware watchdog may not be armed — run scripts/verify-watchdog.sh."
+            - alert: NodePingableButNotReady
+              expr: |
+                (
+                  (kube_node_status_condition{condition="Ready",status="true",node="node-1.eldertree.local"} == 0
+                   and up{instance="10.0.0.1:9100"} == 1)
+                  or
+                  (kube_node_status_condition{condition="Ready",status="true",node="node-2.eldertree.local"} == 0
+                   and up{instance="10.0.0.2:9100"} == 1)
+                  or
+                  (kube_node_status_condition{condition="Ready",status="true",node="node-3.eldertree.local"} == 0
+                   and up{instance="10.0.0.3:9100"} == 1)
+                )
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Node {{ $labels.node }} metrics up but NotReady"
+                description: "node-exporter is reachable but the node is NotReady for 5m — possible freeze (ICMP up, kubelet dead). Check watchdog and journalctl."
         - name: kubernetes-alerts
           rules:
             - alert: PodCrashLooping
@@ -300,6 +321,48 @@ prometheus:
               annotations:
                 summary: "Low disk space on {{ $labels.instance }}"
                 description: "Disk space is below 15% on {{ $labels.instance }}."
+        - name: swimto-alerts
+          rules:
+            - alert: SwimTOApiReplicasUnavailable
+              expr: |
+                kube_deployment_status_replicas_available{
+                  namespace="swimto", deployment="swimto-api"
+                } < 1
+              for: 2m
+              labels:
+                severity: critical
+                app: swimto
+              annotations:
+                summary: "SwimTO API has no ready replicas"
+                description: "swimto-api available replicas < 1 for 2m — schedule/map on swimto.app will show 503. Check node-1 reboots and pod placement on stable nodes."
+            - alert: SwimTOWebReplicasUnavailable
+              expr: |
+                kube_deployment_status_replicas_available{
+                  namespace="swimto", deployment="swimto-web"
+                } < 1
+              for: 2m
+              labels:
+                severity: critical
+                app: swimto
+              annotations:
+                summary: "SwimTO web has no ready replicas"
+                description: "swimto-web available replicas < 1 for 2m — swimto.app may be unreachable."
+            - alert: SwimTOApiOnUnstableNode
+              expr: |
+                count(
+                  kube_pod_info{
+                    namespace="swimto",
+                    pod=~"swimto-api-.*",
+                    node="node-1.eldertree.local"
+                  }
+                ) > 0
+              for: 5m
+              labels:
+                severity: warning
+                app: swimto
+              annotations:
+                summary: "SwimTO API pod scheduled on node-1 (unstable tier)"
+                description: "swimto-api is running on node-1 despite unstable tier policy — reschedule or fix affinity/KEDA."
         - name: blackbox-alerts
           rules:
             - alert: BlackboxProbeFailing
@@ -310,6 +373,15 @@ prometheus:
               annotations:
                 summary: "Blackbox probe failing: {{ $labels.instance }}"
                 description: "The HTTPS blackbox check returned probe_success=0 (target unreachable or bad response) for 5+ minutes. URL: {{ $labels.instance }}."
+            - alert: SwimTOApiPublicProbeFailing
+              expr: probe_success{job="blackbox-https", instance="https://api.swimto.app/health"} == 0
+              for: 2m
+              labels:
+                severity: critical
+                app: swimto
+              annotations:
+                summary: "SwimTO public API health probe failing"
+                description: "Blackbox cannot reach https://api.swimto.app/health — users see 503 on schedule/map."
 
 # Grafana configuration
 grafana:
@@ -330,7 +402,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://observability-monitoring-stack-prometheus-server.observability.svc.cluster.local
+          url: http://monitoring-stack-prometheus-server.observability.svc.cluster.local
           access: proxy
           isDefault: true
         - name: Loki
@@ -359,9 +431,9 @@ grafana:
   dashboardFolders:
     # —— Applications (one subfolder per app; multiple JSON can share the same path) ——
     swimto-dashboard: "Applications/SwimTO"
+    bolao-dashboard: "Applications/Bolao"
     pitanga-dashboard: "Applications/Pitanga"
-    visage-operations: "Applications/Visage"
-    visage-training: "Applications/Visage"
+    ollie-dashboard: "Applications/Ollie"
     # —— Platform (cluster, capacity, network, security) ——
     eldertree-ops-home: "Platform/Overview"
     command-center: "Platform/Overview"
@@ -455,11 +527,6 @@ grafana:
       coredns:
         gnetId: 14981
         revision: 2
-        datasource: Prometheus
-      # Pi-hole monitoring
-      pihole:
-        gnetId: 10176
-        revision: 1
         datasource: Prometheus
       # ===================
       # GITOPS & SECRETS

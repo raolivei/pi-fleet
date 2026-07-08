@@ -1,4 +1,3 @@
----
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -21,7 +20,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: validator
-              image: ghcr.io/raolivei/swimto-api:v0.8.3 # {"$imagepolicy": "swimto:swimto-api-policy"}
+              image: ghcr.io/raolivei/swimto-api:v0.9.8 # {"$imagepolicy": "swimto:swimto-api-policy"}
               imagePullPolicy: IfNotPresent
               command:
                 - python3

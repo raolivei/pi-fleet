@@ -26,6 +26,7 @@ env:
 
 jobs:
   build:
+    # pi-fleet has no Eldertree scale set yet (see ARC_RUNNERS.md); GitHub-hosted
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,10 +34,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4

@@ -177,13 +177,13 @@ data:
 
     ### 3. Infrastructure Code (pi-fleet)
     - **Repo**: pi-fleet - cluster manifests, Ansible, Terraform, scripts
-    - **Use elder_search_code** and **elder_read_file** with repo `pi-fleet` for SERVICES_REFERENCE.md, docs/, scripts/
+    - **Use elder_search_code** and **elder_read_file** with repo `pi-fleet` for docs/SERVICES_REFERENCE.md, docs/, scripts/
 
     ## When to Use
 
     - **Troubleshooting**: Search eldertree-docs runbook for error messages or symptoms first
     - **Architecture questions**: Search pi-fleet-blog chapters for design decisions and context
-    - **Service URLs, IPs, credentials**: See pi-fleet/SERVICES_REFERENCE.md
+    - **Service URLs, IPs, credentials**: See pi-fleet/docs/SERVICES_REFERENCE.md
     - **Runbook workflow**: Follow eldertree-docs/runbook/workflow.md for incident resolution
 
     ## Example
@@ -388,7 +388,7 @@ data:
 
     ## Repo Names (use exactly for API calls)
 
-    - canopy, swimTO, pi-fleet, pi-fleet-blog, eldertree-docs, elder, journey, nima, visage, ollie, pitanga-website, northwaysignal-website, fragment
+    - canopy, swimTO, pi-fleet, pi-fleet-blog, eldertree-docs, elder, journey, nima, ollie, pitanga-website, northwaysignal-website, fragment
 
     ## Projects Managed by Elder
 
@@ -398,7 +398,6 @@ data:
     | swimTO | Toronto pools | https://swimto.eldertree.xyz |
     | journey | AI career pathfinder | https://journey.eldertree.local |
     | nima | ML experiments | https://nima.eldertree.local |
-    | visage | AI headshot gen | https://visage.eldertree.local |
     | ollie | Local AI assistant | - |
     | pi-fleet | Cluster infra | - |
     | pi-fleet-blog | Eldertree blog (chapters, journey) | https://blog.eldertree.xyz |

@@ -56,7 +56,44 @@ git branch -d feat/my-new-feature  # Optional: delete local branch
 - **Keep feature branches** until work is fully complete and tested
 - **Push regularly** to remote for backup and visibility
 - **Merge to main** only when production-ready
-- **Delete branches** after successful merge (optional, but recommended for cleanup)
+- **Delete branches** after successful merge (optional locally; remote is automatic — see below)
+
+### Remote branch cleanup (GitHub)
+
+This repo has **Settings → General → Pull Requests → Automatically delete head branches** enabled (`deleteBranchOnMerge`).
+
+| Event | Remote head branch |
+|-------|-------------------|
+| PR **merged** | Deleted automatically by GitHub |
+| PR **closed** without merge | **Not** deleted — remove manually if obsolete |
+
+```bash
+# After closing a superseded PR, delete the remote branch if you no longer need it:
+git push origin --delete <branch-name>
+
+# Or delete from the PR page: "Delete branch" (shown after merge; for closed PRs use the branches UI)
+```
+
+**Local cleanup** after merge:
+
+```bash
+git checkout main && git pull
+git branch -d feat/my-feature          # safe delete if merged
+git fetch --prune origin               # drop stale remote-tracking refs
+```
+
+Org-wide convention: [workspace-config/docs/PROJECT_CONVENTIONS.md](../workspace-config/docs/PROJECT_CONVENTIONS.md#github-pull-request-branch-cleanup).
+
+### GitHub Actions and Dependabot
+
+- **Vault is the source of truth** for Terraform credentials — see [`docs/VAULT_TERRAFORM_SECRETS.md`](docs/VAULT_TERRAFORM_SECRETS.md).
+- **Local / cluster apps** read Vault via `./terraform/run-terraform.sh` or ExternalSecret `pi-fleet-terraform-vault-credentials`.
+- **GitHub-hosted CI** cannot reach `vault.eldertree.local`; after Vault changes run:
+  ```bash
+  ./scripts/sync-github-terraform-secrets-from-vault.sh --app actions --app dependabot
+  ```
+- **New HCP token:** `./scripts/setup-terraform-cloud-token.sh --sync-github` (create token at [HCP API tokens](https://app.terraform.io/app/settings/tokens) first).
+- **`main` Terraform** ([`terraform.yml`](.github/workflows/terraform.yml)) should stay green — badge on [README](README.md).
 
 ### Commit Message Convention
 

@@ -324,7 +324,7 @@ sudo systemctl restart wg-quick@wg0
 ## 🆘 Support
 
 Check these files for project-specific networking:
-- `pi-fleet/NETWORK.md` - Cluster networking details
+- `pi-fleet/docs/NETWORK.md` - Cluster networking details
 - `pi-fleet/clusters/eldertree/README.md` - Cluster overview
 
 ## 📋 Version

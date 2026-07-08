@@ -1,6 +1,6 @@
 ---
 # PostgreSQL Exporter for all PostgreSQL instances
-# Exports metrics from swimto, canopy, journey, and visage databases
+# Exports metrics from swimto, canopy, and journey databases
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -90,4 +90,4 @@ data:
       - swimto-postgres.swimto.svc.cluster.local:5432
       - canopy-postgres.canopy.svc.cluster.local:5432
       - journey-postgres.journey.svc.cluster.local:5432
-      - visage-postgres.visage.svc.cluster.local:5432
+      # - postgres-service.bolao.svc.cluster.local:5432  # DECOMMISSIONED 2026-07-07

@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: arc-runners
+resources:
+  - namespace.yaml
+  - ollie-external-secret.yaml
+  - ollie-runners-helmrelease.yaml
+  - pi-fleet-blog-runners-helmrelease.yaml
+  - elder-runners-helmrelease.yaml
+  - github-workflows-runners-helmrelease.yaml
+  - canopy-runners-helmrelease.yaml
+  - swimto-runners-helmrelease.yaml
+  - personal-website-runners-helmrelease.yaml
+  - northwaysignal-website-runners-helmrelease.yaml
+  - nima-runners-helmrelease.yaml
+  - eldertree-docs-runners-helmrelease.yaml
+  # - bolao-runners-helmrelease.yaml # DECOMMISSIONED 2026-07-07
+  # - bolao-claude-runners-helmrelease.yaml
+  # - bolao-dind-daemon-configmap.yaml
+  # - bolao-claude-dind-daemon-configmap.yaml

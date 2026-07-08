@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: bolao-claude-standings-sync
+  namespace: bolao-claude
+spec:
+  suspend: true
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sync
+              image: curlimages/curl:8.11.1
+              command: ["/bin/sh", "-c"]
+              args:
+                - 'curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" http://bolao-claude-web:3000/api/internal/cron/standings-sync'
+              env:
+                - name: CRON_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: bolao-claude-secrets
+                      key: CRON_SECRET

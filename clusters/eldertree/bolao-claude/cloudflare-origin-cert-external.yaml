@@ -1,0 +1,28 @@
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: bolao-claude-cloudflare-origin-cert
+  namespace: bolao-claude
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: bolao-claude-cloudflare-origin-tls
+    creationPolicy: Owner
+    template:
+      type: kubernetes.io/tls
+      data:
+        tls.crt: "{{ .certificate }}"
+        tls.key: "{{ .privatekey }}"
+  data:
+    - secretKey: certificate
+      remoteRef:
+        key: secret/swimto/cloudflare-origin-cert-eldertree
+        property: certificate
+    - secretKey: privatekey
+      remoteRef:
+        key: secret/swimto/cloudflare-origin-cert-eldertree
+        property: private-key

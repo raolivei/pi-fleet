@@ -13,10 +13,18 @@ resources:
   - observability # Monitoring stack (Prometheus, Grafana, Alertmanager)
   - autoscaling # KEDA event-driven autoscaling
 
+  # CI/CD
+  - arc-charts-helmrepository.yaml # ARC OCI charts (flux-system; not under arc-controller ns kustomize)
+  - arc-controller # Actions Runner Controller
+  - arc-runners # GitHub Actions runners (ollie)
+
   # Applications
   - canopy # Personal finance dashboard
+  # - bolao # Bolão — DECOMMISSIONED 2026-07-07 (WC pool no longer needed)
+  # - bolao-claude # Bolão Claude scratch — DECOMMISSIONED 2026-07-07
   - swimto # Toronto pool schedules
   - pitanga/flux-kustomization.yaml # Pitanga Cloud (managed by its own Flux Kustomization)
+  - ollie # Workspace assistant with RAG and LLM
   # - nima          # AI/ML learning project (DISABLED - not needed)
   # - journey       # AI-powered career pathfinder (DISABLED - not deployed yet)
   # - us-law-severity-map  # US law visualization (DISABLED - not deployed yet)

@@ -1,0 +1,125 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bolao-claude
+  namespace: bolao-claude
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm/eldertree-app
+      version: "0.1.3"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: bolao-claude
+  releaseName: bolao-claude
+  upgrade:
+    cleanupOnFail: true
+  values:
+    components:
+      bolao-claude-web:
+        image:
+          repository: ghcr.io/raolivei/bolao-claude-web
+          tag: v0.1.7 # {"$imagepolicy": "bolao-claude:bolao-claude-web-policy:tag"}
+          # Always: a tag v0.1.7 foi republicada (build 2026-07-03, digest
+          # sha256:56894949…) sobre uma v0.1.7 anterior — Always garante que o
+          # kubelet re-puxe o digest novo em vez de um cache antigo da tag.
+          pullPolicy: Always
+        replicas: 0
+        port: 3000
+        probesEnabled: false
+        sessionAffinity: ClientIP
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: DATABASE_URL
+          - name: AUTH_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: AUTH_SECRET
+          - name: AUTH_URL
+            value: https://bolao-claude.eldertree.xyz
+          - name: GOOGLE_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: GOOGLE_CLIENT_ID
+          - name: GOOGLE_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: GOOGLE_CLIENT_SECRET
+          - name: FOOTBALL_DATA_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: FOOTBALL_DATA_API_KEY
+          - name: CRON_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: bolao-claude-secrets
+                key: CRON_SECRET
+          - name: AUTH_TRUST_HOST
+            value: "true"
+          - name: POOL_ENTRY_FEE_CAD
+            value: "15"
+          - name: POOL_ADMIN_FEE_PERCENT
+            value: "10"
+          - name: POOL_OPEN_SIGNUP
+            value: "true"
+          - name: SEED_ADMIN_EMAIL
+            value: "rafa.oliveira1@gmail.com"
+          - name: ADMIN_EMAILS
+            value: "rafa.oliveira1@gmail.com"
+          - name: POOL_INTERAC_EMAIL
+            value: "rafa.oliveira1@gmail.com"
+          - name: POOL_INTERAC_SECURITY_ANSWER
+            value: "GUERREIRO"
+          - name: POOL_INVITE_CONTACT_EMAIL
+            value: "rafa.oliveira1@gmail.com"
+          - name: POOL_WHATSAPP_GROUP_URL
+            value: "https://chat.whatsapp.com/ImoLIMLQ7IN7eyXy3VIgin"
+        dnsConfig:
+          nameservers:
+            - 10.43.0.10
+            - 8.8.8.8
+          options:
+            - name: ndots
+              value: "2"
+        resources:
+          requests: {cpu: "100m", memory: "256Mi"}
+          limits: {cpu: "500m", memory: "512Mi"}
+        serviceAnnotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "3000"
+          prometheus.io/path: "/api/metrics"
+    middleware:
+      redirect-https:
+        type: redirectScheme
+        scheme: https
+        permanent: true
+    ingress:
+      bolao-claude-local:
+        host: bolao-claude.eldertree.local
+        service: bolao-claude-web
+        port: 3000
+        middlewares: ["bolao-claude-redirect-https@kubernetescrd"]
+        tls:
+          secretName: bolao-claude-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: bolao-claude.eldertree.local
+      bolao-claude-public:
+        host: bolao-claude.eldertree.xyz
+        service: bolao-claude-web
+        port: 3000
+        tls:
+          secretName: bolao-claude-cloudflare-origin-tls
+        annotations:
+          external-dns.alpha.kubernetes.io/exclude: "true"

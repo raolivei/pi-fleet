@@ -1,0 +1,6 @@
+apiVersion: v2
+name: bind9
+description: Authoritative BIND9 for eldertree.local with RFC2136 (replaces Pi-hole sidecar)
+type: application
+version: 0.1.0
+appVersion: "9.18"

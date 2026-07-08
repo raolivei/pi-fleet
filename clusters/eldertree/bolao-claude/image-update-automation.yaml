@@ -1,0 +1,26 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: bolao-claude-updates
+  namespace: bolao-claude
+spec:
+  interval: 30m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: "chore(bolao-claude): update images{{range .Changed.Changes}} {{.NewValue}}{{end}}"
+    push:
+      branch: main
+  update:
+    path: ./clusters/eldertree/bolao-claude
+    strategy: Setters

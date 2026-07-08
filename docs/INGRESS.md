@@ -2,6 +2,8 @@
 
 Complete guide on configuring and using Traefik Ingress Controller, Cert-Manager, and ExternalDNS in the k3s cluster.
 
+**New app?** Start with **[ONBOARDING_APP_ROUTING.md](ONBOARDING_APP_ROUTING.md)** — end-to-end checklist and `./scripts/verify-service-routing.sh` so Mac/LAN access works before merge.
+
 ## Overview
 
 The cluster uses three main components to manage HTTP/HTTPS traffic and DNS:
@@ -331,18 +333,19 @@ kubectl exec -n external-dns deployment/external-dns -- nslookup eldertree.local
 
 **HelmRepository DNS resolution issues:**
 
-If ExternalDNS HelmRelease fails to deploy because the HelmRepository cannot fetch the chart index (DNS resolution errors), this is usually caused by a circular DNS dependency:
+If ExternalDNS HelmRelease fails to deploy because the HelmRepository cannot fetch the chart index (DNS resolution errors), verify cluster DNS:
 
-1. CoreDNS forwards queries to Pi-hole
-2. Pi-hole uses CoreDNS for its own DNS resolution (`dnsPolicy: ClusterFirst`)
-3. This creates a loop preventing external domain resolution
+```bash
+kubectl exec -n external-dns deployment/external-dns -- nslookup github.com
+kubectl get pods -n bind
+kubectl logs -n external-dns deployment/external-dns --tail=30
+```
 
-**Solution:** Ensure Pi-hole can resolve external domains by:
+Force HelmRepository reconciliation if needed:
 
-- Verifying Pi-hole has upstream DNS servers configured (8.8.8.8, 1.1.1.1)
-- Checking Pi-hole can resolve external domains: `kubectl exec -n pihole deployment/pihole -c pihole -- nslookup google.com 8.8.8.8`
-- If needed, restart Pi-hole pod to reload DNS configuration
-- Force HelmRepository reconciliation: `kubectl patch helmrepository -n flux-system external-dns --type merge -p '{"metadata":{"annotations":{"fluxcd.io/reconcile":"now"}}}'`
+```bash
+kubectl patch helmrepository -n flux-system external-dns --type merge -p '{"metadata":{"annotations":{"fluxcd.io/reconcile":"now"}}}'
+```
 
 ## Complete Flow: Create a New Service
 
@@ -470,7 +473,7 @@ tls:
 
 ### Domains
 
-- **Development/Internal**: Use `*.eldertree.local` (managed by ExternalDNS + Pi-hole)
+- **Development/Internal**: Use `*.eldertree.local` (managed by ExternalDNS + BIND9)
 - **Production/Public**: Use public domain with ACME issuer (when configured)
 
 ## Useful Commands

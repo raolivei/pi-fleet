@@ -14,6 +14,7 @@ spec:
         name: stakater
         namespace: kube-system
       interval: 24h
+  releaseName: reloader
   values:
     reloader:
       watchGlobally: true

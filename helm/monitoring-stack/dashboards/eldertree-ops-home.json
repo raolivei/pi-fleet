@@ -5,7 +5,7 @@
   "tags": ["eldertree", "overview", "sre", "featured"],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "1m",
   "editable": true,
   "time": { "from": "now-1h", "to": "now" },
@@ -30,7 +30,7 @@
       "gridPos": { "h": 6, "w": 24, "x": 0, "y": 1 },
       "options": {
         "mode": "markdown",
-        "content": "## Core\n\n- [Command Center](/d/eldertree-command-center) — cluster SLO, resources, top traffic\n- [Eldertree cluster](/d/eldertree-cluster) — 3-node HA, services, Vault row\n- [Network intelligence](/d/network-intelligence) — Traefik ingress, HTTP codes, top services\n- [Kubernetes workloads](/d/kubernetes-workloads) — deploy/statefulset health\n- [Namespace resources](/d/namespace-resources) — quotas and usage by namespace\n\n## Apps (metrics)\n\n- [SwimTO](/d/swimto-dashboard) | [Pitanga](/d/pitanga-dashboard) | [Visage operations](/d/visage-ops) | [Vault](/d/vault-ops)\n\n## Logs (Loki)\n\n**Explore** → **Loki** datasource. Promtail ships node `/var/log/pods` into Loki in `observability`.\n"
+        "content": "## Core\n\n- [Command Center](/d/eldertree-command-center) — cluster SLO, resources, top traffic\n- [Eldertree cluster](/d/eldertree-cluster) — 3-node HA, services, Vault row\n- [Hardware health](/d/hardware-health) — Pi thermals, watchdog, reboots, freeze signal\n- [Network intelligence](/d/network-intelligence) — Traefik ingress, HTTP codes, top services\n- [Kubernetes workloads](/d/kubernetes-workloads) — deploy/statefulset health\n- [Namespace resources](/d/namespace-resources) — quotas and usage by namespace\n\n## Apps (metrics)\n\n- [SwimTO](/d/swimto-dashboard) | [Pitanga](/d/pitanga-dashboard) | [Vault](/d/vault-ops)\n\n## Logs (Loki)\n\n**Explore** → **Loki** datasource. Promtail ships node `/var/log/pods` into Loki in `observability`.\n"
       }
     },
     {
@@ -120,6 +120,138 @@
           "refId": "A",
           "expr": "swimto_db_users_total",
           "legendFormat": "users"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "row",
+      "title": "Raspberry Pi nodes",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 },
+      "collapsed": false
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "K8s nodes Ready",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 13 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"})",
+          "legendFormat": "ready"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Watchdog active (all nodes)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 13 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 3 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(node_systemd_unit_state{name=\"watchdog.service\",state=\"active\",instance=~\"10.0.0.[1-3]:9100\"})",
+          "legendFormat": "active"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Freeze signal (exporter up, NotReady)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 13 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "color": "green", "text": "OK" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum((kube_node_status_condition{condition=\"Ready\",status=\"true\",node=\"node-1.eldertree.local\"} == 0 and up{instance=\"10.0.0.1:9100\"} == 1) or (kube_node_status_condition{condition=\"Ready\",status=\"true\",node=\"node-2.eldertree.local\"} == 0 and up{instance=\"10.0.0.2:9100\"} == 1) or (kube_node_status_condition{condition=\"Ready\",status=\"true\",node=\"node-3.eldertree.local\"} == 0 and up{instance=\"10.0.0.3:9100\"} == 1))",
+          "legendFormat": "nodes"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "OOM kills (5m)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 13 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(node_vmstat_oom_kill[5m]))",
+          "legendFormat": "kills"
         }
       ]
     }

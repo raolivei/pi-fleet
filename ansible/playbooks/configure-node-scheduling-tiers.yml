@@ -1,0 +1,104 @@
+---
+# Label stable/unstable nodes and deprioritize node-1 for new app pods (PreferNoSchedule taint).
+# Does not evict existing workloads. Re-run after cluster rebuild or if labels/taints are lost.
+# Also syncs ConfigMap to cluster for CronJob reconciler.
+#
+# Usage (from pi-fleet/ansible):
+#   ansible-playbook playbooks/configure-node-scheduling-tiers.yml
+
+- name: Configure node scheduling tiers
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  vars_files:
+    - ../group_vars/all.yml
+  vars:
+    kubeconfig_path: "{{ lookup('env', 'HOME') }}/.kube/config-eldertree"
+    kubectl_bin: kubectl
+    k8s_node_suffix: ".eldertree.local"
+    configmap_path: "../clusters/eldertree/core-infrastructure/node-scheduling/config.yaml"
+
+  tasks:
+    - name: Require kubeconfig
+      stat:
+        path: "{{ kubeconfig_path }}"
+      register: kubeconfig_stat
+      failed_when: not kubeconfig_stat.stat.exists
+
+    - name: Build stable nodes comma-separated list
+      set_fact:
+        stable_nodes_csv: "{{ (node_scheduling_stable_hosts | map('regex_replace', '^(.*)$', '\\1' + k8s_node_suffix) | list) | join(',') }}"
+
+    - name: Generate ConfigMap YAML
+      copy:
+        content: |
+          ---
+          # Node scheduling tier configuration (synced from Ansible group_vars/all.yml).
+          # DO NOT edit manually — changes will be overwritten by Ansible.
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: node-scheduling-config
+            namespace: kube-system
+            labels:
+              app.kubernetes.io/name: node-scheduling-tier-reconciler
+              app.kubernetes.io/part-of: eldertree
+          data:
+            LABEL_KEY: "{{ node_scheduling_label_key }}"
+            TAINT_KEY: "{{ node_scheduling_taint_key }}"
+            TAINT_VALUE: "{{ node_scheduling_taint_value }}"
+            TAINT_EFFECT: "{{ node_scheduling_taint_effect }}"
+            UNSTABLE_NODE: "{{ node_scheduling_unstable_host }}{{ k8s_node_suffix }}"
+            STABLE_NODES: "{{ stable_nodes_csv }}"
+        dest: "{{ configmap_path }}"
+        mode: '0644'
+
+    - name: Apply ConfigMap to cluster
+      command: >
+        {{ kubectl_bin }} apply -f {{ configmap_path }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: apply_result
+      changed_when: "'configured' in apply_result.stdout or 'created' in apply_result.stdout"
+
+    - name: Label unstable node
+      command: >
+        {{ kubectl_bin }} label node
+        {{ node_scheduling_unstable_host }}{{ k8s_node_suffix }}
+        {{ node_scheduling_label_key }}=unstable
+        --overwrite
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Label stable nodes
+      command: >
+        {{ kubectl_bin }} label node
+        {{ item }}{{ k8s_node_suffix }}
+        {{ node_scheduling_label_key }}=stable
+        --overwrite
+      loop: "{{ node_scheduling_stable_hosts }}"
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Taint unstable node (PreferNoSchedule)
+      command: >
+        {{ kubectl_bin }} taint nodes
+        {{ node_scheduling_unstable_host }}{{ k8s_node_suffix }}
+        {{ node_scheduling_taint_key }}={{ node_scheduling_taint_value }}:{{ node_scheduling_taint_effect }}
+        --overwrite
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Show node tiers and taints
+      command: >
+        {{ kubectl_bin }} get nodes
+        -L {{ node_scheduling_label_key }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: nodes_out
+      changed_when: false
+
+    - name: Summary
+      debug:
+        msg: "{{ nodes_out.stdout_lines }}"

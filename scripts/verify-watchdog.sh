@@ -1,71 +1,93 @@
 #!/bin/bash
-# Verify hardware watchdog status on all eldertree nodes
+# Verify hardware watchdog status on all eldertree nodes.
+# Checks service state AND whether the daemon actually holds /dev/watchdog.
 
-set -e
+set -euo pipefail
 
-NODES=("10.0.0.1" "10.0.0.2" "10.0.0.3")
-NAMES=("node-1" "node-2" "node-3")
-SSH_KEY="~/.ssh/id_ed25519_raolivei"
+# Prefer gigabit; fall back to WiFi when SSH from a laptop fails on 10.0.0.x
+NODE_NAMES=("node-1" "node-2" "node-3")
+NODE_IPS_GB=("10.0.0.1" "10.0.0.2" "10.0.0.3")
+NODE_IPS_WIFI=("192.168.2.101" "192.168.2.102" "192.168.2.103")
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519_raolivei}"
 SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=5"
+
+ssh_node() {
+  local ip=$1
+  shift
+  ssh $SSH_OPTS -i "$SSH_KEY" "raolivei@${ip}" "$@"
+}
+
+resolve_ip() {
+  local idx=$1
+  local ip
+  for ip in "${NODE_IPS_GB[$idx]}" "${NODE_IPS_WIFI[$idx]}"; do
+    if ssh_node "$ip" "exit" 2>/dev/null; then
+      echo "$ip"
+      return 0
+    fi
+  done
+  return 1
+}
 
 echo "=== Hardware Watchdog Status Check ==="
 echo "Date: $(date)"
 echo ""
 
-for i in "${!NODES[@]}"; do
-  NODE="${NODES[$i]}"
-  NAME="${NAMES[$i]}"
+FAILURES=0
 
-  echo "--- $NAME ($NODE) ---"
-
-  # Check if node is reachable
-  if ! ssh $SSH_OPTS -i $SSH_KEY raolivei@$NODE "exit" 2>/dev/null; then
-    echo "✗ Node unreachable (SSH failed)"
+for i in "${!NODE_NAMES[@]}"; do
+  NAME="${NODE_NAMES[$i]}"
+  IP=""
+  if ! IP=$(resolve_ip "$i"); then
+    echo "--- $NAME (unreachable) ---"
+    echo "✗ SSH failed on ${NODE_IPS_GB[$i]} and ${NODE_IPS_WIFI[$i]}"
     echo ""
+    FAILURES=$((FAILURES + 1))
     continue
   fi
 
-  # Service status
-  if ssh $SSH_OPTS -i $SSH_KEY raolivei@$NODE "systemctl is-active watchdog" 2>/dev/null | grep -q "active"; then
+  echo "--- $NAME ($IP) ---"
+
+  if ssh_node "$IP" "systemctl is-active watchdog" 2>/dev/null | grep -q "active"; then
     echo "✓ Service: running"
   else
     echo "✗ Service: NOT RUNNING"
+    FAILURES=$((FAILURES + 1))
   fi
 
-  # Boot counter
-  COUNTER=$(ssh $SSH_OPTS -i $SSH_KEY raolivei@$NODE "cat /var/lib/watchdog-boot-count 2>/dev/null" || echo "N/A")
+  if ssh_node "$IP" "test ! -f /usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf" 2>/dev/null; then
+    echo "✓ RPI systemd drop-in: absent (good)"
+  else
+    echo "✗ RPI systemd drop-in: PRESENT — disables hardware watchdog for daemon"
+    FAILURES=$((FAILURES + 1))
+  fi
+
+  if ssh_node "$IP" "sudo lsof /dev/watchdog 2>/dev/null | awk 'NR>1 && \$1==\"watchdog\" {found=1} END {exit !found}'" 2>/dev/null; then
+    echo "✓ Device: watchdog daemon holds /dev/watchdog"
+  else
+    echo "✗ Device: watchdog daemon does NOT hold /dev/watchdog"
+    ssh_node "$IP" "sudo lsof /dev/watchdog 2>/dev/null | head -3" || true
+    FAILURES=$((FAILURES + 1))
+  fi
+
+  COUNTER=$(ssh_node "$IP" "cat /var/lib/watchdog-boot-count 2>/dev/null" || echo "N/A")
   echo "Boot counter: $COUNTER"
-
-  if [ "$COUNTER" != "N/A" ] && [ "$COUNTER" -ge 5 ]; then
-    echo "⚠️  WARNING: Boot counter at max ($COUNTER/5) - watchdog may be disabled!"
+  if [ "$COUNTER" != "N/A" ] && [ "$COUNTER" -ge 5 ] 2>/dev/null; then
+    echo "⚠️  WARNING: Boot counter at max ($COUNTER/5)"
   fi
 
-  # Recent reboots (last 24 hours)
-  REBOOTS=$(ssh $SSH_OPTS -i $SSH_KEY raolivei@$NODE "journalctl -u watchdog --since '24 hours ago' 2>/dev/null | grep -c 'stopping\|started'" 2>/dev/null || echo "0")
-  echo "Watchdog restarts (24h): $REBOOTS"
+  LAST_REBOOT=$(ssh_node "$IP" "awk '/btime/ {print \$2}' /proc/stat | xargs -I{} date -d @{} 2>/dev/null" || echo "unknown")
+  echo "Kernel boot time: $LAST_REBOOT"
 
-  # Last reboot time
-  LAST_REBOOT=$(ssh $SSH_OPTS -i $SSH_KEY raolivei@$NODE "uptime -s 2>/dev/null" || echo "unknown")
-  echo "System boot time: $LAST_REBOOT"
-
-  # Check configuration
-  TIMEOUT=$(ssh $SSH_OPTS -i $SSH_KEY raolivei@$NODE "grep -E '^watchdog-timeout' /etc/watchdog.conf 2>/dev/null | awk '{print \$3}'" || echo "N/A")
+  TIMEOUT=$(ssh_node "$IP" "grep -E '^watchdog-timeout' /etc/watchdog.conf 2>/dev/null | awk '{print \$3}'" || echo "N/A")
   echo "Watchdog timeout: ${TIMEOUT}s"
-
-  # Check for recent watchdog activity
-  LAST_LOG=$(ssh $SSH_OPTS -i $SSH_KEY raolivei@$NODE "journalctl -u watchdog --since '1 hour ago' --no-pager 2>/dev/null | tail -1" || echo "No recent logs")
-  if [ "$LAST_LOG" != "No recent logs" ]; then
-    echo "Last watchdog log: $(echo "$LAST_LOG" | cut -c1-80)..."
-  fi
-
   echo ""
 done
 
 echo "=== Summary ==="
-echo "Check complete. Review any warnings above."
-echo ""
-echo "To check detailed logs on a specific node:"
-echo "  ssh raolivei@10.0.0.X 'journalctl -u watchdog -n 50'"
-echo ""
-echo "To check system logs from previous boot:"
-echo "  ssh raolivei@10.0.0.X 'journalctl --boot=-1 | tail -100'"
+if [ "$FAILURES" -eq 0 ]; then
+  echo "All nodes protected (daemon holds /dev/watchdog)."
+else
+  echo "$FAILURES check(s) failed — see warnings above."
+  exit 1
+fi

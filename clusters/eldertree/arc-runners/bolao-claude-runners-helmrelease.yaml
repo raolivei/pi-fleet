@@ -1,0 +1,101 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bolao-claude-runners
+  namespace: arc-runners
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: gha-runner-scale-set
+      version: "0.14.2"
+      sourceRef:
+        kind: HelmRepository
+        name: arc-charts
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: arc-runners
+  releaseName: bolao-claude-runners
+  install:
+    createNamespace: true
+  upgrade:
+    cleanupOnFail: true
+  dependsOn:
+    - name: arc-controller
+      namespace: arc-controller
+  values:
+    githubConfigUrl: "https://github.com/raolivei/bolao"
+    githubConfigSecret: ollie-runner-github-secret
+
+    minRunners: 0
+    maxRunners: 0
+
+    runnerScaleSetName: "bolao-claude-eldertree"
+
+    scaleSetLabels:
+      - self-hosted
+
+    containerMode:
+      type: "dind"
+
+    template:
+      metadata:
+        labels:
+          workload-type: ci-cd
+      spec:
+        # DinD build containers inherit pod DNS; CoreDNS + 8.8.8.8 fallback
+        # fixes registry.npmjs.org EAI_AGAIN during docker build (bolao-web #243).
+        dnsConfig:
+          nameservers:
+            - 10.43.0.10
+            - 8.8.8.8
+          options:
+            - name: ndots
+              value: "2"
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                      - key: actions.github.com/scale-set-name
+                        operator: In
+                        values:
+                          - bolao-claude-eldertree
+                  topologyKey: kubernetes.io/hostname
+        terminationGracePeriodSeconds: 3600
+
+        volumes:
+          - name: dind-daemon-config
+            configMap:
+              name: bolao-claude-dind-daemon
+
+        containers:
+          - name: runner
+            image: ghcr.io/actions/actions-runner:latest
+            command: ["/home/runner/run.sh"]
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                cpu: 1500m
+                memory: 2Gi
+          - name: dind
+            volumeMounts:
+              - name: dind-daemon-config
+                mountPath: /etc/docker/daemon.json
+                subPath: daemon.json
+                readOnly: true
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                cpu: 1000m
+                memory: 1536Mi
+
+    controllerServiceAccount:
+      namespace: arc-controller
+      name: arc-controller-gha-rs-controller

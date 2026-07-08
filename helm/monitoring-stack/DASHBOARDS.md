@@ -1,6 +1,6 @@
 # Grafana Dashboards
 
-Grafana: `https://grafana.eldertree.local` (or NodePort from `SERVICES_REFERENCE.md` if you use it).
+Grafana: `https://grafana.eldertree.local` (or NodePort from [docs/SERVICES_REFERENCE.md](../../docs/SERVICES_REFERENCE.md) if you use it).
 
 ## Blackbox exporter: what it solves (synthetic HTTP)
 
@@ -37,7 +37,6 @@ Provisioned custom dashboards are grouped by **Grafana folder** using the sideca
 |------|-------------|------------------------|
 | **Applications** | `Applications/SwimTO` | `swimto-dashboard` |
 | | `Applications/Pitanga` | `pitanga-dashboard` |
-| | `Applications/Visage` | `visage-operations`, `visage-training` |
 | **Platform** | `Platform/Overview` | `eldertree-ops-home`, `command-center` |
 | | `Platform/Cluster` | `eldertree-cluster` |
 | | `Platform/Workloads` | `kubernetes-workloads` |
@@ -49,7 +48,7 @@ Provisioned custom dashboards are grouped by **Grafana folder** using the sideca
 **Grafana.com** (`gnetId`) dashboards are still loaded by the Grafana chart into the default file provider; they do not use this annotation and typically appear under **General** (or the chart default) unless reconfigured in the upstream chart.
 
 
-**Verification (repo):** All **12** `dashboards/*.json` files parse as valid JSON. `visage-training.json` had broken string escaping in three `expr` fields (`job=~"..."`); that is fixed so provisioning does not silently fail.
+**Verification (repo):** All **10** custom `dashboards/*.json` files parse as valid JSON (run `./scripts/validate-dashboards.sh`).
 
 **URL pattern:** `https://grafana.eldertree.local/d/<uid>` (optional slug: `/d/<uid>/<slug>`).
 
@@ -62,7 +61,7 @@ Provisioned custom dashboards are grouped by **Grafana folder** using the sideca
 | Grafana      | `https://grafana.eldertree.local`          | Admin from Vault / default |
 | Prometheus   | `https://prometheus.eldertree.local`       | Targets, graph |
 | Alertmanager | `https://alertmanager.eldertree.local`     | Alert routing |
-| Pushgateway  | `https://pushgateway.eldertree.local`      | External workers (e.g. Visage GPU) |
+| Pushgateway  | `https://pushgateway.eldertree.local`      | External workers (optional) |
 | Loki         | In-cluster `loki.observability:3100`     | Use Grafana → Explore (Loki datasource) |
 
 ---
@@ -77,7 +76,7 @@ Use these when adding or editing dashboards for consistent browsing:
 | `featured` | “Open first” (Ops Home, Command Center) |
 | `overview` / `sre` | High-level or on-call panes |
 | `kubernetes` / `workloads` / `network` / `traefik` | Platform layers |
-| `applications` | App-specific (swimto, visage, pitanga, …) |
+| `applications` | App-specific (swimto, pitanga, …) |
 | `hardware` / `raspberry-pi` | Node temperature, Pi metrics |
 
 Search in Grafana: **Dashboards** → browse by **folder** (Applications vs Platform) or filter by tag.
@@ -88,7 +87,7 @@ Search in Grafana: **Dashboards** → browse by **folder** (Applications vs Plat
 
 | Dashboard | UID | File | What it shows |
 |-----------|-----|------|----------------|
-| **Eldertree Ops Home** | `eldertree-ops-home` | `eldertree-ops-home.json` | Links to other UIDs, blackbox `probe_success`, Traefik `up`, `swimto_db_users_total` |
+| **Eldertree Ops Home** | `eldertree-ops-home` | `eldertree-ops-home.json` | Links to other UIDs, blackbox `probe_success`, Traefik `up`, SwimTO gauge, Pi node row (Ready, watchdog, freeze signal, OOM) |
 | **Eldertree Command Center** | `eldertree-command-center` | `command-center.json` | Cluster health, resources, Traefik, PVC, top consumers, problem pods |
 | **Eldertree Cluster Overview** | `eldertree-cluster` | `eldertree-cluster.json` | 3-node HA, namespaces, infra + app service rows (summary; not per-app deep dives) |
 
@@ -103,7 +102,7 @@ Search in Grafana: **Dashboards** → browse by **folder** (Applications vs Plat
 | **Kubernetes Workloads** | `kubernetes-workloads` | `kubernetes-workloads.json` | Deployments, StatefulSets, Jobs, restarts, CPU/memory request vs use |
 | **Cluster Resource Usage by Namespace** | `namespace-resources` | `namespace-resources.json` | Per-namespace CPU/memory/network, top consumers, trends |
 | **Network Intelligence** | `network-intelligence` | `network-intelligence.json` | Traefik request rates, codes, top services, node network |
-| **Hardware Health** | `hardware-health` | `hardware-health.json` | Raspberry Pi temperature, load, disk, I/O |
+| **Hardware Health** | `hardware-health` | `hardware-health.json` | Pi temperature, load, disk, I/O; **watchdog.service** per node (`node_systemd_unit_state`), freeze signal, OOM, uptime / reboot (`node_boot_time_seconds`) — aligns with `WatchdogServiceDown`, `NodePingableButNotReady`, `NodeUnexpectedReboot` alerts |
 
 ---
 
@@ -113,8 +112,6 @@ Search in Grafana: **Dashboards** → browse by **folder** (Applications vs Plat
 |-----------|-----|------|----------------|
 | **SwimTO** | `swimto-dashboard` | `swimto-dashboard.json` | Traefik + pods + Postgres/Redis for SwimTO |
 | **Pitanga & NorthwaySignal** | `pitanga-dashboard` | `pitanga-dashboard.json` | Traffic and resources for pitanga / NorthwaySignal sites |
-| **Visage Operations** | `visage-ops` | `visage-operations.json` | API, workers, Redis, MinIO, Postgres, GPU worker (Pushgateway) |
-| **Visage Training** | `visage-training` | `visage-training.json` | Training loss, step, progress, images, queue (Pushgateway + cluster) |
 | **Vault Operations** (custom) | `vault-ops` | `vault-dashboard.json` | Vault sealed, raft, tokens, requests — **Eldertree-focused** panels |
 
 > **Not shipped as separate JSON in this folder:** Canopy, Journey, NIMA, Ollie, iPhone export, US Law map. If those apps need first-class dashboards, add new `dashboards/<app>.json` and a chart version bump, or rely on **Eldertree Cluster** / **K8s Views** until then.
@@ -144,7 +141,7 @@ These are **not** files under `dashboards/`; they are pulled by ID at deploy tim
 | `node-exporter-full` | 1860 | 37 | Node exporter (compare with **Hardware Health** for Pi-focused view) |
 | `traefik` | 11462 | 1 | **Upstream** Traefik template (Eldertree also uses custom **Network Intelligence**) |
 | `coredns` | 14981 | 2 | CoreDNS |
-| `pihole` | 10176 | 1 | Pi-hole |
+| `bind` | — | 1 | BIND9 LAN DNS |
 
 ### GitOps, TLS, external secrets
 
@@ -201,14 +198,6 @@ Alertmanager: `https://alertmanager.eldertree.local`
 | Postgres / Redis | Exporters in `observability` | See `postgres-exporter.yaml`, `redis-exporter.yaml` |
 
 **Traefik scrape:** static target `traefik.kube-system:9100` (see `core-infrastructure/traefik-config.yaml`). **Loki** datasource in `values.yaml`; **Promtail** ships node logs (see cluster observability manifests).
-
----
-
-## External GPU worker (Visage)
-
-Push metrics to Pushgateway: `https://pushgateway.eldertree.local`
-
-- `visage_training_*`, `visage_images_*`, `visage_queue_*` — see **Visage Operations** / **Visage Training** panels.
 
 ---
 

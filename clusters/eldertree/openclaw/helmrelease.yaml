@@ -15,6 +15,7 @@ spec:
         namespace: flux-system
       interval: 12h
   targetNamespace: openclaw
+  releaseName: openclaw
   upgrade:
     cleanupOnFail: false
     timeout: 10m
@@ -22,7 +23,6 @@ spec:
     # ============================================================
     # OpenClaw - LLM gateway + Elder AI agent
     # ============================================================
-
     components:
       openclaw:
         image:
@@ -32,6 +32,12 @@ spec:
         port: 18789
         strategy: Recreate
         serviceAccountName: openclaw
+        # Stakater Reloader (running in kube-system) restarts this pod whenever the
+        # openclaw-config-file ConfigMap changes, so model-chain edits take effect
+        # without a manual `kubectl rollout restart`. The init script then re-seeds
+        # openclaw.json from the ConfigMap on the resulting fresh container start.
+        podAnnotations:
+          configmap.reloader.stakater.com/reload: "openclaw-config-file"
         command:
           - /bin/sh
           - -c
@@ -102,13 +108,13 @@ spec:
           - configMapRef:
               name: openclaw-config
         resources:
-          requests: { cpu: "200m", memory: "1536Mi" }
-          limits: { cpu: "1000m", memory: "3Gi" }
+          requests: {cpu: "200m", memory: "1536Mi"}
+          limits: {cpu: "1000m", memory: "3Gi"}
         probes:
           path: /health
           port: 18789
-          liveness: { initialDelaySeconds: 180, periodSeconds: 30, timeoutSeconds: 10 }
-          readiness: { initialDelaySeconds: 150, periodSeconds: 10, timeoutSeconds: 5 }
+          liveness: {initialDelaySeconds: 180, periodSeconds: 30, timeoutSeconds: 10}
+          readiness: {initialDelaySeconds: 150, periodSeconds: 10, timeoutSeconds: 5}
         volumeMounts:
           - name: openclaw-data
             mountPath: /home/node/.openclaw
@@ -134,11 +140,10 @@ spec:
           - name: skills
             configMap:
               name: openclaw-skills
-
       elder:
         image:
-          repository: ghcr.io/raolivei/grove
-          tag: v0.2.0 # {"$imagepolicy": "openclaw:elder:tag"}
+          repository: ghcr.io/raolivei/elder
+          tag: v0.3.7 # {"$imagepolicy": "openclaw:elder:tag"}
           pullPolicy: Always
         port: 8006
         servicePort: 8000
@@ -213,13 +218,13 @@ spec:
                 key: ELDER_GMAIL_USER_EMAIL
                 optional: true
         resources:
-          requests: { cpu: "250m", memory: "256Mi" }
-          limits: { cpu: "500m", memory: "512Mi" }
+          requests: {cpu: "250m", memory: "256Mi"}
+          limits: {cpu: "500m", memory: "512Mi"}
         probes:
           path: /health
           port: 8006
-          liveness: { initialDelaySeconds: 30, periodSeconds: 30, timeoutSeconds: 10 }
-          readiness: { initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5 }
+          liveness: {initialDelaySeconds: 30, periodSeconds: 30, timeoutSeconds: 10}
+          readiness: {initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5}
         volumeMounts:
           - name: elder-data
             mountPath: /data
@@ -227,7 +232,6 @@ spec:
           - name: elder-data
             persistentVolumeClaim:
               claimName: elder-data
-
     # -- Middleware
     middleware:
       redirect-https:
@@ -247,7 +251,6 @@ spec:
           certManager: true
         annotations:
           external-dns.alpha.kubernetes.io/hostname: openclaw.eldertree.local
-
       elder:
         host: elder.eldertree.local
         service: elder
@@ -257,3 +260,21 @@ spec:
           certManager: true
         annotations:
           external-dns.alpha.kubernetes.io/hostname: elder.eldertree.local
+      control-center:
+        host: control.eldertree.local
+        service: elder
+        port: 8000
+        tls:
+          secretName: control-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: control.eldertree.local
+      # --- Public (control.eldertree.xyz) ---
+      control-center-public:
+        host: control.eldertree.xyz
+        service: elder
+        port: 8000
+        tls:
+          secretName: control-cloudflare-origin-tls
+        annotations:
+          external-dns.alpha.kubernetes.io/exclude: "true"

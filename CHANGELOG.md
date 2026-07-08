@@ -6,6 +6,153 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **bolao + bolao-claude (scale-down)** — web/postgres `replicas: 0`, cronjobs `suspend: true`, ARC runners `maxRunners: 0` (namespaces retained; PVCs not deleted).
+
+### Removed
+
+- **bolao + bolao-claude** — decommissioned from Eldertree GitOps (`clusters/eldertree/kustomization.yaml`): namespaces, Postgres, cronjobs, ingress, image automation. ARC runners (`bolao-eldertree`, `bolao-claude-eldertree`) removed from `arc-runners`. Postgres exporter and blackbox probe targets dropped.
+
+### Added
+
+- **Elder Ollama wiring (was pointing nowhere)** — `elder-configmap.yaml` had no `ELDER_OLLAMA_BASE_URL`, so `elder_best_answer`'s `ollama`/`ollama-heavy` providers defaulted to `localhost:11434` (unreachable from inside the pod) with model `qwen2.5:14b` (never pulled on the Mac) — reported `available: true` (a bare truthy check) but never actually worked. Now points at the Mac's LAN IP (`192.168.2.107`, same as OpenClaw's primary) with models that are actually present (`qwen2.5:32b` fast, `qwen3.6:35b-mlx` heavy — see [raolivei/elder#27](https://github.com/raolivei/elder/pull/27)). Also removes the now-unused `ELDER_OPENROUTER_API_KEY` wiring (elder#27 replaced the Anthropic/OpenRouter escalation provider with a local one).
+
+- **OpenClaw cluster-local LLM fallback** — [`clusters/eldertree/openclaw/ollama-fallback.yaml`](clusters/eldertree/openclaw/ollama-fallback.yaml): in-cluster `ollama/ollama` Deployment serving `qwen2.5:3b` on a Pi5 (soft-pinned to node-1), `local-path` PVC, and ingress NetworkPolicy. Always-on local fallback for when the Mac Ollama primary is unreachable; pinned image `ollama/ollama:0.31.1`, keeps the model warm between calls (`OLLAMA_KEEP_ALIVE=30m`).
+
+- **bolao Flux image automation** — `ImageRepository`, `ImagePolicy`, and `ImageUpdateAutomation` for `ghcr.io/raolivei/bolao-web`; HelmRelease tag setter comment (swimTO pattern).
+
+### Changed
+
+- **OpenClaw model chain → local-first, LAN-primary** — Primary is the Mac `ollama-lan/qwen2.5:32b` reached over LAN (`192.168.2.107`, the Mac is always home on the same network); `ollama-tailscale/qwen2.5:32b` (same model, `100.97.229.104`) is a passive fallback tier for when the Mac leaves the LAN — no manual toggling needed, a dead LAN path fails in ~7ms so failover is instant. Then `ollama-cluster/qwen2.5:3b` → OpenRouter cloud. Replaces the earlier `gemma4:31b-mlx` primary (measured ~52s to first token / 6-10min per reply — too slow; qwen2.5:32b measures ~12s cold load, <1s TTFT). See [`clusters/eldertree/openclaw/configmap.yaml`](clusters/eldertree/openclaw/configmap.yaml).
+
+- **OpenClaw compaction → cluster** — Compaction model is now `ollama-cluster/qwen2.5:3b` (was `ollama/qwen2.5:7b`, which had been deleted from the Mac → every compaction 404'd, causing "auto-compaction could not recover this turn"). Decoupling compaction from the Mac entirely means it never fails due to the Mac's network path. `reserveTokensFloor` 20000→24000.
+
+- **Elder `elder_best_answer` → opt-in Anthropic/Sonnet-5 escalation** — [raolivei/elder#26](https://github.com/raolivei/elder/pull/26) adds Claude Sonnet 5 (via OpenRouter) as a 4th, opt-in provider for hard multi-hop investigations that local ~30B models don't reliably nail (benchmark evidence: no local MLX model in the 26-35B range matched Sonnet 4.6's root-cause accuracy on a real production debug trace). Default `elder_best_answer` behavior/cost unchanged. Wired `ELDER_OPENROUTER_API_KEY` on the `elder` container in `helmrelease.yaml`, reusing OpenClaw's already-provisioned `openclaw-secrets/OPENROUTER_API_KEY` (no new Vault secret).
+
+- **OpenClaw config auto-reload** — Added `configmap.reloader.stakater.com/reload` annotation to the openclaw pod so Stakater Reloader restarts it on `openclaw-config-file` changes (previously the pod kept stale config until a manual restart).
+
+- **bolao ARC `maxRunners`** — Raise `bolao-eldertree` from 2 to 4 so PR docker builds do not queue behind main.
+
+- **bolao-web `pullPolicy`** — Set `pullPolicy: Always` on `bolao-web` so Flux semver tag updates re-resolve GHCR digests (canopy pattern; alternative is pinning `image.tag` to digest).
+
+- **bolao-web image** — HelmRelease `bolao-web` tag `v0.1.2` (Google OAuth issuer fix; cluster may run sideload until GHCR publishes).
+
+- **`stress-arc-runners.sh`** — include `bolao` in default `ARC_REPOS` (repo-scoped scale set deployed).
+
+### Added
+
+- **bolao ARC runner** — `gha-runner-scale-set` for `raolivei/bolao` (`bolao-eldertree`).
+
+- **bolao Flux wiring** — Register `clusters/eldertree/bolao` in root kustomization; routing registry, postgres-exporter, monitoring-stack 0.2.17 dashboard folder.
+
+- **BIND9 LAN DNS (`helm/bind9`)** — Replaces Pi-hole (#232): authoritative `eldertree.local` on VIP `192.168.2.201`, RFC2136 on port 53. external-dns host `bind9.bind.svc.cluster.local`.
+- **BIND9 cutover scripts** — [`scripts/cutover-bind9-dns.sh`](scripts/cutover-bind9-dns.sh), [`scripts/check-bind9-status.sh`](scripts/check-bind9-status.sh), [`scripts/diagnose-bind9-dns-mac.sh`](scripts/diagnose-bind9-dns-mac.sh).
+- **ARC repo-scoped scale sets** — Per-repo `gha-runner-scale-set` HelmReleases for `pi-fleet-blog`, `elder`, `github-workflows`, `canopy`, `swimTO`, `personal-website`, `northwaysignal-website`, `nima`, `eldertree-docs` (each `githubConfigUrl: https://github.com/raolivei/<repo>`). `raolivei` is a GitHub User, not an Organization, so org-scope ARC is unavailable; each repo needs its own listener. Runner pods right-sized to 250m+100m CPU requests so 4+ schedule concurrently on Pi 5 stable nodes.
+- **ARC repo PAT setup** — [`scripts/operations/setup-arc-repo-github-pat.sh`](scripts/operations/setup-arc-repo-github-pat.sh) writes a `repo`+`workflow` token to Vault and verifies repo-scoped registration. `setup-arc-org-github-pat.sh` now delegates to it.
+- **ARC load-test scripts** — [`scripts/stress-arc-runners.sh`](scripts/stress-arc-runners.sh) (gated to repos with a deployed scale set via `ARC_REPOS`) and [`scripts/monitor-arc-runners.sh`](scripts/monitor-arc-runners.sh) (live runner/listener/node view).
+- **Flux Helm naming guide** — [`docs/FLUX_HELM_NAMING.md`](docs/FLUX_HELM_NAMING.md): require explicit `releaseName` on all HelmReleases; migration map for doubled releases.
+- **Control Center public** — `control.eldertree.xyz` Cloudflare Tunnel ingress rule + DNS CNAME; OpenClaw `control-center-public` ingress with `*.eldertree.xyz` origin cert (ExternalSecret).
+- **Ollie Helm chart** — Vendor `helm/ollie` from the [ollie](https://github.com/raolivei/ollie) repo so Flux `HelmRelease` path `./helm/ollie` resolves (fixes `InvalidChartReference`).
+
+### Fixed
+
+- **bolao ARC runner DNS** — pod `dnsConfig` plus DinD `daemon.json` DNS on `bolao-eldertree` so buildx containers resolve `registry.npmjs.org`
+- **eldertree-app chart** — optional `dnsConfig` on component deployments
+
+- **bolao.eldertree.xyz Terraform DNS** — `cloudflare-reconcile-bolao-dns.sh` deletes stale External-DNS A records before apply (same pattern as `control.eldertree.xyz`)
+
+- **bolao public DNS** — Exclude `bolao.eldertree.xyz` from External-DNS on public ingress so Terraform owns the Cloudflare tunnel CNAME (canopy pattern).
+
+- **Pi-hole Helm upgrade stalled (`loadBalancerClass`)** — HelmRelease used `loadBalancerClass: null` but live Service has immutable `kube-vip.io/kube-vip-class`; align values so exporter disable can roll out.
+- **Pi-hole exporter ImagePullBackOff (arm64)** — `ghcr.io/mosher-labs/pihole6-exporter` has no arm64 manifest; pod stayed 2/3 Ready with **empty Service endpoints**, breaking RFC2136 external-dns. Chart adds `exporter.enabled` (off on Eldertree until arm64 image exists).
+- **external-dns RFC2136 crash loop** — `EXTERNAL_DNS_RFC2136_HOST` pointed at stale Pi-hole ClusterIP `10.43.117.25`; updated to current `10.43.153.12` (`kubectl get svc -n pi-hole pi-hole`).
+- **ExternalSecret Vault path drift** — `ollie`, `personal-website`, and `pitanga` `ghcr-secret` now read `secret/canopy/ghcr-token` (same as swimto/canopy). `ollie-secrets` reads `secret/elder/api-key` and `secret/openclaw/openrouter` instead of missing `secret/pi-fleet/*` paths.
+- **Grafana/KEDA Prometheus DNS after Helm naming migration** — Grafana datasource, KEDA `serverAddress`, and pushgateway ingress pointed at removed `observability-monitoring-stack-prometheus-server`; updated to `monitoring-stack-prometheus-server`. monitoring-stack chart **0.2.15**.
+- **Ollie training CronJob ImagePullBackOff** — `ghcr.io/raolivei/ollie-training:latest` was never published (not in ollie `build-publish.yaml`). Disable `training.enabled` until the image is built and pushed.
+- **ARC runner pods Pending** — Drop `node-tier: stable` nodeSelector (node-1 was ~99% free but excluded while node-2 at 98% CPU requests and node-3 NotReady under load). Lower runner requests to 100m CPU / 512Mi.
+
+### Changed
+
+- **bolao routing** — Align with SwimTO/pitanga: Caddy stanza next to swimto (Traefik VIP), drop custom localdev Caddy file; ingress keys `bolao-web-local` / `bolao-web-public`; `SERVICES_REFERENCE.md` entry.
+
+- **monitoring-stack 0.2.16** — Drop Pi-hole Prometheus scrape mount; Grafana cluster dashboard shows `bind` namespace.
+- **`stress-arc-runners.sh`** — include `github-workflows` in default `ARC_REPOS` (repo-scoped scale set deployed in Phase 1).
+- **ARC ollie-runners** — Repo-scoped (`githubConfigUrl: https://github.com/raolivei/ollie`); `maxRunners: 1` (serial `build-publish.yaml`). Org scope reverted — requires a GitHub Organization entity.
+- **pi-fleet CI** — Terraform and OpenClaw ARM64 build workflows revert to `ubuntu-latest` (pi-fleet has no scale set; terraform needs `~/.kube/config-eldertree` not present in ARC pods).
+- **`runs-on` standardized to `['self-hosted']`** for repos with a scale set; Tier 4 repos (`repo-template`, `eldertree-chassis`, `fragment`) moved to `ubuntu-latest` (no scale set).
+- **Helm release names (cluster-wide)** — Set `releaseName: <metadata.name>` on all Eldertree HelmReleases so Flux no longer creates doubled releases (`openclaw-openclaw`, `canopy-canopy`, `observability-monitoring-stack`, etc.). See migration table in `FLUX_HELM_NAMING.md`.
+- **ARC HelmRepository** — Rename `arc-controller` → `arc-charts` in `flux-system` (serves both controller and scale-set OCI charts).
+- **ARC ClusterRole** — Rename `arc-controller-gha-rs-controller-secrets` → `arc-controller-secrets`.
+- **ARC manifests** — Rename `ollie-runner-helmrelease.yaml` → `ollie-runners-helmrelease.yaml`, `arc-helm-repository.yaml` → `arc-charts-helmrepository.yaml`.
+- **ARC ollie-runners** — `maxRunners: 6` (matches ollie `build-publish.yaml` parallel jobs). Right-size runner + DinD resources (750m CPU / 1.5Gi mem requests per pod, down from 1 CPU / 2Gi) so more pods schedule on Pi 5 nodes; pin to `node-tier: stable` and prefer anti-affinity spread across node-2/node-3. Cap limits to reduce cluster-wide oversubscription (was 3 CPU / 4Gi per runner container).
+- **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.6` (kube-vip DaemonSet health, topology layout variants).
+
+### Fixed
+
+- **Control Center 502 (`control.eldertree.xyz` / `.local`)** — OpenClaw NetworkPolicies used stale labels (`app: elder`, `name: traefik`) and port 8000 after the `releaseName` migration (`app: openclaw`, `component: elder`, Elder on 8006, Traefik in `kube-system`). Scope `openclaw-ingress-only` to `component: openclaw`; allow Traefik → Elder on 8006.
+- **SwimTO 503 during node-1 reboots** — `node-1` watchdog reboots (hang → NotReady, 5× in 8h on 2026-06-07) took down single `swimto-api` pod scheduled on unstable tier. SwimTO API/web: **2 replicas**, **required** `node-tier != unstable`, **podAntiAffinity** across hosts; KEDA `minReplicaCount` 2 (API was 0). Monitoring-stack **0.2.14**: blackbox probes for `swimto.app` and `api.swimto.app/health`, alerts `SwimTOApiReplicasUnavailable`, `SwimTOApiPublicProbeFailing`, `SwimTOApiOnUnstableNode`.
+- **ARC HelmRepository namespace** — Move `arc-charts-helmrepository.yaml` to `clusters/eldertree/` root so Kustomize does not rewrite `flux-system` → `arc-controller` (broke `HelmRepository "arc-charts" not found` after #219).
+- **ARC runners stuck Pending** — `ollie-runners` HelmRelease `controllerServiceAccount.name` did not match the controller's real ServiceAccount (`arc-controller-gha-rs-controller`). Flux defaulted the controller Helm release name to `arc-controller-arc-controller`, producing SA `arc-controller-arc-controller-gha-rs-controller`. Set `releaseName: arc-controller` on the controller HelmRelease and point runners at `arc-controller-gha-rs-controller`.
+- **Pi-hole HelmRelease** — `strategy: Recreate` and 20m upgrade timeout (RollingUpdate dual-pod upgrades caused Helm deadline exceeded).
+- **control.eldertree.xyz DNS** — `scripts/cloudflare-reconcile-control-dns.sh` removes stale `control` A records before Terraform apply; runs in `terraform.yml` on apply.
+- **Pi-hole (Helm 0.2.2)** — Remove zero-byte `gravity.db` init stub; postStart waits for web UI then runs `pihole -g` when db missing/empty. Metrics sidecar `ghcr.io/mosher-labs/pihole6-exporter` (Pi-hole v6 session auth).
+- **Caddy / CoreDNS LAN routing** — `scripts/Caddyfile` proxies to Traefik kube-vip `192.168.2.200:443` (was `192.168.2.101:32474`, which hit Pi-hole on 443). CoreDNS custom hosts add `control.eldertree.local` and `elder.eldertree.local`.
+- **Traefik VIP / Pi-hole 403** — Stop exposing HTTPS (443) on the Pi-hole LoadBalancer Service (`exposeHttpsOnLoadBalancer: false`) so K3s `svclb-traefik` can bind hostPort 443 on `192.168.2.200`; fixes all `*.eldertree.local` URLs (including Control Center) returning Pi-hole HTML.
+- **Control Center routing** — Add `docs/eldertree-local-services.yaml`, `check-local-routing-registry.sh`, `verify-service-routing.sh`, and `docs/ONBOARDING_APP_ROUTING.md` / `CONTROL_CENTER.md`; sync hosts registry for `control.eldertree.local`.
+- **Ollie GitOps** — Vendor `helm/ollie` chart into pi-fleet (Flux `HelmRelease` path `./helm/ollie`); ExternalSecrets `ClusterSecretStore` ref `vault-backend` → `vault` (matches live cluster).
+- **Node scheduling tier reconciler** — Replace distroless `rancher/kubectl` (no `/bin/sh`, StartError) with `debian:bookworm-slim` + downloaded `kubectl v1.35.0` arm64; bump job memory for apt/curl install.
+
+### Changed
+
+- **Local routing sync** — `eldertree-local-hosts-block.txt`, `add-services-to-hosts.sh`, and `Caddyfile` aligned with registry (openclaw, alertmanager, docs, dex, audio, canopy, journey, nima).
+- **Elder (Control Center)** — Image `ghcr.io/raolivei/elder:v0.3.0` (Control Center SPA + `/api/public/cluster/health`); ImageRepository tracks `elder` instead of legacy `grove`. Ingress `control.eldertree.local` → Elder service.
+- **Visage archived (2026-04)** — Detached live monitoring (scrape, dashboards, exporter targets), tunnel/DNS, and hosts/Caddy entries; preserved reference copies under [`docs/archive/visage/`](docs/archive/visage/). See [`workspace-config/docs/PROJECT_DECOMMISSIONING.md`](../workspace-config/docs/PROJECT_DECOMMISSIONING.md).
+- **Repo layout** — Moved `NETWORK.md`, `VAULT.md`, and `SERVICES_REFERENCE.md` into `docs/`; blog drafts and one-off session notes into `docs/archive/`; removed duplicate `blog/` tree at repo root. Root now holds README, CHANGELOG, CLAUDE, CONTRIBUTING, and `VERSION` only.
+
+### Added
+
+- **Service routing onboarding** — [`docs/ONBOARDING_APP_ROUTING.md`](docs/ONBOARDING_APP_ROUTING.md): end-to-end LAN checklist; [`docs/eldertree-local-services.yaml`](docs/eldertree-local-services.yaml) registry; [`scripts/check-local-routing-registry.sh`](scripts/check-local-routing-registry.sh) and [`scripts/verify-service-routing.sh`](scripts/verify-service-routing.sh) for cluster + Pi-hole + Mac verification.
+- **Observability retention (NVMe)** — [`docs/OBSERVABILITY_RETENTION.md`](docs/OBSERVABILITY_RETENTION.md): 90d Prometheus metrics (64Gi `local-path-nvme`, `retentionSize: 58GB`), 30d Loki logs (48Gi NVMe, extend to 90d after measure), stable-node affinity, Promtail probe/health log drops, PVC migration runbook. monitoring-stack chart **0.2.13**.
+- **Control Center ops doc** — [`docs/CONTROL_CENTER.md`](docs/CONTROL_CENTER.md): architecture, URLs, API, troubleshooting for `control.eldertree.local`.
+- **Control Center local dev** — `control.eldertree.local` in `scripts/Caddyfile`, `add-services-to-hosts.sh`, `setup-caddy-proxy.sh`, and `docs/eldertree-local-hosts-block.txt` for LAN Caddy testing of the Elder ops console (cluster ingress via OpenClaw HelmRelease).
+
+### Added
+
+- **Node scheduling tiers** — node-1 deprioritized; Flux reconciler CronJob (reads from ConfigMap), ConfigMap auto-synced from Ansible group_vars, Ansible (`configure-node-scheduling-tiers`, `sync-node-scheduling-config`, host_vars, hooks in setup-cluster/watchdog/install-k3s), `eldertree-app` affinity, vault-auto-unseal on stable nodes; [NODE_SCHEDULING.md](docs/NODE_SCHEDULING.md). Node names/tiers configurable via `ansible/group_vars/all.yml` — no hardcoded values in CronJob script.
+- **Ollie Grafana dashboard** — `helm/monitoring-stack/dashboards/ollie-dashboard.json` with request rate, latency, ChromaDB hit rate, LLM provider split, error rate, and resource usage panels.
+
+### Fixed
+
+- **Ollie HelmRelease** — remove invalid top-level `spec.imagePullSecrets` (not in `helm.toolkit.fluxcd.io/v2` schema); unblocks `flux-system` kustomization dry-run.
+- **Ollie HelmRelease API** — bump `clusters/eldertree/ollie/helmrelease.yaml` from deprecated `helm.toolkit.fluxcd.io/v2beta1` to `v2` so `flux-system` kustomization dry-run succeeds (cluster CRD no longer serves `v2beta1`).
+- **ExternalSecret `pi-fleet-terraform-vault-credentials`** — drop optional `pi-user` Vault key so sync succeeds when that secret is absent.
+
+### Changed
+
+- **Grafana (monitoring-stack 0.2.11)** — `hardware-health` and `eldertree-ops-home` panels for watchdog, freeze signal, OOM, and node uptime/reboot (metrics behind `WatchdogServiceDown`, `NodePingableButNotReady`, `NodeUnexpectedReboot`).
+
+### Changed
+
+- **HCP token Vault path** — active secret at `secret/pi-fleet/terraform/eldertree-github-2026` (`token`); loaders and ExternalSecret read this path (fallback: `terraform-cloud-token`).
+
+### Added
+
+- **Vault-first Terraform secrets** — [`docs/VAULT_TERRAFORM_SECRETS.md`](docs/VAULT_TERRAFORM_SECRETS.md); [`scripts/lib/load-terraform-secrets-from-vault.sh`](scripts/lib/load-terraform-secrets-from-vault.sh); [`setup-terraform-cloud-token.sh`](scripts/setup-terraform-cloud-token.sh); ExternalSecret `pi-fleet-terraform-vault-credentials`; `run-terraform.sh` loads HCP token from Vault.
+- **Scripts** — [`sync-github-terraform-secrets-from-vault.sh`](scripts/sync-github-terraform-secrets-from-vault.sh) publishes Vault → GitHub Actions/Dependabot (CI cache).
+- **ElderTree project hub** — [`docs/ELDERTREE.md`](docs/ELDERTREE.md), [`scripts/operations/eldertree-open.sh`](scripts/operations/eldertree-open.sh), updated [`clusters/eldertree/README.md`](clusters/eldertree/README.md).
+- **InfraOPS & o11y standards** — Agent [`eldertree-infraops`](.claude/agents/eldertree-infraops.md); [`docs/ONBOARDING_APP_OBSERVABILITY.md`](docs/ONBOARDING_APP_OBSERVABILITY.md); workspace [`OBSERVABILITY_STANDARDS.md`](../workspace-config/docs/OBSERVABILITY_STANDARDS.md) (DRY monitoring checklist).
+- **Hardware** — [`docs/HARDWARE_CHASSIS.md`](docs/HARDWARE_CHASSIS.md) links mechanical CAD to [eldertree-chassis](https://github.com/raolivei/eldertree-chassis); README hardware section updated.
+
+### Changed
+
+- **Docs** — Worker-node and `check-new-pi.sh` switch references updated from legacy TP-Link SG105 to **TL-SG1008MP** (PoE+ cluster switch).
+
+### Fixed
+
+- **Prometheus scrape config files** — Pi-hole, Visage, and Vault fragments use top-level `scrape_configs:` (fixes CrashLoop `cannot unmarshal !!seq into config.ScrapeConfigs`).
+- **Hardware watchdog (all nodes)** — Disable Raspberry Pi OS `40-rpi-enable-watchdog.conf` and set `RuntimeWatchdogSec=0` so the watchdog daemon holds `/dev/watchdog`. Add `watchdog-k3s-health.sh` test-binary (k3s, kubelet healthz, API :6443), peer-only ping targets, persistent journald, improved `scripts/verify-watchdog.sh`. Prometheus alerts `WatchdogServiceDown` and `NodePingableButNotReady` (monitoring-stack **0.2.10**). See `docs/NODE-1-HANG-2026-05-26-SECOND.md`.
+
+### Changed
+
 - **Prometheus (monitoring-stack 0.2.9)** — Moved `extraSecretMounts` / `extraConfigmapMounts` scrape config paths from `/etc/config/*.yaml` to `/etc/scrape-configs/*.yaml`. Root cause: the kubelet creates an empty placeholder directory in the `config-volume` backing store for every subPath mount that targets a path inside `/etc/config/`. runc then fails to bind-mount the file over that directory (`MS_BIND|MS_REC` on a file-vs-directory path → `ENOTDIR`), causing Prometheus CrashLoopBackOff (568 restarts, 47 h) with `not a directory` in the containerd shim error. Using a separate `/etc/scrape-configs/` directory avoids the collision entirely; ClusterIP scrape via Prometheus `scrapeConfigFiles` unchanged. `clusters/eldertree/observability/monitoring-stack-helmrelease.yaml` chart `0.2.9`.
 - **Traefik (core-infrastructure/traefik-config.yaml)** — `ports.metrics.expose.default: false` (was `true`). k3s ServiceLB creates `svclb-traefik-*` pods with `hostPort` for every port on the LoadBalancer service; exposing Traefik metrics on port 9100 occupied `hostPort 9100` on all 3 nodes, blocking the `prometheus-node-exporter` DaemonSet from scheduling for 47 h. Prometheus continues to scrape Traefik via ClusterIP (`traefik.kube-system.svc.cluster.local:9100`) — no change to metrics collection.
 - **Kubeconfig scripts** — [`scripts/setup-kubeconfig-eldertree.sh`](scripts/setup-kubeconfig-eldertree.sh) and [`scripts/update-kubeconfig-ha.sh`](scripts/update-kubeconfig-ha.sh) set the API server to the kube-vip WiFi VIP **`192.168.2.100:6443`** (was node-1 LAN IP in the legacy setup path). [`docs/LENS_CONNECTION_GUIDE.md`](docs/LENS_CONNECTION_GUIDE.md) and [`docs/TAILSCALE.md`](docs/TAILSCALE.md): troubleshooting / script path for `192.168.2.100:6443` timeouts → use `config-eldertree-remote` + Tailscale.
@@ -14,7 +161,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 - **monitoring-stack (Prometheus)** — **prometheus-community** subchart **28.x**; global **`scrape_interval`** / **`evaluation_interval`** **60s**; static jobs in **`scrapeConfigs`** (postgres, redis, blackbox, traefik) at **60s**; Pi-hole / Visage / Vault via **`scrape_config_files`** and **`server.extraSecretMounts`** / **`extraConfigmapMounts`**; **`kubernetes-nodes-cadvisor`** **`metric_relabel_configs`** **`labeldrop`** on cAdvisor `id` and `image` (lowers TSDB head cardinality; dashboards use `namespace`/`pod`/`container`). [`DASHBOARDS.md`](helm/monitoring-stack/DASHBOARDS.md) documents TSDB head series diagnostics. Chart `0.2.8` ([`monitoring-stack-helmrelease.yaml`](clusters/eldertree/observability/monitoring-stack-helmrelease.yaml)); reconcile Flux.
 - **personal-website** — HelmRelease image tag `v0.2.1` (Flux ImagePolicy setter) to match GHCR semver after app release 0.2.1.
 - **Terraform / Vault** — Removed `vault_kv_secret_v2.openclaw_openrouter` and `openrouter_api_key` variable; OpenRouter stays in Vault only (CLI/UI/`scripts/setup-openclaw.sh`), not in Terraform state. README documents one-time `terraform state rm` with `TF_TOKEN_app_terraform_io` (Actions only plan/apply). See `terraform/README.md`.
-- **Canopy** — API/frontend **`latest`** with **`pullPolicy: Always`** (solo use); removed Flux image automation manifests (`image-automation.yaml` dropped from [`kustomization.yaml`](clusters/eldertree/canopy/kustomization.yaml)). After deploy, delete leftover `ImageRepository` / `ImagePolicy` / `ImageUpdateAutomation` in namespace `canopy` if they remain. [`SERVICES_REFERENCE.md`](SERVICES_REFERENCE.md) image row; [`docs/FLUX_DEPLOY_KEY_SETUP.md`](docs/FLUX_DEPLOY_KEY_SETUP.md) / [`docs/VAULT_SECRETS_BOOTSTRAP.md`](docs/VAULT_SECRETS_BOOTSTRAP.md) use swimto for ImageUpdateAutomation examples. `SERVICES_REFERENCE`: public URL `https://canopy.eldertree.xyz` (Cloudflare Tunnel + Basic Auth); tunnel path order `/v1/*` before `/` in `terraform/cloudflare.tf`. **`CORS_ALLOW_ORIGINS`** on `canopy-api`; frontend no longer sets bogus **`NEXT_PUBLIC_API_URL=http://canopy-api:8000`** (browser must use same-origin `/v1` or a public URL baked at `next build`). **`SERVICES_REFERENCE`**: run **`kubectl … migrate.sh`** after API upgrades (Alembic).
+- **Canopy** — API/frontend **`latest`** with **`pullPolicy: Always`** (solo use); removed Flux image automation manifests (`image-automation.yaml` dropped from [`kustomization.yaml`](clusters/eldertree/canopy/kustomization.yaml)). After deploy, delete leftover `ImageRepository` / `ImagePolicy` / `ImageUpdateAutomation` in namespace `canopy` if they remain. [`docs/SERVICES_REFERENCE.md`](docs/SERVICES_REFERENCE.md) image row; [`docs/FLUX_DEPLOY_KEY_SETUP.md`](docs/FLUX_DEPLOY_KEY_SETUP.md) / [`docs/VAULT_SECRETS_BOOTSTRAP.md`](docs/VAULT_SECRETS_BOOTSTRAP.md) use swimto for ImageUpdateAutomation examples. `SERVICES_REFERENCE`: public URL `https://canopy.eldertree.xyz` (Cloudflare Tunnel + Basic Auth); tunnel path order `/v1/*` before `/` in `terraform/cloudflare.tf`. **`CORS_ALLOW_ORIGINS`** on `canopy-api`; frontend no longer sets bogus **`NEXT_PUBLIC_API_URL=http://canopy-api:8000`** (browser must use same-origin `/v1` or a public URL baked at `next build`). **`SERVICES_REFERENCE`**: run **`kubectl … migrate.sh`** after API upgrades (Alembic).
 - **OpenClaw RBAC** — Broader workload/service/config/ingress/Flux/cert-manager write access; read-only on PV/CSI/CRDs/webhooks/cluster view; no namespace delete, no node delete (nodes patch allowed for cordon/taints). See `clusters/eldertree/openclaw/rbac.yaml`.
 - **Prometheus (Lens)** — `node` label on `kubernetes-nodes` / `kubernetes-nodes-cadvisor` scrapes so Lens node metrics resolve.
 

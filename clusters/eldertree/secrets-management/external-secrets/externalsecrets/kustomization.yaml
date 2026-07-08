@@ -5,13 +5,12 @@ resources:
   - flux-git-ssh.yaml
   - canopy-secrets.yaml
   # - ghcr-secret.yaml # DISABLED - GHCR token stored per-app or shared from canopy
-  - pihole-secrets.yaml
-  - pihole-bind-tsig-secret.yaml
   - swimto-secrets.yaml
   # - us-law-severity-map-secrets.yaml # DISABLED - us-law-severity-map namespace not created (app disabled)
   # - journey-secrets.yaml # DISABLED - journey namespace not created (journey app disabled)
   - external-dns-tsig-secret.yaml
   - external-dns-cloudflare-secret.yaml
+  - terraform-vault-credentials.yaml
   # Note: nima-secrets.yaml not included as NIMA has no secrets currently
   # When secrets are needed, uncomment and add data section
 

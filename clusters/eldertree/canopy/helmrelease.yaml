@@ -15,6 +15,7 @@ spec:
         namespace: flux-system
       interval: 12h
   targetNamespace: canopy
+  releaseName: canopy
   upgrade:
     cleanupOnFail: true
   values:
@@ -42,6 +43,11 @@ spec:
               secretKeyRef:
                 name: canopy-secrets
                 key: database-url
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: canopy-secrets
+                key: secret-key
           - name: REDIS_URL
             value: "redis://canopy-redis:6379/0"
           - name: ENVIRONMENT

@@ -1,10 +1,11 @@
 # Caddyfile for Eldertree Local Proxy
 # Run with: sudo caddy run --config ~/WORKSPACE/raolivei/pi-fleet/scripts/Caddyfile
 #
-# This proxies *.eldertree.local to the k3s cluster via Traefik NodePort
+# This proxies *.eldertree.local to the k3s cluster via kube-vip Traefik VIP.
+# Use 192.168.2.200:443 — Traefik kube-vip VIP (not a node LAN IP).
 # Allows accessing services without specifying port numbers
 #
-# Only includes DEPLOYED services (as of 2026-01-16)
+# Only includes DEPLOYED services — keep in sync with docs/eldertree-local-services.yaml
 
 {
     # Use local self-signed certs
@@ -14,7 +15,7 @@
 # Grafana (observability)
 grafana.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -25,7 +26,7 @@ grafana.eldertree.local {
 # Vault (secrets management)
 vault.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -36,7 +37,7 @@ vault.eldertree.local {
 # Prometheus (metrics)
 prometheus.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -44,32 +45,10 @@ prometheus.eldertree.local {
     }
 }
 
-# Visage (photo management)
-visage.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.101:32474 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host visage.eldertree.local
-    }
-}
-
-# MinIO (object storage for Visage)
-minio.eldertree.local {
-    tls internal
-    reverse_proxy https://192.168.2.101:32474 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-        header_up Host minio.eldertree.local
-    }
-}
-
 # SwimTO (Toronto pool schedules)
 swimto.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -77,10 +56,21 @@ swimto.eldertree.local {
     }
 }
 
+# Bolão dos Guerreiros (WC 2026 prediction pool)
+bolao.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.200:443 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host bolao.eldertree.local
+    }
+}
+
 # Pitanga (website)
 pitanga.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -91,7 +81,7 @@ pitanga.eldertree.local {
 # Flux UI (GitOps dashboard)
 flux.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -102,7 +92,7 @@ flux.eldertree.local {
 # Pushgateway (metrics push endpoint)
 pushgateway.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -113,7 +103,7 @@ pushgateway.eldertree.local {
 # Elder (AI agent API + Swagger docs)
 elder.eldertree.local {
     tls internal
-    reverse_proxy https://192.168.2.101:32474 {
+    reverse_proxy https://192.168.2.200:443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -121,13 +111,113 @@ elder.eldertree.local {
     }
 }
 
-# Pi-hole (DNS admin - may not work via ingress)
-pihole.eldertree.local {
+# Eldertree Control Center (Elder SPA + /api/public/cluster/*)
+control.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.200:443 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host control.eldertree.local
+    }
+}
+
+# Eldertree Control Center (Elder SPA + /api/public/cluster/*)
+control.eldertree.local {
     tls internal
     reverse_proxy https://192.168.2.101:32474 {
         transport http {
             tls_insecure_skip_verify
         }
-        header_up Host pihole.eldertree.local
+        header_up Host control.eldertree.local
     }
 }
+
+# OpenClaw (AI assistant Web UI)
+openclaw.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host openclaw.eldertree.local
+    }
+}
+
+# Alertmanager
+alertmanager.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host alertmanager.eldertree.local
+    }
+}
+
+# Eldertree docs (runbook ingress)
+docs.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host docs.eldertree.local
+    }
+}
+
+# Dex OIDC
+dex.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host dex.eldertree.local
+    }
+}
+
+# Eldertree docs audio ingress
+audio.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host audio.eldertree.local
+    }
+}
+
+# Canopy (personal finance)
+canopy.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host canopy.eldertree.local
+    }
+}
+
+# Journey (career pathfinder)
+journey.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host journey.eldertree.local
+    }
+}
+
+# Nima (ML learning)
+nima.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.101:32474 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host nima.eldertree.local
+    }
+}
+

@@ -1,0 +1,58 @@
+---
+# Database migration Job for Canopy
+# Runs Alembic migrations before the API starts
+#
+# Usage:
+#   kubectl apply -f migration-job.yaml
+#   kubectl wait --for=condition=complete --timeout=300s job/canopy-migration -n canopy
+#   kubectl delete job canopy-migration -n canopy
+#
+# Or as a pre-upgrade hook in HelmRelease (not currently enabled)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: canopy-migration
+  namespace: canopy
+  labels:
+    app: canopy
+    component: migration
+spec:
+  # Clean up completed pods after 1 hour
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: canopy
+        component: migration
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migration
+          image: ghcr.io/raolivei/canopy-api:latest
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Running database migrations..."
+              cd /app
+              alembic upgrade head
+              echo "Migrations completed successfully"
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: canopy-secrets
+                  key: database-url
+            - name: ENVIRONMENT
+              value: "production"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+      imagePullSecrets:
+        - name: ghcr-secret

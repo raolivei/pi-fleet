@@ -8,13 +8,14 @@ spec:
   chart:
     spec:
       chart: ./helm/monitoring-stack
-      version: "0.2.9"
+      version: "0.2.17"
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
       interval: 12h
   targetNamespace: observability
+  releaseName: monitoring-stack
   install:
     createNamespace: true
   upgrade:
@@ -35,13 +36,28 @@ spec:
                 - pushgateway.eldertree.local
           annotations:
             cert-manager.io/cluster-issuer: ca-cluster-issuer
-      server:
-        # Reduce retention to 7 days (was 15d) to save disk space on node-3
-        retention: "7d"
+      alertmanager:
         persistentVolume:
           enabled: true
-          size: 8Gi
-          storageClass: local-path
+          size: 2Gi
+          storageClass: local-path-nvme
+      server:
+        # 90d metrics on NVMe — see docs/OBSERVABILITY_RETENTION.md (PVC migration required)
+        retention: "90d"
+        retentionSize: "58GB"
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: eldertree.xyz/node-tier
+                      operator: In
+                      values:
+                        - stable
+        persistentVolume:
+          enabled: true
+          size: 64Gi
+          storageClass: local-path-nvme
         ingress:
           enabled: true
           ingressClassName: traefik
@@ -53,7 +69,7 @@ spec:
                 - prometheus.eldertree.local
           annotations:
             cert-manager.io/cluster-issuer: ca-cluster-issuer
-        # Pi-hole, Visage, Vault scrapes: see helm/monitoring-stack values
+        # Pi-hole, Vault scrapes: see helm/monitoring-stack values
         # (scrapeConfigFiles + server extraSecretMounts / extraConfigmapMounts). Traefik + blackbox: same chart values.
     grafana:
       enabled: true

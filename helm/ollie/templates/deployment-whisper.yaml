@@ -1,0 +1,49 @@
+{{- if .Values.audio.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-whisper
+  labels:
+    app: ollie
+    component: whisper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollie
+      component: whisper
+  template:
+    metadata:
+      labels:
+        app: ollie
+        component: whisper
+    spec:
+      containers:
+        - name: whisper
+          image: "{{ .Values.whisper.image.repository }}:{{ .Values.whisper.image.tag }}"
+          imagePullPolicy: {{ .Values.whisper.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: data-storage
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.whisper.resources | nindent 12 }}
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whisper
+spec:
+  selector:
+    app: ollie
+    component: whisper
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+{{- end }}

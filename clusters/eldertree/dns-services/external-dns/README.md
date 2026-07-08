@@ -4,18 +4,17 @@ Automated DNS record management for Kubernetes Ingress resources using external-
 
 ## Overview
 
-External-DNS automatically creates DNS records in Pi-hole when Ingress resources are created, eliminating manual ConfigMap updates.
+External-DNS automatically creates DNS records in the `eldertree.local` zone when Ingress resources are created.
 
 ## Architecture
 
-**BIND Backend for RFC2136:** Pi-hole uses dnsmasq which doesn't support RFC2136, so a BIND sidecar container handles RFC2136 dynamic DNS updates:
+**BIND9 (standalone):** Pi-hole was removed (#232). Authoritative DNS runs in namespace `bind`:
 
-1. **BIND sidecar** runs alongside Pi-hole, listening on port 5353
-2. **External-DNS** connects to BIND via RFC2136 protocol to create/update DNS records
-3. **dnsmasq** forwards `eldertree.local` queries to BIND for resolution
-4. **BIND** manages the `eldertree.local` zone with RFC2136 updates
+1. **BIND9** listens on port **53** (LoadBalancer VIP `192.168.2.201`)
+2. **External-DNS** connects via RFC2136 to `bind9.bind.svc.cluster.local:53`
+3. **BIND** manages the `eldertree.local` zone with TSIG-authenticated dynamic updates
 
-**Current Status:** ✅ BIND backend configured and ready. External-DNS will automatically create DNS records when Ingress resources are created.
+**Current Status:** External-DNS creates/updates A and TXT records when Ingress resources change.
 
 ## Setup
 
@@ -32,17 +31,12 @@ echo -n "YOUR_SECRET_HERE" | base64
 
 Update `secret.yaml` with the base64-encoded secret.
 
-### 2. BIND Backend Configuration
+### 2. BIND9 Configuration
 
-BIND is configured as a sidecar container in the Pi-hole deployment:
-- Listens on port 5353 for RFC2136 updates
+See [`../bind/README.md`](../bind/README.md) and `helm/bind9/templates/configmap.yaml`:
+- Listens on port 53 for queries and RFC2136 updates
 - Manages `eldertree.local` zone
-- Accepts updates authenticated with TSIG key
-- dnsmasq forwards `eldertree.local` queries to BIND
-
-Configuration files:
-- `pihole/bind-configmap.yaml` - BIND named.conf and zone file
-- `pihole/deployment.yaml` - BIND sidecar container configuration
+- TSIG key from Vault via ExternalSecret `bind-tsig-secret`
 
 ### 3. Deploy External-DNS
 
@@ -85,12 +79,8 @@ External-DNS will automatically create the DNS record.
 
 **DNS records not created:**
 - Check external-dns logs: `kubectl logs -n external-dns deployment/external-dns`
-- Verify TSIG key matches Pi-hole configuration
-- Check Pi-hole accepts RFC2136 updates
-
-**dnsmasq not accepting updates:**
-- Consider BIND backend configuration
-- Or use ConfigMap-based approach (manual/scripted)
+- Verify TSIG key matches BIND9 (`bind-tsig-secret` in namespace `bind`)
+- Check BIND9 accepts RFC2136 updates: `kubectl logs -n bind deployment/bind9`
 
 ## Configuration
 

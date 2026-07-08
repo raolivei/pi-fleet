@@ -18,6 +18,7 @@ spec:
         name: hashicorp
         namespace: flux-system
       interval: 12h
+  releaseName: vault
   values:
     server:
       dev:

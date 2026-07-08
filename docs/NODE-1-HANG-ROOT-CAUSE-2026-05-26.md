@@ -37,11 +37,9 @@ The watchdog daemon has been unable to open `/dev/watchdog` since boot because *
 - Our watchdog daemon checks load average and network connectivity - systemd's doesn't
 - 1-minute timeout is much longer than our configured 15-second timeout
 
-### Why Node-2 and Node-3 Work Correctly
+### Node-2 and Node-3 (corrected May 27, 2026)
 
-Checked node-2 and node-3 - **neither have systemd using the watchdog**. They both have the watchdog daemon successfully running and protecting the system.
-
-**This suggests node-1 has a different systemd configuration or was set up differently.**
+Initial investigation suggested only node-1 had the conflict. **Follow-up showed all three nodes** had `/usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf`, causing `watchdog.service` to show **active** while `alive=[none]` (no `/dev/watchdog` access). Node-1 was fixed May 26; node-2 and node-3 were fixed May 27. Use `scripts/verify-watchdog.sh` — do not trust `systemctl is-active watchdog` alone.
 
 ## Resolution
 

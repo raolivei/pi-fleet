@@ -1,3 +1,7 @@
+# Terraform secrets: source of truth is Vault (secret/pi-fleet/terraform/*).
+# GitHub repo secrets are synced via:
+#   ./scripts/sync-github-terraform-secrets-from-vault.sh --app actions --app dependabot
+# CI runs on GitHub-hosted until ARC runner has kubeconfig (see ARC_RUNNERS.md).
 name: "Terraform"
 
 on:
@@ -72,7 +76,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
@@ -166,6 +170,36 @@ jobs:
           if [ -n "$PLAN_LINE" ]; then
             echo "::notice title=Terraform plan::$PLAN_LINE"
           fi
+
+      - name: Reconcile control.eldertree.xyz DNS (tunnel CNAME)
+        if: |
+          steps.plan.outcome == 'success' &&
+          (
+            (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+            (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+          )
+        working-directory: .
+        run: bash scripts/cloudflare-reconcile-control-dns.sh
+
+      - name: Reconcile bolao.eldertree.xyz DNS (tunnel CNAME)
+        if: |
+          steps.plan.outcome == 'success' &&
+          (
+            (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+            (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+          )
+        working-directory: .
+        run: bash scripts/cloudflare-reconcile-bolao-dns.sh
+
+      - name: Reconcile bolao-claude.eldertree.xyz DNS (tunnel CNAME)
+        if: |
+          steps.plan.outcome == 'success' &&
+          (
+            (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+            (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+          )
+        working-directory: .
+        run: bash scripts/cloudflare-reconcile-bolao-claude-dns.sh
 
       - name: Terraform Apply
         id: apply

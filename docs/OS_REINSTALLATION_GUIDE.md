@@ -487,5 +487,5 @@ After successful reinstallation:
 
 - [Boot Fix Guide](./BOOT_FIX.md) - Fixing boot issues
 - [Backup Strategy](./BACKUP_STRATEGY.md) - Backup procedures
-- [Network Configuration](../NETWORK.md) - DNS and networking
+- [Network Configuration](NETWORK.md) - DNS and networking
 - [Vault Quick Reference](./VAULT_QUICK_REFERENCE.md) - Vault operations

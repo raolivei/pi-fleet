@@ -16,7 +16,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 
 - **kube-vip VIP:** 192.168.2.100 (HA API server)
 - **Traefik VIP:** 192.168.2.200 (Ingress)
-- **Pi-hole DNS:** 192.168.2.201
+- **BIND9 LAN DNS:** 192.168.2.201
 - **Kubeconfig:** `~/.kube/config-eldertree`
 
 ---
@@ -36,7 +36,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 | Vault     | https://vault.eldertree.local | vault         | HA Raft, 3 replicas; unseal after restart   |
 | Grafana   | https://grafana.eldertree.local | observability | admin creds in Vault                        |
 | Prometheus| https://prometheus.eldertree.local | observability |                                            |
-| Pi-hole   | https://pihole.eldertree.local | pihole        | DNS 192.168.2.201                          |
+| BIND9     | (DNS only, no web UI)          | bind          | LAN DNS 192.168.2.201                      |
 | FluxCD    | https://flux.eldertree.local | flux-system   | GitOps, path: clusters/eldertree/           |
 | Eldertree Docs | https://docs.eldertree.xyz | eldertree-docs | GitHub Pages                               |
 
@@ -52,6 +52,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 | NIMA      | https://nima.eldertree.local      | nima      | AI/ML learning                             |
 | OpenClaw  | https://openclaw.eldertree.local  | openclaw  | AI assistant; Telegram: @eldertree_assistant_bot |
 | Elder     | https://elder.eldertree.local     | openclaw  | AI agent sidecar; Swagger: /docs           |
+| Control Center | https://control.eldertree.local | openclaw  | Live ops topology + health (Elder SPA); LAN/Tailscale |
 | Pitanga   | https://pitanga.eldertree.local    | pitanga   | Company site; public: pitanga.cloud         |
 
 ---
@@ -103,7 +104,6 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 
 - `secret/canopy/*`, `secret/swimto/*`, `secret/journey/*`, `secret/nima/*`, `secret/pitanga/*`
 - `secret/monitoring/grafana` — Grafana admin
-- `secret/pi-fleet/pihole/webpassword` — Pi-hole admin
 
 ---
 
@@ -121,7 +121,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 | Issue          | Action                                                                 |
 | -------------- | ---------------------------------------------------------------------- |
 | Vault sealed   | `./scripts/operations/unseal-vault.sh`                                 |
-| DNS not resolving | Check Pi-hole: `dig @192.168.2.201 google.com`                      |
+| DNS not resolving | Check BIND9: `dig @192.168.2.201 grafana.eldertree.local +short`   |
 | Pods not starting | `kubectl describe pod <pod>`, check resources and image pull       |
 | Image pull error | Verify ARM64; check GHCR token                                       |
 | Service unreachable | `kubectl get ingress -A`; check Traefik                             |

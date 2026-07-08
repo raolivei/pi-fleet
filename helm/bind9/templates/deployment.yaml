@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bind9.fullname" . }}
+  labels:
+    {{- include "bind9.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  strategy:
+    type: {{ .Values.strategy }}
+  selector:
+    matchLabels:
+      {{- include "bind9.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "bind9.selectorLabels" . | nindent 8 }}
+    spec:
+      dnsPolicy: ClusterFirst
+      initContainers:
+        - name: bind-init
+          image: "{{ .Values.init.image.repository }}:{{ .Values.init.image.tag }}"
+          imagePullPolicy: {{ .Values.init.image.pullPolicy }}
+          command: ["sh", "-c"]
+          args:
+            - |
+              cp /etc/named/eldertree.local.zone /var/named/eldertree.local.zone
+              chmod 644 /var/named/eldertree.local.zone
+              TSIG_SECRET=$(cat /etc/bind-tsig/tsig-secret)
+              sed "s|TSIG_SECRET_PLACEHOLDER|${TSIG_SECRET}|g" /etc/named/named.conf > /var/named/named.conf
+              chmod 644 /var/named/named.conf
+          volumeMounts:
+            - name: bind-config
+              mountPath: /etc/named
+            - name: bind-data
+              mountPath: /var/named
+            - name: bind-tsig-secret
+              mountPath: /etc/bind-tsig
+              readOnly: true
+      containers:
+        - name: bind
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "-4"
+            - "-c"
+            - "/var/named/named.conf"
+            - "-f"
+          ports:
+            - name: dns-udp
+              containerPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+          volumeMounts:
+            - name: bind-config
+              mountPath: /etc/named
+            - name: bind-data
+              mountPath: /var/named
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: 53
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 53
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+      volumes:
+        - name: bind-config
+          configMap:
+            name: {{ include "bind9.fullname" . }}-config
+        - name: bind-data
+          emptyDir: {}
+        - name: bind-tsig-secret
+          secret:
+            secretName: {{ .Values.tsig.secretName }}

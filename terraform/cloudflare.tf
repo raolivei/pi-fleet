@@ -330,25 +330,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
       service  = "http://10.43.23.214:80"
     }
 
-    # Visage AI headshots routes
-    ingress_rule {
-      hostname = "visage.eldertree.xyz"
-      path     = "/"
-      service  = "http://10.43.23.214:80"
-    }
-
-    ingress_rule {
-      hostname = "visage.eldertree.xyz"
-      path     = "/api/*"
-      service  = "http://10.43.23.214:80"
-    }
-
-    ingress_rule {
-      hostname = "visage.eldertree.xyz"
-      path     = "/health"
-      service  = "http://10.43.23.214:80"
-    }
-
     # Pitanga website routes
     ingress_rule {
       hostname = "pitanga.cloud"
@@ -419,6 +400,28 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
       service  = "http://10.43.23.214:80"
     }
 
+
+    # Control Center (Elder ops console)
+    ingress_rule {
+      hostname = "control.eldertree.xyz"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    # Bolão dos Guerreiros (WC 2026 prediction pool)
+    ingress_rule {
+      hostname = "bolao.eldertree.xyz"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
+    # Bolão Claude scratch (design variants)
+    ingress_rule {
+      hostname = "bolao-claude.eldertree.xyz"
+      path     = "/"
+      service  = "http://10.43.23.214:80"
+    }
+
     # Catch-all rule (must be last)
     ingress_rule {
       service = "http_status:404"
@@ -439,6 +442,20 @@ resource "cloudflare_record" "canopy_eldertree_xyz_tunnel" {
   comment         = "canopy.eldertree.xyz - managed by Terraform via Cloudflare Tunnel"
 }
 
+
+# DNS CNAME record for control.eldertree.xyz pointing to tunnel
+resource "cloudflare_record" "control_eldertree_xyz_tunnel" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "control"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1
+  proxied         = true
+  allow_overwrite = true
+  comment         = "control.eldertree.xyz - Eldertree Control Center via Cloudflare Tunnel"
+}
+
 # DNS CNAME record for swimto.eldertree.xyz pointing to tunnel
 # This creates the DNS record that routes traffic to the tunnel
 resource "cloudflare_record" "swimto_eldertree_xyz_tunnel" {
@@ -453,18 +470,30 @@ resource "cloudflare_record" "swimto_eldertree_xyz_tunnel" {
   comment         = "swimto.eldertree.xyz - managed by Terraform via Cloudflare Tunnel"
 }
 
-# DNS CNAME record for visage.eldertree.xyz pointing to tunnel
-# Visage AI headshot generator - external access via Cloudflare Tunnel
-resource "cloudflare_record" "visage_eldertree_xyz_tunnel" {
+# DNS CNAME record for bolao.eldertree.xyz pointing to tunnel
+resource "cloudflare_record" "bolao_eldertree_xyz_tunnel" {
   count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.cloudflare_zone_id != "" ? 1 : 0
   zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
-  name            = "visage"
+  name            = "bolao"
   content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
   type            = "CNAME"
-  ttl             = 1    # Must be 1 when proxied=true
-  proxied         = true # Enable Cloudflare proxy (orange cloud) for automatic HTTPS
+  ttl             = 1
+  proxied         = true
   allow_overwrite = true
-  comment         = "visage.eldertree.xyz - Visage AI headshots via Cloudflare Tunnel - managed by Terraform"
+  comment         = "bolao.eldertree.xyz - Bolão dos Guerreiros via Cloudflare Tunnel"
+}
+
+# DNS CNAME record for bolao-claude.eldertree.xyz pointing to tunnel
+resource "cloudflare_record" "bolao_claude_eldertree_xyz_tunnel" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "bolao-claude"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1
+  proxied         = true
+  allow_overwrite = true
+  comment         = "bolao-claude.eldertree.xyz - Bolão Claude scratch via Cloudflare Tunnel"
 }
 
 # DNS CNAME record for blog.eldertree.xyz pointing to GitHub Pages

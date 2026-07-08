@@ -4,8 +4,8 @@ metadata:
   name: elder
   namespace: openclaw
 spec:
-  # Same image as Grove (app renamed to Elder; image not yet published as elder)
-  image: ghcr.io/raolivei/grove
+  # Elder Control Center + API (published as ghcr.io/raolivei/elder)
+  image: ghcr.io/raolivei/elder
   interval: 30m
   secretRef:
     name: ghcr-secret
