@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Fixed
+
+- **`build-openclaw-arm64.yml` timing out** — the workflow builds on `ubuntu-latest` under QEMU emulation (no arm64 CI runner for pi-fleet yet). Upstream OpenClaw's `scripts/write-cli-startup-metadata.ts` hardcodes a 120s timeout for rendering CLI help text (spawns a subprocess per command); under emulation a single build phase (`tsdown`) has taken 25+ minutes, so 120s reliably timed out (`Failed to render source browser help: timed out after 120000ms`). No env override exists upstream, so `clusters/eldertree/openclaw/docker/Dockerfile` now `sed`-patches both render timeout constants to 600s right after `git clone`, with a `grep` verification so the patch fails loudly (not silently) if upstream renames the constants.
+
 ### Changed
 
 - **bolao + bolao-claude (scale-down)** — web/postgres `replicas: 0`, cronjobs `suspend: true`, ARC runners `maxRunners: 0` (namespaces retained; PVCs not deleted).

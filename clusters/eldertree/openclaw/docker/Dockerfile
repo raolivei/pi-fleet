@@ -24,6 +24,20 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
+# `pnpm build` renders CLI help text by spawning a subprocess per command; this
+# repo builds under QEMU emulation (no arm64 CI runner yet -- see workflow
+# comment), which is ~10-20x slower than native. Upstream hardcodes a 120s
+# timeout for these renders (scripts/write-cli-startup-metadata.ts) with no
+# env override; under emulation a single build phase here has taken 25+
+# minutes, so 120s reliably times out. Raise to 10 minutes -- generous, but
+# still bounded so a genuine hang doesn't run forever.
+RUN sed -i \
+    -e 's/^const ROOT_HELP_RENDER_TIMEOUT_MS = 120_000;/const ROOT_HELP_RENDER_TIMEOUT_MS = 600_000;/' \
+    -e 's/^const BROWSER_HELP_RENDER_TIMEOUT_MS = 120_000;/const BROWSER_HELP_RENDER_TIMEOUT_MS = 600_000;/' \
+    scripts/write-cli-startup-metadata.ts && \
+    grep -q 'ROOT_HELP_RENDER_TIMEOUT_MS = 600_000' scripts/write-cli-startup-metadata.ts && \
+    grep -q 'BROWSER_HELP_RENDER_TIMEOUT_MS = 600_000' scripts/write-cli-startup-metadata.ts
+
 RUN pnpm install --frozen-lockfile
 
 RUN OPENCLAW_A2UI_SKIP_MISSING=1 pnpm build
