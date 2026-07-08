@@ -25,7 +25,7 @@ spec:
       personal-website:
         image:
           repository: ghcr.io/raolivei/personal-website
-          tag: v0.2.5 # {"$imagepolicy": "personal-website:personal-website-policy:tag"}
+          tag: v0.2.19 # {"$imagepolicy": "personal-website:personal-website-policy:tag"}
           pullPolicy: IfNotPresent
         port: 80
         podSecurityContext:

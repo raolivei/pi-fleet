@@ -26,4 +26,10 @@ data:
         192.168.2.200 elder.eldertree.local
         fallthrough
       }
+      # fallthrough needs a next plugin, else unlisted *.eldertree.local names
+      # (and search-suffixed public lookups like registry.npmjs.org.eldertree.local)
+      # error with "plugin/hosts: no next plugin found", flooding errors and
+      # crash-looping CoreDNS. Forward the fallthrough to BIND9 (bind9 svc
+      # ClusterIP), which is authoritative for eldertree.local and NXDOMAINs junk.
+      forward . 10.43.127.139
     }
