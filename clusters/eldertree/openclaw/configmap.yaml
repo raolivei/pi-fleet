@@ -77,10 +77,10 @@ data:
               "openrouter/meta-llama/llama-4-scout"
             ]
           },
-          "contextTokens": 80000,
+          "contextTokens": 24000,
           "compaction": {
             "mode": "safeguard",
-            "reserveTokensFloor": 24000,
+            "reserveTokensFloor": 8192,
             "model": "ollama-lan/qwen2.5:32b",
             "memoryFlush": {
               "enabled": false
@@ -150,7 +150,7 @@ data:
               {
                 "id": "qwen2.5:3b",
                 "name": "Qwen 2.5 3B (Cluster fallback, Pi5 CPU)",
-                "contextWindow": 16384,
+                "contextWindow": 32768,
                 "maxTokens": 2048
               }
             ]
