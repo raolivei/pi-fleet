@@ -12,6 +12,7 @@ resources:
   - swimto-runners-helmrelease.yaml
   - personal-website-runners-helmrelease.yaml
   - northwaysignal-website-runners-helmrelease.yaml
+  - pitanga-website-runners-helmrelease.yaml
   - nima-runners-helmrelease.yaml
   - eldertree-docs-runners-helmrelease.yaml
   # - bolao-runners-helmrelease.yaml # DECOMMISSIONED 2026-07-07
