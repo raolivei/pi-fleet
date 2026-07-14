@@ -19,8 +19,9 @@ RUN apt-get update && \
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/ && \
-    # Clone OpenClaw
-    git clone --depth 1 https://github.com/openclaw/openclaw.git . && \
+    # Clone OpenClaw — pin to a known-good release tag.
+    # To upgrade: bump the tag, commit, and trigger build-openclaw-arm64.yml.
+    git clone --depth 1 --branch 2026.6.11 https://github.com/openclaw/openclaw.git . && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
