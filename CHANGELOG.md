@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
+- **OpenClaw Dockerfile pinned to upstream tag `2026.6.11`** — previously `git clone --depth 1` with no branch/tag, meaning every weekly build silently pulled upstream HEAD. Now pinned to `2026.6.11` (the version confirmed running, commit `c69724e`). To upgrade: bump the `--branch` tag in `clusters/eldertree/openclaw/docker/Dockerfile`, commit, and trigger or wait for the weekly `build-openclaw-arm64.yml` run.
+
 - **OpenClaw image automation** — Flux now tracks `ghcr.io/raolivei/openclaw` and auto-deploys new builds without manual intervention. `build-openclaw-arm64.yml` already pushes `YYYYMMDD` date tags on every build; new `ImageRepository` + `ImagePolicy` (numerical ascending, filter `^[0-9]{8}$`) scan for the latest date tag hourly. The existing `elder-image-update.yaml` (path `./clusters/eldertree/openclaw`, strategy `Setters`) picks up the new `$imagepolicy` marker on the HelmRelease `openclaw.image.tag` field automatically. When a new weekly build lands, Flux commits the updated tag to `main` and redeploys within ~3 minutes (now that Flux intervals are fixed in PR #285).
 
 ### Fixed
