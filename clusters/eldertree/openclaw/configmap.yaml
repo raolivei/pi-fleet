@@ -164,7 +164,7 @@ data:
               {
                 "id": "qwen2.5:3b",
                 "name": "Qwen 2.5 3B (Cluster fallback, Pi5 CPU)",
-                "contextWindow": 32768,
+                "contextWindow": 16384,
                 "maxTokens": 2048
               }
             ]
