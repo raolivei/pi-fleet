@@ -76,16 +76,13 @@ spec:
             - name: OLLAMA_NUM_PARALLEL
               value: "1"
             - name: OLLAMA_CONTEXT_LENGTH
-              value: "32768" # match provider contextWindow in configmap.yaml
+              value: "16384" # 0.14 MB/token × 16384 = ~2.3 GB KV; fits within 5Gi limit (2 GB weights + 2.3 GB KV + headroom)
           volumeMounts:
             - name: ollama-models
               mountPath: /root/.ollama
           resources:
-            # Measured working set serving qwen2.5:3b @16k ctx = ~2.71Gi (weights
-            # + KV pre-allocated at load). Context raised to 32768 to match
-            # configmap.yaml's contextWindow (KV cache scales ~linearly with
-            # context, so peak is now ~3.3-3.5Gi) -- bumped request/limit for
-            # real headroom rather than re-verifying the exact new peak live.
+            # qwen2.5:3b weights ~2 GB + KV cache at 16384 ctx ~2.3 GB = ~4.3 GB peak.
+            # 5 Gi limit gives ~700 MB headroom for runtime overhead.
             requests: {cpu: "250m", memory: "2.5Gi"}
             limits: {cpu: "3500m", memory: "5Gi"}
           # httpGet liveness — Ollama returns "Ollama is running" on /.
