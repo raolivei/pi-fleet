@@ -3,6 +3,9 @@ kind: Kustomization
 # To disable a deployment, simply comment out its line below with '#'
 # Example: To disable nima, change '  - nima' to '  # - nima'
 resources:
+  # Flux self-management (intervals, branch — must be first so Flux updates itself before apps)
+  - flux-system
+
   # Infrastructure components (split by function for better organization)
   - core-infrastructure # TLS certificates (cert-manager, issuers)
   - secrets-management # Secrets storage and syncing (vault, external-secrets)
