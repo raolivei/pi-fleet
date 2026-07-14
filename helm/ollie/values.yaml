@@ -5,6 +5,14 @@ global:
 audio:
   enabled: false
 
+# Ingress (ollie.eldertree.local) — inert until enabled=true
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  tls: []
+
 # Mac Ollama via Tailscale (override per environment)
 ollama:
   externalUrl: "http://host.docker.internal:11434"
