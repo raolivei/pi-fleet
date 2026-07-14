@@ -1,4 +1,5 @@
-# Bootstrap base from flux; intervals tuned in-repo (30m) to align reconcile frequency.
+# Managed by Flux self-reconciliation (flux-system included in clusters/eldertree/kustomization.yaml).
+# Changes here take effect on the next reconcile cycle after merge.
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
@@ -6,7 +7,7 @@ metadata:
   name: flux-system
   namespace: flux-system
 spec:
-  interval: 30m
+  interval: 1m
   ref:
     branch: main
   secretRef:
@@ -19,7 +20,7 @@ metadata:
   name: flux-system
   namespace: flux-system
 spec:
-  interval: 30m
+  interval: 2m
   path: ./clusters/eldertree
   prune: true
   sourceRef:
