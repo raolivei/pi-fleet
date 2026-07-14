@@ -78,7 +78,7 @@ data:
               "openrouter/meta-llama/llama-4-scout"
             ]
           },
-          "contextTokens": 30000,
+          "contextTokens": 60000,
           "compaction": {
             "mode": "safeguard",
             "reserveTokens": 8500,
@@ -126,7 +126,7 @@ data:
               {
                 "id": "qwen3.6:35b-mlx",
                 "name": "Qwen 3.6 35B MLX (Local Mac, primary, LAN)",
-                "contextWindow": 32768,
+                "contextWindow": 65536,
                 "maxTokens": 8192
               },
               {
@@ -145,7 +145,7 @@ data:
               {
                 "id": "qwen3.6:35b-mlx",
                 "name": "Qwen 3.6 35B MLX (Local Mac, primary, Tailscale)",
-                "contextWindow": 32768,
+                "contextWindow": 65536,
                 "maxTokens": 8192
               },
               {
