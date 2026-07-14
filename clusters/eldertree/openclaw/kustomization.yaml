@@ -20,5 +20,7 @@ resources:
   - helmrelease.yaml
   - elder-image-repo.yaml
   - elder-image-policy.yaml
+  - openclaw-image-repo.yaml
+  - openclaw-image-policy.yaml
   - elder-image-update.yaml
   - control-cloudflare-origin-cert-external.yaml

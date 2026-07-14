@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Added
+
+- **OpenClaw image automation** — Flux now tracks `ghcr.io/raolivei/openclaw` and auto-deploys new builds without manual intervention. `build-openclaw-arm64.yml` already pushes `YYYYMMDD` date tags on every build; new `ImageRepository` + `ImagePolicy` (numerical ascending, filter `^[0-9]{8}$`) scan for the latest date tag hourly. The existing `elder-image-update.yaml` (path `./clusters/eldertree/openclaw`, strategy `Setters`) picks up the new `$imagepolicy` marker on the HelmRelease `openclaw.image.tag` field automatically. When a new weekly build lands, Flux commits the updated tag to `main` and redeploys within ~3 minutes (now that Flux intervals are fixed in PR #285).
+
 ### Fixed
 
 - **Flux not auto-reconciling on merge** — `clusters/eldertree/flux-system/gotk-sync.yaml` (which sets the GitRepository and Kustomization intervals) was never included in `clusters/eldertree/kustomization.yaml`, so the file existed in git but was **never applied** by Flux. The live cluster was running the original bootstrap values: GitRepository `interval: 1m`, Kustomization `interval: 10m` (and wrong `branch: flux-bootstrap`). Changes to intervals or branch in `gotk-sync.yaml` had zero effect; any PR merged required a manual `annotate --overwrite` force-reconcile to land within <10 minutes. Fix: added `- flux-system` to `clusters/eldertree/kustomization.yaml` (listed first so Flux updates its own schedule before applying apps), set GitRepository `interval: 1m`, Kustomization `interval: 2m`, branch `main`. After this merges + one final force-reconcile, all future PRs will land within ~3 minutes automatically.

@@ -1,0 +1,15 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: openclaw
+  namespace: openclaw
+spec:
+  imageRepositoryRef:
+    name: openclaw
+  # build-openclaw-arm64.yml pushes YYYYMMDD tags on every build.
+  # Numerical ascending picks the most recent date.
+  filterTags:
+    pattern: "^[0-9]{8}$"
+  policy:
+    numerical:
+      order: asc
