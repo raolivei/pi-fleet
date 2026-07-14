@@ -16,6 +16,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **OpenClaw qwen3.6:35b-mlx context window raised to 65536** — `contextWindow` 32768→65536 (both ollama-lan and ollama-tailscale entries), `contextTokens` 30000→60000. Root cause: tool-heavy tasks (e.g. `kubectl logs`) return large outputs that pushed conversations past 31830 tokens — leaving only 938 tokens of headroom and making compaction impossible (needs the full prompt to fit in context). With 65536: usable budget = 60000 − 8500 = 51500 tokens. Requires `OLLAMA_NUM_CTX=65536` on Mac Ollama (see below).
+
 - **OpenClaw primary model → qwen3.6:35b-mlx (Mac GPU)** — switched from `qwen2.5:32b` to `qwen3.6:35b-mlx` (MLX-optimized Apple Silicon build, 21GB, already on Mac) as primary and compaction model. Fallback chain: `ollama-lan/qwen3.6:35b-mlx` → `ollama-tailscale/qwen3.6:35b-mlx` → `ollama-lan/qwen2.5:32b` → `ollama-cluster/qwen2.5:3b` → openrouter/\*.
 
 - **bolao + bolao-claude (scale-down)** — web/postgres `replicas: 0`, cronjobs `suspend: true`, ARC runners `maxRunners: 0` (namespaces retained; PVCs not deleted).
