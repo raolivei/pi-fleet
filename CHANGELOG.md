@@ -16,6 +16,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **OpenClaw primary model → qwen3.6:35b-mlx (Mac GPU)** — switched from `qwen2.5:32b` to `qwen3.6:35b-mlx` (MLX-optimized Apple Silicon build, 21GB, already on Mac) as primary and compaction model. Fallback chain: `ollama-lan/qwen3.6:35b-mlx` → `ollama-tailscale/qwen3.6:35b-mlx` → `ollama-lan/qwen2.5:32b` → `ollama-cluster/qwen2.5:3b` → openrouter/\*.
+
 - **bolao + bolao-claude (scale-down)** — web/postgres `replicas: 0`, cronjobs `suspend: true`, ARC runners `maxRunners: 0` (namespaces retained; PVCs not deleted).
 
 ### Removed
