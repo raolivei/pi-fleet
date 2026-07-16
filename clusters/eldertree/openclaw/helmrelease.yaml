@@ -127,6 +127,10 @@ spec:
           - name: skills
             mountPath: /home/node/.openclaw/workspace/skills
             readOnly: true
+          - name: workspace-files
+            mountPath: /home/node/.openclaw/workspace/TOOLS.md
+            subPath: TOOLS.md
+            readOnly: true
         volumes:
           - name: openclaw-data
             persistentVolumeClaim:
@@ -140,6 +144,9 @@ spec:
           - name: skills
             configMap:
               name: openclaw-skills
+          - name: workspace-files
+            configMap:
+              name: openclaw-workspace-files
       elder:
         image:
           repository: ghcr.io/raolivei/elder

@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-workspace-files
+  namespace: openclaw
+  labels:
+    app: openclaw
+data:
+  TOOLS.md: |
+    # TOOLS.md - Environment Notes
+
+    ## How to Call Skills
+
+    Skills in `skills/*.md` are **NOT** function-call tools registered in your
+    tool list. They are HTTP calls you make using your `web_fetch` tool.
+
+    When you see a skill like:
+    ```
+    ### elder_create_pr
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/code/pr
+    Body: {"repo": "swimTO", "branch": "...", ...}
+    ```
+    That means: call `web_fetch` with method POST and that URL.
+    `elder_create_pr` is a label for the action, NOT a function you call directly.
+
+    **If you say "I don't have elder_create_pr in my skill set" — you are wrong.**
+    Use `web_fetch` with the URL shown in the skill definition.
+
+    ## Elder API
+
+    Base URL: `http://elder.openclaw.svc.cluster.local:8000`
+    Elder handles GitHub App auth internally. You do NOT need a PAT, gh CLI, or
+    any token. Never use exec for Git/GitHub operations.
+
+    ## PR Workflow (elder_edit_file → elder_create_pr)
+
+    1. `elder_edit_file`
+       → `web_fetch POST http://elder.openclaw.svc.cluster.local:8000/api/code/edit`
+       → Body: `{"repo": "...", "path": "...", "content": "...", "commit_message": "..."}`
+       → Creates branch, commits, pushes (returns approval_id — requires approval)
+
+    2. `elder_create_pr`
+       → `web_fetch POST http://elder.openclaw.svc.cluster.local:8000/api/code/pr`
+       → Body: `{"repo": "...", "branch": "elder/...", "title": "...", "body": "..."}`
+       → Opens PR from that branch (requires approval)
+
+    ## Vault
+
+    HashiCorp Vault is at `http://vault.vault.svc.cluster.local:8200`
+    Use exec to check status:
+    ```bash
+    curl -s http://vault.vault.svc.cluster.local:8200/v1/sys/health
+    ```
+    For secret retrieval, Elder's API handles Vault auth internally.
+
+    ## Environment
+
+    | Variable | Value |
+    |----------|-------|
+    | ELDER_URL | http://elder.openclaw.svc.cluster.local:8000 |
+    | SWIMTO_API_URL | http://swimto-api.swimto.svc.cluster.local:8000 |
+    | VAULT_ADDR | http://vault.vault.svc.cluster.local:8200 |
