@@ -43,7 +43,7 @@ data:
 
     ## Implementation
 
-    The SwimTO API is available at: ${SWIMTO_API_URL}
+    The SwimTO API is available at: http://swimto-api.swimto.svc.cluster.local:8000
 
     Endpoints:
     - GET /api/pools - List all pools
@@ -109,12 +109,31 @@ data:
     kubectl get ingress -n swimto
     ```
 
+    ## HashiCorp Vault
+
+    Vault is deployed in the `vault` namespace.
+    Internal API: `http://vault.vault.svc.cluster.local:8200`
+
+    Check health (via exec):
+    ```bash
+    curl -s http://vault.vault.svc.cluster.local:8200/v1/sys/health | head -c 200
+    ```
+
+    Check seal status:
+    ```bash
+    curl -s http://vault.vault.svc.cluster.local:8200/v1/sys/seal-status
+    ```
+
+    For secret retrieval, use Elder's API — Elder handles the Vault token internally.
+    Do NOT try to read Vault secrets directly with exec; Elder's skill endpoints
+    (elder_*, gmail_*) already have the token and handle auth.
+
     ## Namespaces in Eldertree
 
     - **swimto**: SwimTO pool schedule app (Rafa's project)
     - **canopy**: Personal finance dashboard
     - **openclaw**: This is where you (Elder) live!
-    - **vault**: HashiCorp Vault for secrets
+    - **vault**: HashiCorp Vault for secrets (`http://vault.vault.svc.cluster.local:8200`)
     - **monitoring**: Prometheus + Grafana
     - **longhorn-system**: Distributed storage
     - **flux-system**: GitOps controller
@@ -199,6 +218,17 @@ data:
     monitor Kubernetes, trigger deployments, and plan project features.
     Elder has its own GitHub App identity ("Elder [bot]").
 
+    ## How to Call Skills
+
+    Skills below describe HTTP calls you make using your `web_fetch` tool.
+    The Elder API base URL is: **http://elder.openclaw.svc.cluster.local:8000**
+
+    Example — `elder_create_pr`:
+      `web_fetch POST http://elder.openclaw.svc.cluster.local:8000/api/code/pr`
+
+    Elder handles GitHub App auth internally — you do NOT need a PAT, gh CLI,
+    or any GitHub token. Never use exec or gh for Git/GitHub operations.
+
     **Auto-approved** operations run immediately. **Approval-required** operations
     return an approval ID — ask the user to confirm before executing.
 
@@ -207,12 +237,12 @@ data:
     ### elder_list_repos
     List all project repos Elder has cloned. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/code/repos
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/code/repos
 
     ### elder_search_code
     Search code across all repos using ripgrep. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/code/search
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/code/search
     Body: {"query": "search term", "repo": "optional-repo-name", "file_pattern": "*.py", "max_results": 50}
 
     Example: "Search for authentication in SwimTO"
@@ -220,17 +250,17 @@ data:
     ### elder_read_file
     Read contents of a file from a repo. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/code/read?repo=swimTO&path=backend/main.py
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/code/read?repo=swimTO&path=backend/main.py
 
     ### elder_tree
     Get directory structure of a repo. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/code/tree?repo=swimTO&path=backend
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/code/tree?repo=swimTO&path=backend
 
     ### elder_edit_file
     Edit a file: creates a branch, commits, and pushes. (approval required)
 
-    HTTP: POST ${ELDER_URL}/api/code/edit
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/code/edit
     Body: {"repo": "swimTO", "path": "backend/main.py", "content": "new content", "commit_message": "fix: description"}
 
     Returns an approval_id. Ask the user to approve before executing.
@@ -238,135 +268,135 @@ data:
     ### elder_create_pr
     Create a pull request as Elder [bot]. (approval required)
 
-    HTTP: POST ${ELDER_URL}/api/code/pr
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/code/pr
     Body: {"repo": "swimTO", "branch": "elder/fix-123", "title": "fix: description", "body": "PR body"}
 
     ### elder_list_issues
     List GitHub issues across one or all repos. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/github/issues/list
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/github/issues/list
     Body: {"repo": "swimTO", "state": "open", "max_results": 20}
 
     ### elder_create_issue
     Create a GitHub issue as Elder [bot]. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/github/issues
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/github/issues
     Body: {"repo": "swimTO", "title": "feat: new feature", "body": "Description", "labels": ["enhancement"]}
 
     ### elder_trigger_workflow
     Trigger a GitHub Actions workflow. (approval required)
 
-    HTTP: POST ${ELDER_URL}/api/github/trigger-workflow
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/github/trigger-workflow
     Body: {"repo": "swimTO", "workflow": "build-and-push.yml", "ref": "main"}
 
     ### elder_list_pods
     List Kubernetes pods. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/k8s/pods?namespace=swimto
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/k8s/pods?namespace=swimto
 
     ### elder_pod_logs
     Get pod logs. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/k8s/logs
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/k8s/logs
     Body: {"namespace": "swimto", "pod": "swimto-api-xxx", "tail_lines": 100}
 
     ### elder_events
     List cluster events. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/k8s/events?namespace=swimto
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/k8s/events?namespace=swimto
 
     ### elder_cluster_health
     Get cluster health summary with FluxCD status. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/k8s/health
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/k8s/health
 
     ### elder_scale
     Scale a deployment. (approval required)
 
-    HTTP: POST ${ELDER_URL}/api/k8s/scale
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/k8s/scale
     Body: {"namespace": "swimto", "deployment": "swimto-api", "replicas": 2}
 
     ### elder_flux_reconcile
     Trigger FluxCD reconciliation. (approval required)
 
-    HTTP: POST ${ELDER_URL}/api/k8s/flux/reconcile
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/k8s/flux/reconcile
     Body: {"kustomization": "flux-system"}
 
     ### elder_project_status
     Get status of all managed projects (versions, health, last commits). (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/projects/status
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/projects/status
 
     ### elder_roadmap
     Aggregate TODO/roadmap items from all projects. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/projects/roadmap
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/projects/roadmap
 
     ### elder_plan_feature
     Generate a feature plan and optionally create GitHub issues. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/projects/plan
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/projects/plan
     Body: {"project": "swimTO", "feature": "Push notifications", "description": "Add web push...", "create_issues": true}
 
     ### elder_run_tests
     Trigger test workflow. (approval required)
 
-    HTTP: POST ${ELDER_URL}/api/tests/run?repo=swimTO&workflow=python-ci.yml
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/tests/run?repo=swimTO&workflow=python-ci.yml
 
     ### elder_test_status
     Get latest test run status. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/tests/status?repo=swimTO
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/tests/status?repo=swimTO
 
     ### elder_pending_approvals
     List pending approval requests. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/approvals/pending
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/approvals/pending
 
     ### elder_approve
     Approve a pending action after user confirms. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/approvals/{id}/approve
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/approvals/{id}/approve
 
     ### elder_reject
     Reject a pending action. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/approvals/{id}/reject
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/approvals/{id}/reject
 
     ### elder_best_answer
     Get the best possible answer by querying Gemini, Groq, and Ollama in parallel, then having
     a judge select/synthesize the best response. Use for important questions or double-checking. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/llm/best-answer
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/llm/best-answer
     Body: {"prompt": "user question", "system_prompt": "optional context", "providers": ["gemini", "groq", "ollama"], "timeout_seconds": 30}
 
     ### elder_llm_providers
     Check which LLM providers (Gemini, Groq, Ollama) are currently available. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/llm/providers
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/llm/providers
 
     ### elder_upgrade
     Trigger OpenClaw or Elder image rebuild via GitHub Actions. Requires approval. (approval required)
 
-    HTTP: POST ${ELDER_URL}/api/meta/upgrade
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/meta/upgrade
     Body: {"component": "openclaw" or "elder", "version": "latest"}
 
     ### elder_version
     Get current versions of Elder and OpenClaw. (auto-approved)
 
-    HTTP: GET ${ELDER_URL}/api/meta/version
+    HTTP: GET http://elder.openclaw.svc.cluster.local:8000/api/meta/version
 
     ### elder_store_insight
     Store something you learned from this interaction. Call this when you learn useful info
     from a user question, your answer, or a resolved issue. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/memory/store
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/memory/store
     Body: {"topic": "short-label", "content": "what was learned", "source": "interaction"}
 
     ### elder_recall_insights
     Recall stored insights before answering. Use to include relevant learned context. (auto-approved)
 
-    HTTP: POST ${ELDER_URL}/api/memory/recall
+    HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/memory/recall
     Body: {"query": "optional search term", "topic": "optional exact topic", "limit": 20}
 
     ## Learning (Always Learn)
