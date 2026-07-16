@@ -63,6 +63,16 @@ data:
           "allowFrom": {
             "telegram": ["*"]
           }
+        },
+        "media": {
+          "image": {
+            "models": [
+              { "provider": "ollama-lan",       "model": "minicpm-v:8b"  },
+              { "provider": "ollama-tailscale",  "model": "minicpm-v:8b"  },
+              { "provider": "ollama-lan",        "model": "qwen2.5vl:7b" },
+              { "provider": "ollama-tailscale",  "model": "qwen2.5vl:7b" }
+            ]
+          }
         }
       },
       "agents": {
@@ -137,7 +147,14 @@ data:
               },
               {
                 "id": "minicpm-v:8b",
-                "name": "MiniCPM-V 8B (Local Mac, vision, LAN)",
+                "name": "MiniCPM-V 8B (Local Mac, vision primary, LAN)",
+                "contextWindow": 32768,
+                "maxTokens": 2048,
+                "input": ["image", "text"]
+              },
+              {
+                "id": "qwen2.5vl:7b",
+                "name": "Qwen2.5-VL 7B (Local Mac, vision fallback, LAN)",
                 "contextWindow": 32768,
                 "maxTokens": 2048,
                 "input": ["image", "text"]
@@ -163,7 +180,14 @@ data:
               },
               {
                 "id": "minicpm-v:8b",
-                "name": "MiniCPM-V 8B (Local Mac, vision, Tailscale)",
+                "name": "MiniCPM-V 8B (Local Mac, vision primary, Tailscale)",
+                "contextWindow": 32768,
+                "maxTokens": 2048,
+                "input": ["image", "text"]
+              },
+              {
+                "id": "qwen2.5vl:7b",
+                "name": "Qwen2.5-VL 7B (Local Mac, vision fallback, Tailscale)",
                 "contextWindow": 32768,
                 "maxTokens": 2048,
                 "input": ["image", "text"]
