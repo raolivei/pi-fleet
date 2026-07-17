@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  # Secrets (must exist before HelmRelease)
+  - ghcr-secret-external.yaml
+  - swimto-dev-secrets-external.yaml
+  # Infrastructure (stateful, kept outside Helm)
+  - postgres-pvc.yaml
+  - postgres-deployment.yaml
+  - redis-deployment.yaml
+  # Helm-managed app (api, web, configmap, ingress, middleware)
+  - helmrelease.yaml
+  # CronJobs
+  - cronjob-refresh.yaml
+  # Image automation (Flux requirement: stays separate)
+  - image-repositories.yaml
+  - image-policies.yaml
+  - image-update-automation.yaml
