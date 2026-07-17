@@ -25,7 +25,8 @@ resources:
   - canopy # Personal finance dashboard
   # - bolao # Bolão — DECOMMISSIONED 2026-07-07 (WC pool no longer needed)
   # - bolao-claude # Bolão Claude scratch — DECOMMISSIONED 2026-07-07
-  - swimto # Toronto pool schedules
+  - swimto # Toronto pool schedules (prod — semver tags, swimto.app)
+  - swimto-dev # SwimTO dev environment (build-timestamp tags, swimto-dev.eldertree.local)
   - pitanga/flux-kustomization.yaml # Pitanga Cloud (managed by its own Flux Kustomization)
   - ollie # Workspace assistant with RAG and LLM
   # - nima          # AI/ML learning project (DISABLED - not needed)

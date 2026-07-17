@@ -1,0 +1,147 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: swimto-dev
+  namespace: swimto-dev
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm/eldertree-app
+      version: "0.1.3"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 12h
+  targetNamespace: swimto-dev
+  releaseName: swimto-dev
+  upgrade:
+    cleanupOnFail: true
+  values:
+    # ============================================================
+    # SwimTO Dev — mirrors prod with 1 replica, local ingress only
+    # Tracks build-<timestamp>-<sha> tags (auto-deploys every main push)
+    # ============================================================
+    components:
+      swimto-api:
+        replicas: 1
+        strategy: RollingUpdate
+        image:
+          repository: ghcr.io/raolivei/swimto-api
+          tag: latest # {"$imagepolicy": "swimto-dev:swimto-api-dev-policy:tag"}
+          pullPolicy: Always
+        port: 8000
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: swimto-dev-secrets
+                key: DATABASE_URL
+          - name: REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: swimto-dev-secrets
+                key: REDIS_URL
+          - name: ADMIN_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: swimto-dev-secrets
+                key: ADMIN_TOKEN
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: swimto-dev-secrets
+                key: SECRET_KEY
+        envFrom:
+          - configMapRef:
+              name: swimto-dev-config
+        resources:
+          requests: {cpu: "100m", memory: "128Mi"}
+          limits: {cpu: "300m", memory: "384Mi"}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop: ["ALL"]
+        probes:
+          path: /health
+          liveness: {initialDelaySeconds: 30, periodSeconds: 10}
+          readiness: {initialDelaySeconds: 10, periodSeconds: 5}
+      swimto-web:
+        replicas: 1
+        strategy: RollingUpdate
+        image:
+          repository: ghcr.io/raolivei/swimto-web
+          tag: latest # {"$imagepolicy": "swimto-dev:swimto-web-dev-policy:tag"}
+          pullPolicy: Always
+        port: 3000
+        probesEnabled: false
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests: {cpu: "50m", memory: "64Mi"}
+          limits: {cpu: "100m", memory: "128Mi"}
+        volumeMounts:
+          - name: nginx-cache
+            mountPath: /var/cache/nginx
+          - name: nginx-run
+            mountPath: /var/run
+          - name: nginx-tmp
+            mountPath: /tmp
+        volumes:
+          - name: nginx-cache
+            emptyDir: {}
+          - name: nginx-run
+            emptyDir: {}
+          - name: nginx-tmp
+            emptyDir: {}
+    # -- ConfigMaps
+    configMaps:
+      swimto-dev-config:
+        data:
+          CITY_BASE_URL: "https://www.toronto.ca"
+          OPEN_DATA_BASE_URL: "https://open.toronto.ca"
+          INGEST_WINDOW_DAYS: "56"
+          LOG_LEVEL: "DEBUG"
+          GOOGLE_REDIRECT_URI: "https://swimto-dev.eldertree.local/auth/callback"
+          CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","https://swimto-dev.eldertree.local","http://swimto-dev.eldertree.local"]'
+    # -- Middleware
+    middleware:
+      api-path-rewrite:
+        type: replacePathRegex
+        regex: "^/api(/.*?)/?$"
+        replacement: "$1"
+      redirect-https:
+        type: redirectScheme
+        scheme: https
+        permanent: true
+    # -- Ingress (local only — no external exposure for dev)
+    ingress:
+      swimto-dev-api:
+        host: swimto-dev.eldertree.local
+        service: swimto-api
+        path: /api
+        port: 8000
+        middlewares:
+          - swimto-dev-redirect-https@kubernetescrd
+          - swimto-dev-api-path-rewrite@kubernetescrd
+        tls:
+          secretName: swimto-dev-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: swimto-dev.eldertree.local
+      swimto-dev-web:
+        host: swimto-dev.eldertree.local
+        service: swimto-web
+        port: 3000
+        middlewares:
+          - swimto-dev-redirect-https@kubernetescrd
+        tls:
+          secretName: swimto-dev-tls
+          certManager: true
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: swimto-dev.eldertree.local

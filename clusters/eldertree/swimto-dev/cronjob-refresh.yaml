@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: swimto-dev-data-refresh
+  namespace: swimto-dev
+spec:
+  # 4 AM daily — one hour after prod (3 AM) to avoid simultaneous Open Data hammering
+  schedule: "0 4 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: data-refresh
+              image: ghcr.io/raolivei/swimto-api:latest # {"$imagepolicy": "swimto-dev:swimto-api-dev-policy"}
+              imagePullPolicy: Always
+              command:
+                - python
+                - /data-pipeline/jobs/daily_refresh.py
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: swimto-dev-secrets
+                      key: DATABASE_URL
+              envFrom:
+                - configMapRef:
+                    name: swimto-dev-config
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "250m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+          imagePullSecrets:
+            - name: ghcr-secret
+          restartPolicy: OnFailure

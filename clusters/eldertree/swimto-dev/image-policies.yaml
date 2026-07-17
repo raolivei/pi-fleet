@@ -1,0 +1,33 @@
+# Dev tracks build-<timestamp>-<sha> tags produced on every push to main.
+# These are emitted by docker-build.yml when is_default_branch=true.
+# Alphabetical/asc on the timestamp prefix picks the newest build.
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: swimto-api-dev-policy
+  namespace: swimto-dev
+spec:
+  imageRepositoryRef:
+    name: swimto-api-dev
+  filterTags:
+    pattern: '^build-(?P<ts>\d{14})-'
+    extract: '$ts'
+  policy:
+    alphabetical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: swimto-web-dev-policy
+  namespace: swimto-dev
+spec:
+  imageRepositoryRef:
+    name: swimto-web-dev
+  filterTags:
+    pattern: '^build-(?P<ts>\d{14})-'
+    extract: '$ts'
+  policy:
+    alphabetical:
+      order: asc

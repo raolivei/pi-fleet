@@ -1,0 +1,25 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: swimto-dev-updates
+  namespace: swimto-dev
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: "chore(swimto-dev): update images{{range .Changed.Changes}} {{.NewValue}}{{end}}"
+    push:
+      branch: main
+  update:
+    path: ./clusters/eldertree/swimto-dev
+    strategy: Setters
