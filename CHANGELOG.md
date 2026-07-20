@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Added
 
+- **OpenClaw `finance-br-skill`** — Brazilian financial indicators via public APIs (no key required for BCB; BRAPI token from Vault for B3/crypto). BCB endpoints: Selic meta (série 432), CDI (4389), IPCA (433), Selic efetiva (11), PTAX USD/BRL. BRAPI endpoints: B3 stock quotes (`/api/quote/{ticker}`), crypto in BRL (`/api/v2/crypto`), investment funds. Fixes the 404 loop when the Telegram bot tried to answer "No que devo investir no Brasil?" — no skill was describing the BCB public API.
+
+- **OpenClaw `ollie-skill`** — Exposes Ollie workspace RAG to Telegram via `http://core.ollie.svc.cluster.local:8000`. Tools: `workspace_ask` (RAG Q&A with citations), `workspace_search` (semantic doc search), `workspace_chat` (full conversational interface), `workspace_projects` (list indexed repos). Ollie was running in the cluster but had no skill file in OpenClaw, so the bot could not answer architecture or project questions.
+
+- **OpenClaw `web-browsing-skill`** — Documents Brave Search activation (key was already in `BRAVE_API_KEY` env but undocumented) and `web_fetch` usage patterns for general internet searches and arbitrary URL reading. Eliminates the undirected `web_fetch` retry loop when answering general knowledge queries.
+
+- **BRAPI API key wired from Vault** — `externalsecret.yaml`: syncs `secret/openclaw/brapi.api-key` → k8s secret key `BRAPI_API_KEY`. `helmrelease.yaml`: injects `BRAPI_API_KEY` env var into the OpenClaw pod (`optional: true` so the pod starts even if the ExternalSecret hasn't synced yet).
+
+### Changed
+
+- **OpenClaw skills refactored to individual files via `configMapGenerator`** — replaced the monolithic `skills-configmap.yaml` (all skills inline as YAML literals) with a `skills/` directory of individual `.md` files and a Kustomize `configMapGenerator` block in `kustomization.yaml`. `disableNameSuffixHash: true` keeps the ConfigMap name stable. Adding a new skill is now a one-file change + one line in `kustomization.yaml` instead of editing a 700-line YAML. Existing `helmrelease.yaml` volume mounts are unchanged.
+
+### Fixed
+
+- **OpenClaw build failing: tag `2026.6.11` removed upstream** — `clusters/eldertree/openclaw/docker/Dockerfile` was pinned to `--branch 2026.6.11`; upstream openclaw switched to semver and removed the old date tag. Build failed with `fatal: Remote branch 2026.6.11 not found in upstream origin`. Bumped to `--branch v2026.7.1` (latest stable).
+
 - **OpenClaw skills: resolved `${ELDER_URL}` and `${SWIMTO_API_URL}` placeholders** — env var placeholders in `skills-configmap.yaml` were never substituted at runtime, so the LLM saw literal `${ELDER_URL}` and could not call Elder API skills. Replaced all occurrences with hardcoded cluster-internal URLs (`http://elder.openclaw.svc.cluster.local:8000` and `http://swimto-api.swimto.svc.cluster.local:8000`). Added a "How to Call Skills" preamble to `elder-skill.md` explicitly stating that `HTTP: METHOD URL` entries are `web_fetch` calls and that Elder handles GitHub App auth internally (no PAT or gh CLI needed). Also added Vault API URL (`http://vault.vault.svc.cluster.local:8200`) and usage notes to `cluster-ops-skill.md`.
 
 - **OpenClaw TOOLS.md ConfigMap** — new `openclaw-workspace-files` ConfigMap mounted via subPath at `/home/node/.openclaw/workspace/TOOLS.md`, overriding the PVC copy. Documents: skill calling pattern (skills = web_fetch), Elder/SwimTO/Vault base URLs, and the two-step PR workflow (elder_edit_file → elder_create_pr). Prevents the LLM from claiming Elder API skills "don't exist" or falling back to exec/gh CLI for Git operations.

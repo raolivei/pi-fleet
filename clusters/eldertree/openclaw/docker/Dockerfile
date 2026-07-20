@@ -21,7 +21,7 @@ RUN apt-get update && \
     mv kubectl /usr/local/bin/ && \
     # Clone OpenClaw — pin to a known-good release tag.
     # To upgrade: bump the tag, commit, and trigger build-openclaw-arm64.yml.
-    git clone --depth 1 --branch 2026.6.11 https://github.com/openclaw/openclaw.git . && \
+    git clone --depth 1 --branch v2026.7.1 https://github.com/openclaw/openclaw.git . && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
