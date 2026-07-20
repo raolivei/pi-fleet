@@ -518,6 +518,41 @@ data:
 
     URL pattern: `https://api.bcb.gov.br/dados/serie/bcdata.sgs.{SERIE}/dados/ultimos/{N}?formato=json`
 
+    ## BRAPI — B3 Stocks, Crypto, Funds (requires token)
+
+    Token is available in the `BRAPI_API_KEY` environment variable.
+    Always append `?token=$BRAPI_API_KEY` to BRAPI requests.
+
+    Base URL: `https://brapi.dev`
+
+    ### brapi_quote
+    Real-time B3 stock or BDR quote.
+
+    HTTP: GET https://brapi.dev/api/quote/{ticker}?token=$BRAPI_API_KEY
+    Example tickers: PETR4, VALE3, ITUB4, BBDC4, B3SA3
+    Returns: {"results": [{"symbol": "PETR4", "regularMarketPrice": 38.50, "regularMarketChangePercent": 1.2, ...}]}
+
+    Example: "Qual a cotação da PETR4?" → GET /api/quote/PETR4?token=...
+
+    ### brapi_crypto
+    Crypto price in BRL or USD.
+
+    HTTP: GET https://brapi.dev/api/v2/crypto?coin={coin}&currency=BRL&token=$BRAPI_API_KEY
+    Example coins: BTC, ETH, SOL, BNB
+    Returns: {"coins": [{"coin": "BTC", "regularMarketPrice": 620000, "regularMarketChangePercent": 2.1, ...}]}
+
+    Example: "Qual o Bitcoin em reais?" → GET /api/v2/crypto?coin=BTC&currency=BRL&token=...
+
+    ### brapi_funds
+    Brazilian investment fund (FII or fundo) data.
+
+    HTTP: GET https://brapi.dev/api/v2/funds/{ticker}?token=$BRAPI_API_KEY
+
+    ### brapi_available
+    List all available tickers.
+
+    HTTP: GET https://brapi.dev/api/available?token=$BRAPI_API_KEY
+
     ## Example Conversations
 
     User: "Qual a Selic atual?"
@@ -529,8 +564,14 @@ data:
     User: "Quanto está o dólar?"
     Assistant: *web_fetch PTAX com datas atuais → "USD/BRL: R$ 5,12 (compra) / R$ 5,12 (venda) — PTAX de 17/07/2026"*
 
+    User: "Qual a cotação da VALE3?"
+    Assistant: *web_fetch GET https://brapi.dev/api/quote/VALE3?token=$BRAPI_API_KEY → mostra preço, variação % do dia*
+
+    User: "Quanto está o Bitcoin em reais?"
+    Assistant: *web_fetch GET https://brapi.dev/api/v2/crypto?coin=BTC&currency=BRL&token=$BRAPI_API_KEY*
+
     User: "No que devo investir no Brasil no curto prazo?"
-    Assistant: *web_fetch Selic + CDI + IPCA → analisa contexto: Selic 14.25%, IPCA recente, CDI como benchmark → recomendações: Tesouro Selic, CDBs 100%+ CDI, LCI/LCA isentos*
+    Assistant: *web_fetch Selic (432) + CDI (4389) + IPCA (433) → analisa contexto: Selic 14.25%, IPCA recente, CDI como benchmark → recomendações: Tesouro Selic, CDBs 100%+ CDI, LCI/LCA isentos*
 
   # Ollie Skill - Workspace RAG and project knowledge
   ollie-skill.md: |
