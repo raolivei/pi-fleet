@@ -455,6 +455,189 @@ data:
     User: "What pods are failing?"
     Assistant: *calls elder_cluster_health, checks for failed pods and warnings*
 
+  # Finance BR Skill - Brazilian financial indicators via public APIs (no key required)
+  finance-br-skill.md: |
+    # Finance BR Skill
+
+    Fetch real-time Brazilian financial indicators using public APIs — no authentication required.
+
+    ## Tools
+
+    Use `web_fetch` to call these endpoints directly.
+
+    ### bcb_selic
+    Current Selic target rate (% per year).
+
+    HTTP: GET https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json
+    Returns: [{"data": "DD/MM/YYYY", "valor": "14.25"}]
+
+    Example: "Qual a Selic hoje?"
+
+    ### bcb_cdi
+    Current CDI rate (% per year, effective daily rate).
+
+    HTTP: GET https://api.bcb.gov.br/dados/serie/bcdata.sgs.4389/dados/ultimos/1?formato=json
+    Returns: [{"data": "DD/MM/YYYY", "valor": "14.15"}]
+
+    Example: "Qual o CDI atual?"
+
+    ### bcb_ipca
+    Latest IPCA monthly inflation (% for the month).
+
+    HTTP: GET https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/1?formato=json
+    Returns: [{"data": "DD/MM/YYYY", "valor": "0.16"}]
+
+    Example: "Qual foi o IPCA do último mês?"
+
+    ### bcb_selic_efetiva
+    Daily effective Selic rate (annualized, last business day).
+
+    HTTP: GET https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados/ultimos/1?formato=json
+    Returns: [{"data": "DD/MM/YYYY", "valor": "0.052531"}]
+
+    ### bcb_ptax_usd
+    Latest USD/BRL PTAX rate (last 5 business days, most recent first).
+
+    HTTP: GET https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='07-01-2026'&@dataFinalCotacao='07-20-2026'&$top=1&$orderby=dataHoraCotacao%20desc&$format=json&$select=cotacaoCompra,cotacaoVenda,dataHoraCotacao
+
+    **Important**: Replace dates with actual current and 10-days-ago dates in MM-DD-YYYY format before calling.
+    Returns: {"value": [{"cotacaoCompra": 5.117, "cotacaoVenda": 5.1176, "dataHoraCotacao": "2026-07-17 13:10:18"}]}
+
+    Example: "Qual o dólar hoje?"
+
+    ## BCB Series Reference
+
+    | Indicador | Série | Frequência |
+    |-----------|-------|-----------|
+    | Selic meta | 432 | Por reunião COPOM |
+    | CDI | 4389 | Diária |
+    | IPCA | 433 | Mensal |
+    | Selic efetiva | 11 | Diária |
+    | IGP-M | 189 | Mensal |
+    | Taxa de câmbio EUR | 21619 | Diária |
+
+    URL pattern: `https://api.bcb.gov.br/dados/serie/bcdata.sgs.{SERIE}/dados/ultimos/{N}?formato=json`
+
+    ## Example Conversations
+
+    User: "Qual a Selic atual?"
+    Assistant: *web_fetch GET https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json → "A Selic meta está em 14,25% a.a. (decisão de 05/08/2026)"*
+
+    User: "Qual o CDI e quanto rende em 1 ano?"
+    Assistant: *web_fetch CDI (4389) → calcula rendimento bruto e líquido (IR 15%)*
+
+    User: "Quanto está o dólar?"
+    Assistant: *web_fetch PTAX com datas atuais → "USD/BRL: R$ 5,12 (compra) / R$ 5,12 (venda) — PTAX de 17/07/2026"*
+
+    User: "No que devo investir no Brasil no curto prazo?"
+    Assistant: *web_fetch Selic + CDI + IPCA → analisa contexto: Selic 14.25%, IPCA recente, CDI como benchmark → recomendações: Tesouro Selic, CDBs 100%+ CDI, LCI/LCA isentos*
+
+  # Ollie Skill - Workspace RAG and project knowledge
+  ollie-skill.md: |
+    # Ollie Skill
+
+    Ollie is the workspace assistant with indexed knowledge of all raolivei projects (canopy, swimTO, pi-fleet, elder, personal-website, and more). Use it for architecture questions, deployment context, project status, and cross-repo knowledge.
+
+    ## Tools
+
+    Use `web_fetch` to call the Ollie API.
+
+    Base URL: **http://core.ollie.svc.cluster.local:8000**
+
+    ### workspace_ask
+    Answer questions using workspace documentation (RAG with citations).
+
+    HTTP: POST http://core.ollie.svc.cluster.local:8000/api/v1/workspace/ask
+    Body: {"query": "your question here"}
+    Returns: {"answer": "...", "sources": [...], "citations": [...]}
+
+    Example: "Como faço deploy do canopy?" → POST workspace_ask
+
+    ### workspace_search
+    Semantic search across all indexed project docs.
+
+    HTTP: POST http://core.ollie.svc.cluster.local:8000/api/v1/workspace/search
+    Body: {"query": "search terms", "limit": 5}
+    Returns: {"results": [{"content": "...", "source": "...", "score": 0.85}]}
+
+    Example: "Encontra docs sobre autenticação no swimTO"
+
+    ### workspace_chat
+    Full conversational interface with RAG + Elder routing.
+
+    HTTP: POST http://core.ollie.svc.cluster.local:8000/api/chat
+    Body: {"message": "your message", "session_id": "telegram-{user_id}"}
+    Returns: {"response": "...", "sources": [...]}
+
+    ### workspace_projects
+    List all indexed projects with document counts and health.
+
+    HTTP: GET http://core.ollie.svc.cluster.local:8000/api/v1/workspace/projects
+    Returns: {"projects": [{"name": "swimTO", "chunks": 142, "last_indexed": "..."}]}
+
+    ## When to Use Ollie
+
+    - Architecture or design questions about any raolivei project
+    - "How does X work in Y project?" questions
+    - Finding relevant documentation, conventions, or patterns
+    - Cross-project knowledge (e.g., "how is auth done across projects?")
+    - Any question where Elder code search returns nothing — Ollie has doc-level context
+
+    **Prefer Elder tools** for live code (search_code, read_file) and K8s ops.
+    **Use Ollie** for documentation, conventions, and architectural context.
+
+    ## Example Conversations
+
+    User: "Como está configurado o FluxCD no pi-fleet?"
+    Assistant: *POST workspace_ask with query → Ollie returns indexed doc content with sources*
+
+    User: "Qual a arquitetura do canopy?"
+    Assistant: *POST workspace_ask → returns architecture overview from canopy docs*
+
+    User: "Quais projetos estão indexados?"
+    Assistant: *GET workspace_projects → lists all indexed repos with chunk counts*
+
+  # Web Browsing Skill - Fetch URLs and search the web
+  web-browsing-skill.md: |
+    # Web Browsing Skill
+
+    Use built-in tools to fetch web pages, read URLs, and search the internet.
+
+    ## Tools
+
+    ### web_fetch (built-in)
+    Fetch any URL — GET or POST. Use for reading articles, API responses, documentation pages.
+
+    Examples:
+    - Read a news article: web_fetch GET https://example.com/article
+    - Call a public API: web_fetch GET https://api.example.com/data
+    - POST to an API: web_fetch POST https://api.example.com/query with JSON body
+
+    ### Brave Search (built-in, key auto-loaded from BRAVE_API_KEY env)
+    Search the web when you need current events, news, prices, or information not available from cluster services.
+
+    **Use Brave Search when:**
+    - The user asks about current events or recent news
+    - You need real-world context not in cluster docs
+    - A URL fetch returns a 404 or unhelpful content
+    - The user asks to "search" or "look up" something on the internet
+
+    **Do NOT use for:**
+    - Cluster ops → use kubectl or elder_*
+    - Project docs → use workspace_ask (Ollie) or elder_search_code
+    - Brazilian financial indicators → use finance-br-skill (BCB API, no key needed)
+
+    ## Example Conversations
+
+    User: "Por que o preço do petróleo subiu em Toronto esses dias?"
+    Assistant: *Brave Search "oil price spike Toronto July 2026" → summarizes top results*
+
+    User: "Lê esse artigo pra mim: https://..."
+    Assistant: *web_fetch GET <url> → summarizes content*
+
+    User: "Qual a cotação do Bitcoin agora?"
+    Assistant: *Brave Search "Bitcoin BRL price" → returns current price*
+
   # Gmail Skill - Read and send emails
   gmail-skill.md: |
     # Gmail Skill
