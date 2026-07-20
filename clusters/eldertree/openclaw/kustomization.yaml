@@ -9,7 +9,6 @@ resources:
   - pvc.yaml
   - configmap.yaml
   - exec-approvals-configmap.yaml
-  - skills-configmap.yaml
   - workspace-configmap.yaml
   - ollama-fallback.yaml
   # Elder (AI agent sidecar)
@@ -25,3 +24,18 @@ resources:
   - openclaw-image-policy.yaml
   - elder-image-update.yaml
   - control-cloudflare-origin-cert-external.yaml
+
+configMapGenerator:
+  - name: openclaw-skills
+    namespace: openclaw
+    options:
+      disableNameSuffixHash: true
+    files:
+      - skills/swimto-skill.md
+      - skills/cluster-ops-skill.md
+      - skills/eldertree-docs-skill.md
+      - skills/elder-skill.md
+      - skills/gmail-skill.md
+      - skills/finance-br-skill.md
+      - skills/ollie-skill.md
+      - skills/web-browsing-skill.md
