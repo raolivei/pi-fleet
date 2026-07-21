@@ -9,6 +9,23 @@ data:
   TOOLS.md: |
     # TOOLS.md - Environment Notes
 
+    ## Skill Routing — Use This First
+
+    Before trying web_search or exec, check this table:
+
+    | Question type | Skill to use |
+    |---------------|-------------|
+    | Selic, CDI, IPCA, PTAX, dólar, B3 stocks (PETR4…), crypto in BRL | `finance-br-skill` → `web_fetch` BCB/BRAPI |
+    | Project docs, architecture, deployment, "como funciona X?" | `ollie-skill` → `web_fetch` http://core.ollie.svc.cluster.local:8000 |
+    | Pool schedules, Toronto swimming | `swimto-skill` → `web_fetch` SwimTO API |
+    | Kubernetes pods, logs, cluster health | `cluster-ops-skill` → `exec kubectl` |
+    | Code search, GitHub issues/PRs, file edits | `elder-skill` → `web_fetch` Elder API |
+    | Gmail inbox | `gmail-skill` → `web_fetch` Elder API |
+    | General internet/news | Brave Search (built-in, key auto-loaded) |
+
+    **Never use exec or Yahoo Finance / TwelveData for Brazilian financial data.**
+    **Never say web_search is unavailable — use Brave Search instead.**
+
     ## How to Call Skills
 
     Skills in `skills/*.md` are **NOT** function-call tools registered in your
