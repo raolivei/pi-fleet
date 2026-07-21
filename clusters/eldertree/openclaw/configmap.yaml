@@ -91,8 +91,8 @@ data:
           "contextTokens": 60000,
           "compaction": {
             "mode": "safeguard",
-            "reserveTokens": 8500,
-            "reserveTokensFloor": 8500,
+            "reserveTokens": 20000,
+            "reserveTokensFloor": 20000,
             "model": "ollama-lan/qwen3.6:35b-mlx",
             "memoryFlush": {
               "enabled": false
