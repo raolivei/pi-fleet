@@ -144,6 +144,7 @@ echo ""
 
 create_policy "canopy-policy" "$POLICIES_DIR/canopy-policy.hcl"
 create_policy "swimto-policy" "$POLICIES_DIR/swimto-policy.hcl"
+create_policy "swimto-dev-policy" "$POLICIES_DIR/swimto-dev-policy.hcl"
 create_policy "journey-policy" "$POLICIES_DIR/journey-policy.hcl"
 create_policy "nima-policy" "$POLICIES_DIR/nima-policy.hcl"
 create_policy "us-law-severity-map-policy" "$POLICIES_DIR/us-law-severity-map-policy.hcl"
@@ -162,6 +163,7 @@ echo ""
 
 create_service_token "canopy-token" "canopy-policy" "vault-token-canopy"
 create_service_token "swimto-token" "swimto-policy" "vault-token-swimto"
+create_service_token "swimto-dev-token" "swimto-dev-policy" "vault-token-swimto-dev"
 create_service_token "journey-token" "journey-policy" "vault-token-journey"
 create_service_token "nima-token" "nima-policy" "vault-token-nima"
 create_service_token "us-law-severity-map-token" "us-law-severity-map-policy" "vault-token-us-law-severity-map"
@@ -206,6 +208,40 @@ if [ -n "$OLLIE_GHCR_TOKEN" ]; then
     store_ghcr_token "ollie" "$OLLIE_GHCR_TOKEN"
 else
     echo -e "${YELLOW}Skipping ollie GHCR token (set OLLIE_GHCR_TOKEN env var to store)${NC}"
+fi
+
+echo ""
+
+# Write swimto-dev app secrets (generated fresh each run if not already present)
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}Step 4: Writing swimto-dev app secrets${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+# Check if already set (idempotent — skip if POSTGRES_PASSWORD already exists)
+EXISTING=$(kubectl exec -n vault vault-0 -- sh -c \
+    "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN='${VAULT_ROOT_TOKEN}' && \
+     vault kv get -field=POSTGRES_PASSWORD secret/swimto-dev/app 2>/dev/null || true")
+
+if [ -n "$EXISTING" ]; then
+    echo -e "${GREEN}✅ secret/swimto-dev/app already exists — skipping (delete manually to regenerate)${NC}"
+else
+    PGPASS=$(python3 -c "import secrets; print(secrets.token_urlsafe(24))")
+    ADMIN_TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+    SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+
+    if kubectl exec -n vault vault-0 -- sh -c \
+        "export VAULT_ADDR=http://127.0.0.1:8200 && export VAULT_TOKEN='${VAULT_ROOT_TOKEN}' && \
+         vault kv put secret/swimto-dev/app \
+           POSTGRES_PASSWORD='${PGPASS}' \
+           DATABASE_URL='postgresql+psycopg://postgres:${PGPASS}@postgres-service.swimto-dev.svc.cluster.local:5432/pools' \
+           REDIS_URL='redis://redis-service.swimto-dev.svc.cluster.local:6379/0' \
+           ADMIN_TOKEN='${ADMIN_TOKEN}' \
+           SECRET_KEY='${SECRET_KEY}'" > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ secret/swimto-dev/app written${NC}"
+    else
+        echo -e "${RED}❌ Failed to write secret/swimto-dev/app${NC}"
+    fi
 fi
 
 echo ""
