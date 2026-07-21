@@ -16,8 +16,14 @@ spec:
       interval: 12h
   targetNamespace: swimto-dev
   releaseName: swimto-dev
+  timeout: 15m
+  install:
+    remediation:
+      retries: 3
   upgrade:
     cleanupOnFail: true
+    remediation:
+      retries: 3
   values:
     # ============================================================
     # SwimTO Dev — mirrors prod with 1 replica, local ingress only
