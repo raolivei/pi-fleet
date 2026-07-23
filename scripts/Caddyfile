@@ -56,6 +56,17 @@ swimto.eldertree.local {
     }
 }
 
+# SwimTO dev environment
+swimto-dev.eldertree.local {
+    tls internal
+    reverse_proxy https://192.168.2.200:443 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host swimto-dev.eldertree.local
+    }
+}
+
 # Bolão dos Guerreiros (WC 2026 prediction pool)
 bolao.eldertree.local {
     tls internal
