@@ -136,7 +136,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
         image:
           repository: ghcr.io/raolivei/swimto-web
-          tag: v0.9.8 # {"$imagepolicy": "swimto:swimto-web-policy:tag"}
+          tag: v0.10.0 # {"$imagepolicy": "swimto:swimto-web-policy:tag"}
           pullPolicy: IfNotPresent
         port: 3000
         probesEnabled: false
