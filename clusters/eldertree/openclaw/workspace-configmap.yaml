@@ -46,6 +46,7 @@ data:
     ## Elder API
 
     Base URL: `http://elder.openclaw.svc.cluster.local:8000`
+    **Required header on every call:** `X-API-Key: $ELDER_API_KEY` (env var — always available, never search for it)
     Elder handles GitHub App auth internally. You do NOT need a PAT, gh CLI, or
     any token. Never use exec for Git/GitHub operations.
 

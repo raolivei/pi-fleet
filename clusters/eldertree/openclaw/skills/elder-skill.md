@@ -9,8 +9,20 @@ Elder has its own GitHub App identity ("Elder [bot]").
 Skills below describe HTTP calls you make using your `web_fetch` tool.
 The Elder API base URL is: **http://elder.openclaw.svc.cluster.local:8000**
 
+**Every Elder API call requires this header — always include it:**
+```
+X-API-Key: $ELDER_API_KEY
+```
+The key is in the `ELDER_API_KEY` environment variable. Do not skip it or try to discover it — just use `$ELDER_API_KEY` directly.
+
+Example — `elder_list_repos`:
+  `web_fetch GET http://elder.openclaw.svc.cluster.local:8000/api/code/repos`
+  Headers: `{"X-API-Key": "$ELDER_API_KEY"}`
+
 Example — `elder_create_pr`:
   `web_fetch POST http://elder.openclaw.svc.cluster.local:8000/api/code/pr`
+  Headers: `{"X-API-Key": "$ELDER_API_KEY"}`
+  Body: `{"repo": "swimTO", "branch": "elder/...", "title": "...", "body": "..."}`
 
 Elder handles GitHub App auth internally — you do NOT need a PAT, gh CLI,
 or any GitHub token. Never use exec or gh for Git/GitHub operations.
