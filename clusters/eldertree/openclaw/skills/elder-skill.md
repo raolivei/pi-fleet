@@ -69,6 +69,13 @@ Create a pull request as Elder [bot]. (approval required)
 HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/code/pr
 Body: {"repo": "swimTO", "branch": "elder/fix-123", "title": "fix: description", "body": "PR body"}
 
+### elder_merge_pr
+Merge an existing pull request. (approval required)
+
+HTTP: POST http://elder.openclaw.svc.cluster.local:8000/api/code/pr/merge
+Body: {"repo": "pitanga-website", "pr_number": 6, "merge_method": "squash"}
+merge_method options: "squash" (default), "merge", "rebase"
+
 ### elder_list_issues
 List GitHub issues across one or all repos. (auto-approved)
 
