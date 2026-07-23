@@ -79,7 +79,7 @@ spec:
         strategy: RollingUpdate
         image:
           repository: ghcr.io/raolivei/swimto-web
-          tag: latest # {"$imagepolicy": "swimto-dev:swimto-web-dev-policy:tag"}
+          tag: dev-20260723040422-071d9ea # {"$imagepolicy": "swimto-dev:swimto-web-dev-policy:tag"}
           pullPolicy: Always
         port: 3000
         probesEnabled: false
