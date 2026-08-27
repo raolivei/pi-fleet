@@ -1,0 +1,241 @@
+---
+# Network Subnet Migration — 2026-08-26
+#
+# Home router changed from 192.168.2.x to 10.0.0.x (same "homebase" SSID).
+# Pis had static 192.168.2.x IPs on wlan0 → dead gateway → no internet.
+# eth0 was 10.0.0.x (isolated switch) → subnet collision with new WiFi.
+#
+# What this playbook does:
+#   wlan0 (homebase): 192.168.2.10x  →  10.0.0.10x  (gateway: 10.0.0.1)
+#   eth0 (isolated):  10.0.0.x       →  172.16.0.x  (no gateway, k8s only)
+#   k3s resolv.conf:  192.168.2.1    →  8.8.8.8 / 1.1.1.1
+#   k3s config:       node-ip, advertise-address updated to new eth0 IPs
+#   k3s tls-san:      add new kube-vip VIP (10.0.0.100) and new node IPs
+#
+# Run with migration inventory:
+#   cd pi-fleet/ansible
+#   ansible-playbook -i inventory/hosts-migration.yml playbooks/migrate-network-subnet.yml
+#
+# After success: kube-vip + Traefik manifests updated in git (FluxCD applies them).
+# Then update Mac kubeconfig server to https://10.0.0.100:6443.
+
+- name: Migrate network subnets on all nodes
+  hosts: raspberry_pi
+  become: true
+  serial: 1  # one node at a time to preserve etcd quorum
+
+  vars:
+    node_wlan0_ips:
+      node-1: "10.0.0.101"
+      node-2: "10.0.0.102"
+      node-3: "10.0.0.103"
+    node_eth0_ips:
+      node-1: "172.16.0.1"
+      node-2: "172.16.0.2"
+      node-3: "172.16.0.3"
+    new_kube_vip: "10.0.0.100"
+    new_gateway: "10.0.0.1"
+    new_dns: "8.8.8.8 1.1.1.1"
+
+  tasks:
+    - name: Set per-node IP facts
+      set_fact:
+        new_wlan0_ip: "{{ node_wlan0_ips[inventory_hostname] }}"
+        new_eth0_ip: "{{ node_eth0_ips[inventory_hostname] }}"
+
+    - name: Show planned changes
+      debug:
+        msg:
+          - "{{ inventory_hostname }}: wlan0 → {{ new_wlan0_ip }}/24 gw {{ new_gateway }}"
+          - "{{ inventory_hostname }}: eth0  → {{ new_eth0_ip }}/24 (no gateway)"
+
+    # ── Network changes ──────────────────────────────────────────────────────
+
+    - name: Update homebase (wlan0) NM connection — new subnet + gateway
+      command: >
+        nmcli con modify homebase
+        ipv4.addresses "{{ new_wlan0_ip }}/24"
+        ipv4.gateway "{{ new_gateway }}"
+        ipv4.dns "{{ new_dns }}"
+        ipv4.method manual
+      changed_when: true
+
+    - name: Update eth0 NM connection — move to 172.16.0.x isolated subnet
+      command: >
+        nmcli con modify eth0
+        ipv4.addresses "{{ new_eth0_ip }}/24"
+        ipv4.gateway ""
+        ipv4.dns ""
+        ipv4.method manual
+      changed_when: true
+
+    # Apply both connections via a background script so SSH blip doesn't abort.
+    # wlan0 first (restores internet + default route), then eth0.
+    - name: Apply network changes in background
+      shell: |
+        nohup bash -c '
+          sleep 1
+          nmcli con up homebase
+          sleep 3
+          nmcli con up eth0
+        ' > /tmp/netmig-{{ inventory_hostname }}.log 2>&1 &
+        echo "background pid $!"
+      async: 0
+      poll: 0
+      changed_when: true
+
+    - name: Wait for node to come back (up to 90s) on new wlan0 IP
+      wait_for_connection:
+        delay: 10
+        timeout: 90
+
+    - name: Verify new wlan0 IP is active
+      command: ip addr show wlan0
+      register: wlan0_check
+      changed_when: false
+
+    - name: Show wlan0 state
+      debug:
+        var: wlan0_check.stdout_lines
+
+    - name: Verify internet is restored
+      command: ping -c 2 -W 3 8.8.8.8
+      register: internet_check
+      changed_when: false
+      failed_when: false
+
+    - name: Internet check result
+      debug:
+        msg: "Internet via wlan0: {{ 'OK' if internet_check.rc == 0 else 'STILL FAILING — check manually' }}"
+
+    # ── k3s config ───────────────────────────────────────────────────────────
+
+    - name: Update k3s resolv.conf with working DNS
+      copy:
+        dest: /etc/rancher/k3s/resolv.conf
+        content: |
+          nameserver 8.8.8.8
+          nameserver 1.1.1.1
+          search eldertree.local
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Update k3s node-ip to new eth0 IP
+      lineinfile:
+        path: /etc/rancher/k3s/config.yaml
+        regexp: '^node-ip:'
+        line: "node-ip: {{ new_eth0_ip }}"
+
+    - name: Update k3s advertise-address to new eth0 IP
+      lineinfile:
+        path: /etc/rancher/k3s/config.yaml
+        regexp: '^advertise-address:'
+        line: "advertise-address: {{ new_eth0_ip }}"
+
+    - name: Update k3s server URL to new kube-vip VIP
+      lineinfile:
+        path: /etc/rancher/k3s/config.yaml
+        regexp: '^server:'
+        line: "server: https://{{ new_kube_vip }}:6443"
+
+    - name: Rewrite k3s config.yaml with correct tls-san (clean YAML)
+      shell: |
+        python3 - << 'PYEOF'
+        import re, subprocess
+
+        path = '/etc/rancher/k3s/config.yaml'
+        with open(path) as f:
+            content = f.read()
+
+        # Remove any previously botched ANSIBLE MANAGED tls-san block
+        content = re.sub(
+            r'# BEGIN ANSIBLE MANAGED - new tls-san.*?# END ANSIBLE MANAGED - new tls-san[^\n]*\n',
+            '', content, flags=re.DOTALL)
+
+        # Remove existing tls-san block entirely
+        content = re.sub(
+            r'^tls-san:(\n  - [^\n]+)+\n', '', content, flags=re.MULTILINE)
+
+        new_san = (
+            "tls-san:\n"
+            "  - {{ new_kube_vip }}\n"
+            "  - {{ new_wlan0_ip }}\n"
+            "  - {{ new_eth0_ip }}\n"
+            "  - {{ inventory_hostname }}.eldertree.local\n"
+            "  - {{ inventory_hostname }}\n"
+            "  - 192.168.2.100\n"
+        )
+
+        # Insert before kubelet-arg section
+        anchor = '# BEGIN ANSIBLE MANAGED - klipper-lb sysctl fix'
+        if anchor in content:
+            content = content.replace(anchor, new_san + anchor)
+        else:
+            content = content.rstrip('\n') + '\n' + new_san
+
+        with open(path, 'w') as f:
+            f.write(content)
+        print("tls-san updated")
+        PYEOF
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: Fix wait-for-eth0.sh to accept 172.16.x.x (not just 10.x.x.x)
+      replace:
+        path: /usr/local/bin/wait-for-eth0.sh
+        regexp: 'grep -q "inet 10\\\\."'
+        replace: 'grep -qE "inet (10|172)\\."'
+
+    # ── k3s restart ──────────────────────────────────────────────────────────
+
+    - name: Update watchdog ping targets to new eth0 IPs (prevents watchdog reboot loop)
+      copy:
+        dest: /etc/watchdog.conf
+        content: |
+          interval = 5
+          ping = {{ node_eth0_ips['node-1'] }}
+          ping = {{ node_eth0_ips['node-2'] }}
+          ping = {{ node_eth0_ips['node-3'] }}
+          # k3s/kubelet/API health (catches pingable-but-frozen hangs)
+          file = /var/run/k3s-health
+          change = 1
+          watchdog-device = /dev/watchdog
+          watchdog-timeout = 15
+          max-load-1 = 24
+          retry-timeout = 60
+          repair-maximum = 5
+          min-memory = 4096
+        owner: root
+        group: root
+        mode: "0644"
+      failed_when: false
+      ignore_errors: true
+
+    - name: Reload watchdog to apply new ping targets
+      systemd:
+        name: watchdog
+        state: reloaded
+      failed_when: false
+      ignore_errors: true
+
+    - name: Restart k3s to apply new node-ip and regenerate TLS cert
+      systemd:
+        name: k3s
+        state: restarted
+      register: k3s_restart
+
+    - name: Wait for k3s to be ready (up to 120s)
+      command: k3s kubectl get nodes
+      register: nodes_ready
+      until: nodes_ready.rc == 0
+      retries: 24
+      delay: 5
+      changed_when: false
+      failed_when: false
+
+    - name: Show cluster node status
+      debug:
+        var: nodes_ready.stdout_lines
+      when: nodes_ready.rc == 0

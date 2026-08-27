@@ -41,8 +41,8 @@ spec:
         addRoutersLabels: true
         addServicesLabels: true
     # LoadBalancer configuration for kube-vip
-    # VIP 192.168.2.200 is assigned by kube-vip on wlan0 interface
+    # VIP 10.0.0.200 is assigned by kube-vip on wlan0 interface
     # ServiceLB (svclb pods) handles traffic forwarding to Traefik pods
     service:
       spec:
-        loadBalancerIP: 192.168.2.200
+        loadBalancerIP: 10.0.0.200

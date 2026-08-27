@@ -4,7 +4,7 @@ metadata:
   name: kube-vip
   namespace: kube-system
 data:
-  vip: "192.168.2.100"
+  vip: "10.0.0.100"
   interface: "wlan0"
   enableControlPlane: "true"
   # Enable LoadBalancer service support (replaces MetalLB)
