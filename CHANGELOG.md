@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Changed
+
+- **Network subnet migration (2026-08-27)** — Home router changed from 192.168.2.x to 10.0.0.x, colliding with isolated switch eth0 IPs. Migrated cluster: wlan0 10.0.0.10x (gateway 10.0.0.1), eth0 172.16.0.x (isolated, no gateway). kube-vip VIP → 10.0.0.100; Traefik LB → 10.0.0.200. node-2 and node-3 migrated; node-1 pending SSH privsep fix. Migration playbook: `ansible/playbooks/migrate-network-subnet.yml`.
+
 ### Added
 
 - **OpenClaw `finance-br-skill`** — Brazilian financial indicators via public APIs (no key required for BCB; BRAPI token from Vault for B3/crypto). BCB endpoints: Selic meta (série 432), CDI (4389), IPCA (433), Selic efetiva (11), PTAX USD/BRL. BRAPI endpoints: B3 stock quotes (`/api/quote/{ticker}`), crypto in BRL (`/api/v2/crypto`), investment funds. Fixes the 404 loop when the Telegram bot tried to answer "No que devo investir no Brasil?" — no skill was describing the BCB public API.
