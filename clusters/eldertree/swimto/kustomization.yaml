@@ -21,4 +21,4 @@ resources:
   - image-policies.yaml
   - image-update-automation.yaml
   # Vertical Pod Autoscaler (recommendations only)
-  # - vpa.yaml  # disabled: VPA CRDs must be installed first (autoscaling HelmRelease)
+  - vpa.yaml
