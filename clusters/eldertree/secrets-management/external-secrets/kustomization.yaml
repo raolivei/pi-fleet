@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
-  - clustersecretstore.yaml
-  - externalsecrets/
+  # Bootstrap phase: disabled until ESO CRDs are installed by HelmRelease above
+  # - clustersecretstore.yaml
+  # - externalsecrets/
 
