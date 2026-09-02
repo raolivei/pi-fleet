@@ -5,6 +5,9 @@ metadata:
   namespace: keda
 spec:
   interval: 30m
+  dependsOn:
+    - name: keda
+      namespace: keda
   chart:
     spec:
       chart: ./helm/keda-scaledobjects
