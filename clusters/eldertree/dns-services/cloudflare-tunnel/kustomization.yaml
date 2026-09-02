@@ -5,7 +5,7 @@ namespace: cloudflare-tunnel
 
 resources:
   - namespace.yaml
-  - externalsecret.yaml
+  # - externalsecret.yaml # Bootstrap: disabled until ESO CRDs installed
   # Deployment uses TUNNEL_TOKEN mode (simpler than credentials file)
   # Tunnel configuration (ingress rules) is managed via Terraform
   # See: terraform/cloudflare.tf (cloudflare_zero_trust_tunnel_cloudflared_config)

@@ -3,7 +3,7 @@ kind: Kustomization
 namespace: arc-runners
 resources:
   - namespace.yaml
-  - ollie-external-secret.yaml
+  # - ollie-external-secret.yaml # Bootstrap: disabled until ESO CRDs installed
   - ollie-runners-helmrelease.yaml
   - pi-fleet-blog-runners-helmrelease.yaml
   - elder-runners-helmrelease.yaml
