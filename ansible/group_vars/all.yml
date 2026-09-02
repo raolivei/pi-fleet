@@ -1,28 +1,40 @@
 ---
 # Network Configuration Variables for Eldertree Cluster
 # These variables are used across all playbooks to avoid hardcoding
-# Updated: 2026-01-24 - Fixed IP mappings to correct 192.168.2.10x range
+# Updated: 2026-09-02 - Network migration: homebase gigabit = 192.168.2.x (k3s),
+#   home router WiFi = 10.0.0.x (internet + SSH from Mac)
 
-# Network Base Configuration
+# Gigabit / k3s Network (eth0 on node-2/3, wlan0 on node-1 — homebase switch)
+# Used for k3s inter-node communication and kube-vip VIP. No internet access.
 network_base: "192.168.2"
-network_gateway: "192.168.2.1"
 network_netmask: "255.255.255.0"
-network_dns:
-  - "192.168.2.1"
+
+# WiFi / Management Network (wlan0 on node-2/3, eth0 on node-1 — home router)
+# Used for internet access and SSH from Mac. Gateway is the home router.
+management_network_base: "10.0.0"
+management_gateway: "10.0.0.1"
+management_dns:
+  - "10.0.0.1"
   - "8.8.8.8"
 
-# WiFi Network Configuration (192.168.2.0/24)
-# Used for external access and management
+# Legacy alias (homebase gigabit ≠ internet gateway; no default route on eth0/homebase)
+network_gateway: ""
+
+# homebase WiFi/Gigabit SSID (nodes join this to get their k3s IP)
 wifi_ssid: "homebase"
 wifi_psk: "homebase.io"
 
-# Node IP Assignments (WiFi - 192.168.2.10x range)
-# All nodes are identical HA control-plane servers
+# Node IP Assignments — k3s/gigabit network (192.168.2.0/24, no internet)
 node_1_ip: "192.168.2.101"
 node_2_ip: "192.168.2.102"
 node_3_ip: "192.168.2.103"
 
-# kube-vip Virtual IP (for HA API server access)
+# Node IP Assignments — management/SSH network (10.0.0.0/24, internet + Mac SSH)
+node_1_mgmt_ip: "10.0.0.101"
+node_2_mgmt_ip: "10.0.0.102"
+node_3_mgmt_ip: "10.0.0.103"
+
+# kube-vip Virtual IP (for HA API server access, on gigabit/192.168.2.x)
 kube_vip_ip: "192.168.2.100"
 
 # k3s Configuration
@@ -31,18 +43,16 @@ k3s_version: "v1.35.0+k3s1"
 k3s_server_url: "https://{{ kube_vip_ip }}:6443"
 k3s_cluster_init_node: "node-1"
 
-# Gigabit Network Configuration (10.0.0.0/24 - Isolated Switch)
-# Primary network for all k8s and node-to-node communication
-gigabit_network_base: "10.0.0"
-gigabit_network_netmask: "24"
-node_1_eth0_ip: "10.0.0.1"
-node_2_eth0_ip: "10.0.0.2"
-node_3_eth0_ip: "10.0.0.3"
+# k3s uses gigabit/homebase IPs for inter-node communication (eth0 on node-2/3)
+k3s_node_ip_node_1: "{{ node_1_ip }}"
+k3s_node_ip_node_2: "{{ node_2_ip }}"
+k3s_node_ip_node_3: "{{ node_3_ip }}"
 
-# k3s should prefer gigabit network for all internal communication
-k3s_node_ip_node_1: "{{ node_1_eth0_ip }}"
-k3s_node_ip_node_2: "{{ node_2_eth0_ip }}"
-k3s_node_ip_node_3: "{{ node_3_eth0_ip }}"
+# Legacy: old eth0 IPs before network migration (10.0.0.1/2/3). Kept for reference only.
+# Do NOT use for k3s config — those interfaces are no longer the primary data path.
+node_1_eth0_ip: "10.0.0.101"
+node_2_eth0_ip: "10.0.0.102"
+node_3_eth0_ip: "10.0.0.103"
 
 # Flannel interface for CNI (use gigabit)
 k3s_flannel_iface: "eth0"
@@ -62,9 +72,9 @@ disabled_services: []
 watchdog_timeout: 15
 watchdog_max_load: 24
 watchdog_ping_targets:
-  - "{{ node_1_eth0_ip }}"
-  - "{{ node_2_eth0_ip }}"
-  - "{{ node_3_eth0_ip }}"
+  - "{{ node_1_mgmt_ip }}"
+  - "{{ node_2_mgmt_ip }}"
+  - "{{ node_3_mgmt_ip }}"
 
 # Boot Loop Protection
 watchdog_max_boot_attempts: 5
