@@ -16,6 +16,8 @@ spec:
       interval: 30m
   releaseName: ollie
   values:
+    imagePullSecrets:
+      - name: ghcr-secret
     audio:
       enabled: false
     ollama:
