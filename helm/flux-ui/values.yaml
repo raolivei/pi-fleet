@@ -45,10 +45,11 @@ weave-gitops:
   # Replica count
   replicaCount: 1
   
-  # Security context
+  # Security context (container-level — fsGroup is pod-level only)
   securityContext:
     runAsNonRoot: true
     runAsUser: 65534
+  podSecurityContext:
     fsGroup: 65534
   
   # Service account
