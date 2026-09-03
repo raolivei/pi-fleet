@@ -308,7 +308,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
 
   config {
     # Web service route
-    # IMPORTANT: Using ClusterIP (10.43.23.214) instead of DNS name (traefik.kube-system.svc.cluster.local)
+    # IMPORTANT: Using ClusterIP (10.43.225.225) instead of DNS name (traefik.kube-system.svc.cluster.local)
     # because this cluster uses IP addresses instead of DNS names (gigabit network configuration).
     # The tunnel container may have DNS resolution problems with Kubernetes service DNS,
     # so using the direct ClusterIP bypasses this issue and works reliably with IP-based networking.
@@ -320,84 +320,84 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
     ingress_rule {
       hostname = "swimto.eldertree.xyz"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     # API service route (path-based)
     ingress_rule {
       hostname = "swimto.eldertree.xyz"
       path     = "/api/*"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     # Pitanga website routes
     ingress_rule {
       hostname = "pitanga.cloud"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     ingress_rule {
       hostname = "www.pitanga.cloud"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     ingress_rule {
       hostname = "northwaysignal.pitanga.cloud"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     # swimto.app routes
     ingress_rule {
       hostname = "swimto.app"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     ingress_rule {
       hostname = "swimto.app"
       path     = "/api/*"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     ingress_rule {
       hostname = "www.swimto.app"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     ingress_rule {
       hostname = "api.swimto.app"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     # raolivei.me routes (personal website)
     ingress_rule {
       hostname = "raolivei.me"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     ingress_rule {
       hostname = "www.raolivei.me"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     # Canopy personal finance routes (more-specific paths first)
     ingress_rule {
       hostname = "canopy.eldertree.xyz"
       path     = "/v1/*"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     ingress_rule {
       hostname = "canopy.eldertree.xyz"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
 
@@ -405,21 +405,21 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
     ingress_rule {
       hostname = "control.eldertree.xyz"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     # Bolão dos Guerreiros (WC 2026 prediction pool)
     ingress_rule {
       hostname = "bolao.eldertree.xyz"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     # Bolão Claude scratch (design variants)
     ingress_rule {
       hostname = "bolao-claude.eldertree.xyz"
       path     = "/"
-      service  = "http://10.43.23.214:80"
+      service  = "http://10.43.225.225:80"
     }
 
     # Catch-all rule (must be last)
