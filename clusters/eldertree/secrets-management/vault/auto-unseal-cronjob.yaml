@@ -51,17 +51,17 @@ spec:
                   valueFrom:
                     secretKeyRef:
                       name: vault-unseal-keys
-                      key: UNSEAL_KEY_1
+                      key: VAULT_UNSEAL_KEY_1
                 - name: UNSEAL_KEY_2
                   valueFrom:
                     secretKeyRef:
                       name: vault-unseal-keys
-                      key: UNSEAL_KEY_2
+                      key: VAULT_UNSEAL_KEY_2
                 - name: UNSEAL_KEY_3
                   valueFrom:
                     secretKeyRef:
                       name: vault-unseal-keys
-                      key: UNSEAL_KEY_3
+                      key: VAULT_UNSEAL_KEY_3
               resources:
                 requests:
                   cpu: 10m
