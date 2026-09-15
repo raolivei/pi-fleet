@@ -26,18 +26,23 @@
     gigabit_interface: "{{ k3s_flannel_iface | default('eth0') }}"
 
     # Node-specific configuration mapping
+    # node_ip = gigabit/k3s data path (192.168.2.10x) -> node-ip/advertise-address
+    # mgmt_ip = management/WiFi (10.0.0.10x)          -> tls-san only
+    # These were previously swapped, which wrote an unreachable node-ip into
+    # config.yaml and left k3s failing with "failed to find interface with
+    # specified node ip".
     node_config:
       node-1:
-        node_ip: "{{ node_1_eth0_ip }}"
-        wifi_ip: "{{ node_1_ip }}"
+        node_ip: "{{ node_1_ip }}"
+        mgmt_ip: "{{ node_1_mgmt_ip }}"
         hostname: "node-1.eldertree.local"
       node-2:
-        node_ip: "{{ node_2_eth0_ip }}"
-        wifi_ip: "{{ node_2_ip }}"
+        node_ip: "{{ node_2_ip }}"
+        mgmt_ip: "{{ node_2_mgmt_ip }}"
         hostname: "node-2.eldertree.local"
       node-3:
-        node_ip: "{{ node_3_eth0_ip }}"
-        wifi_ip: "{{ node_3_ip }}"
+        node_ip: "{{ node_3_ip }}"
+        mgmt_ip: "{{ node_3_mgmt_ip }}"
         hostname: "node-3.eldertree.local"
 
   tasks:
@@ -53,8 +58,8 @@
       debug:
         msg:
           - "Node: {{ inventory_hostname }}"
-          - "Gigabit IP (node-ip): {{ this_node_config.node_ip }}"
-          - "WiFi IP: {{ this_node_config.wifi_ip }}"
+          - "Gigabit/k3s IP (node-ip): {{ this_node_config.node_ip }}"
+          - "Management IP: {{ this_node_config.mgmt_ip }}"
           - "Hostname: {{ this_node_config.hostname }}"
           - "VIP: {{ kube_vip_ip }}"
           - "bind-address: {{ k3s_bind_address | default('0.0.0.0') }}"
@@ -164,7 +169,7 @@
           # TLS SANs - all valid ways to reach this API server
           tls-san:
             - {{ kube_vip_ip }}
-            - {{ this_node_config.wifi_ip }}
+            - {{ this_node_config.mgmt_ip }}
             - {{ this_node_config.node_ip }}
             - {{ this_node_config.hostname }}
             - {{ inventory_hostname }}
@@ -186,7 +191,7 @@
           # Node: {{ inventory_hostname }} (joining node)
 
           # Cluster join configuration - required for auto-rejoin after reboot
-          server: https://{{ node_1_eth0_ip }}:6443
+          server: https://{{ kube_vip_ip }}:6443
           token: {{ k3s_cluster_token }}
 
           # Node identity - use gigabit IP for internal communication
@@ -205,7 +210,7 @@
           # TLS SANs - all valid ways to reach this API server
           tls-san:
             - {{ kube_vip_ip }}
-            - {{ this_node_config.wifi_ip }}
+            - {{ this_node_config.mgmt_ip }}
             - {{ this_node_config.node_ip }}
             - {{ this_node_config.hostname }}
             - {{ inventory_hostname }}

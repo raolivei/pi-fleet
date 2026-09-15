@@ -10,7 +10,7 @@ This document provides comprehensive infrastructure context for OpenClaw/Elder. 
 
 | Node   | Hostname                 | WiFi IP       | Gigabit IP | Role                         |
 | ------ | ------------------------ | ------------- | ---------- | ---------------------------- |
-| node-1 | `node-1.eldertree.local` | 192.168.2.101 | 10.0.0.1   | Control Plane + etcd + Vault |
+| node-1 | `node-1.eldertree.local` | 192.168.2.101 | 10.0.0.101 | Control Plane + etcd + Vault |
 | node-2 | `node-2.eldertree.local` | 192.168.2.102 | 10.0.0.2   | Control Plane + etcd + Vault |
 | node-3 | `node-3.eldertree.local` | 192.168.2.103 | 10.0.0.3   | Control Plane + etcd + Vault |
 

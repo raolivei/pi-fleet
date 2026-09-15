@@ -64,7 +64,7 @@ kubectl delete node node-1.eldertree.local
 ### Issue 2: IP Address Conflict
 
 **Symptoms:**
-- node-1 and node-1 both have InternalIP: `10.0.0.1`
+- node-1 and node-1 both have InternalIP: `10.0.0.1` (historical: duplicate-IP incident)
 - node-2 and node-3 both have InternalIP: `10.0.0.3`
 
 **Root Cause:**
@@ -73,7 +73,7 @@ kubectl delete node node-1.eldertree.local
 
 **Expected Configuration:**
 According to cluster documentation:
-- **node-1**: 192.168.2.101 (wlan0), 10.0.0.1 (eth0) ✅ Correct
+- **node-1**: 10.0.0.101 (wlan0/mgmt), 192.168.2.101 (eth0/k3s) ✅ Correct
 - **node-2**: 192.168.2.102 (wlan0), 10.0.0.2 (eth0) ❌ Currently 10.0.0.3
 - **node-3**: 192.168.2.103 (wlan0), 10.0.0.3 (eth0) ✅ Correct
 

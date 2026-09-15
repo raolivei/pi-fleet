@@ -23,11 +23,14 @@ K3s cluster on Raspberry Pi, managed with Ansible and Terraform.
 
 The eldertree cluster consists of 3 identical Raspberry Pi 5 nodes in a fully HA configuration:
 
-| Node | WiFi IP | Gigabit IP | Role |
-|------|---------|------------|------|
-| node-1 | 192.168.2.101 | 10.0.0.1 | control-plane, etcd, master |
-| node-2 | 192.168.2.102 | 10.0.0.2 | control-plane, etcd, master |
-| node-3 | 192.168.2.103 | 10.0.0.3 | control-plane, etcd, master |
+| Node | WiFi / mgmt (wlan0) | Gigabit / k3s (eth0) | Role |
+|------|---------------------|----------------------|------|
+| node-1 | 10.0.0.101 | 192.168.2.101 | control-plane, etcd, master |
+| node-2 | 10.0.0.102 | 192.168.2.102 | control-plane, etcd, master |
+| node-3 | 10.0.0.103 | 192.168.2.103 | control-plane, etcd, master |
+
+SSH from the Mac uses the WiFi/mgmt address; the gigabit network has no internet
+gateway. `10.0.0.1` is the home router, not a node.
 
 **kube-vip VIP**: 192.168.2.100 (HA API server access)
 

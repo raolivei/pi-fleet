@@ -43,12 +43,12 @@ node-3.eldertree.local   Ready      <none>                      4d19h   v1.33.6+
 ## IP Address Configuration
 
 **Actual Network IPs (verified):**
-- node-1: 192.168.2.101 (wlan0), 10.0.0.1 (eth0) ✅
+- node-1: 10.0.0.101 (wlan0/mgmt), 192.168.2.101 (eth0/k3s) ✅
 - node-2: 192.168.2.102 (wlan0), 10.0.0.2 (eth0) ✅
 - node-3: 192.168.2.103 (wlan0), 10.0.0.3 (eth0) ✅
 
 **Kubernetes Reported IPs:**
-- node-1: 10.0.0.1 ✅
+- node-1: 10.0.0.101 ✅
 - node-2: 10.0.0.3 ⚠️ (should be 10.0.0.2, but actual network is correct)
 - node-3: 10.0.0.3 ✅
 

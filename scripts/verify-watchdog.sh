@@ -4,10 +4,12 @@
 
 set -euo pipefail
 
-# Prefer gigabit; fall back to WiFi when SSH from a laptop fails on 10.0.0.x
+# SSH from a laptop uses the management/WiFi network (10.0.0.10x, has internet).
+# The gigabit network (192.168.2.10x) is the k3s data path and is NOT routable
+# from the Mac, so it is only a fallback for on-cluster use.
 NODE_NAMES=("node-1" "node-2" "node-3")
-NODE_IPS_GB=("10.0.0.1" "10.0.0.2" "10.0.0.3")
-NODE_IPS_WIFI=("192.168.2.101" "192.168.2.102" "192.168.2.103")
+NODE_IPS_MGMT=("10.0.0.101" "10.0.0.102" "10.0.0.103")
+NODE_IPS_GB=("192.168.2.101" "192.168.2.102" "192.168.2.103")
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519_raolivei}"
 SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=5"
 
@@ -20,7 +22,7 @@ ssh_node() {
 resolve_ip() {
   local idx=$1
   local ip
-  for ip in "${NODE_IPS_GB[$idx]}" "${NODE_IPS_WIFI[$idx]}"; do
+  for ip in "${NODE_IPS_MGMT[$idx]}" "${NODE_IPS_GB[$idx]}"; do
     if ssh_node "$ip" "exit" 2>/dev/null; then
       echo "$ip"
       return 0
@@ -40,7 +42,7 @@ for i in "${!NODE_NAMES[@]}"; do
   IP=""
   if ! IP=$(resolve_ip "$i"); then
     echo "--- $NAME (unreachable) ---"
-    echo "✗ SSH failed on ${NODE_IPS_GB[$i]} and ${NODE_IPS_WIFI[$i]}"
+    echo "✗ SSH failed on ${NODE_IPS_MGMT[$i]} and ${NODE_IPS_GB[$i]}"
     echo ""
     FAILURES=$((FAILURES + 1))
     continue

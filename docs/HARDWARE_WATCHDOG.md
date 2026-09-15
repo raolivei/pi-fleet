@@ -41,7 +41,7 @@ To prevent infinite reboot loops, a boot guard tracks consecutive reboots:
 | `watchdog-timeout` | 15s | Hardware timeout before forced reboot |
 | `interval` | 5s | How often daemon kicks watchdog |
 | `max-load-1` | 24 | Reboot if 1-min load avg exceeds this |
-| `ping` | peer 10.0.0.x only | Each node pings **other** nodes (not self); reboot if **all** peers unreachable |
+| `ping` | peer mgmt IPs (10.0.0.10x) only | Each node pings **other** nodes (not self); reboot if **all** peers unreachable |
 | `test-binary` | `/usr/local/bin/watchdog-k3s-health.sh` | k3s active, kubelet `/healthz`, API `:6443` |
 | `watchdog_max_boot_attempts` | 5 | Max consecutive reboots before disabling watchdog |
 | `watchdog_successful_boot_time` | 600s | Time node must stay up to reset boot counter |
@@ -83,12 +83,12 @@ sudo lsof /dev/watchdog   # must show watchdog daemon, not wd_keepalive alone
 
 ### Logs
 ```bash
-ssh raolivei@10.0.0.1 "journalctl -u watchdog -f"
+ssh raolivei@10.0.0.101 "journalctl -u watchdog -f"
 ```
 
 ### Configuration Check
 ```bash
-ssh raolivei@10.0.0.1 "cat /etc/watchdog.conf | grep -v '^#'"
+ssh raolivei@10.0.0.101 "cat /etc/watchdog.conf | grep -v '^#'"
 ```
 
 ## Monitoring
@@ -106,7 +106,7 @@ Check AlertManager at `alertmanager.eldertree.local`.
 
 Check for unexpected reboots:
 ```bash
-ssh raolivei@10.0.0.1 "uptime"
+ssh raolivei@10.0.0.101 "uptime"
 # Compare with other nodes
 ```
 
@@ -118,12 +118,12 @@ If watchdog disabled after 5 consecutive reboots:
 
 1. **Check boot counter**
    ```bash
-   ssh raolivei@10.0.0.1 "cat /var/lib/watchdog-boot-count"
+   ssh raolivei@10.0.0.101 "cat /var/lib/watchdog-boot-count"
    ```
 
 2. **Check boot guard logs**
    ```bash
-   ssh raolivei@10.0.0.1 "journalctl -u watchdog-boot-guard -n 50"
+   ssh raolivei@10.0.0.101 "journalctl -u watchdog-boot-guard -n 50"
    ```
 
 3. **Investigate root cause**
@@ -133,8 +133,8 @@ If watchdog disabled after 5 consecutive reboots:
 
 4. **Reset counter and re-enable watchdog**
    ```bash
-   ssh raolivei@10.0.0.1 "echo 0 | sudo tee /var/lib/watchdog-boot-count"
-   ssh raolivei@10.0.0.1 "sudo systemctl enable watchdog && sudo systemctl start watchdog"
+   ssh raolivei@10.0.0.101 "echo 0 | sudo tee /var/lib/watchdog-boot-count"
+   ssh raolivei@10.0.0.101 "sudo systemctl enable watchdog && sudo systemctl start watchdog"
    ```
 ### False Positive Reboots
 
@@ -142,19 +142,19 @@ If nodes reboot unexpectedly:
 
 1. **Check load average**
    ```bash
-   ssh raolivei@10.0.0.1 "uptime"
+   ssh raolivei@10.0.0.101 "uptime"
    ```
    If > 24, watchdog is protecting against system overload. This is working as designed.
 
 2. **Check k3s service**
    ```bash
-   ssh raolivei@10.0.0.1 "systemctl status k3s"
+   ssh raolivei@10.0.0.101 "systemctl status k3s"
    ```
    If k3s crashed, watchdog detected it. Investigate k3s logs.
 
 3. **Check network connectivity**
    ```bash
-   ssh raolivei@10.0.0.1 "ping -c 1 10.0.0.1"
+   ssh raolivei@10.0.0.101 "ping -c 1 10.0.0.1"   # 10.0.0.1 = home router (gateway)
    ```
    If network unavailable, watchdog triggers reboot. Check eth0 connectivity.
 
@@ -171,7 +171,7 @@ If nodes reboot unexpectedly:
 ### Service Not Starting
 
 ```bash
-ssh raolivei@10.0.0.1 "journalctl -u watchdog -n 50"
+ssh raolivei@10.0.0.101 "journalctl -u watchdog -n 50"
 ```
 
 Common issues:
@@ -217,9 +217,9 @@ Common issues:
   - **Explanation**: Watchdog only triggers on high load (>24) or network failure. Silent hangs may not be detected.
   - **Mitigation**: Consider lowering max-load threshold or adding application-level health checks.
   
-- **Network isolation**: If all ping targets (10.0.0.1-3) are unreachable, watchdog detects as local hang
+- **Network isolation**: If all ping targets (10.0.0.101-103) are unreachable, watchdog detects as local hang
   - **Explanation**: If gigabit network is down, watchdog can't verify cluster health
-  - **Check**: Verify eth0 connectivity to other nodes
+  - **Check**: Verify wlan0 (mgmt) connectivity to the other nodes
 
 - **Watchdog not deployed**: Playbook may not have run on this specific node
   - **Fix**: Run `ansible-playbook playbooks/setup-hardware-watchdog.yml --limit node-X`
@@ -267,7 +267,7 @@ Use the verification script to check all nodes:
 
 Expected output for healthy node:
 ```
---- node-1 (10.0.0.1) ---
+--- node-1 (10.0.0.101) ---
 ✓ Service: running
 Boot counter: 0
 Watchdog restarts (24h): 0
@@ -279,7 +279,7 @@ Watchdog timeout: 15s
 
 To disable watchdog:
 ```bash
-ssh raolivei@10.0.0.1 "sudo systemctl stop watchdog && sudo systemctl disable watchdog"
+ssh raolivei@10.0.0.101 "sudo systemctl stop watchdog && sudo systemctl disable watchdog"
 ```
 
 To re-enable:
