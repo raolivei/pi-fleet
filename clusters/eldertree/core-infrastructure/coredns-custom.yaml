@@ -12,18 +12,18 @@ data:
       errors
       cache 30
       hosts {
-        192.168.2.200 dex.eldertree.local
-        192.168.2.200 flux.eldertree.local
-        192.168.2.200 grafana.eldertree.local
-        192.168.2.200 prometheus.eldertree.local
-        192.168.2.200 vault.eldertree.local
-        192.168.2.200 swimto.eldertree.local
-        192.168.2.200 canopy.eldertree.local
-        192.168.2.200 pitanga.eldertree.local
-        192.168.2.200 docs.eldertree.local
-        192.168.2.200 openclaw.eldertree.local
-        192.168.2.200 control.eldertree.local
-        192.168.2.200 elder.eldertree.local
+        10.43.225.225 dex.eldertree.local
+        10.43.225.225 flux.eldertree.local
+        10.43.225.225 grafana.eldertree.local
+        10.43.225.225 prometheus.eldertree.local
+        10.43.225.225 vault.eldertree.local
+        10.43.225.225 swimto.eldertree.local
+        10.43.225.225 canopy.eldertree.local
+        10.43.225.225 pitanga.eldertree.local
+        10.43.225.225 docs.eldertree.local
+        10.43.225.225 openclaw.eldertree.local
+        10.43.225.225 control.eldertree.local
+        10.43.225.225 elder.eldertree.local
         fallthrough
       }
       # fallthrough needs a next plugin, else unlisted *.eldertree.local names
@@ -31,5 +31,10 @@ data:
       # error with "plugin/hosts: no next plugin found", flooding errors and
       # crash-looping CoreDNS. Forward the fallthrough to BIND9 (bind9 svc
       # ClusterIP), which is authoritative for eldertree.local and NXDOMAINs junk.
-      forward . 10.43.127.139
+      #
+      # BOTH IPs above and below are ClusterIPs and therefore change whenever the
+      # Service is recreated. When *.eldertree.local stops resolving, re-check them:
+      #   kubectl get svc traefik -n kube-system -o jsonpath='{.spec.clusterIP}'
+      #   kubectl get svc bind9   -n bind       -o jsonpath='{.spec.clusterIP}'
+      forward . 10.43.237.251
     }
