@@ -4,11 +4,14 @@
 
 **Cluster Nodes:**
 
-| Node   | Hostname               | wlan0 IP      | eth0 IP  |
-| ------ | ---------------------- | ------------- | -------- |
-| node-1 | node-1.eldertree.local | 192.168.2.101 | 10.0.0.1 |
-| node-2 | node-2.eldertree.local | 192.168.2.102 | 10.0.0.2 |
-| node-3 | node-3.eldertree.local | 192.168.2.103 | 10.0.0.3 |
+| Node   | Hostname               | wlan0 IP (mgmt/WAN) | eth0 IP (gigabit/k3s) |
+| ------ | ---------------------- | ------------------- | --------------------- |
+| node-1 | node-1.eldertree.local | 10.0.0.101          | 192.168.2.101         |
+| node-2 | node-2.eldertree.local | 10.0.0.102          | 192.168.2.102         |
+| node-3 | node-3.eldertree.local | 10.0.0.103          | 192.168.2.103         |
+
+`10.0.0.1` is the home router (the management gateway), never a node. The gigabit
+segment has no gateway — a default route there blackholes all egress.
 
 **kube-vip Virtual IPs (ARP Mode):**
 

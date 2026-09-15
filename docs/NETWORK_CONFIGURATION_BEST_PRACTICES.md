@@ -38,7 +38,7 @@ Node-1 experienced recurring network issues due to:
 **Required Configuration:**
 
 - ✅ **Static IP** on isolated subnet:
-  - node-1: `10.0.0.1/24`
+  - node-1: `192.168.2.101/24` (eth0, gigabit/k3s, no gateway)
   - node-2: `10.0.0.2/24`
   - node-3: `10.0.0.3/24`
 - ✅ **No gateway** (isolated network)

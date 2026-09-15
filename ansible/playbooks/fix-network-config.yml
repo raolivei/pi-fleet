@@ -1,4 +1,18 @@
 ---
+# ############################################################################
+# DEPRECATED 2026-09-15 — DO NOT RUN. Superseded by configure-node-network.yml
+#
+# This playbook encodes the PRE-migration layout: it assigns the 192.168.2.x
+# k3s address to wlan0 and sets `ipv4.gateway 192.168.2.1` on it. The gigabit
+# switch has no internet gateway, so that default route blackholes all egress.
+#
+# Running this against node-1 on 2026-09-15 left it with wlan0=192.168.2.101
+# gw 192.168.2.1 and eth0=10.0.0.1 (a duplicate of the home router's own IP),
+# which knocked it off the cluster and triggered a watchdog reboot loop.
+#
+# Use instead:
+#   ansible-playbook -i inventory/hosts.yml playbooks/configure-node-network.yml
+# ############################################################################
 # Fix network configuration to prevent dual IP issues
 # This playbook ensures:
 # 1. Only one IP on wlan0 (excluding kube-vip VIP)
@@ -17,6 +31,15 @@
     vip: "192.168.2.100"
 
   tasks:
+    - name: REFUSE TO RUN — this playbook is deprecated and will break networking
+      ansible.builtin.fail:
+        msg: >-
+          fix-network-config.yml is DEPRECATED (pre-migration layout) and will
+          blackhole egress by putting a default route on the gigabit network.
+          Use playbooks/configure-node-network.yml instead. To override for
+          forensics only, pass -e i_understand_this_breaks_networking=true
+      when: not (i_understand_this_breaks_networking | default(false) | bool)
+
     - name: Get expected IP for this node
       set_fact:
         expected_ip: "{{ node_ips[inventory_hostname] }}"

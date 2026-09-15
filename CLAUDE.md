@@ -127,9 +127,12 @@ pi-fleet/
 ## Node Configuration
 
 ### Node Naming & IPs
-- **node-1**: 192.168.2.101 (WiFi) / 10.0.0.1 (Gigabit)
-- **node-2**: 192.168.2.102 (WiFi) / 10.0.0.2 (Gigabit)
-- **node-3**: 192.168.2.103 (WiFi) / 10.0.0.3 (Gigabit)
+- **node-1**: 10.0.0.101 (WiFi/mgmt, wlan0) / 192.168.2.101 (Gigabit/k3s, eth0)
+- **node-2**: 10.0.0.102 (WiFi/mgmt, wlan0) / 192.168.2.102 (Gigabit/k3s, eth0)
+- **node-3**: 10.0.0.103 (WiFi/mgmt, wlan0) / 192.168.2.103 (Gigabit/k3s, eth0)
+- SSH from the Mac uses the **WiFi/mgmt** address. The gigabit network has **no
+  internet gateway** and is not routable from the Mac.
+- `10.0.0.1` is the **home router**, never a node.
 - **kube-vip VIP**: 192.168.2.100 (HA API server access)
 - **node-x**: Generic hostname on backup SD card for recovery
 
