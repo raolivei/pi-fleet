@@ -1,0 +1,115 @@
+---
+# Ensure systemd-journald persists logs to disk across reboots.
+#
+# This was previously only applied as a side effect of
+# setup-hardware-watchdog.yml, so a node never targeted by that playbook (or
+# re-flashed since) silently falls back to volatile (tmpfs) journal storage.
+# `Storage=persistent` alone is also not sufficient: without /var/log/journal
+# existing, journald keeps using the volatile /run/log/journal and the
+# setting has no visible effect until the directory is created.
+#
+# IMPORTANT — what this does and does not protect against:
+#   - Protects against: reboots, service restarts, watchdog-triggered resets
+#     (anything with a shutdown sequence, or where journald gets a chance to
+#     flush before the kernel drops).
+#   - Does NOT protect against: an abrupt power loss (PoE brownout, pulled
+#     plug). journald syncs to disk periodically, not per-line; a true power
+#     cut can lose the last few seconds of logs and may leave the active
+#     journal file flagged corrupt, in which case journald starts a fresh
+#     file on next boot and the crash itself goes unlogged. This is why
+#     node-3's boot after the 2026-09-15 brownout showed an empty prior-boot
+#     journal even with Storage=persistent already set on that node.
+#   - The real fix for that failure mode is on the power side (headroom on
+#     the PoE budget / a supply not shared with other nodes), not journald
+#     config. See CHANGELOG.md 2026-09-15 for the incident this responds to.
+#
+# ROOT CAUSE this playbook also fixes: Raspberry Pi OS ships
+# /usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf, which forces
+# Storage=volatile regardless of /etc/systemd/journald.conf (later drop-ins
+# win). It exists to spare SD cards from write wear, but these nodes boot
+# from NVMe, so it silently defeats Storage=persistent on every node until
+# removed. Same category of bug as the watchdog/systemd-managed-watchdog
+# conflict documented in NODE-1-HANG-ROOT-CAUSE-2026-05-26.md
+# (40-rpi-enable-watchdog.conf) — a distinct file, same "RPi default assumes
+# SD card" pattern. Verify with:
+#   systemd-analyze cat-config systemd/journald.conf
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/configure-persistent-journal.yml
+#   ansible-playbook -i inventory/hosts.yml playbooks/configure-persistent-journal.yml --limit node-1
+
+- name: Configure persistent systemd journal
+  hosts: raspberry_pi
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check for the Raspberry Pi OS volatile-storage drop-in
+      ansible.builtin.stat:
+        path: /usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf
+      register: rpi_volatile_dropin
+
+    - name: Disable RPi volatile-storage drop-in (these nodes boot from NVMe, not SD)
+      ansible.builtin.command:
+        argv:
+          - mv
+          - /usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf
+          - /root/40-rpi-volatile-storage.conf.disabled
+      when: rpi_volatile_dropin.stat.exists
+      notify: restart journald
+
+    - name: Ensure /var/log/journal exists (required for Storage=persistent to take effect)
+      ansible.builtin.file:
+        path: /var/log/journal
+        state: directory
+        owner: root
+        group: systemd-journal
+        mode: '2755'
+
+    - name: Set Storage=persistent
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: '^#?Storage='
+        line: 'Storage=persistent'
+      notify: restart journald
+
+    - name: Cap journal disk usage
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: '^#?SystemMaxUse='
+        line: 'SystemMaxUse=500M'
+      notify: restart journald
+
+    - name: Keep at least 7 days on disk when possible
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: '^#?MaxRetentionSec='
+        line: 'MaxRetentionSec=7day'
+      notify: restart journald
+
+    - name: Flush any pending handlers now (so verification below sees the final state)
+      ansible.builtin.meta: flush_handlers
+
+    - name: Flush the current volatile journal into persistent storage
+      ansible.builtin.command: journalctl --flush
+      changed_when: false
+
+    - name: Verify persistent storage is actually active
+      ansible.builtin.command: journalctl --header
+      register: journal_header
+      changed_when: false
+
+    - name: Assert journald is using persistent (disk) storage
+      ansible.builtin.assert:
+        that: "'File path: /var/log/journal' in journal_header.stdout"
+        fail_msg: >-
+          journald is still using volatile storage. Check that
+          /var/log/journal exists with the correct ownership and that
+          journald.conf was reloaded.
+        success_msg: "journald confirmed writing to /var/log/journal (persistent)."
+
+  handlers:
+    - name: restart journald
+      ansible.builtin.systemd:
+        name: systemd-journald
+        state: restarted
