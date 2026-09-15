@@ -4,12 +4,12 @@
 # Updated: 2026-09-02 - Network migration: homebase gigabit = 192.168.2.x (k3s),
 #   home router WiFi = 10.0.0.x (internet + SSH from Mac)
 
-# Gigabit / k3s Network (eth0 on node-2/3, wlan0 on node-1 — homebase switch)
+# Gigabit / k3s Network (eth0 on ALL nodes — homebase switch)
 # Used for k3s inter-node communication and kube-vip VIP. No internet access.
 network_base: "192.168.2"
 network_netmask: "255.255.255.0"
 
-# WiFi / Management Network (wlan0 on node-2/3, eth0 on node-1 — home router)
+# WiFi / Management Network (wlan0 on ALL nodes — home router)
 # Used for internet access and SSH from Mac. Gateway is the home router.
 management_network_base: "10.0.0"
 management_gateway: "10.0.0.1"
@@ -43,13 +43,14 @@ k3s_version: "v1.35.0+k3s1"
 k3s_server_url: "https://{{ kube_vip_ip }}:6443"
 k3s_cluster_init_node: "node-1"
 
-# k3s uses gigabit/homebase IPs for inter-node communication (eth0 on node-2/3)
+# k3s uses gigabit/homebase IPs for inter-node communication (eth0 on all nodes)
 k3s_node_ip_node_1: "{{ node_1_ip }}"
 k3s_node_ip_node_2: "{{ node_2_ip }}"
 k3s_node_ip_node_3: "{{ node_3_ip }}"
 
 # Legacy: old eth0 IPs before network migration (10.0.0.1/2/3). Kept for reference only.
-# Do NOT use for k3s config — those interfaces are no longer the primary data path.
+# Do NOT use for k3s config — these are the MANAGEMENT addresses, not the k3s data path.
+# Prefer node_N_mgmt_ip; these aliases exist only for older playbooks.
 node_1_eth0_ip: "10.0.0.101"
 node_2_eth0_ip: "10.0.0.102"
 node_3_eth0_ip: "10.0.0.103"

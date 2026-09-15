@@ -1,0 +1,146 @@
+---
+# Configure node network interfaces to the canonical post-migration layout.
+#
+# Canonical layout (identical on ALL nodes since 2026-09-15):
+#   eth0             -> gigabit / k3s      192.168.2.10X/24, NO gateway, never-default
+#   wlan0 (homebase) -> management / WAN   10.0.0.10X/24,    gw management_gateway
+#
+# The gigabit switch has NO internet gateway. A default route on eth0 blackholes
+# all egress -- this is why eth0 must set ipv4.never-default=yes.
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/configure-node-network.yml --limit node-1
+#   ansible-playbook -i inventory/hosts.yml playbooks/configure-node-network.yml --check --diff
+#
+# Recovery: if a node is unreachable over the management IP, run with
+#   -e ansible_host=<tailscale-ip>   (or the node's current reachable address)
+
+- name: Configure node network to canonical layout
+  hosts: raspberry_pi
+  become: true
+  gather_facts: false
+
+  vars:
+    _idx: "{{ inventory_hostname.split('-')[1] }}"
+    node_k3s_ip: "{{ vars['node_' ~ _idx ~ '_ip'] }}"
+    node_mgmt_ip: "{{ vars['node_' ~ _idx ~ '_mgmt_ip'] }}"
+    mgmt_dns_csv: "{{ management_dns | join(',') }}"
+
+  tasks:
+    - name: Discover NetworkManager profile bound to eth0
+      ansible.builtin.shell: >-
+        nmcli -t -f NAME,DEVICE connection show | awk -F: '$2=="eth0"{print $1; exit}'
+      register: eth0_profile
+      changed_when: false
+
+    - name: Discover NetworkManager profile bound to wlan0
+      ansible.builtin.shell: >-
+        nmcli -t -f NAME,DEVICE connection show | awk -F: '$2=="wlan0"{print $1; exit}'
+      register: wlan0_profile
+      changed_when: false
+
+    - name: Fail early if either profile is missing
+      ansible.builtin.fail:
+        msg: >-
+          Could not resolve NM profiles (eth0='{{ eth0_profile.stdout }}',
+          wlan0='{{ wlan0_profile.stdout }}'). Refusing to reconfigure networking.
+      when: eth0_profile.stdout == '' or wlan0_profile.stdout == ''
+
+    - name: Show intended configuration
+      ansible.builtin.debug:
+        msg:
+          - "eth0  profile '{{ eth0_profile.stdout }}'  -> {{ node_k3s_ip }}/24 (k3s, no gateway)"
+          - "wlan0 profile '{{ wlan0_profile.stdout }}' -> {{ node_mgmt_ip }}/24 gw {{ management_gateway }}"
+
+    # --- eth0: gigabit / k3s. Safe to change; never the Ansible control channel. ---
+    - name: Configure eth0 for gigabit/k3s network (no default route)
+      ansible.builtin.command:
+        argv:
+          - nmcli
+          - connection
+          - modify
+          - "{{ eth0_profile.stdout }}"
+          - ipv4.method
+          - manual
+          - ipv4.addresses
+          - "{{ node_k3s_ip }}/24"
+          - ipv4.gateway
+          - ""
+          - ipv4.dns
+          - "{{ mgmt_dns_csv }}"
+          - ipv4.never-default
+          - "yes"
+      register: eth0_mod
+      changed_when: eth0_mod.rc == 0
+
+    - name: Reactivate eth0
+      ansible.builtin.command: nmcli connection up "{{ eth0_profile.stdout }}"
+      register: eth0_up
+      changed_when: eth0_up.rc == 0
+      failed_when: false
+
+    # --- wlan0: management / internet. This IS the Ansible control channel. ---
+    - name: Configure wlan0 for management network (default route + DNS)
+      ansible.builtin.command:
+        argv:
+          - nmcli
+          - connection
+          - modify
+          - "{{ wlan0_profile.stdout }}"
+          - ipv4.method
+          - manual
+          - ipv4.addresses
+          - "{{ node_mgmt_ip }}/24"
+          - ipv4.gateway
+          - "{{ management_gateway }}"
+          - ipv4.dns
+          - "{{ mgmt_dns_csv }}"
+          - ipv4.never-default
+          - "no"
+      register: wlan0_mod
+      changed_when: wlan0_mod.rc == 0
+
+    # Reactivating wlan0 drops our SSH session when the address changes.
+    # Fire-and-forget, then wait for the node to come back on its canonical IP.
+    - name: Reactivate wlan0 (connection will drop if the address changed)
+      ansible.builtin.shell: |
+        nohup sh -c 'sleep 2; nmcli connection up "{{ wlan0_profile.stdout }}"' >/dev/null 2>&1 &
+      async: 1
+      poll: 0
+      changed_when: true
+
+    - name: Wait for node to return on its canonical management IP
+      ansible.builtin.wait_for_connection:
+        delay: 10
+        timeout: 180
+
+    # --- verification ---
+    - name: Collect post-change network state
+      ansible.builtin.shell: |
+        echo "ADDRS:";  ip -4 -o addr show | awk '{print $2, $4}'
+        echo "DEFAULT:"; ip route | grep '^default' || echo "(none)"
+      register: net_state
+      changed_when: false
+
+    - name: Verify default route leaves via the management gateway
+      ansible.builtin.command: ip route get 1.1.1.1
+      register: route_check
+      changed_when: false
+
+    - name: Assert egress does NOT use the gigabit network
+      ansible.builtin.assert:
+        that: "network_base not in route_check.stdout"
+        fail_msg: >-
+          Default route still egresses via {{ network_base }}.x (gigabit has no
+          internet gateway). Got: {{ route_check.stdout }}
+        success_msg: "Egress correctly uses the management network."
+
+    - name: Verify internet connectivity
+      ansible.builtin.command: ping -c 2 -W 3 {{ management_gateway }}
+      register: gw_ping
+      changed_when: false
+      failed_when: gw_ping.rc != 0
+
+    - name: Report final state
+      ansible.builtin.debug:
+        msg: "{{ net_state.stdout_lines }}"
