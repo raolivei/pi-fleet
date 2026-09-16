@@ -1,0 +1,76 @@
+# kube-vip in ARP mode: provides a floating VIP for both the k3s API server
+# and any Service of type LoadBalancer (kube-vip-cloud-provider not used here,
+# plain kube-vip services controller — see config below).
+#
+# VIP lives on the MANAGEMENT network (10.0.0.x), not gigabit (192.168.2.x),
+# because the gigabit segment has no route from the Mac unless the USB
+# ethernet adapter is plugged in. WiFi is always up.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-vip
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: kube-vip
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-vip
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kube-vip
+    spec:
+      serviceAccountName: kube-vip
+      hostNetwork: true
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      containers:
+        - name: kube-vip
+          image: ghcr.io/kube-vip/kube-vip:v0.8.9
+          imagePullPolicy: IfNotPresent
+          args: ["manager"]
+          env:
+            - name: vip_arp
+              value: "true"
+            - name: port
+              value: "6443"
+            - name: vip_interface
+              value: "wlan0" # management network interface on all 3 nodes
+            - name: vip_cidr
+              value: "32"
+            - name: cp_enable
+              value: "true"
+            - name: cp_namespace
+              value: kube-system
+            - name: vip_ddns
+              value: "false"
+            - name: svc_enable
+              value: "true" # also handle type:LoadBalancer Services
+            - name: svc_election
+              value: "true"
+            - name: vip_leaderelection
+              value: "true"
+            - name: vip_leaseduration
+              value: "5"
+            - name: vip_renewdeadline
+              value: "3"
+            - name: vip_retryperiod
+              value: "1"
+            - name: address
+              value: "10.0.0.100"
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN", "NET_RAW"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

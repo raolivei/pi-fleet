@@ -15,3 +15,4 @@ resources:
   - traefik-config.yaml # HA Traefik with 2 replicas for graceful node drains
   - coredns-custom.yaml # Custom DNS: resolve *.eldertree.local inside the cluster
   - reloader # Auto-restart pods when ConfigMaps/Secrets change
+  - kube-vip # Floating VIP (10.0.0.100) for kube-apiserver HA + LoadBalancer services
