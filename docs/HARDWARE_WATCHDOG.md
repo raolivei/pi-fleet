@@ -289,6 +289,19 @@ ansible-playbook -i inventory/hosts.yml \
   playbooks/setup-hardware-watchdog.yml
 ```
 
+## Known limitation: does not protect against power loss
+
+The watchdog protects against software hangs (frozen kubelet, dead SSH, no
+response but still pingable). It does **not** protect against an abrupt PoE
+brownout/power cut — if the SoC itself loses power, there is nothing for the
+watchdog daemon to run on. Three nodes went down within the same hour on
+2026-09-15 from what the evidence points to as a shared PoE power problem,
+not a software hang; the watchdog was disabled cluster-wide afterward
+specifically because it was adding an uncontrolled reboot on top of an
+already uncontrolled power problem. See
+[POE-POWER-INCIDENT-2026-09-15.md](POE-POWER-INCIDENT-2026-09-15.md) for the
+full incident and re-enable the watchdog once the power issue is resolved.
+
 ## References
 
 - [Watchdog Documentation](https://linux.die.net/man/5/watchdog.conf)
