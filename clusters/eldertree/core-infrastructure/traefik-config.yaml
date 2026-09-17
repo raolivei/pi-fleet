@@ -9,15 +9,39 @@ spec:
   valuesContent: |-
     deployment:
       replicas: 2
+    # maxSurge: 0 is required because pod-anti-affinity below is `required` on
+    # hostname topology and only 2 nodes are schedulable (node-1 is labelled
+    # `unstable`). With the chart's default maxSurge: 1, a rolling update would
+    # try to land a 3rd pod that has no legal home and time out. maxUnavailable: 1
+    # means we drop to a single Traefik pod briefly during a chart upgrade;
+    # acceptable, same trade-off swimto's helmrelease.yaml documents for #228.
+    updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
+    # HA on stable nodes only (node-2/3). node-1 is labelled ``unstable`` by the
+    # node-scheduling-tier-reconciler and has recurring hangs/reboots. Traefik is
+    # the cluster's sole ingress -- losing the replica on node-1 with only a soft
+    # (preferred) anti-affinity risked both replicas ending up co-located, or one
+    # stuck on node-1, causing 503s across every *.eldertree.local / public
+    # hostname during a node-1 outage. Same pattern as
+    # clusters/eldertree/swimto/helmrelease.yaml.
     affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: eldertree.xyz/node-tier
+                  operator: NotIn
+                  values:
+                    - unstable
       podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app.kubernetes.io/name: traefik
-              topologyKey: kubernetes.io/hostname
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: traefik
+            topologyKey: kubernetes.io/hostname
     # Resource limits for Raspberry Pi
     resources:
       requests:

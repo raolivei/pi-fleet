@@ -7,6 +7,17 @@ metadata:
     app: cloudflared
 spec:
   replicas: 2
+  # maxSurge: 0 is required because pod-anti-affinity below is `required` on
+  # hostname topology and only 2 nodes are schedulable (node-1 is labelled
+  # `unstable`). With the default maxSurge: 1, a rolling update would try to
+  # land a 3rd pod with no legal home and stall. maxUnavailable: 1 means we
+  # drop to a single tunnel connector briefly during a rollout; acceptable,
+  # same trade-off swimto's helmrelease.yaml documents for #228.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: cloudflared
@@ -15,15 +26,27 @@ spec:
       labels:
         app: cloudflared
     spec:
+      # HA on stable nodes only (node-2/3). node-1 is labelled `unstable` by the
+      # node-scheduling-tier-reconciler and has recurring hangs/reboots. This is
+      # the sole public ingress path (Cloudflare Tunnel) -- losing the replica on
+      # node-1 with only a soft (preferred) anti-affinity risked both replicas
+      # co-locating, or one stuck on node-1, cutting off all public traffic
+      # during a node-1 outage.
       affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: eldertree.xyz/node-tier
+                    operator: NotIn
+                    values:
+                      - unstable
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app: cloudflared
-                topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: cloudflared
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: cloudflared
           image: cloudflare/cloudflared:latest
