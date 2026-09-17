@@ -21,8 +21,31 @@ spec:
   upgrade:
     cleanupOnFail: true
   values:
+    # HA on stable nodes only (node-2/3). node-1 is labelled ``unstable`` by the
+    # node-scheduling-tier-reconciler and has recurring hangs/reboots; a single
+    # replica landing there means a full outage (503 on raolivei.me) whenever it
+    # goes down. Same pattern as clusters/eldertree/swimto/helmrelease.yaml.
     components:
       personal-website:
+        replicas: 2
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: eldertree.xyz/node-tier
+                      operator: NotIn
+                      values:
+                        - unstable
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: component
+                      operator: In
+                      values:
+                        - personal-website
+                topologyKey: kubernetes.io/hostname
         image:
           repository: ghcr.io/raolivei/personal-website
           tag: v0.2.20 # {"$imagepolicy": "personal-website:personal-website-policy:tag"}
