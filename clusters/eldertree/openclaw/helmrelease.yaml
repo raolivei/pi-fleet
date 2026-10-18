@@ -27,7 +27,7 @@ spec:
       openclaw:
         image:
           repository: ghcr.io/raolivei/openclaw
-          tag: "20261004" # {"$imagepolicy": "openclaw:openclaw:tag"}
+          tag: "20261018" # {"$imagepolicy": "openclaw:openclaw:tag"}
           pullPolicy: Always
         port: 18789
         strategy: Recreate
