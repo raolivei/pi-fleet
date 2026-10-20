@@ -35,8 +35,13 @@ jobs:
         run: |
           set -euo pipefail
           version=$(sed -n 's/^ARG OPENCLAW_VERSION=//p' clusters/eldertree/openclaw/docker/Dockerfile)
+          upstream_tag=$(sed -n 's/^ARG OPENCLAW_UPSTREAM_TAG=//p' clusters/eldertree/openclaw/docker/Dockerfile)
           if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Expected one semver OPENCLAW_VERSION ARG, got: ${version:-<empty>}" >&2
+            exit 1
+          fi
+          if [[ "v$upstream_tag" != "$version" ]]; then
+            echo "OPENCLAW_UPSTREAM_TAG must match OPENCLAW_VERSION without the v prefix" >&2
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"

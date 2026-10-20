@@ -50,22 +50,28 @@ cluster fallback model, edit both the `ollama pull` line in `ollama-fallback.yam
 
 ## ARM64 Build
 
-The official OpenClaw image doesn't support ARM64 (Raspberry Pi). We build our own image using GitHub Actions.
+OpenClaw publishes a multi-architecture image with `linux/arm64` support. Our
+GitHub Actions workflow builds a thin cluster image from that digest-pinned
+runtime and adds a checksummed ARM64 `kubectl` binary.
 
 **Image:** `ghcr.io/raolivei/openclaw:v2026.9.5`
 
 **Workflow:** `.github/workflows/build-openclaw-arm64.yml`
 
-The Dockerfile pins a reviewed upstream release in `OPENCLAW_VERSION`. A merge
-that changes the Dockerfile automatically builds that release for ARM64,
-publishes the same `vYYYY.M.P` tag to GHCR, and Flux selects it with a semver
-image policy. This keeps the deployed tag tied to the source release; the old
-weekly job only produced new date tags around unchanged, pinned source.
+The Dockerfile pins a reviewed upstream release and manifest digest in
+`OPENCLAW_VERSION`, `OPENCLAW_UPSTREAM_TAG`, and `OPENCLAW_IMAGE_DIGEST`. A
+merge that changes the Dockerfile automatically wraps that official ARM64
+runtime with cluster tools, publishes the same `vYYYY.M.P` tag to GHCR, and
+Flux selects it with a semver image policy. This keeps the deployed tag tied to
+the source release; the old weekly job only produced new date tags around
+unchanged, pinned source.
 
 To upgrade:
 
 1. Review the upstream OpenClaw release notes and configuration changes.
-2. Bump `ARG OPENCLAW_VERSION` in `docker/Dockerfile`.
+2. Bump `ARG OPENCLAW_VERSION`, `ARG OPENCLAW_UPSTREAM_TAG` (same value without
+   the `v` prefix), and the verified multi-arch `OPENCLAW_IMAGE_DIGEST` in
+   `docker/Dockerfile`.
 3. If the same PR changes config or pins the new tag in the HelmRelease, run
    the workflow manually on the branch first so the image exists before merge.
 4. Merge the change to `main`; the ARM64 workflow rebuilds the release and
