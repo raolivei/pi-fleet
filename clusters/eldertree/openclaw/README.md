@@ -36,24 +36,12 @@ CPU cold-start.
 > too small to hold the baseline system prompt). For the Mac providers, set `num_ctx`/`OLLAMA_CONTEXT_LENGTH`
 > on the Mac side if you need a window other than qwen2.5:32b's default.
 >
-> **`reserveTokens`/`reserveTokensFloor` math (verified against upstream source, don't set blindly):**
-> `reserveTokensFloor` is only a *minimum* — it does NOT set the actual reserve. If
-> `agents.defaults.compaction.reserveTokens` is left **unset**, OpenClaw falls back to the runtime's
-> current/default reserve value (effectively ~20000, the same number the generic error message
-> suggests) via `max(configuredReserveTokens ?? currentReserveTokens, reserveTokensFloor)` in
-> `applyAgentCompactionSettingsFromConfig()` (`src/agents/agent-settings.ts`) — so lowering
-> `reserveTokensFloor` alone (an earlier fix tried 24000→8192) does **nothing** if it's already below
-> that fallback. There's also a hard safety cap: `minPromptBudget = min(8000, contextTokenBudget*0.5)`
-> (`agent-compaction-constants.ts`) guarantees at least this much prompt room by capping the reserve —
-> which is *why* it didn't overflow-loop forever, but it also meant every session got squeezed to a
-> razor-thin ~8000-token budget against a baseline system prompt (tools + workspace context, zero
-> conversation) measured at **~9748 tokens** — overflowing every fresh `/new` session immediately.
-> Fix: set **both** `reserveTokens` (the actual value, not just the floor) **and** `reserveTokensFloor`
-> explicitly (currently `8500` each) with a large enough `contextTokens` (`30000`, below the smallest
-> real `contextWindow` of `32768` so it stays the binding budget) — usable prompt budget is now
-> `30000 - 8500 = 21500`, comfortably above the ~9748 baseline. Before changing either value: verify
-> against upstream's `resolveCompactionReserveTokensFloor`/`applyAgentCompactionSettingsFromConfig`
-> logic, don't infer the formula from log field names alone (cost real debugging time twice).
+> **Compaction headroom:** `reserveTokens` and `reserveTokensFloor` were retired before
+> OpenClaw 2026.9.5 and must not be reintroduced. The current runtime manages its own
+> compaction headroom. `agents.defaults.contextTokens` was also retired; each configured
+> model's `contextWindow` is now authoritative. We retain safeguard mode and the explicit
+> Mac-hosted compaction model. `keepRecentTokens` is not a replacement for the removed
+> reserve settings because it controls how much recent conversation is preserved.
 
 To change the primary/fallback Mac model, edit both `ollama-lan` and `ollama-tailscale` provider
 entries in `configmap.yaml` (keep them in sync — same model, different `baseUrl`). To change the
@@ -64,16 +52,36 @@ cluster fallback model, edit both the `ollama pull` line in `ollama-fallback.yam
 
 The official OpenClaw image doesn't support ARM64 (Raspberry Pi). We build our own image using GitHub Actions.
 
-**Image:** `ghcr.io/raolivei/openclaw:latest`
+**Image:** `ghcr.io/raolivei/openclaw:v2026.9.5`
 
 **Workflow:** `.github/workflows/build-openclaw-arm64.yml`
 
-To rebuild manually:
+The Dockerfile pins a reviewed upstream release in `OPENCLAW_VERSION`. A merge
+that changes the Dockerfile automatically builds that release for ARM64,
+publishes the same `vYYYY.M.P` tag to GHCR, and Flux selects it with a semver
+image policy. This keeps the deployed tag tied to the source release; the old
+weekly job only produced new date tags around unchanged, pinned source.
 
-1. Go to Actions → "Build OpenClaw ARM64"
-2. Click "Run workflow"
-3. Optionally set version input (e.g. `v1.0.0`)
-4. Wait for build (~10-15 min)
+To upgrade:
+
+1. Review the upstream OpenClaw release notes and configuration changes.
+2. Bump `ARG OPENCLAW_VERSION` in `docker/Dockerfile`.
+3. If the same PR changes config or pins the new tag in the HelmRelease, run
+   the workflow manually on the branch first so the image exists before merge.
+4. Merge the change to `main`; the ARM64 workflow rebuilds the release and
+   Flux image automation tracks subsequent reviewed semver tags.
+5. Verify the packaged-version smoke test and the Flux rollout before testing
+   Telegram.
+
+Use Actions → "Build OpenClaw ARM64" → "Run workflow" only to rebuild the
+release already pinned on the selected branch.
+
+`v2026.9.5` is an intentional migration bridge from the previously deployed
+`v2026.7.1`. Upstream requires installations with retired pre-July state to
+run `doctor --fix` on `2026.9.5` before moving to current releases. The pod
+startup command performs that repair once per image version and ConfigMap hash,
+after saving the pre-migration config on the PVC. Upgrade to `v2026.10.5` only
+after the `v2026.9.5` rollout and Doctor migration are verified.
 
 ## Features
 

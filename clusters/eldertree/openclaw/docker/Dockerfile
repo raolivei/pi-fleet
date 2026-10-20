@@ -2,15 +2,22 @@
 # Based on upstream: https://github.com/openclaw/openclaw
 # This builds the same image but for ARM64 architecture
 
-FROM node:22-bookworm
+FROM docker.io/oven/bun:1.4.0@sha256:5ff609364c049b54eb0ff560ec96319729a972078ef2c755d758f0c6ef89c2d6 AS bun
 
-# Install Bun (required for build scripts)
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:${PATH}"
+# Match the runtime and Bun versions supported by the pinned upstream release.
+# These are multi-arch manifest digests copied from upstream's v2026.9.5
+# Dockerfile, so the custom ARM64 build remains reproducible.
+FROM docker.io/library/node:24-bookworm@sha256:934240a162082fd8b8a2f90cd5114446443f1eba1c5378f6687167ca405e6584
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 
 RUN corepack enable
 
 WORKDIR /app
+
+# The image tag and the source tag intentionally share this value. The build
+# workflow reads it to publish ghcr.io/raolivei/openclaw:<release>, and Flux
+# selects those semver release tags. Bumping this ARG is the upgrade action.
+ARG OPENCLAW_VERSION=v2026.9.5
 
 # Clone OpenClaw source and install kubectl for Kubernetes access
 RUN apt-get update && \
@@ -19,9 +26,8 @@ RUN apt-get update && \
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/ && \
-    # Clone OpenClaw — pin to a known-good release tag.
-    # To upgrade: bump the tag, commit, and trigger build-openclaw-arm64.yml.
-    git clone --depth 1 --branch v2026.7.1 https://github.com/openclaw/openclaw.git . && \
+    # Clone OpenClaw — pin to a reviewed release tag.
+    git clone --depth 1 --branch "${OPENCLAW_VERSION}" https://github.com/openclaw/openclaw.git . && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
@@ -30,14 +36,13 @@ RUN apt-get update && \
 # comment), which is ~10-20x slower than native. Upstream hardcodes a 120s
 # timeout for these renders (scripts/write-cli-startup-metadata.ts) with no
 # env override; under emulation a single build phase here has taken 25+
-# minutes, so 120s reliably times out. Raise to 10 minutes -- generous, but
-# still bounded so a genuine hang doesn't run forever.
+# minutes, so 120s reliably times out. Raise the remaining root-help timeout
+# to 10 minutes. The old browser-help constant was removed upstream by
+# v2026.9.5, so patching it would make every upgrade build fail.
 RUN sed -i \
     -e 's/^const ROOT_HELP_RENDER_TIMEOUT_MS = 120_000;/const ROOT_HELP_RENDER_TIMEOUT_MS = 600_000;/' \
-    -e 's/^const BROWSER_HELP_RENDER_TIMEOUT_MS = 120_000;/const BROWSER_HELP_RENDER_TIMEOUT_MS = 600_000;/' \
     scripts/write-cli-startup-metadata.ts && \
-    grep -q 'ROOT_HELP_RENDER_TIMEOUT_MS = 600_000' scripts/write-cli-startup-metadata.ts && \
-    grep -q 'BROWSER_HELP_RENDER_TIMEOUT_MS = 600_000' scripts/write-cli-startup-metadata.ts
+    grep -q 'ROOT_HELP_RENDER_TIMEOUT_MS = 600_000' scripts/write-cli-startup-metadata.ts
 
 RUN pnpm install --frozen-lockfile
 
