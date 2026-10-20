@@ -1,20 +1,12 @@
-# Optional: migrate to raolivei/github-workflows reusable docker-build.yml with:
-#   context: clusters/eldertree/openclaw/docker
-#   image-name: openclaw
-#   dockerfile: Dockerfile
-# Add VERSION in that directory for semver tags.
 name: Build OpenClaw ARM64
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version tag (e.g., v1.0.0 or latest)"
-        required: false
-        default: "latest"
-  schedule:
-    # Rebuild weekly to pick up upstream updates
-    - cron: "0 6 * * 0"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-openclaw-arm64.yml"
+      - "clusters/eldertree/openclaw/docker/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,6 +15,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/openclaw
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -35,6 +28,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      - name: Read pinned OpenClaw release
+        id: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^ARG OPENCLAW_VERSION=//p' clusters/eldertree/openclaw/docker/Dockerfile)
+          upstream_tag=$(sed -n 's/^ARG OPENCLAW_UPSTREAM_TAG=//p' clusters/eldertree/openclaw/docker/Dockerfile)
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected one semver OPENCLAW_VERSION ARG, got: ${version:-<empty>}" >&2
+            exit 1
+          fi
+          if [[ "v$upstream_tag" != "$version" ]]; then
+            echo "OPENCLAW_UPSTREAM_TAG must match OPENCLAW_VERSION without the v prefix" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Building upstream OpenClaw $version"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -55,11 +66,14 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ github.event.inputs.version || 'latest' }}
-            type=raw,value={{date 'YYYYMMDD'}}
+            # A manual branch build pre-stages the reviewed release before the
+            # GitOps config that consumes it merges. Main also rebuilds it.
+            type=raw,value=${{ steps.upstream.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: clusters/eldertree/openclaw/docker
@@ -71,14 +85,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Verify packaged OpenClaw release
+        env:
+          OPENCLAW_VERSION: ${{ steps.upstream.outputs.version }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          image="${REGISTRY}/${IMAGE_NAME}@${IMAGE_DIGEST}"
+          docker run --rm --platform linux/arm64 --entrypoint node "$image" \
+            /app/dist/index.js --version | grep -F "${OPENCLAW_VERSION#v}"
+
       - name: Summary
         run: |
-          echo "## OpenClaw Build Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Platform:** \`linux/arm64\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## OpenClaw Build Complete"
+            echo ""
+            echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`"
+            echo "**Upstream release:** \`${{ steps.upstream.outputs.version }}\`"
+            echo "**Platform:** \`linux/arm64\`"
+            echo ""
+            echo "**Tags:**"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
