@@ -92,6 +92,7 @@ dig @192.168.2.201 grafana.eldertree.local
 | Property                | Value                                                          |
 | ----------------------- | -------------------------------------------------------------- |
 | **Local URL**           | `https://grafana.eldertree.local`                              |
+| **Public URL**          | `https://grafana.eldertree.xyz` (Cloudflare Tunnel → Traefik) |
 | **Namespace**           | `observability`                                                |
 | **Username**            | `admin`                                                        |
 | **Password**            | Stored in Vault: `secret/monitoring/grafana` → `adminPassword` |

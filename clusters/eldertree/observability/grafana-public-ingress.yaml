@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-public
+  namespace: observability
+  annotations:
+    external-dns.alpha.kubernetes.io/exclude: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: grafana.eldertree.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: monitoring-stack-grafana
+                port:
+                  number: 80
+  tls:
+    - secretName: grafana-cloudflare-origin-tls
+      hosts:
+        - grafana.eldertree.xyz

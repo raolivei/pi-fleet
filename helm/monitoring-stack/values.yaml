@@ -159,6 +159,7 @@ prometheus:
           replacement: blackbox-exporter.observability.svc.cluster.local:9115
       static_configs:
         - targets:
+            - "https://grafana.eldertree.xyz"
             - "https://swimto.eldertree.xyz"
             - "https://swimto.app"
             - "https://api.swimto.app/health"
