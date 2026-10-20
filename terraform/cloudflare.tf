@@ -461,6 +461,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "eldertree" {
       service  = "http://10.43.225.225:80"
     }
 
+    # Grafana observability console
+    ingress_rule {
+      hostname = "grafana.eldertree.xyz"
+      path     = "/"
+      service  = "http://10.43.225.225:80"
+    }
+
     # Bolão dos Guerreiros (WC 2026 prediction pool)
     ingress_rule {
       hostname = "bolao.eldertree.xyz"
@@ -507,6 +514,19 @@ resource "cloudflare_record" "control_eldertree_xyz_tunnel" {
   proxied         = true
   allow_overwrite = true
   comment         = "control.eldertree.xyz - Eldertree Control Center via Cloudflare Tunnel"
+}
+
+# DNS CNAME record for grafana.eldertree.xyz pointing to tunnel
+resource "cloudflare_record" "grafana_eldertree_xyz_tunnel" {
+  count           = local.cloudflare_enabled && var.cloudflare_account_id != "" && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "grafana"
+  content         = "${cloudflare_zero_trust_tunnel_cloudflared.eldertree[0].id}.cfargotunnel.com"
+  type            = "CNAME"
+  ttl             = 1
+  proxied         = true
+  allow_overwrite = true
+  comment         = "grafana.eldertree.xyz - Grafana via Cloudflare Tunnel"
 }
 
 # DNS CNAME record for swimto.eldertree.xyz pointing to tunnel

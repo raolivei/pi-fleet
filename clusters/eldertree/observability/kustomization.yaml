@@ -5,6 +5,8 @@ resources:
   - namespace.yaml # Observability namespace
   - weave-gitops-gitrepository.yaml # GitRepository for Weave GitOps charts (from GitHub)
   - monitoring-stack-helmrelease.yaml # Prometheus + Grafana monitoring stack
+  - grafana-cloudflare-origin-cert-external.yaml # Shared *.eldertree.xyz origin certificate
+  - grafana-public-ingress.yaml # Public Grafana route via Cloudflare Tunnel
   - vault-scrape-config.yaml # Vault telemetry scrape configuration
   - blackbox-exporter.yaml # Blackbox exporter (HTTPS synthetic probes for Alertmanager)
   # traefik + blackbox scrape jobs: defined in helm/monitoring-stack (avoid duplicate with Secret files)
