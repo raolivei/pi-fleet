@@ -28,6 +28,10 @@
 # Local value to check if Cloudflare is enabled (token is provided)
 locals {
   cloudflare_enabled = var.cloudflare_api_token != ""
+
+  # The eldertree.xyz apex is redirect-only (-> blog.eldertree.xyz), which requires a
+  # proxied record at "@". Set to false to go back to pointing the apex at var.public_ip.
+  eldertree_apex_redirect = true
 }
 
 # Configure Cloudflare provider
@@ -85,7 +89,7 @@ data "cloudflare_zone" "raolivei_me" {
 
 # Root domain A record
 resource "cloudflare_record" "eldertree_xyz_root" {
-  count           = local.cloudflare_enabled && var.public_ip != "" && var.cloudflare_zone_id != "" ? 1 : 0
+  count           = local.cloudflare_enabled && !local.eldertree_apex_redirect && var.public_ip != "" && var.cloudflare_zone_id != "" ? 1 : 0
   zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
   name            = "@"
   content         = var.public_ip
@@ -94,6 +98,55 @@ resource "cloudflare_record" "eldertree_xyz_root" {
   proxied         = false
   allow_overwrite = true
   comment         = "Root domain A record for eldertree.xyz - managed by Terraform"
+}
+
+# -----------------------------------------------------------------------------
+# Apex redirect: https://eldertree.xyz/ -> https://blog.eldertree.xyz/
+# -----------------------------------------------------------------------------
+# The apex serves no origin of its own; it exists only to hand visitors to the
+# blog. A redirect rule runs at the Cloudflare edge, so the record must be
+# proxied and the origin IP is never contacted - 192.0.2.1 (RFC 5737
+# documentation range) is the conventional placeholder.
+# allow_overwrite adopts the pre-existing, manually created apex record.
+resource "cloudflare_record" "eldertree_xyz_apex_redirect" {
+  count           = local.cloudflare_enabled && local.eldertree_apex_redirect && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id         = data.cloudflare_zone.eldertree_xyz[0].id
+  name            = "@"
+  content         = "192.0.2.1"
+  type            = "A"
+  ttl             = 1
+  proxied         = true
+  allow_overwrite = true
+  comment         = "Apex placeholder - redirects to blog.eldertree.xyz - managed by Terraform"
+}
+
+# Single Redirect rule (Rules -> Redirect Rules in the dashboard).
+# Static target: blog.eldertree.xyz is a GitHub Pages site with its own path
+# tree, so forwarding apex paths through would only produce 404s.
+resource "cloudflare_ruleset" "eldertree_xyz_apex_redirect" {
+  count   = local.cloudflare_enabled && local.eldertree_apex_redirect && var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id = data.cloudflare_zone.eldertree_xyz[0].id
+  name    = "eldertree.xyz redirects"
+  kind    = "zone"
+  phase   = "http_request_dynamic_redirect"
+
+  rules {
+    ref         = "apex_to_blog"
+    description = "Redirect eldertree.xyz apex to blog.eldertree.xyz"
+    expression  = "(http.host eq \"eldertree.xyz\")"
+    action      = "redirect"
+    enabled     = true
+
+    action_parameters {
+      from_value {
+        status_code = 301
+        target_url {
+          value = "https://blog.eldertree.xyz/"
+        }
+        preserve_query_string = false
+      }
+    }
+  }
 }
 
 # Wildcard A record
