@@ -4,7 +4,7 @@ metadata:
   name: openclaw
   namespace: openclaw
 spec:
-  # OpenClaw ARM64 image (built weekly via build-openclaw-arm64.yml)
+  # Only tested, versioned cluster releases are eligible for deployment.
   image: ghcr.io/raolivei/openclaw
   interval: 1h
   secretRef:

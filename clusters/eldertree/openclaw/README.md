@@ -48,46 +48,76 @@ entries in `configmap.yaml` (keep them in sync — same model, different `baseUr
 cluster fallback model, edit both the `ollama pull` line in `ollama-fallback.yaml` **and** the
 `ollama-cluster` provider entry in `configmap.yaml`.
 
-## ARM64 Build
+## Cluster image releases
 
-OpenClaw publishes a multi-architecture image with `linux/arm64` support. Our
-GitHub Actions workflow builds a thin cluster image from that digest-pinned
-runtime and adds a checksummed ARM64 `kubectl` binary.
+The cluster image extends OpenClaw's official ARM64 runtime with `kubectl` and
+our startup script. The Dockerfile contains build instructions; release data
+lives in two reviewed files:
 
-**Image:** `ghcr.io/raolivei/openclaw:v2026.9.5`
+| File | Owns |
+| --- | --- |
+| `docker/build.lock.json` | Exact upstream image reference (tag + digest), kubectl version and ARM64 checksum |
+| `docker/VERSION` | Independent semantic version of our cluster image |
 
-**Workflow:** `.github/workflows/build-openclaw-arm64.yml`
+For example, cluster image `ghcr.io/raolivei/openclaw:v0.1.0` contains upstream
+OpenClaw `2026.9.5`. Changing kubectl or startup behavior requires a new cluster
+image version even if OpenClaw itself has not changed. OCI labels record both
+versions, the Git revision and a hash of all image inputs.
 
-The Dockerfile pins a reviewed upstream release and manifest digest in
-`OPENCLAW_VERSION`, `OPENCLAW_UPSTREAM_TAG`, and `OPENCLAW_IMAGE_DIGEST`. A
-merge that changes the Dockerfile automatically wraps that official ARM64
-runtime with cluster tools, publishes the same `vYYYY.M.P` tag to GHCR, and
-Flux selects it with a semver image policy. This keeps the deployed tag tied to
-the source release; the old weekly job only produced new date tags around
-unchanged, pinned source.
+`.github/workflows/build-openclaw-arm64.yml` validates pull requests on native
+ARM64 runners. It builds locally, validates the exact managed config, exercises
+Doctor and repeated startup on disposable state, and waits for gateway health.
+These tests use placeholder credentials and disable Telegram before starting
+the test gateway. PR validation has no package-write permission.
 
-To upgrade:
+Only after validation succeeds does a separate publication job upload the same
+tested image to GHCR. Version tags are write-once: a repeated run reuses an
+existing release with identical inputs; changed inputs require a VERSION bump.
+Registry errors fail the job rather than being treated as an absent image.
+There are no date or `latest` deployment tags.
 
-1. Review the upstream OpenClaw release notes and configuration changes.
-2. Bump `ARG OPENCLAW_VERSION`, `ARG OPENCLAW_UPSTREAM_TAG` (same value without
-   the `v` prefix), and the verified multi-arch `OPENCLAW_IMAGE_DIGEST` in
-   `docker/Dockerfile`.
-3. If the same PR changes config or pins the new tag in the HelmRelease, run
-   the workflow manually on the branch first so the image exists before merge.
-4. Merge the change to `main`; the ARM64 workflow rebuilds the release and
-   Flux image automation tracks subsequent reviewed semver tags.
-5. Verify the packaged-version smoke test and the Flux rollout before testing
-   Telegram.
+Release procedure:
 
-Use Actions → "Build OpenClaw ARM64" → "Run workflow" only to rebuild the
-release already pinned on the selected branch.
+1. Review the upstream release and migration requirements. Update the lock file
+   when upstream or kubectl changes. Verify the upstream digest includes ARM64
+   and the kubectl checksum comes from `dl.k8s.io`.
+2. Bump `docker/VERSION` for any image change. Wrapper fixes use a patch bump;
+   a different upstream OpenClaw release requires a new minor release line.
+3. For a coordinated config/image migration, update the HelmRelease tag and
+   select the branch in Actions → **Build OpenClaw ARM64** → **Run workflow**,
+   with `publish_release: true`. Wait for **both** validation and publication
+   before merging; this prevents GitOps referencing an unpublished image.
+   Manual runs default to validation only. Publication from a branch is an
+   explicit maintainer action, never triggered by a PR event.
+4. Merge the PR. Main validates again and reuses an identical published release.
+   Later compatible wrapper releases are selected by Flux within the approved
+   policy range.
+5. Verify Flux rollout, Doctor completion, then a Telegram DM and an approved
+   Elder operation. CI cannot establish the condition of the live cluster or
+   migrate its existing PVC.
 
-`v2026.9.5` is an intentional migration bridge from the previously deployed
-`v2026.7.1`. Upstream requires installations with retired pre-July state to
-run `doctor --fix` on `2026.9.5` before moving to current releases. The pod
-startup command performs that repair once per image version and ConfigMap hash,
-after saving the pre-migration config on the PVC. Upgrade to `v2026.10.5` only
-after the `v2026.9.5` rollout and Doctor migration are verified.
+The `0.1.x` line deliberately holds upstream `2026.9.5`, the bridge required for
+older persisted state. Flux is constrained to `>=0.1.0 <0.2.0`. A move to a new
+upstream release must change the wrapper minor version, lock file and Flux
+policy together, after the bridge migration has been verified. CI enforces the
+version bump and policy gate; publication alone cannot skip the bridge.
+
+`docker/startup.sh` saves the actual PVC config before any ConfigMap refresh,
+seeds a private writable copy, and runs Doctor once per runtime/config hash.
+Doctor is bounded to 300 seconds, and liveness waits 600 seconds so it cannot
+interrupt a normal migration. Failures leave no success marker and a diagnostic
+log under `~/.openclaw/migration-backups/`; retries resume against the writable
+config. Config validation also runs on every subsequent start. Config backups
+do not replace a PVC snapshot: take a storage backup before a persisted-state
+upgrade, because schema downgrades may not be reversible.
+
+Local checks (from the repo root, with Python/PyYAML and Docker installed):
+
+```bash
+python3 -m unittest discover -s scripts/openclaw -p 'test_*.py' -v
+python3 scripts/openclaw/release.py --build
+python3 scripts/openclaw/smoke.py openclaw:ci
+```
 
 ## Features
 
@@ -153,7 +183,9 @@ Elder can upgrade itself or OpenClaw:
 - **elder_upgrade**: Trigger GitHub Actions rebuild (requires approval)
 - **elder_version**: Get current Elder and OpenClaw versions
 
-Example: "Upgrade OpenClaw to v1.0.0" → creates approval → user approves → workflow runs → Flux deploys.
+OpenClaw upgrades follow the reviewed release procedure above. A workflow
+dispatch validates the committed lock; it does not select an arbitrary upstream
+version. Elder's legacy `version` request field is not a release-selection API.
 
 ## Secrets
 

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "upstreamImage": "ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218",
+  "kubectl": {
+    "version": "v1.35.0",
+    "sha256": "58f82f9fe796c375c5c4b8439850b0f3f4d401a52434052f2df46035a8789e25"
+  }
+}
