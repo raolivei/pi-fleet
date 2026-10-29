@@ -88,6 +88,9 @@ jobs:
       - name: Verify ARM64 config, migration and gateway startup
         run: python scripts/openclaw/smoke.py openclaw:ci
 
+      - name: Verify the ARM64 Ollama fallback API
+        run: python scripts/openclaw/smoke_ollama.py
+
       - name: Export the tested image for publication
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
         run: docker save openclaw:ci -o /tmp/openclaw-tested.tar

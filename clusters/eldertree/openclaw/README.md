@@ -59,7 +59,7 @@ lives in two reviewed files:
 | `docker/build.lock.json` | Exact upstream image reference (tag + digest), kubectl version and ARM64 checksum |
 | `docker/VERSION` | Independent semantic version of our cluster image |
 
-For example, cluster image `ghcr.io/raolivei/openclaw:v0.1.0` contains upstream
+For example, cluster image `ghcr.io/raolivei/openclaw:v0.1.1` contains upstream
 OpenClaw `2026.9.5`. Changing kubectl or startup behavior requires a new cluster
 image version even if OpenClaw itself has not changed. OCI labels record both
 versions, the Git revision and a hash of all image inputs.
@@ -101,6 +101,14 @@ older persisted state. Flux is constrained to `>=0.1.0 <0.2.0`. A move to a new
 upstream release must change the wrapper minor version, lock file and Flux
 policy together, after the bridge migration has been verified. CI enforces the
 version bump and policy gate; publication alone cannot skip the bridge.
+
+The bridge uses kubectl `1.35.10`, the latest patch of the cluster's `1.35`
+release line as checked on 2026-10-29. Do not select the global kubectl `latest`
+release independently of the control plane's supported version skew. The
+cluster fallback uses digest-pinned Ollama `0.40.13`. Elder stays at `0.3.7`,
+which is the latest version declared by its current source; no newer versioned
+source release was found. A subsequent wrapper minor release targets current stable
+OpenClaw `2026.10.8` after the bridge has migrated and verified the live state.
 
 `docker/startup.sh` saves the actual PVC config before any ConfigMap refresh,
 seeds a private writable copy, and runs Doctor once per runtime/config hash.

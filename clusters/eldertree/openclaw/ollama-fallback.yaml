@@ -49,7 +49,7 @@ spec:
                       - node-1.eldertree.local
       containers:
         - name: ollama
-          image: ollama/ollama:0.31.1 # pinned; linux/arm64 verified
+          image: ollama/ollama:0.40.13@sha256:b2f0122c476bc9fe7ce679d8bb4bd555351e25e2554eefb156f61cb0a89cf429 # stable; linux/arm64 verified
           imagePullPolicy: IfNotPresent
           # Serve, then pull the fallback model in the background so the
           # server is up immediately; readiness gates on the model existing.

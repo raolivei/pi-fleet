@@ -26,6 +26,11 @@ class ReleaseTests(unittest.TestCase):
         update(lock)
         path.write_text(json.dumps(lock))
 
+    def bump_patch(self):
+        path = self.context / "VERSION"
+        major, minor, patch = map(int, path.read_text().strip().split("."))
+        path.write_text(f"{major}.{minor}.{patch + 1}\n")
+
     def test_missing_digest_is_rejected(self):
         self.change_lock(lambda lock: lock.update(upstreamImage="ghcr.io/openclaw/openclaw:latest"))
         with self.assertRaisesRegex(ValueError, "digest"):
@@ -76,14 +81,14 @@ class ReleaseTests(unittest.TestCase):
     def test_upstream_upgrade_requires_new_release_line(self):
         base = self.init_repository()
         self.change_lock(lambda lock: lock.update(upstreamImage=lock["upstreamImage"].replace(":2026.9.5@", ":2026.10.5@")))
-        (self.context / "VERSION").write_text("0.1.1\n")
+        self.bump_patch()
         self.commit_changes()
         with self.assertRaisesRegex(ValueError, "minor release"):
             check_version(base, self.root)
 
     def test_wrapper_patch_with_version_bump_is_accepted(self):
         base = self.init_repository()
-        (self.context / "VERSION").write_text("0.1.1\n")
+        self.bump_patch()
         with (self.context / "startup.sh").open("a") as output:
             output.write("\n# wrapper fix\n")
         self.commit_changes()
