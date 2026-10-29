@@ -50,7 +50,7 @@ class ReleaseTests(unittest.TestCase):
         workflow = yaml.safe_load((ROOT / ".github/workflows/build-openclaw-arm64.yml").read_text())
         builder = workflow["jobs"]["build"]
         self.assertEqual(builder["uses"], "raolivei/github-workflows/.github/workflows/docker-build.yml@main")
-        self.assertEqual(builder["needs"], "validate")
+        self.assertEqual(builder["needs"], ["validate", "version-check"])
         self.assertEqual(builder["with"]["context"], str(CONTEXT))
         self.assertEqual(builder["with"]["push"], "${{ github.event_name != 'pull_request' }}")
         self.assertNotIn("steps", builder)
