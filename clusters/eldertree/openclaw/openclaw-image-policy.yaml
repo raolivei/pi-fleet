@@ -6,10 +6,12 @@ metadata:
 spec:
   imageRepositoryRef:
     name: openclaw
-  # build-openclaw-arm64.yml pushes YYYYMMDD tags on every build.
-  # Numerical ascending picks the most recent date.
+  # The shared docker-build.yml publishes pi-fleet's root VERSION. Hold the
+  # 1.3.x migration bridge until its live persisted state has been verified;
+  # the next upstream upgrade opens 1.4.x in a separate reviewed PR.
   filterTags:
-    pattern: "^[0-9]{8}$"
+    pattern: '^v(?P<version>[0-9]+\.[0-9]+\.[0-9]+)$'
+    extract: '$version'
   policy:
-    numerical:
-      order: asc
+    semver:
+      range: ">=1.3.2 <1.4.0"

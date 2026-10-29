@@ -65,14 +65,12 @@ data:
           }
         },
         "media": {
-          "image": {
-            "models": [
-              { "provider": "ollama-lan",       "model": "minicpm-v:8b"  },
-              { "provider": "ollama-tailscale",  "model": "minicpm-v:8b"  },
-              { "provider": "ollama-lan",        "model": "qwen2.5vl:7b" },
-              { "provider": "ollama-tailscale",  "model": "qwen2.5vl:7b" }
-            ]
-          }
+          "models": [
+            { "provider": "ollama-lan",       "model": "minicpm-v:8b",  "capabilities": ["image"] },
+            { "provider": "ollama-tailscale", "model": "minicpm-v:8b",  "capabilities": ["image"] },
+            { "provider": "ollama-lan",       "model": "qwen2.5vl:7b", "capabilities": ["image"] },
+            { "provider": "ollama-tailscale", "model": "qwen2.5vl:7b", "capabilities": ["image"] }
+          ]
         }
       },
       "agents": {
@@ -88,11 +86,8 @@ data:
               "openrouter/meta-llama/llama-4-scout"
             ]
           },
-          "contextTokens": 60000,
           "compaction": {
             "mode": "safeguard",
-            "reserveTokens": 20000,
-            "reserveTokensFloor": 20000,
             "model": "ollama-lan/qwen3.6:35b-mlx",
             "memoryFlush": {
               "enabled": false

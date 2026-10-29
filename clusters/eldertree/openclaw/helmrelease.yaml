@@ -27,7 +27,7 @@ spec:
       openclaw:
         image:
           repository: ghcr.io/raolivei/openclaw
-          tag: "20261025" # {"$imagepolicy": "openclaw:openclaw:tag"}
+          tag: "v1.3.2" # {"$imagepolicy": "openclaw:openclaw:tag"}
           pullPolicy: Always
         port: 18789
         strategy: Recreate
@@ -39,40 +39,7 @@ spec:
         podAnnotations:
           configmap.reloader.stakater.com/reload: "openclaw-config-file"
         command:
-          - /bin/sh
-          - -c
-          - |
-            set -e
-            export OPENCLAW_DIR=/home/node/.openclaw
-            export CONFIG_FILE=$OPENCLAW_DIR/openclaw.json
-            mkdir -p $OPENCLAW_DIR/agents/main/sessions $OPENCLAW_DIR/credentials $OPENCLAW_DIR/workspace
-            chown node:node $OPENCLAW_DIR/workspace || true
-            # Seed writable openclaw.json from ConfigMap only when CM changes or file missing.
-            # Always cp caused OpenClaw "missing-meta-*" noise every restart (it embeds file metadata on PVC).
-            CM_SRC=/etc/openclaw-config/config.json
-            HASHFILE="$OPENCLAW_DIR/.openclaw-config.cm.sha256"
-            if [ ! -r "$CM_SRC" ]; then
-              echo "[openclaw] ConfigMap mount missing: $CM_SRC"; exit 1
-            fi
-            newhash=$(sha256sum "$CM_SRC" | awk '{print $1}')
-            if [ ! -s "$CONFIG_FILE" ] || [ ! -f "$HASHFILE" ]; then
-              cp -f "$CM_SRC" "$CONFIG_FILE"
-              echo "$newhash" > "$HASHFILE"
-              echo "[openclaw] Seeded openclaw.json from ConfigMap (initial or empty PVC)"
-            elif [ "$(cat "$HASHFILE")" != "$newhash" ]; then
-              cp -f "$CM_SRC" "$CONFIG_FILE"
-              echo "$newhash" > "$HASHFILE"
-              echo "[openclaw] Refreshed openclaw.json from ConfigMap (ConfigMap content changed)"
-            else
-              echo "[openclaw] Keeping PVC openclaw.json (ConfigMap hash unchanged; preserves OpenClaw file metadata)"
-            fi
-            # Copy exec policy onto PVC (OpenClaw mutates this file; ConfigMap mount would be EROFS)
-            if [ -r /etc/openclaw-defaults/exec-approvals.json ]; then
-              cp -f /etc/openclaw-defaults/exec-approvals.json "$OPENCLAW_DIR/exec-approvals.json"
-              echo "[openclaw] Seeded exec-approvals.json (writable on PVC)"
-            fi
-            echo "[openclaw] Skipping doctor (config from ConfigMap)"
-            exec node /app/dist/index.js gateway --bind lan
+          - /usr/local/bin/openclaw-cluster-start
         env:
           - name: TELEGRAM_BOT_TOKEN
             valueFrom:
@@ -124,7 +91,9 @@ spec:
         probes:
           path: /health
           port: 18789
-          liveness: {initialDelaySeconds: 180, periodSeconds: 30, timeoutSeconds: 10}
+          # Doctor is bounded to 300s; allow migration + gateway startup before
+          # liveness can interrupt writes to the PVC. Readiness stays closed.
+          liveness: {initialDelaySeconds: 600, periodSeconds: 30, timeoutSeconds: 10}
           readiness: {initialDelaySeconds: 150, periodSeconds: 10, timeoutSeconds: 5}
         volumeMounts:
           - name: openclaw-data

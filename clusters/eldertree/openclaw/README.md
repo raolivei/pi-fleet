@@ -36,44 +36,88 @@ CPU cold-start.
 > too small to hold the baseline system prompt). For the Mac providers, set `num_ctx`/`OLLAMA_CONTEXT_LENGTH`
 > on the Mac side if you need a window other than qwen2.5:32b's default.
 >
-> **`reserveTokens`/`reserveTokensFloor` math (verified against upstream source, don't set blindly):**
-> `reserveTokensFloor` is only a *minimum* — it does NOT set the actual reserve. If
-> `agents.defaults.compaction.reserveTokens` is left **unset**, OpenClaw falls back to the runtime's
-> current/default reserve value (effectively ~20000, the same number the generic error message
-> suggests) via `max(configuredReserveTokens ?? currentReserveTokens, reserveTokensFloor)` in
-> `applyAgentCompactionSettingsFromConfig()` (`src/agents/agent-settings.ts`) — so lowering
-> `reserveTokensFloor` alone (an earlier fix tried 24000→8192) does **nothing** if it's already below
-> that fallback. There's also a hard safety cap: `minPromptBudget = min(8000, contextTokenBudget*0.5)`
-> (`agent-compaction-constants.ts`) guarantees at least this much prompt room by capping the reserve —
-> which is *why* it didn't overflow-loop forever, but it also meant every session got squeezed to a
-> razor-thin ~8000-token budget against a baseline system prompt (tools + workspace context, zero
-> conversation) measured at **~9748 tokens** — overflowing every fresh `/new` session immediately.
-> Fix: set **both** `reserveTokens` (the actual value, not just the floor) **and** `reserveTokensFloor`
-> explicitly (currently `8500` each) with a large enough `contextTokens` (`30000`, below the smallest
-> real `contextWindow` of `32768` so it stays the binding budget) — usable prompt budget is now
-> `30000 - 8500 = 21500`, comfortably above the ~9748 baseline. Before changing either value: verify
-> against upstream's `resolveCompactionReserveTokensFloor`/`applyAgentCompactionSettingsFromConfig`
-> logic, don't infer the formula from log field names alone (cost real debugging time twice).
+> **Compaction headroom:** `reserveTokens` and `reserveTokensFloor` were retired before
+> OpenClaw 2026.9.5 and must not be reintroduced. The current runtime manages its own
+> compaction headroom. `agents.defaults.contextTokens` was also retired; each configured
+> model's `contextWindow` is now authoritative. We retain safeguard mode and the explicit
+> Mac-hosted compaction model. `keepRecentTokens` is not a replacement for the removed
+> reserve settings because it controls how much recent conversation is preserved.
 
 To change the primary/fallback Mac model, edit both `ollama-lan` and `ollama-tailscale` provider
 entries in `configmap.yaml` (keep them in sync — same model, different `baseUrl`). To change the
 cluster fallback model, edit both the `ollama pull` line in `ollama-fallback.yaml` **and** the
 `ollama-cluster` provider entry in `configmap.yaml`.
 
-## ARM64 Build
+## Cluster image releases
 
-The official OpenClaw image doesn't support ARM64 (Raspberry Pi). We build our own image using GitHub Actions.
+OpenClaw uses the workspace's existing [shared Docker workflow](https://github.com/raolivei/github-workflows/blob/main/README.md).
+The caller is `.github/workflows/build-openclaw-arm64.yml`; GHCR login, image
+metadata, tags, content hashes, caching and publishing remain owned by
+`raolivei/github-workflows/.github/workflows/docker-build.yml@main`.
 
-**Image:** `ghcr.io/raolivei/openclaw:latest`
+| File | Owns |
+| --- | --- |
+| Repository root `VERSION` | Published image version, as read by the shared workflow |
+| `docker/build.lock.json` | Upstream OpenClaw tag/digest and kubectl version/checksum |
+| `docker/Dockerfile` | Build instructions consuming those locked arguments |
 
-**Workflow:** `.github/workflows/build-openclaw-arm64.yml`
+The root pi-fleet version `1.3.2` publishes
+`ghcr.io/raolivei/openclaw:v1.3.2`, containing upstream OpenClaw `2026.9.5`.
+There is no separate component VERSION or custom publisher. The shared
+workflow's existing semver, branch, SHA, content and latest tags are retained;
+Flux selects full semver tags within the approved migration range.
 
-To rebuild manually:
+Pull requests run the shared `version-check.yml` to enforce root VERSION and
+CHANGELOG updates, plus OpenClaw-specific tests on a native ARM64 runner.
+The latter build a local image, validate managed config, exercise Doctor and
+repeated startup, and check gateway/Ollama health with disposable state.
+They use placeholder credentials and disable Telegram in the test gateway.
+These test helpers do not log in to GHCR or publish images.
 
-1. Go to Actions → "Build OpenClaw ARM64"
-2. Click "Run workflow"
-3. Optionally set version input (e.g. `v1.0.0`)
-4. Wait for build (~10-15 min)
+All runs validate first, then call the shared Docker workflow with
+`image-name: openclaw`, the Docker context, and its existing `build-args`
+input. PRs pass `push: false`; main and manual runs publish the validated source.
+`scripts/openclaw/build_inputs.py` only validates the lock file and emits its
+arguments; it does not define a tagging, versioning or publishing policy.
+
+Release procedure follows the workspace conventions:
+
+1. Review upstream compatibility and migration requirements, update the lock
+   file, and bump the repository root VERSION and CHANGELOG.
+2. Let the PR checks validate the change. Publication uses the existing shared
+   workflow on main or a manual run.
+3. For this coordinated initial image/config migration, run **Build OpenClaw
+   ARM64** on the branch and verify the shared build succeeds before merging
+   the new HelmRelease tag. This follows the existing image-before-tag rule.
+   There is no separate `publish_release` input or artifact promotion command.
+4. Flux image automation follows published semver tags within the approved
+   policy, commits the image update, and reconciles the HelmRelease.
+5. Verify Doctor completion, a Telegram DM and an approved Elder operation.
+
+The bridge policy is `>=1.3.2 <1.4.0`. It deliberately holds upstream
+`2026.9.5` while the old persisted state is migrated and verified. A subsequent
+PR updates upstream to stable `2026.10.8`, bumps root VERSION to `1.4.0`,
+and opens the `1.4.x` policy range. Fresh-state CI does not prove live-PVC
+migration; the bridge must be verified before that follow-up is promoted.
+
+kubectl `1.35.10` matches the cluster's declared `1.35` control-plane minor.
+Ollama `0.40.13` is pinned by digest; Elder stays at its latest declared source
+version `0.3.7`. Node and Bun are supplied by the selected upstream image.
+
+`docker/startup.sh` preserves the actual PVC config before ConfigMap refresh,
+seeds a private writable copy and runs Doctor once per runtime/config hash.
+Doctor is bounded to 300 seconds; liveness waits 600 seconds. Failures leave
+no success marker and a diagnostic log in
+`~/.openclaw/migration-backups/`. Config validation runs on every start.
+Take a PVC snapshot before a persisted-state upgrade; config backups alone
+cannot reverse a database-schema migration.
+
+Local checks (Python and PyYAML required):
+
+```bash
+python3 scripts/openclaw/build_inputs.py
+python3 -m unittest discover -s scripts/openclaw -p 'test_*.py' -v
+```
 
 ## Features
 
@@ -139,7 +183,9 @@ Elder can upgrade itself or OpenClaw:
 - **elder_upgrade**: Trigger GitHub Actions rebuild (requires approval)
 - **elder_version**: Get current Elder and OpenClaw versions
 
-Example: "Upgrade OpenClaw to v1.0.0" → creates approval → user approves → workflow runs → Flux deploys.
+OpenClaw upgrades follow the reviewed release procedure above. A workflow
+dispatch validates the committed lock; it does not select an arbitrary upstream
+version. Elder's legacy `version` request field is not a release-selection API.
 
 ## Secrets
 
