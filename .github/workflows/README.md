@@ -6,6 +6,7 @@
 
 - PRs call `raolivei/github-workflows/.github/workflows/version-check.yml@main`
   and run application-specific ARM64 config, migration and health checks.
+  They also exercise the shared Docker builder with `push: false`.
 - Main pushes and manual runs validate first, then call
   `raolivei/github-workflows/.github/workflows/docker-build.yml@main`.
 - The shared builder reads the root `VERSION`, handles GHCR authentication,

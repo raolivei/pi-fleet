@@ -52,6 +52,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(builder["uses"], "raolivei/github-workflows/.github/workflows/docker-build.yml@main")
         self.assertEqual(builder["needs"], "validate")
         self.assertEqual(builder["with"]["context"], str(CONTEXT))
+        self.assertEqual(builder["with"]["push"], "${{ github.event_name != 'pull_request' }}")
         self.assertNotIn("steps", builder)
         self.assertEqual(workflow["jobs"]["version-check"]["uses"],
                          "raolivei/github-workflows/.github/workflows/version-check.yml@main")
