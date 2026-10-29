@@ -80,7 +80,10 @@ class ReleaseTests(unittest.TestCase):
 
     def test_upstream_upgrade_requires_new_release_line(self):
         base = self.init_repository()
-        self.change_lock(lambda lock: lock.update(upstreamImage=lock["upstreamImage"].replace(":2026.9.5@", ":2026.10.5@")))
+        current = metadata(self.root)["upstream_version"]
+        major, minor, patch = map(int, current.split("."))
+        future = f"{major}.{minor}.{patch + 1}"
+        self.change_lock(lambda lock: lock.update(upstreamImage=lock["upstreamImage"].replace(f":{current}@", f":{future}@")))
         self.bump_patch()
         self.commit_changes()
         with self.assertRaisesRegex(ValueError, "minor release"):

@@ -29,6 +29,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Current stable OpenClaw, after the migration bridge** — wrapper `0.2.0` selects digest-pinned upstream `2026.10.8` (including its patched Node `24.22.1` runtime) after the `0.1.x` bridge has migrated and verified the live state. The managed exec policy now uses canonical `tools.exec.mode: full`; the Flux release gate moves to the separately reviewed `0.2.x` line. kubectl remains at compatible `1.35.10`, Ollama at stable `0.40.13`, and Elder at its latest declared source version `0.3.7`.
+
 - **OpenClaw-stack dependency refresh (2026-10-29)** — bridge wrapper `0.1.1` uses kubectl `1.35.10`, the newest patch matching the declared Kubernetes `1.35` control plane, and the Ollama fallback moves from `0.31.1` to digest-pinned stable `0.40.13`. Current stable OpenClaw `2026.10.8` is a separate migration step after the `2026.9.5` bridge; its newer persisted-state readers cannot safely replace all legacy imports directly.
 
 - **OpenClaw release pipeline** — replaced weekly date-tagged source rebuilds with a thin official ARM64 runtime, a reviewed dependency lock and an independently versioned cluster image (`docker/VERSION`). Native ARM64 PR checks exercise config validation, Doctor, repeated startup and gateway health before a separate job can publish the tested image. Release tags cannot be overwritten with different inputs. The `0.1.x` policy holds upstream `2026.9.5` as the persisted-state migration bridge; upstream upgrades require a new wrapper minor version and Flux policy review. Startup now preserves the actual PVC config before refresh, protects backups, bounds Doctor execution and delays liveness beyond the migration budget.

@@ -59,8 +59,8 @@ lives in two reviewed files:
 | `docker/build.lock.json` | Exact upstream image reference (tag + digest), kubectl version and ARM64 checksum |
 | `docker/VERSION` | Independent semantic version of our cluster image |
 
-For example, cluster image `ghcr.io/raolivei/openclaw:v0.1.1` contains upstream
-OpenClaw `2026.9.5`. Changing kubectl or startup behavior requires a new cluster
+For example, cluster image `ghcr.io/raolivei/openclaw:v0.2.0` contains upstream
+OpenClaw `2026.10.8`. Changing kubectl or startup behavior requires a new cluster
 image version even if OpenClaw itself has not changed. OCI labels record both
 versions, the Git revision and a hash of all image inputs.
 
@@ -96,19 +96,27 @@ Release procedure:
    Elder operation. CI cannot establish the condition of the live cluster or
    migrate its existing PVC.
 
-The `0.1.x` line deliberately holds upstream `2026.9.5`, the bridge required for
-older persisted state. Flux is constrained to `>=0.1.0 <0.2.0`. A move to a new
-upstream release must change the wrapper minor version, lock file and Flux
-policy together, after the bridge migration has been verified. CI enforces the
-version bump and policy gate; publication alone cannot skip the bridge.
+The `0.1.x` line holds upstream `2026.9.5`, the bridge required for older
+persisted state. Deploy and verify that bridge before promoting this `0.2.x`
+line, which contains current stable `2026.10.8`. Flux is now constrained to
+`>=0.2.0 <0.3.0`. Another upstream upgrade must change the wrapper minor
+version, lock file and Flux policy together. CI enforces the version bump and
+policy gate. These fresh-state CI checks do not prove live-PVC migration.
 
-The bridge uses kubectl `1.35.10`, the latest patch of the cluster's `1.35`
+The cluster image uses kubectl `1.35.10`, the latest patch of the cluster's `1.35`
 release line as checked on 2026-10-29. Do not select the global kubectl `latest`
 release independently of the control plane's supported version skew. The
 cluster fallback uses digest-pinned Ollama `0.40.13`. Elder stays at `0.3.7`,
 which is the latest version declared by its current source; no newer versioned
-source release was found. A subsequent wrapper minor release targets current stable
-OpenClaw `2026.10.8` after the bridge has migrated and verified the live state.
+source release was found. Upstream `2026.10.8` supplies its supported, patched
+Node `24.22.1` runtime; Node and Bun are owned by the upstream image, not
+independently overridden in this wrapper.
+
+Before promoting this release, verify Doctor on the original live state while
+still on the bridge and save a PVC snapshot. If current Doctor reports a retired
+queue, cron, plugin or other legacy format requiring `2026.9.7`, follow that
+additional intermediate step from a preserved backup before retrying. See the
+[upstream state migration policy](https://github.com/openclaw/openclaw/blob/v2026.10.8/docs/gateway/doctor/config-migrations.md).
 
 `docker/startup.sh` saves the actual PVC config before any ConfigMap refresh,
 seeds a private writable copy, and runs Doctor once per runtime/config hash.
