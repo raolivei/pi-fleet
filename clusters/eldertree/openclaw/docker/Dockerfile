@@ -1,5 +1,5 @@
-# Release inputs are required. scripts/openclaw/release.py reads the reviewed
-# build.lock.json; CI and local builds pass the same arguments.
+# Build arguments come from build.lock.json through the standard shared
+# docker-build.yml workflow. VERSION and GHCR tags are owned by that workflow.
 ARG OPENCLAW_IMAGE
 FROM ${OPENCLAW_IMAGE}
 

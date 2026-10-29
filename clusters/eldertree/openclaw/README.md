@@ -50,89 +50,74 @@ cluster fallback model, edit both the `ollama pull` line in `ollama-fallback.yam
 
 ## Cluster image releases
 
-The cluster image extends OpenClaw's official ARM64 runtime with `kubectl` and
-our startup script. The Dockerfile contains build instructions; release data
-lives in two reviewed files:
+OpenClaw uses the workspace's existing [shared Docker workflow](https://github.com/raolivei/github-workflows/blob/main/README.md).
+The caller is `.github/workflows/build-openclaw-arm64.yml`; GHCR login, image
+metadata, tags, content hashes, caching and publishing remain owned by
+`raolivei/github-workflows/.github/workflows/docker-build.yml@main`.
 
 | File | Owns |
 | --- | --- |
-| `docker/build.lock.json` | Exact upstream image reference (tag + digest), kubectl version and ARM64 checksum |
-| `docker/VERSION` | Independent semantic version of our cluster image |
+| Repository root `VERSION` | Published image version, as read by the shared workflow |
+| `docker/build.lock.json` | Upstream OpenClaw tag/digest and kubectl version/checksum |
+| `docker/Dockerfile` | Build instructions consuming those locked arguments |
 
-For example, cluster image `ghcr.io/raolivei/openclaw:v0.2.0` contains upstream
-OpenClaw `2026.10.8`. Changing kubectl or startup behavior requires a new cluster
-image version even if OpenClaw itself has not changed. OCI labels record both
-versions, the Git revision and a hash of all image inputs.
+The root pi-fleet version `1.4.0` publishes
+`ghcr.io/raolivei/openclaw:v1.4.0`, containing upstream OpenClaw `2026.10.8`.
+There is no separate component VERSION or custom publisher. The shared
+workflow's existing semver, branch, SHA, content and latest tags are retained;
+Flux selects full semver tags within the approved migration range.
 
-`.github/workflows/build-openclaw-arm64.yml` validates pull requests on native
-ARM64 runners. It builds locally, validates the exact managed config, exercises
-Doctor and repeated startup on disposable state, and waits for gateway health.
-These tests use placeholder credentials and disable Telegram before starting
-the test gateway. PR validation has no package-write permission.
+Pull requests run the shared `version-check.yml` to enforce root VERSION and
+CHANGELOG updates, plus OpenClaw-specific tests on a native ARM64 runner.
+The latter build a local image, validate managed config, exercise Doctor and
+repeated startup, and check gateway/Ollama health with disposable state.
+They use placeholder credentials and disable Telegram in the test gateway.
+These test helpers do not log in to GHCR or publish images.
 
-Only after validation succeeds does a separate publication job upload the same
-tested image to GHCR. Version tags are write-once: a repeated run reuses an
-existing release with identical inputs; changed inputs require a VERSION bump.
-Registry errors fail the job rather than being treated as an absent image.
-There are no date or `latest` deployment tags.
+Main and manual runs validate first, then call the shared Docker workflow with
+`image-name: openclaw`, the Docker context, and its existing `build-args`
+input. The shared workflow builds and publishes the validated source.
+`scripts/openclaw/build_inputs.py` only validates the lock file and emits its
+arguments; it does not define a tagging, versioning or publishing policy.
 
-Release procedure:
+Release procedure follows the workspace conventions:
 
-1. Review the upstream release and migration requirements. Update the lock file
-   when upstream or kubectl changes. Verify the upstream digest includes ARM64
-   and the kubectl checksum comes from `dl.k8s.io`.
-2. Bump `docker/VERSION` for any image change. Wrapper fixes use a patch bump;
-   a different upstream OpenClaw release requires a new minor release line.
-3. For a coordinated config/image migration, update the HelmRelease tag and
-   select the branch in Actions → **Build OpenClaw ARM64** → **Run workflow**,
-   with `publish_release: true`. Wait for **both** validation and publication
-   before merging; this prevents GitOps referencing an unpublished image.
-   Manual runs default to validation only. Publication from a branch is an
-   explicit maintainer action, never triggered by a PR event.
-4. Merge the PR. Main validates again and reuses an identical published release.
-   Later compatible wrapper releases are selected by Flux within the approved
-   policy range.
-5. Verify Flux rollout, Doctor completion, then a Telegram DM and an approved
-   Elder operation. CI cannot establish the condition of the live cluster or
-   migrate its existing PVC.
+1. Review upstream compatibility and migration requirements, update the lock
+   file, and bump the repository root VERSION and CHANGELOG.
+2. Let the PR checks validate the change. Publication uses the existing shared
+   workflow on main or a manual run.
+3. For this coordinated initial image/config migration, run **Build OpenClaw
+   ARM64** on the branch and verify the shared build succeeds before merging
+   the new HelmRelease tag. This follows the existing image-before-tag rule.
+   There is no separate `publish_release` input or artifact promotion command.
+4. Flux image automation follows published semver tags within the approved
+   policy, commits the image update, and reconciles the HelmRelease.
+5. Verify Doctor completion, a Telegram DM and an approved Elder operation.
 
-The `0.1.x` line holds upstream `2026.9.5`, the bridge required for older
-persisted state. Deploy and verify that bridge before promoting this `0.2.x`
-line, which contains current stable `2026.10.8`. Flux is now constrained to
-`>=0.2.0 <0.3.0`. Another upstream upgrade must change the wrapper minor
-version, lock file and Flux policy together. CI enforces the version bump and
-policy gate. These fresh-state CI checks do not prove live-PVC migration.
+This release opens `>=1.4.0 <1.5.0` only after the `1.3.x` bridge (upstream
+`2026.9.5`) has migrated and verified the original live PVC. Fresh-state CI
+does not prove that migration. Keep this follow-up in draft until the bridge
+is deployed and verified. If Doctor reports legacy data requiring another
+intermediate release such as `2026.9.7`, follow upstream's recovery instructions
+from the preserved backup before retrying. See the [upstream migration policy](https://github.com/openclaw/openclaw/blob/v2026.10.8/docs/gateway/doctor/config-migrations.md).
 
-The cluster image uses kubectl `1.35.10`, the latest patch of the cluster's `1.35`
-release line as checked on 2026-10-29. Do not select the global kubectl `latest`
-release independently of the control plane's supported version skew. The
-cluster fallback uses digest-pinned Ollama `0.40.13`. Elder stays at `0.3.7`,
-which is the latest version declared by its current source; no newer versioned
-source release was found. Upstream `2026.10.8` supplies its supported, patched
-Node `24.22.1` runtime; Node and Bun are owned by the upstream image, not
-independently overridden in this wrapper.
+kubectl `1.35.10` matches the cluster's declared `1.35` control-plane minor.
+Ollama `0.40.13` is pinned by digest; Elder stays at its latest declared source
+version `0.3.7`. Node `24.22.1` and Bun are supplied by the selected upstream image.
 
-Before promoting this release, verify Doctor on the original live state while
-still on the bridge and save a PVC snapshot. If current Doctor reports a retired
-queue, cron, plugin or other legacy format requiring `2026.9.7`, follow that
-additional intermediate step from a preserved backup before retrying. See the
-[upstream state migration policy](https://github.com/openclaw/openclaw/blob/v2026.10.8/docs/gateway/doctor/config-migrations.md).
+`docker/startup.sh` preserves the actual PVC config before ConfigMap refresh,
+seeds a private writable copy and runs Doctor once per runtime/config hash.
+Doctor is bounded to 300 seconds; liveness waits 600 seconds. Failures leave
+no success marker and a diagnostic log in
+`~/.openclaw/migration-backups/`. Config validation runs on every start.
+Take a PVC snapshot before a persisted-state upgrade; config backups alone
+cannot reverse a database-schema migration.
 
-`docker/startup.sh` saves the actual PVC config before any ConfigMap refresh,
-seeds a private writable copy, and runs Doctor once per runtime/config hash.
-Doctor is bounded to 300 seconds, and liveness waits 600 seconds so it cannot
-interrupt a normal migration. Failures leave no success marker and a diagnostic
-log under `~/.openclaw/migration-backups/`; retries resume against the writable
-config. Config validation also runs on every subsequent start. Config backups
-do not replace a PVC snapshot: take a storage backup before a persisted-state
-upgrade, because schema downgrades may not be reversible.
-
-Local checks (from the repo root, with Python/PyYAML and Docker installed):
+Local checks (Python and PyYAML required):
 
 ```bash
+python3 scripts/openclaw/build_inputs.py
 python3 -m unittest discover -s scripts/openclaw -p 'test_*.py' -v
-python3 scripts/openclaw/release.py --build
-python3 scripts/openclaw/smoke.py openclaw:ci
 ```
 
 ## Features

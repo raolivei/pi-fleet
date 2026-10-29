@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-from release import ROOT, metadata
+from build_inputs import ROOT, metadata
 
 
 def main():
