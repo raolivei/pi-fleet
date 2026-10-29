@@ -84,7 +84,11 @@ jobs:
         run: python scripts/openclaw/smoke_ollama.py
 
   build:
-    needs: validate
+    needs: [validate, version-check]
+    # VERSION checks apply to PRs; main/manual runs intentionally skip them.
+    if: >-
+      !cancelled() && needs.validate.result == 'success' &&
+      (needs.version-check.result == 'success' || needs.version-check.result == 'skipped')
     # Exercise the standard builder on PRs with publishing disabled.
     permissions:
       contents: write
