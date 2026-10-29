@@ -74,9 +74,9 @@ repeated startup, and check gateway/Ollama health with disposable state.
 They use placeholder credentials and disable Telegram in the test gateway.
 These test helpers do not log in to GHCR or publish images.
 
-Main and manual runs validate first, then call the shared Docker workflow with
+All runs validate first, then call the shared Docker workflow with
 `image-name: openclaw`, the Docker context, and its existing `build-args`
-input. The shared workflow builds and publishes the validated source.
+input. PRs pass `push: false`; main and manual runs publish the validated source.
 `scripts/openclaw/build_inputs.py` only validates the lock file and emits its
 arguments; it does not define a tagging, versioning or publishing policy.
 

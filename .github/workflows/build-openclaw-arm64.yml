@@ -85,8 +85,7 @@ jobs:
 
   build:
     needs: validate
-    # Match the established pattern: PRs validate; main/manual runs publish.
-    if: github.event_name != 'pull_request'
+    # Exercise the standard builder on PRs with publishing disabled.
     permissions:
       contents: write
       packages: write
@@ -97,6 +96,7 @@ jobs:
       dockerfile: Dockerfile
       platforms: linux/arm64
       runs-on: ubuntu-24.04-arm
+      push: ${{ github.event_name != 'pull_request' }}
       build-args: |
         OPENCLAW_IMAGE=${{ needs.validate.outputs.upstream_image }}
         KUBECTL_VERSION=${{ needs.validate.outputs.kubectl_version }}
