@@ -61,8 +61,8 @@ metadata, tags, content hashes, caching and publishing remain owned by
 | `docker/build.lock.json` | Upstream OpenClaw tag/digest and kubectl version/checksum |
 | `docker/Dockerfile` | Build instructions consuming those locked arguments |
 
-The root pi-fleet version `1.3.2` publishes
-`ghcr.io/raolivei/openclaw:v1.3.2`, containing upstream OpenClaw `2026.9.5`.
+The root pi-fleet version `1.4.0` publishes
+`ghcr.io/raolivei/openclaw:v1.4.0`, containing upstream OpenClaw `2026.10.8`.
 There is no separate component VERSION or custom publisher. The shared
 workflow's existing semver, branch, SHA, content and latest tags are retained;
 Flux selects full semver tags within the approved migration range.
@@ -94,15 +94,16 @@ Release procedure follows the workspace conventions:
    policy, commits the image update, and reconciles the HelmRelease.
 5. Verify Doctor completion, a Telegram DM and an approved Elder operation.
 
-The bridge policy is `>=1.3.2 <1.4.0`. It deliberately holds upstream
-`2026.9.5` while the old persisted state is migrated and verified. A subsequent
-PR updates upstream to stable `2026.10.8`, bumps root VERSION to `1.4.0`,
-and opens the `1.4.x` policy range. Fresh-state CI does not prove live-PVC
-migration; the bridge must be verified before that follow-up is promoted.
+This release opens `>=1.4.0 <1.5.0` only after the `1.3.x` bridge (upstream
+`2026.9.5`) has migrated and verified the original live PVC. Fresh-state CI
+does not prove that migration. Keep this follow-up in draft until the bridge
+is deployed and verified. If Doctor reports legacy data requiring another
+intermediate release such as `2026.9.7`, follow upstream's recovery instructions
+from the preserved backup before retrying. See the [upstream migration policy](https://github.com/openclaw/openclaw/blob/v2026.10.8/docs/gateway/doctor/config-migrations.md).
 
 kubectl `1.35.10` matches the cluster's declared `1.35` control-plane minor.
 Ollama `0.40.13` is pinned by digest; Elder stays at its latest declared source
-version `0.3.7`. Node and Bun are supplied by the selected upstream image.
+version `0.3.7`. Node `24.22.1` and Bun are supplied by the selected upstream image.
 
 `docker/startup.sh` preserves the actual PVC config before ConfigMap refresh,
 seeds a private writable copy and runs Doctor once per runtime/config hash.

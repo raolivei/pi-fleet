@@ -29,6 +29,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Current stable OpenClaw, after the migration bridge** — pi-fleet `1.4.0` selects digest-pinned upstream `2026.10.8` with patched Node `24.22.1`, after the `1.3.x` bridge has migrated and verified the live state. The managed exec policy uses canonical `tools.exec.mode: full`, and the Flux gate opens the separately reviewed `1.4.x` range. Publication stays with the workspace's shared Docker workflow and root VERSION.
+
 - **OpenClaw-stack dependency refresh (2026-10-29)** — pi-fleet `1.3.2` uses kubectl `1.35.10`, the newest patch matching the declared Kubernetes `1.35` control plane, and the Ollama fallback moves from `0.31.1` to digest-pinned stable `0.40.13`. Current stable OpenClaw `2026.10.8` is a separate migration step after the `2026.9.5` bridge; its newer persisted-state readers cannot safely replace all legacy imports directly.
 
 - **OpenClaw release pipeline** — use the established `raolivei/github-workflows/docker-build.yml` for GHCR publication, tags, caching and content hashes, with the repository root `VERSION`. Locked OpenClaw/kubectl dependencies are passed through its existing `build-args` input. The shared `version-check.yml` enforces VERSION/CHANGELOG updates on PRs; application-specific native ARM64 tests cover config validation, Doctor, repeated startup and gateway/Ollama health before the shared build. Removed the custom publisher and artifact-promotion path. The `1.3.x` Flux range holds the `2026.9.5` migration bridge. Startup preserves the actual PVC config before refresh, protects backups, bounds Doctor execution and delays liveness beyond the migration budget.
