@@ -50,6 +50,12 @@ The focused `inotify` tag changes only this sysctl, with no reboot or service
 restart. Watch and event-queue limits remain unchanged. The correction was
 previewed and applied on node-2/3; node-1 was excluded after Rafael shut it down.
 
+Both hosts subsequently reported the persisted value `1024`, and a second
+Ansible check was unchanged. Blog run `43260631464` was requeued as attempt 2;
+ARC created fresh runners for both stages. The build passed in 52 seconds and
+the Pages deployment passed in 11 seconds. This verifies queue pickup and
+end-to-end execution after recovery, not long-term control-plane stability.
+
 ### Generated ARC containers
 
 With Kubernetes 1.35, ARC's built-in DinD mode emits a restartable init
