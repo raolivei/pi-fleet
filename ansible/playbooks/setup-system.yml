@@ -70,6 +70,16 @@
       when: hostname == "eldertree" or (hostname is defined and hostname != "" and ".eldertree.local" not in hostname)
 
   tasks:
+    - name: Reserve inotify instance capacity for k3s and container workloads
+      ansible.posix.sysctl:
+        name: fs.inotify.max_user_instances
+        value: "{{ node_inotify_max_user_instances }}"
+        state: present
+        sysctl_set: true
+        sysctl_file: /etc/sysctl.d/99-eldertree-inotify.conf
+        reload: true
+      tags: [inotify]
+
     - name: Update apt cache
       apt:
         update_cache: yes

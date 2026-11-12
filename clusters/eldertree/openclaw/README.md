@@ -62,7 +62,7 @@ metadata, tags, content hashes, caching and publishing remain owned by
 | `docker/Dockerfile` | Build instructions consuming those locked arguments |
 
 The root pi-fleet version `1.4.0` publishes
-`ghcr.io/raolivei/openclaw:v1.4.0`, containing upstream OpenClaw `2026.10.8`.
+`ghcr.io/raolivei/openclaw:v1.4.0`, containing upstream OpenClaw `2026.11.3`.
 There is no separate component VERSION or custom publisher. The shared
 workflow's existing semver, branch, SHA, content and latest tags are retained;
 Flux selects full semver tags within the approved migration range.
@@ -94,18 +94,20 @@ Release procedure follows the workspace conventions:
    policy, commits the image update, and reconciles the HelmRelease.
 5. Verify Doctor completion, a Telegram DM and an approved Elder operation.
 
-This release opens `>=1.4.0 <1.5.0` only after the `1.3.x` bridge (upstream
-`2026.9.5`) has migrated and verified the original live PVC. Fresh-state CI
-does not prove that migration. Keep this follow-up in draft until the bridge
-is deployed and verified. If Doctor reports legacy data requiring another
-intermediate release such as `2026.9.7`, follow upstream's recovery instructions
-from the preserved backup before retrying. See the [upstream migration policy](https://github.com/openclaw/openclaw/blob/v2026.10.8/docs/gateway/doctor/config-migrations.md).
+The policy opens `>=1.4.0 <1.5.0` after the preceding `2026.9.5` runtime has
+repaired and verified the live state. Fresh-state CI does not prove live-PVC
+migration. If Doctor reports retired state requiring another intermediate
+version, follow the [upstream migration policy](https://github.com/openclaw/openclaw/blob/v2026.11.3/docs/gateway/doctor/config-migrations.md)
+from a preserved backup before promoting the upgrade.
 
 kubectl `1.35.10` matches the cluster's declared `1.35` control-plane minor.
-Ollama `0.40.13` is pinned by digest; Elder stays at its latest declared source
-version `0.3.7`. Node `24.22.1` and Bun are supplied by the selected upstream image.
+Ollama `0.40.16` is pinned by digest; Elder stays at its latest declared source
+version `0.3.7`. Node and Bun are supplied by the selected upstream image.
 
-`docker/startup.sh` preserves the actual PVC config before ConfigMap refresh,
+`docker/startup.sh` applies the managed exec policy with `openclaw approvals set`
+to the canonical SQLite store. It never recreates the retired state-directory
+`exec-approvals.json`; leftover legacy files trigger Doctor even if an earlier
+migration marker exists. The script preserves the actual PVC config before ConfigMap refresh,
 seeds a private writable copy and runs Doctor once per runtime/config hash.
 Doctor is bounded to 300 seconds; liveness waits 600 seconds. Failures leave
 no success marker and a diagnostic log in

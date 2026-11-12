@@ -27,6 +27,8 @@ def main():
         # isolated Doctor/gateway test. CI never polls the production bot.
         config["channels"]["telegram"]["enabled"] = False
         (fixtures / "smoke.json").write_text(json.dumps(config))
+        policy = yaml.safe_load((ROOT / "clusters/eldertree/openclaw/exec-approvals-configmap.yaml").read_text())
+        (fixtures / "exec-approvals.json").write_text(policy["data"]["exec-approvals.json"])
         for path in fixtures.iterdir():
             path.chmod(0o644)
         command = [
@@ -41,7 +43,7 @@ def main():
             "OPENROUTER_API_KEY": "ci-placeholder-key",
             "GROQ_API_KEY": "ci-placeholder-key",
             "OPENCLAW_CONFIG_SOURCE": "/fixtures/smoke.json",
-            "OPENCLAW_EXEC_POLICY_SOURCE": "/fixtures/absent-policy.json",
+            "OPENCLAW_EXEC_POLICY_SOURCE": "/fixtures/exec-approvals.json",
             "EXPECTED_OPENCLAW_VERSION": release["upstream_version"],
             "EXPECTED_KUBECTL_VERSION": release["kubectl_version"],
         }
@@ -65,12 +67,17 @@ OPENCLAW_CONFIG_PATH=/fixtures/config.json node /app/dist/index.js config valida
 # Simulate an existing PVC, then exercise the real migration and repeat startup.
 printf '%s\n' '{"gateway":{"mode":"local"}}' > /home/node/.openclaw/openclaw.json
 original_hash=$(sha256sum /home/node/.openclaw/openclaw.json | cut -d' ' -f1)
+cp /fixtures/exec-approvals.json /home/node/.openclaw/exec-approvals.json
 /usr/local/bin/openclaw-cluster-start --prepare-only
 test -s "/home/node/.openclaw/migration-backups/config-${original_hash}.json"
 test "$(find /home/node/.openclaw -maxdepth 1 -name '.doctor-*' | wc -l)" -eq 1
 before=$(sha256sum /home/node/.openclaw/openclaw.json)
 /usr/local/bin/openclaw-cluster-start --prepare-only
 test "$before" = "$(sha256sum /home/node/.openclaw/openclaw.json)"
+test ! -e /home/node/.openclaw/exec-approvals.json
+test ! -e /home/node/.openclaw/exec-approvals.json.doctor-importing
+node /app/dist/index.js approvals get --json > /tmp/approvals-snapshot.json
+node -e 'const d=require("/tmp/approvals-snapshot.json").file.defaults; if(d.security!=="full" || d.ask!=="off" || d.askFallback!=="full")process.exit(1)'
 
 /usr/local/bin/openclaw-cluster-start > /tmp/gateway.log 2>&1 &
 gateway_pid=$!

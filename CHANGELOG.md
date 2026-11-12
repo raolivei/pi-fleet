@@ -29,7 +29,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
-- **Current stable OpenClaw, after the migration bridge** — pi-fleet `1.4.0` selects digest-pinned upstream `2026.10.8` with patched Node `24.22.1`, after the `1.3.x` bridge has migrated and verified the live state. The managed exec policy uses canonical `tools.exec.mode: full`, and the Flux gate opens the separately reviewed `1.4.x` range. Publication stays with the workspace's shared Docker workflow and root VERSION.
+- **OpenClaw stack refresh (2026-11-12)** — pi-fleet `1.4.0` selects digest-pinned OpenClaw `2026.11.3` and Ollama `0.40.16`, with ARM64 manifests verified. Retain compatible kubectl `1.35.10`, the canonical approvals startup repair, and the existing shared publisher/Flux release process. Use canonical `tools.exec.mode` for the upgraded runtime; promote only after the preceding runtime has repaired live state.
+
+- **OpenClaw channels stopped on a recreated legacy approvals file** — startup now repairs legacy approvals even when a Doctor marker exists and applies the mounted exec policy through OpenClaw's canonical SQLite-backed `approvals set` command. Removed the post-migration JSON copy that made Telegram fail on every restart. ARM64 runtime validation now includes the actual managed policy, legacy migration and repeated startup. Cluster image version: `1.3.3`.
+
+- **Pod forwarding on nodes with UFW enabled** — `install-k3s.yml` now persists the routed allowance for the pod CIDR from `group_vars/all.yml`. Input rules alone left node-3 dropping pod DNS and outbound traffic before Flannel's forwarding chain. The `pod-egress` tag applies just this correction without reinstalling k3s or restarting nodes.
+
+- **Node inotify exhaustion stalled ARC runners and destabilized k3s** — persist `fs.inotify.max_user_instances=1024` through the existing system setup playbook and group variables. The default 128-instance quota was nearly exhausted on node-2 while k3s certificate watchers and DinD reported `too many open files`. The `inotify` tag applies this kernel-only correction without rebooting nodes or changing descriptor/watch limits.
+
+- **ARC container resource defaults** — namespace LimitRanges now cover ARC-generated DinD/init containers and listener pods. Removed ineffective DinD resource blocks from the active runner HelmReleases; explicit runner limits remain authoritative. A shared listener template patch softly prefers stable nodes and spreads listeners across hosts while retaining node-1 as overflow capacity.
 
 - **OpenClaw-stack dependency refresh (2026-10-29)** — pi-fleet `1.3.2` uses kubectl `1.35.10`, the newest patch matching the declared Kubernetes `1.35` control plane, and the Ollama fallback moves from `0.31.1` to digest-pinned stable `0.40.13`. Current stable OpenClaw `2026.10.8` is a separate migration step after the `2026.9.5` bridge; its newer persisted-state readers cannot safely replace all legacy imports directly.
 

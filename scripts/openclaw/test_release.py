@@ -91,6 +91,15 @@ if sys.argv[2] == "doctor":
     data = json.loads(config.read_text())
     data["doctor-repaired"] = True
     config.write_text(json.dumps(data))
+    for name in ["exec-approvals.json", "exec-approvals.json.doctor-importing"]:
+        (state / name).unlink(missing_ok=True)
+elif sys.argv[2:4] == ["approvals", "set"]:
+    if (state / "exec-approvals.json").exists():
+        sys.exit(1)
+    if os.environ.get("TEST_POLICY_FAILURE"):
+        sys.exit(1)
+    policy = Path(sys.argv[sys.argv.index("--file") + 1])
+    (state / "canonical-policy.json").write_text(policy.read_text())
 elif sys.argv[2:4] == ["config", "validate"]:
     json.loads(config.read_text())
     if os.environ.get("TEST_INVALID"):
@@ -160,6 +169,27 @@ class StartupTests(unittest.TestCase):
         self.assertEqual(self.start().returncode, 0)
         self.assertEqual(self.start(TEST_RUNTIME="2026.10.5").returncode, 0)
         self.assertEqual((self.state / "doctor-count").read_text(), "3")
+
+    def test_legacy_policy_is_migrated_despite_existing_marker(self):
+        self.assertEqual(self.start().returncode, 0)
+        policy = self.root / "policy.json"
+        policy.write_text('{"version": 1, "defaults": {"security": "full"}}')
+        for legacy in ["exec-approvals.json", "exec-approvals.json.doctor-importing"]:
+            (self.state / legacy).write_text(policy.read_text())
+            result = self.start(OPENCLAW_EXEC_POLICY_SOURCE=str(policy))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((self.state / legacy).exists())
+        self.assertEqual((self.state / "doctor-count").read_text(), "3")
+        self.assertEqual((self.state / "canonical-policy.json").read_text(), policy.read_text())
+        self.assertEqual(self.start(OPENCLAW_EXEC_POLICY_SOURCE=str(policy)).returncode, 0)
+        self.assertEqual((self.state / "doctor-count").read_text(), "3")
+
+    def test_policy_failure_blocks_gateway_startup(self):
+        policy = self.root / "policy.json"
+        policy.write_text('{"version": 1}')
+        result = self.start(OPENCLAW_EXEC_POLICY_SOURCE=str(policy), TEST_POLICY_FAILURE="1")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Applying exec approvals failed", result.stderr)
 
 
 if __name__ == "__main__":

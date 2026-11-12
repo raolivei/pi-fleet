@@ -36,7 +36,7 @@ if [ ! -s "$OPENCLAW_CONFIG_PATH" ] || [ ! -r "$hash_file" ] || [ "$(cat "$hash_
   echo "[openclaw] Seeded writable config from ConfigMap"
 fi
 
-if [ ! -f "$marker" ]; then
+if [ ! -f "$marker" ] || [ -e "$state_dir/exec-approvals.json" ] || [ -e "$state_dir/exec-approvals.json.doctor-importing" ]; then
   # Preserve the input for every release/config migration, including a fresh PVC.
   backup="$backup_dir/input-${runtime_version}-${managed_hash}.json"
   if [ ! -f "$backup" ]; then
@@ -62,8 +62,13 @@ fi
 # Validate even when the migration marker exists: persisted config may change.
 node /app/dist/index.js config validate
 if [ -r "$policy_source" ]; then
-  cp "$policy_source" "$state_dir/exec-approvals.json"
-  chmod 600 "$state_dir/exec-approvals.json"
+  # Current OpenClaw stores approvals in SQLite. Its CLI owns normalization
+  # and persistence; recreating the retired JSON source blocks channel startup.
+  policy_log="$backup_dir/approvals-${runtime_version}-${managed_hash}.log"
+  if ! node /app/dist/index.js approvals set --file "$policy_source" > "$policy_log" 2>&1; then
+    echo "[openclaw] Applying exec approvals failed; diagnostic log: $policy_log" >&2
+    exit 1
+  fi
 fi
 
 case "${1:-}" in

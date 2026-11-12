@@ -685,6 +685,8 @@
       register: ufw_installed_all
       changed_when: false
       failed_when: false
+      check_mode: false
+      tags: [pod-egress]
 
     - name: Ensure UFW allows internal network (eth0)
       ufw:
@@ -696,9 +698,20 @@
     - name: Ensure UFW allows pod network
       ufw:
         rule: allow
-        from: "10.42.0.0/16"
+        from: "{{ k3s_cluster_cidr }}"
         comment: "k3s pod network"
       when: ufw_installed_all.rc == 0
+
+    # Input allowances do not permit routed traffic. UFW can drop pod DNS and
+    # internet traffic before Flannel's forwarding chain is reached.
+    - name: Ensure UFW allows forwarding from the pod network
+      community.general.ufw:
+        rule: allow
+        route: true
+        from_ip: "{{ k3s_cluster_cidr }}"
+        comment: "k3s pod forwarding"
+      when: ufw_installed_all.rc == 0
+      tags: [pod-egress]
 
     - name: Ensure UFW allows service network
       ufw:
