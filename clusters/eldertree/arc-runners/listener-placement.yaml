@@ -1,0 +1,22 @@
+# One placement policy for every active repository-scoped ARC scale set.
+# Preferences keep listeners distributed without preventing recovery on node-1.
+- op: add
+  path: /spec/values/listenerTemplate
+  value:
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: eldertree.xyz/node-tier
+                    operator: In
+                    values: [stable]
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: runner-scale-set-listener

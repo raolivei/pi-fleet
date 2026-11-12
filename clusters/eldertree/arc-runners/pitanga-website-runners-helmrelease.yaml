@@ -70,14 +70,6 @@ spec:
               limits:
                 cpu: 1500m
                 memory: 2Gi
-          - name: dind
-            resources:
-              requests:
-                cpu: 50m
-                memory: 256Mi
-              limits:
-                cpu: 1000m
-                memory: 1536Mi
 
     controllerServiceAccount:
       namespace: arc-controller
