@@ -138,8 +138,26 @@ kubectl logs -n arc-runners <pod-name>
 | Component | CPU (req/limit) | Memory (req/limit) |
 |-----------|-----------------|-------------------|
 | Controller | 100m / 500m | 64Mi / 256Mi |
-| Listener | 100m / 200m | 64Mi / 128Mi |
-| Runner | 1000m / 3000m | 2Gi / 4Gi |
+| Listener (namespace defaults) | 50m / 200m | 64Mi / 128Mi |
+| Runner (explicit Helm values) | 100m / 1500m | 512Mi / 2Gi |
+| DinD (namespace defaults) | 50m / 2000m | 256Mi / 3Gi |
+
+The live HelmRelease values are authoritative for explicit controller and runner
+resources. On Kubernetes 1.29+, ARC's built-in DinD mode injects Docker as a
+restartable init container; `template.spec.containers[name=dind].resources`
+does not customize that generated container. Namespace `LimitRange` defaults
+cover generated containers while preserving explicit resources:
+
+| Namespace / generated container | CPU request / limit | Memory request / limit |
+| --- | --- | --- |
+| `arc-runners` / DinD and external-files init | 50m / 2000m | 256Mi / 3Gi |
+| `arc-controller` / listener | 50m / 200m | 64Mi / 128Mi |
+
+Defaults apply when a pod is created; running jobs are not restarted to apply
+them. Explicit runner limits remain separate from the Docker daemon's limit.
+The DinD ceiling preserves headroom documented for Elder's npm/TypeScript
+builds. Limits are ceilings, not reserved capacity. Per-repository `maxRunners`
+values do not enforce a cluster-wide concurrency budget.
 
 ## Node Placement
 
@@ -147,10 +165,19 @@ kubectl logs -n arc-runners <pod-name>
 - Uses `nodeSelector: eldertree.xyz/node-tier: stable`
 - Runs on node-2 or node-3 only
 
+**Listeners:**
+- Prefer stable nodes and spread softly across hostnames, using the shared
+  `listener-placement.yaml` Kustomize patch on the active HelmReleases.
+- Both rules are preferences: node-1 remains an overflow/recovery option.
+- Namespace resource defaults reserve capacity for every newly created listener.
+
 **Runners:**
 - Prefer stable nodes (node-2, node-3) via cluster scheduling; **no hard nodeSelector** — when stable nodes are saturated, runners may schedule on node-1 (unstable tier, `PreferNoSchedule` taint).
 - Pod anti-affinity spreads runners across hosts when possible.
-- Requests: **100m CPU + 512Mi** per runner container (~150m/pod with dind sidecar values) so multiple runners fit under heavy cluster request pressure.
+- Requests: **100m CPU + 512Mi** per runner container, plus **50m CPU + 256Mi**
+  for the DinD sidecar through namespace defaults. The external-files init
+  container uses the same defaults temporarily; it is not another long-running
+  Docker daemon.
 
 ## Adding More Repos
 
@@ -168,7 +195,11 @@ Each repo gets a HelmRelease with `githubConfigUrl: https://github.com/raolivei/
 
 2. Create HelmRelease in `clusters/eldertree/arc-runners/<slug>-runners-helmrelease.yaml` — copy an existing release and set unique `metadata.name`, `releaseName`, `runnerScaleSetName`, `githubConfigUrl`, and `maxRunners` (default `1`; `2` for repos with parallel docker-build jobs).
 
-   **Resource sizing (Pi 5 cluster):** Each runner pod is runner + DinD (~100m+512Mi requests). No `node-tier: stable` nodeSelector — node-1 absorbs overflow when node-2/3 are full. Cluster-wide budget: **4–6 concurrent DinD runners** under normal load; avoid firing all scale sets at once (stress script).
+   **Resource sizing (Pi 5 cluster):** Runner + DinD reserve **150m CPU + 768Mi**
+   through explicit runner resources and namespace defaults. No hard node-tier
+   selector — node-1 absorbs overflow when node-2/3 are full. The
+   operational target of **4–6 concurrent DinD runners** is not a global limit
+   enforced by ARC; avoid firing all scale sets at once (stress script).
 
 **DinD + npm/pnpm builds:** If Docker build fails with `getaddrinfo EAI_AGAIN registry.npmjs.org`, configure **both** (1) pod `dnsConfig` with CoreDNS (`10.43.0.10`) plus `8.8.8.8` fallback on `template.spec`, and (2) mount a `daemon.json` on the **dind** sidecar with the same DNS servers — buildx containers use the Docker daemon resolver, not the pod's `resolv.conf`. See `bolao-dind-daemon-configmap.yaml` + `bolao-runners-helmrelease.yaml`.
 

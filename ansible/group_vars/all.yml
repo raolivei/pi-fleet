@@ -83,6 +83,10 @@ watchdog_max_boot_attempts: 5
 watchdog_successful_boot_time: 600  # 10 minutes
 
 # Node scheduling tiers (node-1 is deprioritized for app workloads — see docs/NODE_SCHEDULING.md)
+# Host and container UID 0 share this kernel quota. The default 128 instances
+# was exhausted by k3s, containerd and DinD, breaking certificate/probe watchers.
+node_inotify_max_user_instances: 1024
+
 node_scheduling_label_key: "eldertree.xyz/node-tier"
 node_scheduling_taint_key: "eldertree.xyz/prefer-stable-nodes"
 node_scheduling_taint_value: "true"

@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: arc-runners
 resources:
   - namespace.yaml
+  - resource-defaults.yaml
   - ollie-external-secret.yaml
   - ollie-runners-helmrelease.yaml
   - pi-fleet-blog-runners-helmrelease.yaml
@@ -19,3 +20,9 @@ resources:
   # - bolao-claude-runners-helmrelease.yaml
   # - bolao-dind-daemon-configmap.yaml
   # - bolao-claude-dind-daemon-configmap.yaml
+patches:
+  - target:
+      group: helm.toolkit.fluxcd.io
+      version: v2
+      kind: HelmRelease
+    path: listener-placement.yaml
