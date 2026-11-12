@@ -29,6 +29,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Pod forwarding on nodes with UFW enabled** — `install-k3s.yml` now persists the routed allowance for the pod CIDR from `group_vars/all.yml`. Input rules alone left node-3 dropping pod DNS and outbound traffic before Flannel's forwarding chain. The `pod-egress` tag applies just this correction without reinstalling k3s or restarting nodes.
+
 - **Node inotify exhaustion stalled ARC runners and destabilized k3s** — persist `fs.inotify.max_user_instances=1024` through the existing system setup playbook and group variables. The default 128-instance quota was nearly exhausted on node-2 while k3s certificate watchers and DinD reported `too many open files`. The `inotify` tag applies this kernel-only correction without rebooting nodes or changing descriptor/watch limits.
 
 - **ARC container resource defaults** — namespace LimitRanges now cover ARC-generated DinD/init containers and listener pods. Removed ineffective DinD resource blocks from the active runner HelmReleases; explicit runner limits remain authoritative. A shared listener template patch softly prefers stable nodes and spreads listeners across hosts while retaining node-1 as overflow capacity.
