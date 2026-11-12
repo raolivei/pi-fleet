@@ -3,5 +3,6 @@ kind: Kustomization
 namespace: arc-controller
 resources:
   - namespace.yaml
+  - resource-defaults.yaml
   - arc-controller-helmrelease.yaml
   - controller-secrets-clusterrole.yaml
