@@ -55,8 +55,7 @@ data:
       "tools": {
         "exec": {
           "host": "gateway",
-          "security": "full",
-          "ask": "off"
+          "mode": "full"
         },
         "elevated": {
           "enabled": true,

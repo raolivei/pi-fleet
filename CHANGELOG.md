@@ -29,6 +29,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **OpenClaw stack refresh (2026-11-12)** — pi-fleet `1.4.0` selects digest-pinned OpenClaw `2026.11.3` and Ollama `0.40.16`, with ARM64 manifests verified. Retain compatible kubectl `1.35.10`, the canonical approvals startup repair, and the existing shared publisher/Flux release process. Use canonical `tools.exec.mode` for the upgraded runtime; promote only after the preceding runtime has repaired live state.
+
+- **OpenClaw channels stopped on a recreated legacy approvals file** — startup now repairs legacy approvals even when a Doctor marker exists and applies the mounted exec policy through OpenClaw's canonical SQLite-backed `approvals set` command. Removed the post-migration JSON copy that made Telegram fail on every restart. ARM64 runtime validation now includes the actual managed policy, legacy migration and repeated startup. Cluster image version: `1.3.3`.
+
 - **Pod forwarding on nodes with UFW enabled** — `install-k3s.yml` now persists the routed allowance for the pod CIDR from `group_vars/all.yml`. Input rules alone left node-3 dropping pod DNS and outbound traffic before Flannel's forwarding chain. The `pod-egress` tag applies just this correction without reinstalling k3s or restarting nodes.
 
 - **Node inotify exhaustion stalled ARC runners and destabilized k3s** — persist `fs.inotify.max_user_instances=1024` through the existing system setup playbook and group variables. The default 128-instance quota was nearly exhausted on node-2 while k3s certificate watchers and DinD reported `too many open files`. The `inotify` tag applies this kernel-only correction without rebooting nodes or changing descriptor/watch limits.
