@@ -60,6 +60,12 @@ the API still reported an older Ready condition. Do not treat that reported
 condition as proof that the host completed recovery. Further node/VIP checks
 are required after all restarts finish.
 
+After Rafael confirmed the restarts were finished, node-1 transitioned to
+`NotReady`. Both management-network SSH and SSH through node-2 reset before
+authentication, and the kubelet exec path was unavailable. Local console access
+is required to inspect that host. The Kubernetes API EndpointSlice had removed
+node-1 and retained the healthy node-2/3 API endpoints.
+
 A running `swimto-web` pod was observed on node-1 even though its current
 required affinity excludes the `unstable` tier. Node-1's recorded k3s startup
 arguments include a `node-tier=stable` label, conflicting with the scheduling
