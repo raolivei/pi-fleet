@@ -33,6 +33,25 @@ the underlying cause of the recurring connectivity failure.
 
 ## Corrected resource configuration
 
+### Kernel inotify capacity
+
+The later blog job `131330621286` remained queued with its runner stuck after
+DinD initialization on node-2. K3s repeatedly logged `error creating fsnotify
+watcher: too many open files`; DinD also failed to create filesystem watchers.
+Node-2's per-UID inotify-instance limit was 128, with 125 root-owned inotify FD
+references observed during diagnosis. FD references may share instances, so
+that count is supporting evidence rather than an exact distinct-instance count.
+K3s's ordinary file-descriptor limit was already 1,048,576 and system-wide
+descriptor use was low: increasing generic descriptor limits was not indicated.
+
+Persist `fs.inotify.max_user_instances=1024` through the existing
+`setup-system.yml` playbook and `node_inotify_max_user_instances` group variable.
+The focused `inotify` tag changes only this sysctl, with no reboot or service
+restart. Watch and event-queue limits remain unchanged. The correction was
+previewed and applied on node-2/3; node-1 was excluded after Rafael shut it down.
+
+### Generated ARC containers
+
 With Kubernetes 1.35, ARC's built-in DinD mode emits a restartable init
 container. The former `template.spec.containers[name=dind].resources` blocks
 were ignored. The live injected Docker daemon had no requests or limits.

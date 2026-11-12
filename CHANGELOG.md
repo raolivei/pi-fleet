@@ -29,6 +29,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Node inotify exhaustion stalled ARC runners and destabilized k3s** — persist `fs.inotify.max_user_instances=1024` through the existing system setup playbook and group variables. The default 128-instance quota was nearly exhausted on node-2 while k3s certificate watchers and DinD reported `too many open files`. The `inotify` tag applies this kernel-only correction without rebooting nodes or changing descriptor/watch limits.
+
 - **ARC container resource defaults** — namespace LimitRanges now cover ARC-generated DinD/init containers and listener pods. Removed ineffective DinD resource blocks from the active runner HelmReleases; explicit runner limits remain authoritative. A shared listener template patch softly prefers stable nodes and spreads listeners across hosts while retaining node-1 as overflow capacity.
 
 - **OpenClaw-stack dependency refresh (2026-10-29)** — pi-fleet `1.3.2` uses kubectl `1.35.10`, the newest patch matching the declared Kubernetes `1.35` control plane, and the Ollama fallback moves from `0.31.1` to digest-pinned stable `0.40.13`. Current stable OpenClaw `2026.10.8` is a separate migration step after the `2026.9.5` bridge; its newer persisted-state readers cannot safely replace all legacy imports directly.
