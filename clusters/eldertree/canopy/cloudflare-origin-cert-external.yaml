@@ -17,8 +17,8 @@ spec:
     kind: ClusterSecretStore
   target:
     name: canopy-cloudflare-origin-tls
-    # Merge updates existing secret (e.g. if created manually); avoids "secret already exists" error
-    creationPolicy: Merge
+    # ESO must create the target when it is absent, as with the other origin certs.
+    creationPolicy: Owner
     template:
       type: kubernetes.io/tls
       data:

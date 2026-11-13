@@ -4,6 +4,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Fixed
+
+- **Cluster reconciliation recovery** — include the required listener container in the shared ARC placement patch; relax kube-vip leader election from 5/3/1 to 30/20/5 seconds and raise its CPU budget; retry seven stalled Helm releases declaratively. Keep KEDA scaling on SwimTO stateless services only, and let ESO create Canopy’s missing origin TLS secret. Restore Traefik scraping through a dedicated ClusterIP metrics Service (monitoring chart 0.2.19). Node-1 recovery is outside this change.
+
 ### Added
 
 - **Apex redirect `https://eldertree.xyz/` → `https://blog.eldertree.xyz/`** (`terraform/cloudflare.tf`) — a Cloudflare Single Redirect rule (`cloudflare_ruleset`, phase `http_request_dynamic_redirect`, 301) plus a proxied apex `A` record. The apex previously resolved to the home IP (`70.51.223.187`, DNS-only, created by hand and unmanaged by Terraform) and served nothing; redirect rules only run on proxied traffic, so the record is now `192.0.2.1` (RFC 5737) with `proxied = true` and `allow_overwrite = true` to adopt the manual record — the placeholder origin is never contacted because the edge answers first. Target is static rather than path-preserving: `blog.eldertree.xyz` is a GitHub Pages site with its own path tree, so forwarding apex paths through would only yield 404s. New `local.eldertree_apex_redirect` flag gates both the new record and the (currently dormant, `public_ip`-dependent) `cloudflare_record.eldertree_xyz_root`, so the two can never contend for `@`. There is no apex `AAAA`, so no IPv6 path bypasses the edge.

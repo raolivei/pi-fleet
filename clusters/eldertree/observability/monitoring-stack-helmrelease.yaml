@@ -1,6 +1,10 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
+  annotations:
+    # One recovery attempt after fixing the underlying configuration/availability.
+    reconcile.fluxcd.io/requestedAt: "2026-11-12-health-recovery"
+    reconcile.fluxcd.io/resetAt: "2026-11-12-health-recovery"
   name: monitoring-stack
   namespace: observability
 spec:
@@ -8,7 +12,7 @@ spec:
   chart:
     spec:
       chart: ./helm/monitoring-stack
-      version: "0.2.18"
+      version: "0.2.19"
       sourceRef:
         kind: GitRepository
         name: flux-system

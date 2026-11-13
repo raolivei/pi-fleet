@@ -4,6 +4,9 @@
   path: /spec/values/listenerTemplate
   value:
     spec:
+      # ARC fills in the listener image/command; the PodSpec still needs a container.
+      containers:
+        - name: listener
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
