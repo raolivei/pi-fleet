@@ -31,6 +31,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **ARC listener placement upgrades** — include the required `listener` container entry in the shared listener PodSpec so the scale-set CRD accepts Helm upgrades.
+
 - **OpenClaw channels stopped on a recreated legacy approvals file** — startup now repairs legacy approvals even when a Doctor marker exists and applies the mounted exec policy through OpenClaw's canonical SQLite-backed `approvals set` command. Removed the post-migration JSON copy that made Telegram fail on every restart. ARM64 runtime validation now includes the actual managed policy, legacy migration and repeated startup. Cluster image version: `1.3.3`.
 
 - **Pod forwarding on nodes with UFW enabled** — `install-k3s.yml` now persists the routed allowance for the pod CIDR from `group_vars/all.yml`. Input rules alone left node-3 dropping pod DNS and outbound traffic before Flannel's forwarding chain. The `pod-egress` tag applies just this correction without reinstalling k3s or restarting nodes.

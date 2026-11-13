@@ -4,6 +4,9 @@
   path: /spec/values/listenerTemplate
   value:
     spec:
+      # ARC merges this entry into its generated listener container.
+      containers:
+        - name: listener
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
