@@ -25,6 +25,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **Dormant self-hosted CI scale sets** — omit Canopy, Nima and Pitanga from the active ARC Kustomization while retaining their manifests for re-enabling. This removes three idle listeners and their 150m CPU/192Mi memory reservations without modifying application deployments or GitHub-hosted checks.
+
 - **OpenClaw skills refactored to individual files via `configMapGenerator`** — replaced the monolithic `skills-configmap.yaml` (all skills inline as YAML literals) with a `skills/` directory of individual `.md` files and a Kustomize `configMapGenerator` block in `kustomization.yaml`. `disableNameSuffixHash: true` keeps the ConfigMap name stable. Adding a new skill is now a one-file change + one line in `kustomization.yaml` instead of editing a 700-line YAML. Existing `helmrelease.yaml` volume mounts are unchanged.
 
 ### Fixed
