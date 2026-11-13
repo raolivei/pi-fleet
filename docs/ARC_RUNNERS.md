@@ -104,6 +104,18 @@ gh api repos/raolivei/ollie/actions/runners
 
 ## Scaling Behavior
 
+### Dormant repositories
+
+Canopy, Nima and Pitanga's runner HelmReleases are retained in Git but omitted
+from the active Kustomization. This stops their idle queue listeners without
+changing application deployments. Restore the corresponding resource entry to
+enable self-hosted CI again; jobs requesting these runners otherwise remain
+queued. GitHub-hosted checks, including CodeQL, are unaffected.
+
+`minRunners: 0` removes idle build runners, not a scale set's listener.
+Suspending Helm reconciliation also does not stop an existing listener. The
+shared ARC controller remains necessary for the active repository scale sets.
+
 **Idle state:**
 - Controller: running
 - Listener: running

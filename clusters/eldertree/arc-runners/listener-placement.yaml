@@ -4,7 +4,7 @@
   path: /spec/values/listenerTemplate
   value:
     spec:
-      # ARC fills in the listener image/command; the PodSpec still needs a container.
+      # ARC merges this entry into its generated listener container.
       containers:
         - name: listener
       affinity:
