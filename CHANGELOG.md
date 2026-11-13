@@ -6,7 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
-- **Cluster reconciliation recovery** — include the required listener container in the shared ARC placement patch; relax kube-vip leader election from 5/3/1 to 30/20/5 seconds and raise its CPU budget; retry seven stalled Helm releases declaratively. Keep KEDA scaling on SwimTO stateless services only, and let ESO create Canopy’s missing origin TLS secret. Restore Traefik scraping through a dedicated ClusterIP metrics Service (monitoring chart 0.2.19). Node-1 recovery is outside this change.
+- **Cluster reconciliation recovery** — relax kube-vip leader election from 5/3/1 to 30/20/5 seconds and raise its CPU budget; retry seven stalled Helm releases declaratively. Keep KEDA scaling on SwimTO stateless services only, and let ESO create Canopy’s missing origin TLS secret. Restore Traefik scraping through a dedicated ClusterIP metrics Service (monitoring chart 0.2.19). Node-1 recovery is outside this change.
 
 ### Added
 
