@@ -106,7 +106,7 @@ gh api repos/raolivei/ollie/actions/runners
 
 ### Dormant repositories
 
-Canopy, Nima and Pitanga's runner HelmReleases are retained in Git but omitted
+Nima and Pitanga's runner HelmReleases (Canopy was re-enabled 2026-11-15) are retained in Git but omitted
 from the active Kustomization. This stops their idle queue listeners without
 changing application deployments. Restore the corresponding resource entry to
 enable self-hosted CI again; jobs requesting these runners otherwise remain

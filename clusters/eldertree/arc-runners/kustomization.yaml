@@ -13,8 +13,8 @@ resources:
   - personal-website-runners-helmrelease.yaml
   - northwaysignal-website-runners-helmrelease.yaml
   - eldertree-docs-runners-helmrelease.yaml
-  # Dormant repository CI. Restore an entry to re-enable its self-hosted jobs.
-  # - canopy-runners-helmrelease.yaml
+  # Dormant repository CI (Canopy re-enabled 2026-11-15). Restore an entry to re-enable its self-hosted jobs.
+  - canopy-runners-helmrelease.yaml
   # - pitanga-website-runners-helmrelease.yaml
   # - nima-runners-helmrelease.yaml
   # - bolao-runners-helmrelease.yaml # DECOMMISSIONED 2026-07-07
