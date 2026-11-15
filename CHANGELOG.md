@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Canopy self-hosted CI re-enabled** — restore `canopy-runners-helmrelease.yaml` in the active ARC Kustomization. The scale set was paused in #332, so Canopy jobs using `runs-on: self-hosted` (e.g. the reusable `version-check.yml` on PR checks) stayed queued indefinitely with no listener. Nima and Pitanga remain dormant.
+
 - **Cluster reconciliation recovery** — relax kube-vip leader election from 5/3/1 to 30/20/5 seconds and raise its CPU budget; retry seven stalled Helm releases declaratively. Keep KEDA scaling on SwimTO stateless services only, and let ESO create Canopy’s missing origin TLS secret. Restore Traefik scraping through a dedicated ClusterIP metrics Service (monitoring chart 0.2.19). Node-1 recovery is outside this change.
 
 ### Added
