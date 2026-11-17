@@ -4,6 +4,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ## [Unreleased]
 
+### Fixed
+
+- **Canopy self-hosted CI re-enabled** — restore `canopy-runners-helmrelease.yaml` in the active ARC Kustomization. The scale set was paused in #332, so Canopy jobs using `runs-on: self-hosted` (e.g. the reusable `version-check.yml` on PR checks) stayed queued indefinitely with no listener. Nima and Pitanga remain dormant.
+
+- **Cluster reconciliation recovery** — relax kube-vip leader election from 5/3/1 to 30/20/5 seconds and raise its CPU budget; retry seven stalled Helm releases declaratively. Keep KEDA scaling on SwimTO stateless services only, and let ESO create Canopy’s missing origin TLS secret. Restore Traefik scraping through a dedicated ClusterIP metrics Service (monitoring chart 0.2.19). Node-1 recovery is outside this change.
+
 ### Added
 
 - **Apex redirect `https://eldertree.xyz/` → `https://blog.eldertree.xyz/`** (`terraform/cloudflare.tf`) — a Cloudflare Single Redirect rule (`cloudflare_ruleset`, phase `http_request_dynamic_redirect`, 301) plus a proxied apex `A` record. The apex previously resolved to the home IP (`70.51.223.187`, DNS-only, created by hand and unmanaged by Terraform) and served nothing; redirect rules only run on proxied traffic, so the record is now `192.0.2.1` (RFC 5737) with `proxied = true` and `allow_overwrite = true` to adopt the manual record — the placeholder origin is never contacted because the edge answers first. Target is static rather than path-preserving: `blog.eldertree.xyz` is a GitHub Pages site with its own path tree, so forwarding apex paths through would only yield 404s. New `local.eldertree_apex_redirect` flag gates both the new record and the (currently dormant, `public_ip`-dependent) `cloudflare_record.eldertree_xyz_root`, so the two can never contend for `@`. There is no apex `AAAA`, so no IPv6 path bypasses the edge.
@@ -25,11 +31,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Changed
 
+- **Dormant self-hosted CI scale sets** — omit Canopy, Nima and Pitanga from the active ARC Kustomization while retaining their manifests for re-enabling. This removes three idle listeners and their 150m CPU/192Mi memory reservations without modifying application deployments or GitHub-hosted checks.
+
 - **OpenClaw skills refactored to individual files via `configMapGenerator`** — replaced the monolithic `skills-configmap.yaml` (all skills inline as YAML literals) with a `skills/` directory of individual `.md` files and a Kustomize `configMapGenerator` block in `kustomization.yaml`. `disableNameSuffixHash: true` keeps the ConfigMap name stable. Adding a new skill is now a one-file change + one line in `kustomization.yaml` instead of editing a 700-line YAML. Existing `helmrelease.yaml` volume mounts are unchanged.
 
 ### Fixed
 
 - **OpenClaw stack refresh (2026-11-12)** — pi-fleet `1.4.0` selects digest-pinned OpenClaw `2026.11.3` and Ollama `0.40.16`, with ARM64 manifests verified. Retain compatible kubectl `1.35.10`, the canonical approvals startup repair, and the existing shared publisher/Flux release process. Use canonical `tools.exec.mode` for the upgraded runtime; promote only after the preceding runtime has repaired live state.
+
+- **ARC listener placement upgrades** — include the required `listener` container entry in the shared listener PodSpec so the scale-set CRD accepts Helm upgrades.
 
 - **OpenClaw channels stopped on a recreated legacy approvals file** — startup now repairs legacy approvals even when a Doctor marker exists and applies the mounted exec policy through OpenClaw's canonical SQLite-backed `approvals set` command. Removed the post-migration JSON copy that made Telegram fail on every restart. ARM64 runtime validation now includes the actual managed policy, legacy migration and repeated startup. Cluster image version: `1.3.3`.
 

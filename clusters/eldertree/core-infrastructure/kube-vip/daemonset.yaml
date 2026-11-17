@@ -56,12 +56,13 @@ spec:
               value: "true"
             - name: vip_leaderelection
               value: "true"
+            # Allow API latency bursts on Pi hardware without a restart/ARP storm.
             - name: vip_leaseduration
-              value: "5"
+              value: "30"
             - name: vip_renewdeadline
-              value: "3"
+              value: "20"
             - name: vip_retryperiod
-              value: "1"
+              value: "5"
             - name: address
               value: "10.0.0.100"
           securityContext:
@@ -69,8 +70,8 @@ spec:
               add: ["NET_ADMIN", "NET_RAW"]
           resources:
             requests:
-              cpu: 25m
+              cpu: 100m
               memory: 32Mi
             limits:
-              cpu: 100m
+              cpu: 250m
               memory: 128Mi

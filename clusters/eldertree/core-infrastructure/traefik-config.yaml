@@ -54,7 +54,7 @@ spec:
     # k3s ServiceLB creates svclb-traefik pods with hostPort for each LB service port; exposing
     # port 9100 on the LB occupies hostPort 9100 on every node, blocking node-exporter DaemonSet
     # (which also needs hostPort 9100) from scheduling.
-    # Prometheus scrapes via ClusterIP (traefik.kube-system.svc.cluster.local:9100) — no LB needed.
+    # Prometheus scrapes via ClusterIP (traefik-metrics.kube-system.svc.cluster.local:9100) — no LB needed.
     ports:
       metrics:
         expose:

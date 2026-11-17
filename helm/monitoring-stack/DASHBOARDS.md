@@ -197,7 +197,7 @@ Alertmanager: `https://alertmanager.eldertree.local`
 | Product DB depth (SwimTO) | `swimto_db_users_total` | From API; **Eldertree Ops Home** |
 | Postgres / Redis | Exporters in `observability` | See `postgres-exporter.yaml`, `redis-exporter.yaml` |
 
-**Traefik scrape:** static target `traefik.kube-system:9100` (see `core-infrastructure/traefik-config.yaml`). **Loki** datasource in `values.yaml`; **Promtail** ships node logs (see cluster observability manifests).
+**Traefik scrape:** static target `traefik-metrics.kube-system:9100` (see `core-infrastructure/traefik-config.yaml`). **Loki** datasource in `values.yaml`; **Promtail** ships node logs (see cluster observability manifests).
 
 ---
 

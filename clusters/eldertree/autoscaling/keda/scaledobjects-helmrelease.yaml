@@ -1,6 +1,10 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
+  annotations:
+    # One recovery attempt after fixing the underlying configuration/availability.
+    reconcile.fluxcd.io/requestedAt: "2026-11-12-health-recovery"
+    reconcile.fluxcd.io/resetAt: "2026-11-12-health-recovery"
   name: keda-scaledobjects
   namespace: keda
 spec:
@@ -23,3 +27,10 @@ spec:
   upgrade:
     cleanupOnFail: true
 
+  values:
+    swimto:
+      # Single-instance databases with persistent storage are not horizontally scalable.
+      postgres:
+        enabled: false
+      redis:
+        enabled: false

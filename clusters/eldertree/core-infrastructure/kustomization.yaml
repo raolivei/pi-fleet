@@ -12,6 +12,7 @@ resources:
   - storage-class-default-patch.yaml # Ensure local-path is NOT default (Longhorn is)
   - storage-class-nvme.yaml # NVMe/SATA storage class for main node (high-performance)
   - storage-class-sd.yaml # SD card storage class for worker nodes
+  - traefik-metrics-service.yaml # ClusterIP scrape endpoint; no hostPort conflict
   - traefik-config.yaml # HA Traefik with 2 replicas for graceful node drains
   - coredns-custom.yaml # Custom DNS: resolve *.eldertree.local inside the cluster
   - reloader # Auto-restart pods when ConfigMaps/Secrets change

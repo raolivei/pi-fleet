@@ -102,3 +102,35 @@ while node recovery remains uncertain.
 Prometheus was reachable through the Kubernetes service proxy: 55 of 56 scrape
 targets were up in the observed sample. The down target was Traefik metrics;
 this observation alone does not establish an ingress outage.
+
+## Follow-up reconciliation recovery
+
+ARC's shared listener placement patch initially omitted `spec.containers`.
+The API rejected all 11 scale sets with `spec.listenerTemplate.spec.containers:
+Required value`. Keep a container named `listener` in that template; ARC supplies
+its image and command. Render against chart 0.14.2 and validate the resulting
+AutoscalingRunnerSets against the API schema before publishing.
+
+Kube-vip was losing leadership on API lease-update timeouts with its 5/3/1-second
+lease settings and 100m CPU cap. Increase lease duration/renewal/retry to 30/20/5
+seconds and CPU request/limit to 100m/250m. This tolerates short stalls but makes
+failure detection slower; it does not repair persistent network outages.
+
+Seven other Helm releases had exhausted retries after earlier failures, while
+most corresponding deployments were currently available. Matching declarative
+`reconcile.fluxcd.io/requestedAt` and `reconcile.fluxcd.io/resetAt` markers request
+one recovery attempt through Flux. KEDA must only scale the stateless SwimTO
+services, not its single-instance persistent Postgres/Redis deployments.
+Canopy's missing origin TLS secret requires ESO `creationPolicy: Owner`, matching
+the other wildcard origin certificates.
+
+Prometheus's Traefik job targeted port 9100 on the LoadBalancer Service, which
+only exposes 80/443. Use a dedicated `traefik-metrics` ClusterIP Service and update
+the monitoring chart (0.2.19); keep 9100 off the LoadBalancer to avoid hostPort
+conflicts with node-exporter. Node-1 and its Vault replica remain excluded from
+recovery. A CI runner was evicted during node-2 disk pressure; subsequent read-only
+Ansible inspection showed 68% use and 37 GiB available, so no PVC or runtime data
+was deleted.
+
+References: [Flux retry reset](https://fluxcd.io/flux/components/helm/helmreleases/#resetting-remediation-retries)
+and [kube-vip lease settings](https://kube-vip.io/docs/installation/flags/).
