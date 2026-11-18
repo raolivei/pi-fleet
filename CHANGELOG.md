@@ -37,6 +37,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **OpenClaw stack refresh (2026-11-12)** — pi-fleet `1.4.0` selects digest-pinned OpenClaw `2026.11.3` and Ollama `0.40.16`, with ARM64 manifests verified. Retain compatible kubectl `1.35.10`, the canonical approvals startup repair, and the existing shared publisher/Flux release process. Use canonical `tools.exec.mode` for the upgraded runtime; promote only after the preceding runtime has repaired live state.
+
 - **ARC listener placement upgrades** — include the required `listener` container entry in the shared listener PodSpec so the scale-set CRD accepts Helm upgrades.
 
 - **OpenClaw channels stopped on a recreated legacy approvals file** — startup now repairs legacy approvals even when a Doctor marker exists and applies the mounted exec policy through OpenClaw's canonical SQLite-backed `approvals set` command. Removed the post-migration JSON copy that made Telegram fail on every restart. ARM64 runtime validation now includes the actual managed policy, legacy migration and repeated startup. Cluster image version: `1.3.3`.
