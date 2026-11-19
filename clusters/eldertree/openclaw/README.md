@@ -8,16 +8,23 @@ Configured in [`configmap.yaml`](configmap.yaml) under `agents.defaults.model`:
 
 | Tier | Model | Runs on | Notes |
 | ---- | ----- | ------- | ----- |
-| **primary** | `ollama-lan/qwen2.5:32b` | Mac Ollama, **LAN** (`192.168.2.107:11434`) | Mac is always home on the same LAN as the cluster; fast (~12s cold load, <1s TTFT) |
-| **fallback 1** | `ollama-tailscale/qwen2.5:32b` | Mac Ollama, **Tailscale** (`100.97.229.104:11434`) | same model, in case the Mac ever leaves the LAN. LAN connect-refused fails in ~7ms, so this fires near-instantly — no manual toggling needed. Keep Tailscale running as an always-on login item; it costs nothing when idle. |
+| **primary** | `ollama-tailscale/qwen3.6:35b-mlx` | Mac Ollama, **Tailscale** (`100.97.229.104:11434`) | Verified reachable from the OpenClaw pod. Keep Tailscale running and Ollama listening on the network. |
+| **fallback 1** | `ollama-lan/qwen3.6:35b-mlx`, then `ollama-lan/qwen2.5:32b` | Legacy Mac LAN endpoint (`192.168.2.107:11434`) | Retained fallback entries; this endpoint was unreachable during the November 19 incident. |
 | **fallback 2** | `ollama-cluster/qwen2.5:3b` | Raspberry Pi 5 in-cluster (`ollama-fallback` svc) | 100% local, always-on regardless of the Mac; CPU-only, ~3-6 tok/s |
 | **fallback 3+** | `openrouter/*` (Gemini Flash, Claude Haiku, Llama 4 Scout) | Cloud (OpenRouter free tier) | last resort, fast |
-| _compaction_ | `ollama-lan/qwen2.5:32b` | Mac (LAN) | **not** the cluster — measured the Pi5's real prefill speed at 14.35 tok/s; OpenClaw's ~180s compaction budget only fits ~2,583 tokens at that rate, far below real conversation sizes (15-16k+ tokens). The Mac processes the same size prompt in ~44s. Moving compaction to the cluster (an earlier fix, see CHANGELOG) *sounded* right — decouple from Mac reachability — but the Pi5's CPU genuinely cannot do this task in time regardless of context-window tuning. Accepted trade-off: compaction now shares the Mac-reachability risk with primary again, but the LAN/Tailscale dual-path makes that risk small in practice. |
+| _compaction_ | `ollama-tailscale/qwen3.6:35b-mlx` | Mac (Tailscale) | Uses the same reachable endpoint as primary inference. The Pi's measured prefill speed is too slow for large-prompt compaction within the runtime budget. |
 
-Why LAN-primary with Tailscale as a passive fallback tier (not primary): OpenClaw's fallback chain is
-**reliability-based** (tries the next entry only when a call fails/errors), not quality-based — so
-ordering LAN first is a pure latency win with no downside, and Tailscale silently covers the "Mac left
-home" case without anyone needing to remember to flip anything.
+On November 19, Telegram commands worked but normal turns exhausted retries against
+the unreachable LAN endpoint and the stopped Mac Tailscale connection. The Pi
+fallback then rejected an estimated 27,684-token prompt against its 16,384-token
+context, while compaction tried the unreachable LAN endpoint again. `/new` could
+not fix model connectivity or the baseline prompt size.
+
+For recovery, ensure Tailscale is running on the Mac with DNS overrides disabled
+to preserve corporate DNS (`tailscale up --accept-dns=false`), and verify Ollama
+is listening on port 11434 beyond localhost. Test `/api/tags` from the OpenClaw
+pod before treating a model as available. Tailscale must remain running for both
+normal replies and compaction; this change does not provide an independent Mac.
 
 **For genuinely hard investigations** (deep multi-file/log tracing) that need more reasoning than a
 local ~30B model reliably gives: don't change this passive chain. Instead call Elder's
@@ -26,15 +33,15 @@ OpenRouter, reuses this same key) — see [`elder` README](https://github.com/ra
 This keeps the default chat path free/local/private and only pays for cloud when you deliberately ask.
 
 The **cluster fallback** is deployed by [`ollama-fallback.yaml`](ollama-fallback.yaml): a pinned
-`ollama/ollama:0.31.1` Deployment (soft-pinned to node-1, the node with most free RAM), a `local-path`
+Ollama Deployment (see the pinned version in the manifest), a `local-path`
 PVC for the model, and an ingress NetworkPolicy. The model is pulled on first boot and the pod is
 only `Ready` once `qwen2.5:3b` exists. `OLLAMA_KEEP_ALIVE=30m` keeps it warm so a failover isn't a
 CPU cold-start.
 
-> **Context caveat:** Ollama caps context at `OLLAMA_CONTEXT_LENGTH` (set to `32768` on the cluster
-> pod, matching the provider's `contextWindow` — matches the Mac providers so no tier is structurally
-> too small to hold the baseline system prompt). For the Mac providers, set `num_ctx`/`OLLAMA_CONTEXT_LENGTH`
-> on the Mac side if you need a window other than qwen2.5:32b's default.
+> **Context caveat:** The cluster fallback is limited to 16,384 tokens and cannot
+> accommodate the observed full agent prompt. It is not a reliable substitute for
+> the Mac on this workload. The Mac provider advertises 65,536 tokens; verify the
+> actual Ollama context configuration separately before relying on long sessions.
 >
 > **Compaction headroom:** `reserveTokens` and `reserveTokensFloor` were retired before
 > OpenClaw 2026.9.5 and must not be reintroduced. The current runtime manages its own
