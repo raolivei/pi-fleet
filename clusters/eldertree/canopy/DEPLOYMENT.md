@@ -106,14 +106,9 @@ Both routes proxy `/v1/*` to the API and `/*` to the frontend.
    kubectl get all -n canopy
    ```
 
-4. **Run database migrations**:
+4. **Database migrations** run on their own. Migrations run automatically: each canopy-api pod's `migrate` init container runs `alembic upgrade head` under a PostgreSQL advisory lock before the API starts. Check them with:
    ```bash
-   kubectl apply -f clusters/eldertree/canopy/migration-job.yaml
-   kubectl wait --for=condition=complete --timeout=300s job/canopy-migration -n canopy
-   kubectl logs -f job/canopy-migration -n canopy
-   
-   # Clean up job after success
-   kubectl delete job canopy-migration -n canopy
+   kubectl logs deploy/canopy-api -c migrate -n canopy
    ```
 
 5. **Verify deployment**:
@@ -160,18 +155,10 @@ kubectl rollout status deployment/canopy-frontend -n canopy
 
 ### Running Migrations After Updates
 
-If schema changes are included in the new API image:
+Migrations run automatically: each canopy-api pod's `migrate` init container runs `alembic upgrade head` under a PostgreSQL advisory lock before the API starts. A failed migration leaves the new pod in `Init` while the old pods keep serving:
 
 ```bash
-# Apply migration job
-kubectl apply -f clusters/eldertree/canopy/migration-job.yaml
-kubectl wait --for=condition=complete --timeout=300s job/canopy-migration -n canopy
-
-# Check logs
-kubectl logs job/canopy-migration -n canopy
-
-# Clean up
-kubectl delete job canopy-migration -n canopy
+kubectl logs deploy/canopy-api -c migrate -n canopy
 ```
 
 ## Troubleshooting
@@ -228,8 +215,9 @@ kubectl exec -it -n canopy deployment/canopy-api -- /bin/sh
 ### Migration failures
 
 ```bash
-# Check migration job logs
-kubectl logs job/canopy-migration -n canopy
+# Check migration logs (init container)
+kubectl get pods -n canopy -l app=canopy,component=canopy-api
+kubectl logs <canopy-api-pod> -c migrate -n canopy
 
 # Check current database version
 kubectl exec -it statefulset/canopy-postgres -n canopy -- psql -U canopy -d canopy -c "SELECT * FROM alembic_version;"
@@ -237,7 +225,7 @@ kubectl exec -it statefulset/canopy-postgres -n canopy -- psql -U canopy -d cano
 # Rollback if needed (manual)
 kubectl exec -it deployment/canopy-api -n canopy -- /bin/sh
 # Inside pod:
-# cd /app && alembic downgrade -1
+# cd /app/backend && alembic downgrade -1   (only after a backup; see canopy #136)
 ```
 
 ### Ingress issues
@@ -264,7 +252,6 @@ clusters/eldertree/canopy/
 ├── kustomization.yaml                 # Kustomize resources list
 ├── helmrelease.yaml                   # HelmRelease (API, Frontend, Redis)
 ├── statefulset-postgres.yaml          # PostgreSQL with PVC
-├── migration-job.yaml                 # Database migration Job
 ├── canopy-secrets-external.yaml       # App secrets (NEW)
 ├── ghcr-secret-external.yaml          # GHCR auth
 ├── basic-auth-external.yaml           # Traefik basic auth

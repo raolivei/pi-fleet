@@ -137,6 +137,9 @@ The following paths are being migrated to `secret/pi-fleet/`:
 - `secret/canopy/database` - Canopy database URL
 - `secret/canopy/questrade` - Questrade API refresh token (`refresh-token`); used for Celery background sync and optional env in API
 - `secret/canopy/wise` - Wise API token (`api-token`); used for Wise sync (balances/transactions) and optional env in API
+- `secret/canopy/basic-auth` - Traefik BasicAuth users (`users`, htpasswd format) for `canopy-basic-auth`
+
+Rotation: write the new value to Vault. ExternalSecrets refresh every 24h; force an immediate sync with `kubectl annotate externalsecret <name> -n canopy force-sync=$(date +%s) --overwrite`, then restart the pods that read it.
 
 ### SwimTO Application
 - `secret/swimto/database` - SwimTO database URL

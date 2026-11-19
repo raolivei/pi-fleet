@@ -35,11 +35,8 @@ kubectl get pods -n canopy -w
 chmod +x verify-deployment.sh
 ./verify-deployment.sh
 
-# Run migrations
-kubectl apply -f migration-job.yaml
-kubectl wait --for=condition=complete --timeout=300s job/canopy-migration -n canopy
-kubectl logs -f job/canopy-migration -n canopy
-kubectl delete job canopy-migration -n canopy
+# Migration logs (init container on each API pod)
+kubectl logs deploy/canopy-api -c migrate -n canopy
 ```
 
 ### Access
@@ -60,7 +57,6 @@ Both require basic auth (credentials from Vault).
 - `ghcr-secret-external.yaml` - GHCR authentication
 - `basic-auth-external.yaml` - Web UI authentication
 - `cloudflare-origin-cert-external.yaml` - Public TLS cert
-- `migration-job.yaml` - Database migration Job
 - `verify-deployment.sh` - Deployment verification
 
 ## Common Commands
