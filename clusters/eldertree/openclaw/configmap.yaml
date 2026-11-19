@@ -75,9 +75,9 @@ data:
       "agents": {
         "defaults": {
           "model": {
-            "primary": "ollama-lan/qwen3.6:35b-mlx",
+            "primary": "ollama-tailscale/qwen3.6:35b-mlx",
             "fallbacks": [
-              "ollama-tailscale/qwen3.6:35b-mlx",
+              "ollama-lan/qwen3.6:35b-mlx",
               "ollama-lan/qwen2.5:32b",
               "ollama-cluster/qwen2.5:3b",
               "openrouter/google/gemini-2.0-flash-001",
@@ -87,7 +87,7 @@ data:
           },
           "compaction": {
             "mode": "safeguard",
-            "model": "ollama-lan/qwen3.6:35b-mlx",
+            "model": "ollama-tailscale/qwen3.6:35b-mlx",
             "memoryFlush": {
               "enabled": false
             }
