@@ -1,5 +1,7 @@
 # Canopy FluxCD Deployment - Setup Summary
 
+> **Historical record.** `migration-job.yaml` has since been removed: migrations now run in a `migrate` init container on each `canopy-api` pod, serialised by a PostgreSQL advisory lock (see `DEPLOYMENT.md`). The `canopy-secrets` ExternalSecret lives in `clusters/eldertree/secrets-management/external-secrets/externalsecrets/canopy-secrets.yaml`.
+
 ## Changes Made
 
 ### New Files Created

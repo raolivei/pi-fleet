@@ -18,6 +18,10 @@ spec:
   releaseName: canopy
   upgrade:
     cleanupOnFail: true
+  # Revert out-of-band changes (e.g. a manual `kubectl scale --replicas=0`) to
+  # what Git declares. Without it Helm leaves live drift in place.
+  driftDetection:
+    mode: enabled
   values:
     # ============================================================
     # Canopy - Personal finance
@@ -37,6 +41,28 @@ spec:
           pullPolicy: Always
         replicas: 2
         port: 8000
+        # Migrate before serving. Alembic holds a PostgreSQL advisory lock
+        # (canopy backend/alembic/env.py), so replicas starting together
+        # migrate one at a time and later ones find the schema at head.
+        # A failed migration leaves the new pod in Init and old pods serving:
+        #   kubectl logs <pod> -c migrate -n canopy
+        initContainers:
+          - name: migrate
+            image: ghcr.io/raolivei/canopy-api:latest
+            imagePullPolicy: Always
+            workingDir: /app/backend
+            command: ["alembic", "upgrade", "head"]
+            env:
+              - name: DATABASE_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: canopy-secrets
+                    key: database-url
+              - name: ENVIRONMENT
+                value: "production"
+            resources:
+              requests: { cpu: "100m", memory: "128Mi" }
+              limits: { cpu: "500m", memory: "384Mi" }
         env:
           - name: DATABASE_URL
             valueFrom:
