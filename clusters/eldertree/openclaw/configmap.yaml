@@ -76,17 +76,11 @@ data:
         "defaults": {
           "model": {
             "primary": "ollama-tailscale/qwen3.6:35b-mlx",
-            "fallbacks": [
-              "ollama-lan/qwen3.6:35b-mlx",
-              "ollama-lan/qwen2.5:32b",
-              "ollama-cluster/qwen2.5:3b",
-              "openrouter/google/gemini-2.0-flash-001",
-              "openrouter/anthropic/claude-3.5-haiku",
-              "openrouter/meta-llama/llama-4-scout"
-            ]
+            "fallbacks": []
           },
           "compaction": {
             "mode": "safeguard",
+            "thinkingLevel": "off",
             "model": "ollama-tailscale/qwen3.6:35b-mlx",
             "memoryFlush": {
               "enabled": false
