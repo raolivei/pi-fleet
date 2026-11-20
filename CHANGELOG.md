@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 
 ### Fixed
 
+- **Local-only OpenClaw fallback** — replace unreachable LAN, undersized Pi and obsolete paid cloud chat fallbacks with the tested Mac Nemotron Nano 4B model, explicitly configured for 65,536-token context.
+
 - **Canopy migrations and drift** — each `canopy-api` pod now runs `alembic upgrade head` in a `migrate` init container before serving (serialised by the PostgreSQL advisory lock in canopy #148), replacing the never-deployed `migration-job.yaml`, which ran from the wrong directory. The HelmRelease enables drift detection, so out-of-band changes such as the manual scale to zero are reverted to Git. VAULT.md lists `secret/canopy/basic-auth` and how to rotate Canopy secrets (canopy #48, #49).
 
 - **Telegram model and compaction routing** — use the Mac's Tailscale Ollama endpoint for primary inference and compaction. The former LAN endpoint is unreachable from the cluster and caused retries followed by an undersized Pi fallback and failed compaction, even after `/new`.

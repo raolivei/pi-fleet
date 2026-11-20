@@ -77,12 +77,7 @@ data:
           "model": {
             "primary": "ollama-tailscale/qwen3.6:35b-mlx",
             "fallbacks": [
-              "ollama-lan/qwen3.6:35b-mlx",
-              "ollama-lan/qwen2.5:32b",
-              "ollama-cluster/qwen2.5:3b",
-              "openrouter/google/gemini-2.0-flash-001",
-              "openrouter/anthropic/claude-3.5-haiku",
-              "openrouter/meta-llama/llama-4-scout"
+              "ollama-tailscale/nemotron-3-nano:4b-mlx"
             ]
           },
           "compaction": {
@@ -160,6 +155,12 @@ data:
             "baseUrl": "http://100.97.229.104:11434/v1",
             "apiKey": "ollama",
             "models": [
+              {
+                "id": "nemotron-3-nano:4b-mlx",
+                "name": "Nemotron Nano 4B MLX (Mac fallback)",
+                "contextWindow": 65536,
+                "maxTokens": 4096
+              },
               {
                 "id": "qwen3.6:35b-mlx",
                 "name": "Qwen 3.6 35B MLX (Local Mac, primary, Tailscale)",
