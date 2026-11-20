@@ -76,12 +76,11 @@ data:
         "defaults": {
           "model": {
             "primary": "ollama-tailscale/qwen3.6:35b-mlx",
-            "fallbacks": [
-              "ollama-tailscale/nemotron-3-nano:4b-mlx"
-            ]
+            "fallbacks": []
           },
           "compaction": {
             "mode": "safeguard",
+            "thinkingLevel": "off",
             "model": "ollama-tailscale/qwen3.6:35b-mlx",
             "memoryFlush": {
               "enabled": false
@@ -155,12 +154,6 @@ data:
             "baseUrl": "http://100.97.229.104:11434/v1",
             "apiKey": "ollama",
             "models": [
-              {
-                "id": "nemotron-3-nano:4b-mlx",
-                "name": "Nemotron Nano 4B MLX (Mac fallback)",
-                "contextWindow": 65536,
-                "maxTokens": 4096
-              },
               {
                 "id": "qwen3.6:35b-mlx",
                 "name": "Qwen 3.6 35B MLX (Local Mac, primary, Tailscale)",
