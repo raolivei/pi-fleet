@@ -7,7 +7,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Dates are ISO 86
 ### Fixed
 
 - **Canopy network isolation** — default-deny ingress NetworkPolicy in the `canopy` namespace, with explicit allows: Traefik → frontend/API; `canopy-api` (and its `migrate` init container) → Postgres/Redis; the `observability` exporters → Postgres/Redis. Public access via Cloudflare Tunnel still enters through Traefik and is unchanged (canopy #154).
-- **Ollie and Elder local-only LLM routing (raolivei/ollie#151)** — Remove the OpenRouter cloud key from Ollie's ExternalSecret and core deployment. Point Elder's Ollama at the Mac's Tailscale address with an installed model (`llama3.1:8b`); the LAN IP had no route off-LAN and `qwen2.5:32b` was not pulled. Ollie's direct Ollama fallback now uses the same address instead of `host.docker.internal`, which does not resolve in k3s. The Ollie chart moves to 0.1.2. Requires the Ollie core image that routes chat through Elder.
+- **Ollie and Elder local-only LLM routing (raolivei/ollie#151)** — Remove the OpenRouter cloud key from Ollie's ExternalSecret and core deployment. Point Elder's Ollama at the Mac's Tailscale address with an installed model (`llama3.1:8b`); the LAN IP had no route off-LAN and `qwen2.5:32b` was not pulled. Ollie's direct Ollama fallback now uses the same address instead of `host.docker.internal`, which does not resolve in k3s. The Ollie chart moves to 0.1.2. Bumps `ollie-core` to `v0.6.0`, which routes chat through Elder.
 
 - **Local-only OpenClaw fallback** — remove unreachable LAN, undersized Pi and obsolete paid cloud chat fallbacks, and explicitly disable compaction reasoning to avoid incompatible provider defaults.
 
