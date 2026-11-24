@@ -252,6 +252,7 @@ clusters/eldertree/canopy/
 ├── kustomization.yaml                 # Kustomize resources list
 ├── helmrelease.yaml                   # HelmRelease (API, Frontend, Redis)
 ├── statefulset-postgres.yaml          # PostgreSQL with PVC
+├── networkpolicy.yaml                 # Default-deny ingress + explicit allows
 ├── canopy-secrets-external.yaml       # App secrets (NEW)
 ├── ghcr-secret-external.yaml          # GHCR auth
 ├── basic-auth-external.yaml           # Traefik basic auth
@@ -301,7 +302,23 @@ curl -k https://canopy.eldertree.local/v1/health
 - **Secrets**: All secrets in Vault, synced via ExternalSecrets
 - **Authentication**: Basic auth on all ingress routes
 - **TLS**: Cert-Manager for local, Cloudflare Origin Cert for public
-- **Network**: ClusterIP services, ingress-only external access
+- **Network**: ClusterIP services, ingress-only external access. `networkpolicy.yaml` denies all ingress into the namespace except:
+  - Traefik (`kube-system`) → `canopy-frontend:3000` and `canopy-api:8000`. Public access (phone → Cloudflare → cloudflared → Traefik) and local access both arrive this way.
+  - `canopy-api` pods, including the `migrate` init container → `canopy-postgres:5432` and `canopy-redis:6379`.
+  - `observability` exporters (`postgres-exporter`, `redis-exporter`) → Postgres and Redis.
+
+  A new in-cluster caller needs an explicit allow rule here. Kubelet probes come from the local node, which the k3s policy controller permits. Egress isn't restricted.
+
+  Verify (a denied connection must time out; an allowed one must succeed):
+
+  ```bash
+  # Denied: a pod in another namespace
+  kubectl run np-deny --rm -i --restart=Never -n default --image=busybox:1.36 -- \
+    sh -c 'nc -zv -w 5 canopy-api.canopy 8000; nc -zv -w 5 canopy-postgres.canopy 5432'
+  # Allowed: the API pod reaching Postgres
+  kubectl exec -n canopy deploy/canopy-api -c canopy-api -- python -c \
+    "import socket; socket.create_connection(('canopy-postgres', 5432), 5); print('ok')"
+  ```
 - **Container**: Non-root user (UID 1000) in API container
 
 ## References

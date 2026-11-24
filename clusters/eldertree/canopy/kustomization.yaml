@@ -11,5 +11,7 @@ resources:
   # commit e2026db introduced a duplicate here; that duplicate is removed.
   # PostgreSQL StatefulSet (kept outside Helm - volumeClaimTemplates)
   - statefulset-postgres.yaml
+  # Network isolation: default-deny ingress plus explicit allows (canopy#154)
+  - networkpolicy.yaml
   # Helm-managed app (api, frontend, redis, ingress, middleware)
   - helmrelease.yaml

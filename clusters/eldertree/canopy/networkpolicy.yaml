@@ -1,0 +1,107 @@
+# Canopy network isolation (raolivei/canopy#154).
+#
+# Default-deny ingress for every pod in the namespace, then allow only:
+#   Traefik (kube-system)           -> canopy-frontend:3000, canopy-api:8000
+#   canopy-api (incl. migrate init) -> canopy-postgres:5432, canopy-redis:6379
+#   observability exporters         -> canopy-postgres:5432, canopy-redis:6379
+#
+# Public access is unaffected: phone -> Cloudflare -> cloudflared -> Traefik
+# -> Canopy, so the only hop into this namespace is from Traefik. Kubelet
+# probes come from the local node, which the k3s policy controller allows.
+# Egress is not restricted (the API needs DNS and outbound HTTPS).
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: canopy
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-to-web
+  namespace: canopy
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["canopy"]
+      - key: component
+        operator: In
+        values: ["canopy-frontend", "canopy-api"]
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 3000
+        - protocol: TCP
+          port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres-clients
+  namespace: canopy
+spec:
+  podSelector:
+    matchLabels:
+      app: canopy
+      component: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: canopy
+              component: canopy-api
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              app: postgres-exporter
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis-clients
+  namespace: canopy
+spec:
+  podSelector:
+    matchLabels:
+      app: canopy
+      component: canopy-redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: canopy
+              component: canopy-api
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              app: redis-exporter
+      ports:
+        - protocol: TCP
+          port: 6379
