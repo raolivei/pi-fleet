@@ -12,7 +12,7 @@ spec:
   chart:
     spec:
       chart: ./helm/ollie
-      version: "0.1.1"
+      version: "0.1.2"
       sourceRef:
         kind: GitRepository
         name: flux-system
@@ -25,7 +25,9 @@ spec:
     audio:
       enabled: false
     ollama:
-      externalUrl: "http://host.docker.internal:11434"
+      # host.docker.internal does not resolve in k3s. Direct fallback uses the
+      # Mac's Tailscale address; primary inference goes through Elder (ollie#151).
+      externalUrl: "http://100.97.229.104:11434"
       deployOnCluster: false
     elder:
       url: "http://elder.openclaw.svc.cluster.local:8000"
@@ -39,7 +41,7 @@ spec:
     core:
       image:
         repository: ghcr.io/raolivei/ollie-core
-        tag: v0.4.5
+        tag: v0.6.0
         pullPolicy: Always
       resources:
         requests:
@@ -48,6 +50,8 @@ spec:
         limits:
           memory: "1Gi"
           cpu: "1000m"
+      env:
+        ollamaModel: "llama3.1:8b"
     frontend:
       enabled: true
       image:
