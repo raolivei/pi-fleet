@@ -48,12 +48,6 @@ spec:
                   name: {{ .Release.Name }}-secrets
                   key: elder-api-key
                   optional: true
-            - name: OPENROUTER_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
-                  key: openrouter-api-key
-                  optional: true
             - name: LOCAL_WORKSPACE_TOOLS
               value: "false"
             {{- if .Values.audio.enabled }}

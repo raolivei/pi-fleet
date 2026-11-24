@@ -15,6 +15,10 @@ data:
   # "ollama"/"ollama-heavy" providers were reporting available=true (a bare
   # truthy check) but never actually worked. Point at the same Mac LAN IP
   # OpenClaw's primary uses, and models that are actually present.
-  ELDER_OLLAMA_BASE_URL: "http://192.168.2.107:11434"
-  ELDER_OLLAMA_MODEL: "qwen2.5:32b"
+  # 2026-11: the LAN IP is unroutable whenever the Mac is off the home network
+  # ("No route to host" from the elder pod) and qwen2.5:32b is not pulled. Use
+  # the Mac's Tailscale address (same as OpenClaw's primary) and an installed
+  # model. Elder is the single local-only LLM router for Ollie (ollie#151).
+  ELDER_OLLAMA_BASE_URL: "http://100.97.229.104:11434"
+  ELDER_OLLAMA_MODEL: "llama3.1:8b"
   ELDER_OLLAMA_HEAVY_MODEL: "qwen3.6:35b-mlx"
