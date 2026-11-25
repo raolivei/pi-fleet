@@ -52,7 +52,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
         image:
           repository: ghcr.io/raolivei/personal-website
-          tag: v0.2.21 # {"$imagepolicy": "personal-website:personal-website-policy:tag"}
+          tag: v0.2.22 # {"$imagepolicy": "personal-website:personal-website-policy:tag"}
           pullPolicy: IfNotPresent
         port: 80
         podSecurityContext:
